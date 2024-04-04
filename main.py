@@ -27,7 +27,7 @@ discord_token = discord_token_file.read()
 discord_token_file.close()
 
 intents = discord.Intents.default()
-bot = commands.Bot(intents = intents, command_prefix = '')
+bot = commands.Bot(owner_id = 563372552643149825, intents = intents, command_prefix = '')
 
 bot.path = path
 bot.pathtype = pathtype
@@ -40,7 +40,6 @@ async def on_ready():
     for filename in os.listdir(f"{path}{pathtype}commands{pathtype}"):
         # If file is a Python file...
         if filename.endswith("py"):
-            print(filename)
             # We load it into the bot
             await bot.load_extension(f"commands.{filename[:-3]}")
     
