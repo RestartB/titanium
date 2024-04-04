@@ -1,0 +1,8 @@
+/content
+/assets
+/tokens
+/.vscode
+/test
+.cache
+*.json
+*.db
