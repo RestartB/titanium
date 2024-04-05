@@ -12,8 +12,8 @@ class spotify(commands.Cog):
         self.auth_manager = SpotifyClientCredentials(client_id = self.bot.spotify_id, client_secret = self.bot.spotify_secret)
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
 
-    # Spotify Search Rewrite
-    @app_commands.command(name = "spotify-test", description = "Search Spotify.")
+    # Spotify Search command
+    @app_commands.command(name = "spotify", description = "Search Spotify.")
     @app_commands.checks.cooldown(1, 10)
     @app_commands.choices(search_type=[
             app_commands.Choice(name="Song", value="song"),
