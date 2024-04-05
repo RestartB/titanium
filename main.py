@@ -73,6 +73,7 @@ if options_dict['sync-on-start'] == 'True':
 else:
     bot.sync_on_start = False
 
+# Convert Dev IDs from str to int
 bot.dev_ids = []
 for id in bot.dev_ids_str:
     bot.dev_ids.append(int(id))
