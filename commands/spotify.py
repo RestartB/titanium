@@ -223,7 +223,14 @@ class spotify(commands.Cog):
                     # Sort through request data
                     i = 0
                     for item in result['albums']['items']:
-                        options_list.append(discord.SelectOption(label = item['name'], value = i))
+                        artist_string = ""
+                        for artist in item['artists']:
+                            if artist_string == "":
+                                artist_string = artist['name'] 
+                            else:
+                                artist_string = artist_string + ", " + artist['name']
+                        
+                        options_list.append(discord.SelectOption(label = item['name'], description = artist_string, value = i))
                         i += 1
                     
                     # Define options
