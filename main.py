@@ -105,7 +105,7 @@ async def on_ready():
                 else:
                     # We load it into the bot
                     await bot.load_extension(f"commands-private.{filename[:-3]}")
-    
+
     print("[INIT] Loaded cogs.")
 
     # Sync tree if sync on start is enabled
