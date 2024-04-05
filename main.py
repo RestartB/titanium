@@ -46,11 +46,14 @@ def readconfigfile(path):
         print("[INIT] Config file malformed: Error while reading Options section! The file may be missing or malformed.")
         exit()
 
-readconfigfile('config.cfg')
-
+# Bot Setup
 intents = discord.Intents.default()
 bot = commands.Bot(intents = intents, command_prefix = '')
 
+# Read config files
+readconfigfile('config.cfg')
+
+# Config File Vars
 bot.path = path
 bot.pathtype = pathtype
 
@@ -75,8 +78,9 @@ async def on_ready():
     print("[INIT] Loading cogs...")
     # Find all cogs in command dir
     for filename in os.listdir(bot.cog_dir):
-        # If file is a Python file...
+        # Determine if file is a python file
         if filename.endswith("py"):
+            # Don't load it if it's in the blocklist
             if filename[:-3] in bot.cog_blacklist:
                 pass
             else:
@@ -85,6 +89,7 @@ async def on_ready():
     
     print("[INIT] Loaded cogs.")
 
+    # Sync tree if sync on start is enabled
     if bot.sync_on_start == True:
         print("[INIT] Syncing command tree...")
         sync = await bot.tree.sync()
