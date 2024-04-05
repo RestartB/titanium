@@ -87,6 +87,17 @@ async def on_ready():
                 # We load it into the bot
                 await bot.load_extension(f"commands.{filename[:-3]}")
     
+    # Find all cogs in private command dir
+    for filename in os.listdir(f"{path}{pathtype}commands-private{pathtype}"):
+        # Determine if file is a python file
+        if filename.endswith("py"):
+            # Don't load it if it's in the blocklist
+            if filename[:-3] in bot.cog_blacklist:
+                pass
+            else:
+                # We load it into the bot
+                await bot.load_extension(f"commands-private.{filename[:-3]}")
+    
     print("[INIT] Loaded cogs.")
 
     # Sync tree if sync on start is enabled

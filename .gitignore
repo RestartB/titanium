@@ -1,6 +1,7 @@
 /content
 /assets
-/commands
+/commands/__pycache__
+/commands-private
 /.vscode
 /test
 .cache
