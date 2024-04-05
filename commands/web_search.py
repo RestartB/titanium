@@ -37,7 +37,7 @@ class web_search(commands.Cog):
     # Urban Dictionary command
     @app_commands.command(name = "urban_dictionary", description = "Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!")
     @app_commands.checks.cooldown(1,10)
-    async def self(interaction: discord.Interaction, query: str):
+    async def urban_dict(self, interaction: discord.Interaction, query: str):
         await interaction.response.defer()
 
         embed = discord.Embed(title = "Searching...")
@@ -111,7 +111,7 @@ class web_search(commands.Cog):
     # Wikipedia command
     @app_commands.command(name = "wikipedia", description = "Search Wikipedia for information.")
     @app_commands.checks.cooldown(1, 5)
-    async def self(interaction: discord.Interaction, search: str):
+    async def wiki(self, interaction: discord.Interaction, search: str):
         await interaction.response.defer()
         embed = discord.Embed(title = "Loading...", color = Color.random())
         await interaction.followup.send(embed = embed)
