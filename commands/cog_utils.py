@@ -51,7 +51,7 @@ class cog_utils(commands.Cog):
                 await interaction.edit_original_response(embed = embed)
             except Exception as error:
                 embed = discord.Embed(title = "Error", description = f"Error while loading {cog}.\n\n{error}", color = Color.red())
-                await interaction.edit_original_response(error = error)
+                await interaction.edit_original_response(embed = embed)
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
             await interaction.followup.send(embed = embed, ephemeral = True)
@@ -72,7 +72,7 @@ class cog_utils(commands.Cog):
                 await interaction.edit_original_response(embed = embed)
             except Exception as error:
                 embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\n{error}", color = Color.red())
-                await interaction.edit_original_response(error = error)
+                await interaction.edit_original_response(embed = embed)
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
             await interaction.followup.send(embed = embed, ephemeral = True)
@@ -93,7 +93,7 @@ class cog_utils(commands.Cog):
                 await interaction.edit_original_response(embed = embed)
             except Exception as error:
                 embed = discord.Embed(title = "Error", description = f"Error while reloading {cog}.\n\n{error}", color = Color.red())
-                await interaction.edit_original_response(error = error)
+                await interaction.edit_original_response(embed = embed)
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
             await interaction.followup.send(embed = embed, ephemeral = True)
