@@ -1,4 +1,4 @@
-# RestartBot-Cogs
+# RestartBot
 Welcome to the rewrite of RestartBot, using **discord.py Cogs**.
 
 > [!CAUTION]
