@@ -25,7 +25,7 @@ class utils(commands.Cog):
     @app_commands.command(name = "restart", description = "Restart the bot.")
     @commands.is_owner()
     async def restart(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral = True)
         
         if interaction.user.id in self.bot.dev_ids:
             embed = discord.Embed(title = "The bot will restart.", color = Color.green())

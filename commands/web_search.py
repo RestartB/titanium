@@ -30,7 +30,7 @@ class web_search(commands.Cog):
     #         # Edit loading message with new embed
     #         await interaction.edit_original_response(embed = embed)
     #     except Exception:
-    #         embed = discord.Embed(title = "Error", description = "An error has occured. Solutions:\n\n**1.** Is the expression / equation valid?\n**2.** Are you using any forbidden characters?\n**3.** Try again later.")
+    #         embed = discord.Embed(title = "Error", description = "An error has occurred. Solutions:\n\n**1.** Is the expression / equation valid?\n**2.** Are you using any forbidden characters?\n**3.** Try again later.")
     #         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
     #         await interaction.edit_original_response(embed = embed)
 
@@ -40,7 +40,7 @@ class web_search(commands.Cog):
     async def urban_dict(self, interaction: discord.Interaction, query: str):
         await interaction.response.defer()
 
-        embed = discord.Embed(title = "Searching...")
+        embed = discord.Embed(title = "Searching...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
 
@@ -71,7 +71,7 @@ class web_search(commands.Cog):
                             self.page -= 1
                         else:
                             self.page = len(self.pages) - 1
-                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}", color = Color.random())
+                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", color = Color.random())
                         embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
                         embed_list.append(embed)
                         await interaction.response.edit_message(embeds = embed_list)
@@ -83,7 +83,7 @@ class web_search(commands.Cog):
                             self.page += 1
                         else:
                             self.page = 0
-                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}", color = Color.random())
+                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", color = Color.random())
                         embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
                         embed_list.append(embed)
                         await interaction.response.edit_message(embeds = embed_list)
@@ -91,7 +91,7 @@ class web_search(commands.Cog):
                 embed = discord.Embed(title = "Content Warning", description = "Urban Dictionary has very little moderation and content may be inappropriate! View at your own risk.", color = Color.orange())
                 embed_list.append(embed)
                 
-                embed = discord.Embed(title = f"{item_list[0]['word']} (Urban Dictionary)", description = f"**Author: {item_list[0]['author']}**\n\n{(item_list[0]['definition'].replace('[', '')).replace(']', '')}", color = Color.random())
+                embed = discord.Embed(title = f"{item_list[0]['word']} (Urban Dictionary)", description = f"**Author: {item_list[0]['author']}**\n\n||{(item_list[0]['definition'].replace('[', '')).replace(']', '')}||", color = Color.random())
                 embed.set_footer(text = f"Requested by {interaction.user.name} - Page 1/{len(item_list)}", icon_url = interaction.user.avatar.url)
                 embed_list.append(embed)
                 
@@ -104,7 +104,7 @@ class web_search(commands.Cog):
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
         except Exception:
-            embed = discord.Embed(title = "An error has occured.", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+            embed = discord.Embed(title = "An error has occurred.", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
             await interaction.edit_original_response(embed = embed, view = None)
 
@@ -113,7 +113,7 @@ class web_search(commands.Cog):
     @app_commands.checks.cooldown(1, 5)
     async def wiki(self, interaction: discord.Interaction, search: str):
         await interaction.response.defer()
-        embed = discord.Embed(title = "Loading...", color = Color.random())
+        embed = discord.Embed(title = "Loading...", color = Color.orange())
         await interaction.followup.send(embed = embed)
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         try:
@@ -134,7 +134,7 @@ class web_search(commands.Cog):
             embed.set_footer(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             await interaction.edit_original_response(embed = embed)
         except Exception:
-            embed = discord.Embed(title = "An error has occured.", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+            embed = discord.Embed(title = "An error has occurred.", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
             await interaction.edit_original_response(embed = embed, view = None)
 

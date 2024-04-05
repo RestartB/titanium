@@ -50,7 +50,7 @@ class misc(commands.Cog):
                 view.add_item(discord.ui.Button(style = discord.ButtonStyle.url, url = msg.jump_url, label = "Jump to Message"))
                 await interaction.followup.send(ephemeral=True, embed=embed, view=view)
         except Exception:
-            embed = discord.Embed(title = "Error", description = "**An error has occured.\n\nSolutions**\n- Is the channel a text channel?\n- Has a message been sent here yet?\n- Try again later.", color = Color.red())
+            embed = discord.Embed(title = "Error", description = "**An error has occurred.\n\nSolutions**\n- Is the channel a text channel?\n- Has a message been sent here yet?\n- Try again later.", color = Color.red())
             interaction.followup.send(embed=embed, ephemeral=True)
     
     # Fish Command
