@@ -10,7 +10,6 @@ class cog_utils(commands.Cog):
 
     # Sync cogs command
     @app_commands.command(name = "sync-cogs", description = "Sync cogs.")
-    @commands.is_owner()
     async def sync_cogs(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
@@ -38,7 +37,6 @@ class cog_utils(commands.Cog):
 
     # Load cog command
     @app_commands.command(name = "load-cog", description = "Load a cog.")
-    @commands.is_owner()
     async def load(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
 
@@ -60,7 +58,6 @@ class cog_utils(commands.Cog):
 
     # Unload cog command
     @app_commands.command(name = "unload-cog", description = "Unload a cog.")
-    @commands.is_owner()
     async def unload(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
 
@@ -80,9 +77,29 @@ class cog_utils(commands.Cog):
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
             await interaction.followup.send(embed = embed, ephemeral = True)
 
+    # Reload cog command
+    @app_commands.command(name = "reload-cog", description = "Reload a cog.")
+    async def reload(self, interaction:discord.Interaction, cog: str):
+        await interaction.response.defer(ephemeral = True)
+
+        if interaction.user.id in self.bot.dev_ids:
+            embed = discord.Embed(title = "Reloading cog...", color = Color.orange())
+            await interaction.followup.send(embed = embed, ephemeral = True)
+
+            try:
+                await self.bot.reload_extension(f"commands.{cog}")
+
+                embed = discord.Embed(title = f"Reloaded {cog}!", color = Color.green())
+                await interaction.edit_original_response(embed = embed)
+            except Exception as error:
+                embed = discord.Embed(title = "Error", description = f"Error while reloading {cog}.\n\n{error}", color = Color.red())
+                await interaction.edit_original_response(error = error)
+        else:
+            embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
+            await interaction.followup.send(embed = embed, ephemeral = True)
+    
     # Tree sync command
     @app_commands.command(name = "tree-sync", description = "Sync the command tree.")
-    @commands.is_owner()
     async def tree_sync(self, interaction:discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
