@@ -61,6 +61,7 @@ bot.token = tokens_dict['discord-bot-token']
 bot.spotify_id = tokens_dict['spotify-api-id']
 bot.spotify_secret = tokens_dict['spotify-api-secret']
 
+bot.dev_ids_str = options_dict['owner-ids'].split(",")
 bot.support_server = options_dict['support-server']
 if options_dict['cog-dir'] == '':
     bot.cog_dir = f"{path}{pathtype}commands{pathtype}"
@@ -71,6 +72,10 @@ if options_dict['sync-on-start'] == 'True':
     bot.sync_on_start = True
 else:
     bot.sync_on_start = False
+
+bot.dev_ids = []
+for id in bot.dev_ids_str:
+    bot.dev_ids.append(int(id))
 
 # Sync bot cogs when started
 @bot.event
@@ -87,16 +92,18 @@ async def on_ready():
                 # We load it into the bot
                 await bot.load_extension(f"commands.{filename[:-3]}")
     
-    # Find all cogs in private command dir
-    for filename in os.listdir(f"{path}{pathtype}commands-private{pathtype}"):
-        # Determine if file is a python file
-        if filename.endswith("py"):
-            # Don't load it if it's in the blocklist
-            if filename[:-3] in bot.cog_blacklist:
-                pass
-            else:
-                # We load it into the bot
-                await bot.load_extension(f"commands-private.{filename[:-3]}")
+    # Read cogs from private commands folder if it exists
+    if os.path.exists(f"{path}{pathtype}commands-private{pathtype}"):
+        # Find all cogs in private command dir
+        for filename in os.listdir(f"{path}{pathtype}commands-private{pathtype}"):
+            # Determine if file is a python file
+            if filename.endswith("py"):
+                # Don't load it if it's in the blocklist
+                if filename[:-3] in bot.cog_blacklist:
+                    pass
+                else:
+                    # We load it into the bot
+                    await bot.load_extension(f"commands-private.{filename[:-3]}")
     
     print("[INIT] Loaded cogs.")
 
