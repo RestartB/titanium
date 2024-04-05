@@ -73,7 +73,7 @@ class spotify(commands.Cog):
                     # Define options
                     select = Select(options = options_list)
 
-                    embed = discord.Embed(title = "Select Song", description = f'Found {len(result['tracks']['items'])} results for "{search}"', color = Color.random())
+                    embed = discord.Embed(title = "Select Song", description = f'Found {len(result["tracks"]["items"])} results for "{search}"', color = Color.random())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
 
                     # Response to user selection
@@ -150,7 +150,7 @@ class spotify(commands.Cog):
                     # Define options
                     select = Select(options=options_list)
 
-                    embed = discord.Embed(title = "Select Artist", description = f'Found {len(result['artists']['items'])} results for "{search}"', color = Color.random())
+                    embed = discord.Embed(title = "Select Artist", description = f'Found {len(result["artists"]["items"])} results for "{search}"', color = Color.random())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
 
                     # Response to user selection
@@ -229,7 +229,7 @@ class spotify(commands.Cog):
                     # Define options
                     select = Select(options=options_list)
 
-                    embed = discord.Embed(title = "Select Album", description = f'Found {len(result['albums']['items'])} results for "{search}"', color = Color.random())
+                    embed = discord.Embed(title = "Select Album", description = f'Found {len(result["albums"]["items"])} results for "{search}"', color = Color.random())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
 
                     # Response to user selection
