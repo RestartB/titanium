@@ -110,11 +110,11 @@ class spotify(commands.Cog):
                         view.add_item(spotify_button)
                         
                         # Add Search on YT Music button
-                        ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(item['name'])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}')
+                        ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(item["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}')
                         view.add_item(ytm_button)
 
                         # Add Search on Google button
-                        google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item['name'])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}')
+                        google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}')
                         view.add_item(google_button)
                         
                         # Send new embed
