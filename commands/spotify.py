@@ -20,7 +20,7 @@ class spotify(commands.Cog):
             app_commands.Choice(name="Artist", value="artist"),
             app_commands.Choice(name="Album", value="album"),
             ])
-    async def spotify_search_test(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str):
+    async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str):
         await interaction.response.defer()
 
         options_list = []
