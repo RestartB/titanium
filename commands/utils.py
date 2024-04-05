@@ -26,9 +26,14 @@ class utils(commands.Cog):
     @commands.is_owner()
     async def restart(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        embed = discord.Embed(title = "The bot will restart.", color = Color.green())
-        await interaction.followup.send(embed = embed, ephemeral = True)
-        os.execv(sys.executable, ['python'] + sys.argv)
+        
+        if interaction.user.id in self.bot.dev_ids:
+            embed = discord.Embed(title = "The bot will restart.", color = Color.green())
+            await interaction.followup.send(embed = embed, ephemeral = True)
+            os.execv(sys.executable, ['python'] + sys.argv)
+        else:
+            embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
+            await interaction.followup.send(embed = embed, ephemeral = True)
 
     # Info command
     @app_commands.command(name = "info", description = "Info about the bot.")
