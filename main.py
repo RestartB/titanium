@@ -48,6 +48,7 @@ def readconfigfile(path):
 
 # Bot Setup
 intents = discord.Intents.default()
+intents.message_content = True
 bot = commands.Bot(intents = intents, command_prefix = '')
 
 # Read config files
@@ -117,6 +118,10 @@ async def on_ready():
         print("[INIT] Skipping command tree sync. Please manually sync commands later.")
 
     print(f"[INIT] Bot is ready and connected as {bot.user}.")
+
+@bot.event
+async def on_message(message):
+    pass
 
 # Cooldown Handler
 @bot.tree.error
