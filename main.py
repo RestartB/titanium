@@ -21,30 +21,78 @@ else:
     pathtype = "/"
     print(f"[INIT] OS name is {os.name}, path type {pathtype}")
 
-# Open Token Files
-discord_token_file = open(f"{path}{pathtype}tokens{pathtype}discord_token.txt", "r")
-discord_token = discord_token_file.read()
-discord_token_file.close()
+# ------ Config File Reader ------
+def readconfigfile(path):
+    #Make dicts global
+    global tokens_dict, options_dict
+
+    # Set up reader
+    import configparser
+    config = configparser.RawConfigParser()
+
+    # Read options section of config file, add it to dict
+    try:
+        config.read(path)
+        tokens_dict = dict(config.items('TOKENS'))
+    except Exception as error:
+        print("[INIT] Config file malformed: Error while reading Tokens section! The file may be missing or malformed.")
+        exit()
+
+    # Read path section of config file, add it to dict
+    try:
+        config.read(path)
+        options_dict = dict(config.items('OPTIONS'))
+    except Exception as error:
+        print("[INIT] Config file malformed: Error while reading Options section! The file may be missing or malformed.")
+        exit()
+
+readconfigfile('config.cfg')
 
 intents = discord.Intents.default()
-bot = commands.Bot(owner_id = 563372552643149825, intents = intents, command_prefix = '')
+bot = commands.Bot(intents = intents, command_prefix = '')
 
 bot.path = path
 bot.pathtype = pathtype
 
+bot.token = tokens_dict['discord-bot-token']
+bot.spotify_id = tokens_dict['spotify-api-id']
+bot.spotify_secret = tokens_dict['spotify-api-secret']
+
+bot.support_server = options_dict['support-server']
+if options_dict['cog-dir'] == '':
+    bot.cog_dir = f"{path}{pathtype}commands{pathtype}"
+else:
+    bot.cog_dir = options_dict['cog-dir']
+bot.cog_blacklist = options_dict['cog-blacklist']
+if options_dict['sync-on-start'] == 'True':
+    bot.sync_on_start = True
+else:
+    bot.sync_on_start = False
+
 # Sync bot cogs when started
 @bot.event
 async def on_ready():
-    print("[INIT] Syncing cogs...")
+    print("[INIT] Loading cogs...")
     # Find all cogs in command dir
-    for filename in os.listdir(f"{path}{pathtype}commands{pathtype}"):
+    for filename in os.listdir(bot.cog_dir):
         # If file is a Python file...
         if filename.endswith("py"):
-            # We load it into the bot
-            await bot.load_extension(f"commands.{filename[:-3]}")
+            if filename[:-3] in bot.cog_blacklist:
+                pass
+            else:
+                # We load it into the bot
+                await bot.load_extension(f"commands.{filename[:-3]}")
     
-    sync = await bot.tree.sync()
-    print(f"[INIT] Cogs synced. {len(sync)} commands loaded.")
+    print("[INIT] Loaded cogs.")
+
+    if bot.sync_on_start == True:
+        print("[INIT] Syncing command tree...")
+        sync = await bot.tree.sync()
+        print(f"[INIT] Command tree synced. {len(sync)} commands loaded.")
+    else:
+        print("[INIT] Skipping command tree sync. Please manually sync commands later.")
+
+    print(f"[INIT] Bot is ready and connected as {bot.user}.")
 
 # Cooldown Handler
 @bot.tree.error
@@ -57,4 +105,4 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
         await msg.delete()
 
 # Run bot with token
-bot.run(discord_token)
+bot.run(bot.token)
