@@ -25,8 +25,16 @@ RestartBot comes with some premade commands. Below is a list of what is in each 
   - **cat:** see a random image of a cat.
   - **dog:** see a random image of a dog.
 - **misc.py**
+  - **8ball:** consult the mystical 8 ball for an answer to a question.
   - **first-message:** get the first message in a channel.
   - **fish:** see the fish video.
+- **music.py**
+  - **lyrics:** get the lyrics to a song.
+  - **song-global-url:** get a list of streaming service URLs based on a song URL. Powered by https://song.link.
+- **spotify.py**
+  - **spotify:** search Spotify for a song, artist or album.
+  - **spotify-url:** get info on a Spotify song, artist, album or playlist URL.
+  - **spotify-image:** get album art for a Spotify song or album URL.
 
 ## Setup
 Coming soon!
