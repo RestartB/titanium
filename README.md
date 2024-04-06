@@ -1,14 +1,23 @@
 # RestartBot
 Welcome to the rewrite of RestartBot, using **discord.py Cogs**.
 
-> [!CAUTION]
-> The cogs rewrite is in active development and will contain bugs and unfinished features.
+> [!NOTE]
+> The cogs rewrite is now the main version of RestartBot. Development has ceased on the single file version of RestartBot, and this version is now the solely supported version.
+
+## Included Features
+- Wikipedia and Urban Dictionary search
+- Random Dog and Cat images
+- Fun commands like the 8 ball and fish command
+- Search Spotify and get Spotify URL information
+- Get lyrics for songs
+- Get URLs for a song on every streaming service
+- Expandable cog system to allow you to make your own commands
 
 ## Why?
 The old code of RestartBot was very hard to work on. Every command was in the main.py file, meaning that at times it would be over 1800 lines long. This made it difficult to look at and edit. Therefore, by using cogs, each group of commands can be split into their own file, so I only need to see the commands that are relavent to what I am currently working on.
 
 ## Included Commands
-RestartBot comes with some premade commands. Below is a list of what commands are in each cog file:
+RestartBot comes with some included commands. Below is a list of what commands are in each cog file:
 - **Utility Commands** *(utils.py)*
   - **ping:** see the bot's latency.
   - **restart:** restart the bot. Only available to the bot owner.
@@ -38,6 +47,11 @@ RestartBot comes with some premade commands. Below is a list of what commands ar
 - **Web Search Commands** *(web_search.py)*
   - **urban-dictionary:** search Urban Dictionary. Results are mainly unmoderated and may be inappropriate.
   - **wikipedia:** search Wikipedia for an answer.
+
+## Included Cogs
+RestartBot also includes some non command cogs, which are also stored in the command folder. The list is below:
+- **spotify_autoembed.py**
+  - Stores the event handler for Spotify Auto-embedding.
 
 ## Setup
 Coming soon!
