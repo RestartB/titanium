@@ -35,6 +35,9 @@ RestartBot comes with some premade commands. Below is a list of what commands ar
   - **spotify:** search Spotify for a song, artist or album.
   - **spotify-url:** get info on a Spotify song, artist, album or playlist URL.
   - **spotify-image:** get album art for a Spotify song or album URL.
+- **Web Search Commands** *(web_search.py)*
+  - **urban-dictionary:** search Urban Dictionary. Results are mainly unmoderated and may be inappropriate.
+  - **wikipedia:** search Wikipedia for an answer.
 
 ## Setup
 Coming soon!
