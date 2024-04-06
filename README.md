@@ -24,6 +24,9 @@ RestartBot comes with some premade commands. Below is a list of what is in each 
 - **animals.py**
   - **cat:** see a random image of a cat.
   - **dog:** see a random image of a dog.
+- **misc.py**
+  - **first-message:** get the first message in a channel.
+  - **fish:** see the fish video.
 
 ## Setup
 Coming soon!
