@@ -1,7 +1,7 @@
-# RestartBot discord.py Cogs Rewrite
-# Restart, 2024
+# RestartBot v2
+# Made by Restart, 2024
 
-# This rewrite will soon become the main version of RestartBot. It is experimental currently and may contain bugs.
+# Welcome to the rewritten version of RestartBot, now using cogs.
 
 # Imports
 import discord
