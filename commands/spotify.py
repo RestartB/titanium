@@ -304,7 +304,7 @@ class spotify(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = None, ephemeral = True)
 
     # Spotify URL command
-    @app_commands.command(name = "spotify_url", description = "Get info about a Spotify song, artist, album or playlist.")
+    @app_commands.command(name = "spotify-url", description = "Get info about a Spotify song, artist, album or playlist.")
     @app_commands.checks.cooldown(1, 10)
     async def spotify_url(self, interaction: discord.Interaction, url: str):
         await interaction.response.defer()
@@ -567,7 +567,7 @@ class spotify(commands.Cog):
             await interaction.edit_original_response(embed = embed)
 
     # Spotify Image command
-    @app_commands.command(name = "spotify_image", description = "Get album art from a Spotify URL.")
+    @app_commands.command(name = "spotify-image", description = "Get album art from a Spotify URL.")
     @app_commands.checks.cooldown(1, 10)
     async def spotify_image(self, interaction: discord.Interaction, url: str):
         await interaction.response.defer()
