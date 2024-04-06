@@ -35,7 +35,7 @@ class web_search(commands.Cog):
     #         await interaction.edit_original_response(embed = embed)
 
     # Urban Dictionary command
-    @app_commands.command(name = "urban_dictionary", description = "Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!")
+    @app_commands.command(name = "urban-dictionary", description = "Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!")
     @app_commands.checks.cooldown(1,10)
     async def urban_dict(self, interaction: discord.Interaction, query: str):
         await interaction.response.defer()
