@@ -5,13 +5,17 @@
 
 # Imports
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from discord import Color
 import os
 import asyncio
+import logging
 
 # Current Running Path
 path = os.getcwd()
+
+# Logging handler
+handler = logging.FileHandler(filename='discord_critical.log', encoding='utf-8', mode='w')
 
 # Set path type
 if f"{os.name}" == "nt":
@@ -134,4 +138,4 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
         await msg.delete()
 
 # Run bot with token
-bot.run(bot.token)
+bot.run(bot.token, log_handler=handler, log_level=logging.CRITICAL)
