@@ -7,4 +7,5 @@
 .cache
 *.json
 *.db
+*.log
 config.cfg
