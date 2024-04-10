@@ -10,6 +10,7 @@ import aiohttp
 import string
 from colorthief import ColorThief
 import os
+import urlexpander
 
 class spotify(commands.Cog):
     def __init__(self, bot):
@@ -391,14 +392,36 @@ class spotify(commands.Cog):
     @app_commands.checks.cooldown(1, 10)
     async def spotify_url(self, interaction: discord.Interaction, url: str):
         await interaction.response.defer()
-        
-        embed = discord.Embed(title = "Please wait...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-        await interaction.followup.send(embed = embed)
 
         artist_string = ""
 
         try:
+            if "spotify.link" in url:
+                try:
+                    embed = discord.Embed(title = "Expanding URL...", color = Color.orange())
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    await interaction.followup.send(embed = embed)
+                    url = urlexpander.expand(url)
+                    url_expanded = True
+                except Exception as error:
+                    print("[SPOTURL] Error while expanding URL.")
+                    print(error)
+                    if interaction.user.id in self.bot.dev_ids:
+                        embed = discord.Embed(title = "Error occurred while expanding URL.", description = error, color = Color.red())
+                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                        await interaction.edit_original_response(embed = embed)
+                    else:
+                        embed = discord.Embed(title = "Error occurred while expanding URL.", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                        await interaction.edit_original_response(embed = embed)
+            
+            embed = discord.Embed(title = "Please wait...", color = Color.orange())
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            if url_expanded == True:
+                await interaction.edit_original_response(embed = embed)
+            else:
+                await interaction.followup.send(embed = embed)
+            
             if "track" in url:
                 result = self.sp.track(url)
                 
@@ -772,9 +795,31 @@ class spotify(commands.Cog):
     async def spotify_image(self, interaction: discord.Interaction, url: str):
         await interaction.response.defer()
         
+        if "spotify.link" in url:
+            try:
+                embed = discord.Embed(title = "Expanding URL...", color = Color.orange())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                await interaction.followup.send(embed = embed)
+                url = urlexpander.expand(url)
+                url_expanded = True
+            except Exception as error:
+                print("[SPOTURL] Error while expanding URL.")
+                print(error)
+                if interaction.user.id in self.bot.dev_ids:
+                    embed = discord.Embed(title = "Error occurred while expanding URL.", description = error, color = Color.red())
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    await interaction.edit_original_response(embed = embed)
+                else:
+                    embed = discord.Embed(title = "Error occurred while expanding URL.", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    await interaction.edit_original_response(embed = embed)
+        
         embed = discord.Embed(title = "Getting images...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-        await interaction.followup.send(embed = embed)
+        if url_expanded == True:
+                await interaction.edit_original_response(embed = embed)
+        else:
+            await interaction.followup.send(embed = embed)
 
         artist_string = ""
 
