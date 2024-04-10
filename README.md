@@ -4,6 +4,9 @@ Welcome to the rewrite of RestartBot, using **discord.py Cogs**.
 > [!NOTE]
 > The cogs rewrite is now the main version of RestartBot. Development has ceased on the single file version of RestartBot, and this version is now the solely supported version.
 
+## Contributions Welcome!
+Have an improvement you want to make? Developed a new cog that you want to be in the main bot? Contributions are welcome! Make a pull request and I'll take a look. :)
+
 ## Included Features
 - Wikipedia and Urban Dictionary search
 - Random Dog and Cat images
