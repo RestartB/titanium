@@ -30,13 +30,13 @@ class spotify(commands.Cog):
 
         options_list = []
         
+        # Send initial embed
+        embed = discord.Embed(title = "Please wait...", color = Color.orange())
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        await interaction.followup.send(embed = embed)
+        
         try:
             if search_type.value == "song":
-                # Send initial embed
-                embed = discord.Embed(title = "Searching...", color = Color.orange())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
-
                 # Search Spotify
                 result = self.sp.search(search, type = 'track', limit = 5)
 
@@ -84,16 +84,14 @@ class spotify(commands.Cog):
                     # Response to user selection
                     async def response(interaction: discord.Interaction):
                         await interaction.response.defer()
+                        
                         # Find unique ID of selection in the list
                         item = result['tracks']['items'][int(select.values[0])]
 
-                        artist_string = ""
-                        for artist in item['artists']:
-                            if artist_string == "":
-                                artist_string = artist['name']
-                            else:
-                                artist_string = f"{artist_string}, {artist['name']}"
-
+                        embed = discord.Embed(title = "Getting images...", color = Color.orange())
+                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                        await interaction.followup.send(embed = embed, view = None)
+                        
                         image_url = item['album']['images'][0]['url']
                         
                         # Generate random filename
@@ -115,6 +113,17 @@ class spotify(commands.Cog):
                         # Remove file when done
                         os.remove(f'{filename}.jpg')
 
+                        embed = discord.Embed(title = "Parsing info...", color = Color.orange())
+                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                        await interaction.followup.send(embed = embed, view = None)
+                        
+                        artist_string = ""
+                        for artist in item['artists']:
+                            if artist_string == "":
+                                artist_string = artist['name']
+                            else:
+                                artist_string = f"{artist_string}, {artist['name']}"
+                        
                         # Set up new embed
                         if item['explicit'] == True:
                             embed = discord.Embed(title = f"{item['name']} (Explicit)", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
@@ -154,11 +163,6 @@ class spotify(commands.Cog):
                     # Edit initial message to show dropdown
                     await interaction.edit_original_response(embed = embed, view = view)
             elif search_type.value == "artist":
-                # Send initial embed
-                embed = discord.Embed(title = "Searching...", color = Color.orange())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
-
                 # Search Spotify
                 result = self.sp.search(search, type = 'artist', limit = 5)
 
@@ -189,6 +193,10 @@ class spotify(commands.Cog):
 
                         result_top_tracks = self.sp.artist_top_tracks(item['id'])
 
+                        embed = discord.Embed(title = "Getting images...", color = Color.orange())
+                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                        await interaction.followup.send(embed = embed, view = None)
+                        
                         image_url = result_info["images"][0]["url"]
                         
                         # Generate random filename
@@ -209,6 +217,10 @@ class spotify(commands.Cog):
 
                         # Remove file when done
                         os.remove(f'{filename}.jpg')
+                        
+                        embed = discord.Embed(title = "Parsing info...", color = Color.orange())
+                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                        await interaction.followup.send(embed = embed, view = None)
                         
                         embed = discord.Embed(title = f"{result_info['name']}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
                         embed.add_field(name = "Followers", value = f"{result_info['followers']['total']:,}")
@@ -254,11 +266,6 @@ class spotify(commands.Cog):
                     # Edit initial message to show dropdown
                     await interaction.edit_original_response(embed = embed, view = view)
             elif search_type.value == "album":
-                # Send initial embed
-                embed = discord.Embed(title = "Searching...", color = Color.orange())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
-
                 # Search Spotify
                 result = self.sp.search(search, type = 'album', limit = 5)
 
@@ -294,6 +301,10 @@ class spotify(commands.Cog):
 
                         result_info = self.sp.album(item['id'])
 
+                        embed = discord.Embed(title = "Getting images...", color = Color.orange())
+                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                        await interaction.followup.send(embed = embed, view = None)
+                        
                         image_url = result_info["images"][0]["url"]
                         
                         # Generate random filename
@@ -314,6 +325,10 @@ class spotify(commands.Cog):
 
                         # Remove file when done
                         os.remove(f'{filename}.jpg')
+
+                        embed = discord.Embed(title = "Parsing info...", color = Color.orange())
+                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                        await interaction.followup.send(embed = embed, view = None)
 
                         songlist_string = ""
                         for i in range(len(result_info['tracks']['items'])):
@@ -377,7 +392,7 @@ class spotify(commands.Cog):
     async def spotify_url(self, interaction: discord.Interaction, url: str):
         await interaction.response.defer()
         
-        embed = discord.Embed(title = "Searching...", color = Color.orange())
+        embed = discord.Embed(title = "Please wait...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
 
@@ -386,6 +401,10 @@ class spotify(commands.Cog):
         try:
             if "track" in url:
                 result = self.sp.track(url)
+                
+                embed = discord.Embed(title = "Getting images...", color = Color.orange())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                await interaction.followup.send(embed = embed)
                 
                 image_url = result["album"]["images"][0]["url"]
 
@@ -407,6 +426,10 @@ class spotify(commands.Cog):
 
                 # Remove file when done
                 os.remove(f'{filename}.jpg')
+                
+                embed = discord.Embed(title = "Parsing info...", color = Color.orange())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                await interaction.followup.send(embed = embed)
                 
                 if result['explicit'] == True:
                     embed = discord.Embed(title = f"{result['name']} (Explicit)", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
@@ -450,6 +473,10 @@ class spotify(commands.Cog):
                 # Fetch artist top songs
                 result_top_tracks = self.sp.artist_top_tracks(url)
 
+                embed = discord.Embed(title = "Getting images...", color = Color.orange())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                await interaction.followup.send(embed = embed)
+                
                 image_url = result_info["images"][0]["url"]
 
                 # Generate random filename
@@ -471,6 +498,10 @@ class spotify(commands.Cog):
                 # Remove file when done
                 os.remove(f'{filename}.jpg')
 
+                embed = discord.Embed(title = "Parsing info...", color = Color.orange())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                await interaction.followup.send(embed = embed)
+                
                 embed = discord.Embed(title = f"{result_info['name']}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
                 embed.add_field(name = "Followers", value = f"{result_info['followers']['total']:,}")
                 embed.set_thumbnail(url = result_info["images"][0]["url"])
@@ -511,6 +542,10 @@ class spotify(commands.Cog):
                 # Fetch artist info
                 result_info = self.sp.album(url)
 
+                embed = discord.Embed(title = "Getting images...", color = Color.orange())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                await interaction.followup.send(embed = embed)
+                
                 image_url = result_info["images"][0]["url"]
 
                 # Generate random filename
@@ -531,6 +566,10 @@ class spotify(commands.Cog):
 
                 # Remove file when done
                 os.remove(f'{filename}.jpg')
+                
+                embed = discord.Embed(title = "Parsing info...", color = Color.orange())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                await interaction.followup.send(embed = embed)
                 
                 songlist_string = ""
                 for i in range(len(result_info['tracks']['items'])):
@@ -582,6 +621,10 @@ class spotify(commands.Cog):
                 pages = []
                 pageStr = ""
 
+                embed = discord.Embed(title = "Getting images...", color = Color.orange())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                await interaction.followup.send(embed = embed)
+                
                 # Get image URL
                 image_url = result_info["images"][0]["url"]
 
@@ -604,6 +647,10 @@ class spotify(commands.Cog):
                 # Remove file when done
                 os.remove(f'{filename}.jpg')
 
+                embed = discord.Embed(title = "Parsing info...", color = Color.orange())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                await interaction.followup.send(embed = embed)
+                
                 # Work through all tracks in playlist, adding them to a page
                 for playlist_item in result_info['tracks']['items']:
                     i += 1
