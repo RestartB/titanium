@@ -11,6 +11,7 @@ import string
 from colorthief import ColorThief
 import os
 import urlexpander
+import tldextract
 
 class spotify(commands.Cog):
     def __init__(self, bot):
@@ -401,7 +402,14 @@ class spotify(commands.Cog):
                     embed = discord.Embed(title = "Expanding URL...", color = Color.orange())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                     await interaction.followup.send(embed = embed)
-                    url = urlexpander.expand(url)
+                    
+                    url = url.replace('www.', '').replace('http://', '').replace('https://', '').rstrip('/')
+                    url = f"https://{url}"
+                    
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(url) as request:
+                            url = str(request.url)
+                        
                     url_expanded = True
                 except Exception as error:
                     print("[SPOTURL] Error while expanding URL.")
@@ -410,10 +418,14 @@ class spotify(commands.Cog):
                         embed = discord.Embed(title = "Error occurred while expanding URL.", description = error, color = Color.red())
                         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                         await interaction.edit_original_response(embed = embed)
+                        return
                     else:
-                        embed = discord.Embed(title = "Error occurred while expanding URL.", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+                        embed = discord.Embed(title = "Error occurred while expanding URL.", description = "A **spotify.link** was detected, but we could not expand it. Is it valid?\n\nIf you are sure the URL is valid and supported, please try again later or message <@563372552643149825> for assistance.", color = Color.red())
                         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                         await interaction.edit_original_response(embed = embed)
+                        return
+            else:
+                url_expanded = False
             
             embed = discord.Embed(title = "Please wait...", color = Color.orange())
             embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
@@ -800,19 +812,28 @@ class spotify(commands.Cog):
                 embed = discord.Embed(title = "Expanding URL...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.followup.send(embed = embed)
-                url = urlexpander.expand(url)
+                
+                url = url.replace('www.', '').replace('http://', '').replace('https://', '').rstrip('/')
+                url = f"https://{url}"
+                
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as request:
+                        url = str(request.url)
+                    
                 url_expanded = True
             except Exception as error:
-                print("[SPOTURL] Error while expanding URL.")
+                print("[SPOTIMG] Error while expanding URL.")
                 print(error)
                 if interaction.user.id in self.bot.dev_ids:
                     embed = discord.Embed(title = "Error occurred while expanding URL.", description = error, color = Color.red())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                     await interaction.edit_original_response(embed = embed)
+                    return
                 else:
-                    embed = discord.Embed(title = "Error occurred while expanding URL.", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+                    embed = discord.Embed(title = "Error occurred while expanding URL.", description = "A **spotify.link** was detected, but we could not expand it. Is it valid?\n\nIf you are sure the URL is valid and supported, please try again later or message <@563372552643149825> for assistance.", color = Color.red())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                     await interaction.edit_original_response(embed = embed)
+                    return
         
         embed = discord.Embed(title = "Getting images...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
