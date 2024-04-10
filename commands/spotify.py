@@ -91,7 +91,7 @@ class spotify(commands.Cog):
 
                         embed = discord.Embed(title = "Getting images...", color = Color.orange())
                         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.followup.send(embed = embed, view = None)
+                        await interaction.edit_original_response(embed = embed, view = None)
                         
                         image_url = item['album']['images'][0]['url']
                         
@@ -116,7 +116,7 @@ class spotify(commands.Cog):
 
                         embed = discord.Embed(title = "Parsing info...", color = Color.orange())
                         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.followup.send(embed = embed, view = None)
+                        await interaction.edit_original_response(embed = embed, view = None)
                         
                         artist_string = ""
                         for artist in item['artists']:
@@ -196,7 +196,7 @@ class spotify(commands.Cog):
 
                         embed = discord.Embed(title = "Getting images...", color = Color.orange())
                         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.followup.send(embed = embed, view = None)
+                        await interaction.edit_original_response(embed = embed, view = None)
                         
                         image_url = result_info["images"][0]["url"]
                         
@@ -221,7 +221,7 @@ class spotify(commands.Cog):
                         
                         embed = discord.Embed(title = "Parsing info...", color = Color.orange())
                         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.followup.send(embed = embed, view = None)
+                        await interaction.edit_original_response(embed = embed, view = None)
                         
                         embed = discord.Embed(title = f"{result_info['name']}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
                         embed.add_field(name = "Followers", value = f"{result_info['followers']['total']:,}")
@@ -304,7 +304,7 @@ class spotify(commands.Cog):
 
                         embed = discord.Embed(title = "Getting images...", color = Color.orange())
                         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.followup.send(embed = embed, view = None)
+                        await interaction.edit_original_response(embed = embed, view = None)
                         
                         image_url = result_info["images"][0]["url"]
                         
@@ -329,7 +329,7 @@ class spotify(commands.Cog):
 
                         embed = discord.Embed(title = "Parsing info...", color = Color.orange())
                         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.followup.send(embed = embed, view = None)
+                        await interaction.edit_original_response(embed = embed, view = None)
 
                         songlist_string = ""
                         for i in range(len(result_info['tracks']['items'])):
@@ -427,7 +427,7 @@ class spotify(commands.Cog):
                 
                 embed = discord.Embed(title = "Getting images...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
+                await interaction.edit_original_response(embed = embed)
                 
                 image_url = result["album"]["images"][0]["url"]
 
@@ -452,7 +452,7 @@ class spotify(commands.Cog):
                 
                 embed = discord.Embed(title = "Parsing info...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
+                await interaction.edit_original_response(embed = embed)
                 
                 if result['explicit'] == True:
                     embed = discord.Embed(title = f"{result['name']} (Explicit)", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
@@ -498,7 +498,7 @@ class spotify(commands.Cog):
 
                 embed = discord.Embed(title = "Getting images...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
+                await interaction.edit_original_response(embed = embed)
                 
                 image_url = result_info["images"][0]["url"]
 
@@ -523,7 +523,7 @@ class spotify(commands.Cog):
 
                 embed = discord.Embed(title = "Parsing info...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
+                await interaction.edit_original_response(embed = embed)
                 
                 embed = discord.Embed(title = f"{result_info['name']}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
                 embed.add_field(name = "Followers", value = f"{result_info['followers']['total']:,}")
@@ -567,7 +567,7 @@ class spotify(commands.Cog):
 
                 embed = discord.Embed(title = "Getting images...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
+                await interaction.edit_original_response(embed = embed)
                 
                 image_url = result_info["images"][0]["url"]
 
@@ -592,7 +592,7 @@ class spotify(commands.Cog):
                 
                 embed = discord.Embed(title = "Parsing info...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
+                await interaction.edit_original_response(embed = embed)
                 
                 songlist_string = ""
                 for i in range(len(result_info['tracks']['items'])):
@@ -646,7 +646,7 @@ class spotify(commands.Cog):
 
                 embed = discord.Embed(title = "Getting images...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
+                await interaction.edit_original_response(embed = embed)
                 
                 # Get image URL
                 image_url = result_info["images"][0]["url"]
@@ -672,7 +672,7 @@ class spotify(commands.Cog):
 
                 embed = discord.Embed(title = "Parsing info...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.followup.send(embed = embed)
+                await interaction.edit_original_response(embed = embed)
                 
                 # Work through all tracks in playlist, adding them to a page
                 for playlist_item in result_info['tracks']['items']:
