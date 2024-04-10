@@ -10,8 +10,6 @@ import aiohttp
 import string
 from colorthief import ColorThief
 import os
-import urlexpander
-import tldextract
 
 class spotify(commands.Cog):
     def __init__(self, bot):
