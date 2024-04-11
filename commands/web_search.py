@@ -118,7 +118,7 @@ class web_search(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         try:
             page = wikipedia.page(search)
-            embed = discord.Embed(title = f"Search: {search}")
+            embed = discord.Embed(title = f"Search: {search}", color=Color.from_rgb(r = 255, g = 255, b = 255))
             embed.add_field(name = f"{page.title}", value = wikipedia.summary(search, sentences = 3))
             embed.set_footer(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             view = View()
