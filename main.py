@@ -11,6 +11,8 @@ import os
 import asyncio
 import logging
 
+print("Welcome to RestartBot!")
+
 # Current Running Path
 path = os.getcwd()
 
@@ -55,33 +57,42 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(intents = intents, command_prefix = '')
 
+print("[INIT] Reading config files.")
+
 # Read config files
 readconfigfile('config.cfg')
 
+print("[INIT] Config files read.")
+
 # Config File Vars
-bot.path = path
-bot.pathtype = pathtype
+try:
+    bot.path = path
+    bot.pathtype = pathtype
 
-bot.token = tokens_dict['discord-bot-token']
-bot.spotify_id = tokens_dict['spotify-api-id']
-bot.spotify_secret = tokens_dict['spotify-api-secret']
+    bot.token = tokens_dict['discord-bot-token']
+    bot.spotify_id = tokens_dict['spotify-api-id']
+    bot.spotify_secret = tokens_dict['spotify-api-secret']
 
-bot.dev_ids_str = options_dict['owner-ids'].split(",")
-bot.support_server = options_dict['support-server']
-if options_dict['cog-dir'] == '':
-    bot.cog_dir = f"{path}{pathtype}commands{pathtype}"
-else:
-    bot.cog_dir = options_dict['cog-dir']
-bot.cog_blacklist = options_dict['cog-blacklist']
-if options_dict['sync-on-start'] == 'True':
-    bot.sync_on_start = True
-else:
-    bot.sync_on_start = False
+    bot.dev_ids_str = options_dict['owner-ids'].split(",")
+    bot.support_server = options_dict['support-server']
+    if options_dict['cog-dir'] == '':
+        bot.cog_dir = f"{path}{pathtype}commands{pathtype}"
+    else:
+        bot.cog_dir = options_dict['cog-dir']
+    bot.cog_blacklist = options_dict['cog-blacklist']
+    if options_dict['sync-on-start'] == 'True':
+        bot.sync_on_start = True
+    else:
+        bot.sync_on_start = False
 
-# Convert Dev IDs from str to int
-bot.dev_ids = []
-for id in bot.dev_ids_str:
-    bot.dev_ids.append(int(id))
+    # Convert Dev IDs from str to int
+    bot.dev_ids = []
+    for id in bot.dev_ids_str:
+        bot.dev_ids.append(int(id))
+except Exception as error:
+    print("[INIT] Bad value in config file! Exiting.")
+    print(error)
+    exit()
 
 # Sync bot cogs when started
 @bot.event
@@ -123,6 +134,7 @@ async def on_ready():
 
     print(f"[INIT] Bot is ready and connected as {bot.user}.")
 
+# Ignore normal user messages
 @bot.event
 async def on_message(message):
     pass
