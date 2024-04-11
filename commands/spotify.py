@@ -25,7 +25,10 @@ class spotify(commands.Cog):
             app_commands.Choice(name="Artist", value="artist"),
             app_commands.Choice(name="Album", value="album"),
             ])
-    async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str):
+    @app_commands.describe(search_type = "The type of media you are searching for. Supported types are song, artist and album.")
+    @app_commands.describe(search = "What you are searching for.")
+    @app_commands.describe(message = "Add an optional message to the output.")
+    async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str, message: str = ""):
         await interaction.response.defer()
 
         options_list = []
@@ -379,6 +382,10 @@ class spotify(commands.Cog):
 
                     # Edit initial message to show dropdown
                     await interaction.edit_original_response(embed = embed, view = view)
+        
+            if message != "":
+                message_str = f"**Message from {interaction.user.mention}**\n{message.replace("@everyone", "`@everyone`").replace("@here", "`@here`")}\n\n*RestartBot is not responsible for the content of user messages.*"
+                await interaction.channel.send(message_str)
         except Exception as error:
             await interaction.response.defer(ephemeral = True)
             embed = discord.Embed(title = "Spotify - Error", description = "An unknown error has occurred. The error has been logged.")
@@ -388,8 +395,10 @@ class spotify(commands.Cog):
 
     # Spotify URL command
     @app_commands.command(name = "spotify-url", description = "Get info about a Spotify song, artist, album or playlist.")
+    @app_commands.describe(url = "The target Spotify URL. Song, artist, album, playlist and spotify.link URLs are supported.")
+    @app_commands.describe(message = "Add an optional message to the output.")
     @app_commands.checks.cooldown(1, 10)
-    async def spotify_url(self, interaction: discord.Interaction, url: str):
+    async def spotify_url(self, interaction: discord.Interaction, url: str, message: str = ""):
         await interaction.response.defer()
 
         artist_string = ""
@@ -795,6 +804,11 @@ class spotify(commands.Cog):
                 embed = discord.Embed(title = "Spotify - Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
+                return
+            
+            if message != "":
+                message_str = f"**Message from {interaction.user.mention}**\n{message.replace("@everyone", "`@everyone`").replace("@here", "`@here`")}\n\n*RestartBot is not responsible for the content of user messages.*"
+                await interaction.channel.send(message_str)
         except Exception:
             embed = discord.Embed(title = "Spotify - Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
             await interaction.edit_original_response(embed = embed)
