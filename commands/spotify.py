@@ -384,7 +384,7 @@ class spotify(commands.Cog):
                     await interaction.edit_original_response(embed = embed, view = view)
         
             if message != "":
-                message_str = f"**Message from {interaction.user.mention}**\n{message.replace("@everyone", "`@everyone`").replace("@here", "`@here`")}\n\n*RestartBot is not responsible for the content of user messages.*"
+                message_str = f"**Message from {interaction.user.mention}**\n{message.replace('@everyone', '`@everyone`').replace('@here', '`@here`')}\n\n*RestartBot is not responsible for the content of user messages.*"
                 await interaction.channel.send(message_str)
         except Exception as error:
             await interaction.response.defer(ephemeral = True)
@@ -807,7 +807,7 @@ class spotify(commands.Cog):
                 return
             
             if message != "":
-                message_str = f"**Message from {interaction.user.mention}**\n{message.replace("@everyone", "`@everyone`").replace("@here", "`@here`")}\n\n*RestartBot is not responsible for the content of user messages.*"
+                message_str = f"**Message from {interaction.user.mention}**\n{message.replace('@everyone', '`@everyone`').replace('@here', '`@here`')}\n\n*RestartBot is not responsible for the content of user messages.*"
                 await interaction.channel.send(message_str)
         except Exception:
             embed = discord.Embed(title = "Spotify - Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
