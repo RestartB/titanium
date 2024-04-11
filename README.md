@@ -25,7 +25,7 @@ Self-hosting RestartBot is possible, however you must get the required modules a
 > [!IMPORTANT]
 > While I have taken every precaution to block offensive content from being displayed without a disclaimer, it is your responsibility as the bot host to monitor for any offensive content posted using the bot.
 
-> [!DANGER]
+> [!CAUTION]
 > When generating Bot Tokens and API Secrets, do not share them with anybody!
 
 ### Python Modules
