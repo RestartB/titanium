@@ -36,13 +36,30 @@ RestartBot relies on several Python modules to function. These modules can be in
 
 ### Discord Bot Token
 RestartBot requires a Discord Bot Token to function. The steps to get one are as follows:
-1. Go to the Discord Developer Portal and log in with your Discord Account.
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and log in with your Discord Account.
 2. Create a new application and fill in the information required.
 3. Go to the `Bot` section, and generate a new bot.
-4. Copy the Bot Token, and paste it into the bot token field in the config file.
+4. Give your bot a username, and optionally, a PFP and banner.
+5. Copy the Bot Token, and paste it into the bot token field in the config file. Due to security reasons, you will only be able to view the bot token once from Discord Developer Portal before having to generate a new one.
 
 ### Spotify API Key
-To use the Spotify commands in RestartBot, a Spotify Client ID and Secret are required. If you do not provide these, Spotify commands will automatically be disabled.
+To use the Spotify commands in RestartBot, a Spotify Client ID and Secret are required. If you do not provide these, Spotify commands will automatically be disabled. The steps to get these are as follows:
+1. Go to the [Spotify Developers dashboard](https://developer.spotify.com/dashboard). A free or premium Spotify account is required.
+2. Create a new app, set the app name and description to whatever you please.  No additional APIs are required.
+3. Set the Redirect URI to any valid URL. `http://example.com` is known to work. Then, create the app.
+4. Copy the Client ID and Secret for your app, and paste them into their respective fields in the config file.
+
+### Starting the Bot
+Once you have have installed the required Python modules and generated your tokens, you can run the bot as follows:
+1. Navigate to the RestartBot directory through the terminal.
+2. Once you are at the RestartBot directory, run `python main.py`, and monitor for any errors in the terminal.
+
+If an error occurs, please create a GitHub issue and I will take a look.
+
+### Generating a Bot Invite
+To invite RestartBot to your server, an invite is required. You can use the following template to make a bot invite URL:\
+`https://discord.com/oauth2/authorize?client_id=(YOUR CLIENT ID)&permissions=964220546112&scope=bot`\
+You will need your Discord Client ID to make this URL. You can get this from the General Information page of your Application you generated earlier in Discord Developer Portal.
 
 ## Included Commands
 RestartBot comes with some included commands. Below is a list of what commands are in each cog file:
