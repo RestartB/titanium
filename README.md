@@ -32,7 +32,7 @@ Self-hosting RestartBot is possible, however you must get the required modules a
 RestartBot relies on several Python modules to function. These modules can be installed from Pypi using Pip.\
 \
 **Installation Command:**\
-`pip install discord.py spotipy wikipedia ...`
+`pip install discord.py spotipy wikipedia colorthief cpuinfo psutil`
 
 ### Discord Bot Token
 RestartBot requires a Discord Bot Token to function. The steps to get one are as follows:
