@@ -19,8 +19,30 @@ Have an improvement you want to make? Developed a new cog that you want to be in
 ## Why?
 The old code of RestartBot was very hard to work on. Every command was in the main.py file, meaning that at times it would be over 1800 lines long. This made it difficult to look at and edit. Therefore, by using cogs, each group of commands can be split into their own file, so I only need to see the commands that are relavent to what I am currently working on.
 
-## Setup
-Coming soon!
+## Self Hosting RestartBot
+Self-hosting RestartBot is possible, however you must get the required modules and API tokens first.
+
+> [!IMPORTANT]
+> While I have taken every precaution to block offensive content from being displayed without a disclaimer, it is your responsibility as the bot host to monitor for any offensive content posted using the bot.
+
+> [!DANGER]
+> When generating Bot Tokens and API Secrets, do not share them with anybody!
+
+### Python Modules
+RestartBot relies on several Python modules to function. These modules can be installed from Pypi using Pip.\
+\
+**Installation Command:**\
+`pip install discord.py spotipy wikipedia ...`
+
+### Discord Bot Token
+RestartBot requires a Discord Bot Token to function. The steps to get one are as follows:
+1. Go to the Discord Developer Portal and log in with your Discord Account.
+2. Create a new application and fill in the information required.
+3. Go to the `Bot` section, and generate a new bot.
+4. Copy the Bot Token, and paste it into the bot token field in the config file.
+
+### Spotify API Key
+To use the Spotify commands in RestartBot, a Spotify Client ID and Secret are required. If you do not provide these, Spotify commands will automatically be disabled.
 
 ## Included Commands
 RestartBot comes with some included commands. Below is a list of what commands are in each cog file:
