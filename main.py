@@ -40,7 +40,7 @@ def readconfigfile(path):
     try:
         config.read(path)
         tokens_dict = dict(config.items('TOKENS'))
-    except Exception as error:
+    except Exception:
         print("[INIT] Config file malformed: Error while reading Tokens section! The file may be missing or malformed.")
         exit()
 
@@ -48,7 +48,7 @@ def readconfigfile(path):
     try:
         config.read(path)
         options_dict = dict(config.items('OPTIONS'))
-    except Exception as error:
+    except Exception:
         print("[INIT] Config file malformed: Error while reading Options section! The file may be missing or malformed.")
         exit()
 
@@ -62,8 +62,6 @@ print("[INIT] Reading config files.")
 # Read config files
 readconfigfile('config.cfg')
 
-print("[INIT] Config files read.")
-
 # Config File Vars
 try:
     bot.path = path
@@ -75,11 +73,14 @@ try:
 
     bot.dev_ids_str = options_dict['owner-ids'].split(",")
     bot.support_server = options_dict['support-server']
+    bot.cog_blacklist = options_dict['cog-blacklist']
+    bot.blocked_ids_str = options_dict['user-blacklist'].split(",")
+
     if options_dict['cog-dir'] == '':
         bot.cog_dir = f"{path}{pathtype}commands{pathtype}"
     else:
         bot.cog_dir = options_dict['cog-dir']
-    bot.cog_blacklist = options_dict['cog-blacklist']
+    
     if options_dict['sync-on-start'] == 'True':
         bot.sync_on_start = True
     else:
@@ -89,6 +90,13 @@ try:
     bot.dev_ids = []
     for id in bot.dev_ids_str:
         bot.dev_ids.append(int(id))
+
+    # Convert Dev IDs from str to int
+    bot.blocked_ids = []
+    for id in bot.blocked_ids_str:
+        bot.blocked_ids.append(int(id))
+    
+    print("[INIT] Config files read.")
 except Exception as error:
     print("[INIT] Bad value in config file! Exiting.")
     print(error)
