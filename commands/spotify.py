@@ -210,14 +210,14 @@ class spotify(commands.Cog):
                             artist_string = ""
                             for artist in result_top_tracks['tracks'][i]['artists']:
                                 if artist_string == "":
-                                    artist_string = artist['name'] 
+                                    artist_string = artist['name'].replace('*', '-') 
                                 else:
-                                    artist_string = f"{artist_string}, {artist['name']}"
+                                    artist_string = f"{artist_string}, {artist['name']}".replace('*', '-')
                                     
                             if topsong_string == "":
-                                topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name']}** - {artist_string}"
+                                topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                             else:
-                                topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name']}** - {artist_string}"
+                                topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                         
                         embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
 
@@ -283,9 +283,9 @@ class spotify(commands.Cog):
                         artist_string = ""
                         for artist in item['artists']:
                             if artist_string == "":
-                                artist_string = artist['name'] 
+                                artist_string = artist['name'].replace('*', '-') 
                             else:
-                                artist_string = artist_string + ", " + artist['name']
+                                artist_string = artist_string + ", " + artist['name'].replace('*', '-')
                         
                         options_list.append(discord.SelectOption(label = item['name'], description = artist_string, value = i))
                         i += 1
@@ -315,21 +315,21 @@ class spotify(commands.Cog):
                             artist_string = ""
                             for artist in result_info['tracks']['items'][i]['artists']:
                                 if artist_string == "":
-                                    artist_string = artist['name'] 
+                                    artist_string = artist['name'].replace('*', '-') 
                                 else:
-                                    artist_string = artist_string + ", " + artist['name']
+                                    artist_string = artist_string + ", " + artist['name'].replace('*', '-')
                                     
                             if songlist_string == "":
-                                songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name']}** - {artist_string}"
+                                songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
                             else:
-                                songlist_string = f"{songlist_string}\n**{i + 1}: {result_info['tracks']['items'][i]['name']}** - {artist_string}"
+                                songlist_string = f"{songlist_string}\n**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
 
                         artist_string = ""
                         for artist in result_info['artists']:
                             if artist_string == "":
-                                artist_string = artist['name'] 
+                                artist_string = artist['name'].replace('*', '-') 
                             else:
-                                artist_string = artist_string + ", " + artist['name']
+                                artist_string = artist_string + ", " + artist['name'].replace('*', '-')
                         
                         embed = discord.Embed(title = f"{result_info['name']} - {artist_string}", description = songlist_string, color = Color.from_rgb(r = 255, g = 255, b = 255))
                         embed.set_footer(text = "Getting colour information...")
@@ -468,9 +468,9 @@ class spotify(commands.Cog):
 
                 for artist in result['artists']:
                     if artist_string == "":
-                        artist_string = artist['name']
+                        artist_string = artist['name'].replace('*', '-')
                     else:
-                        artist_string = f"{artist_string}, {artist['name']}"
+                        artist_string = f"{artist_string}, {artist['name']}".replace('*', '-')
                 
                 embed.add_field(name = "Artists", value = artist_string, inline = True)
                 embed.add_field(name = "Album", value = result['album']["name"], inline = True)
@@ -562,14 +562,14 @@ class spotify(commands.Cog):
                     artist_string = ""
                     for artist in result_top_tracks['tracks'][i]['artists']:
                         if artist_string == "":
-                            artist_string = artist['name'] 
+                            artist_string = artist['name'].replace('*', '-') 
                         else:
-                            artist_string = f"{artist_string}, {artist['name']}"
+                            artist_string = f"{artist_string}, {artist['name']}".replace('*', '-')
                             
                     if topsong_string == "":
-                        topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name']}** - {artist_string}"
+                        topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                     else:
-                        topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name']}** - {artist_string}"
+                        topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                 
                 embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
 
@@ -646,21 +646,21 @@ class spotify(commands.Cog):
                     artist_string = ""
                     for artist in result_info['tracks']['items'][i]['artists']:
                         if artist_string == "":
-                            artist_string = artist['name'] 
+                            artist_string = artist['name'].replace('*', '-') 
                         else:
-                            artist_string = artist_string + ", " + artist['name']
+                            artist_string = artist_string + ", " + artist['name'].replace('*', '-')
                             
                     if songlist_string == "":
-                        songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name']}** - {artist_string}"
+                        songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
                     else:
-                        songlist_string = f"{songlist_string}\n**{i + 1}: {result_info['tracks']['items'][i]['name']}** - {artist_string}"
+                        songlist_string = f"{songlist_string}\n**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
 
                 artist_string = ""
                 for artist in result_info['artists']:
                     if artist_string == "":
-                        artist_string = artist['name'] 
+                        artist_string = artist['name'].replace('*', '-') 
                     else:
-                        artist_string = artist_string + ", " + artist['name']
+                        artist_string = artist_string + ", " + artist['name'].replace('*', '-')
                 
                 embed = discord.Embed(title = f"{result_info['name']} - {artist_string}", description = songlist_string, color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
                 embed.set_footer(text = "Getting colour information...")
@@ -773,16 +773,16 @@ class spotify(commands.Cog):
                         
                         # If there's nothing in the current page, make a new one
                         if pageStr == "":
-                            pageStr = f"**{i}: {playlist_item['track']['name'].replace("*", "-")}** - {artist_string}"
+                            pageStr = f"**{i}: {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
                         # Else, add string to existing page
                         else:
-                            pageStr = f"{pageStr}\n**{i}: {playlist_item['track']['name'].replace("*", "-")}** - {artist_string}"
+                            pageStr = f"{pageStr}\n**{i}: {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
                     elif playlist_item['track']['type'] == "episode":
                         # Item is a podcast
                         if pageStr == "":
-                            pageStr = f"**{i}: {playlist_item['track']['album']['name'].replace("*", "-")}** - {playlist_item['track']['name'].replace("*", "-")} (Podcast)"
+                            pageStr = f"**{i}: {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
                         else:
-                            pageStr = f"{pageStr}\n**{i}: {playlist_item['track']['album']['name'].replace("*", "-")}** - {playlist_item['track']['name'].replace("*", "-")} (Podcast)"
+                            pageStr = f"{pageStr}\n**{i}: {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
                     else:
                         # Item type is unknown / unsupported
                         # If there's nothing in the current page, make a new one
