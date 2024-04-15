@@ -769,7 +769,7 @@ class spotify(commands.Cog):
                                 artist_string = artist['name'].replace("*", "-")
                             else:
                                 # Else, we add the current artist to the existing artist string
-                                artist_string = f"{artist_string}, {artist['name'].replace("*", "-")}"
+                                artist_string = f"{artist_string}, {artist['name']}".replace("*", "-")
                         
                         # If there's nothing in the current page, make a new one
                         if pageStr == "":
