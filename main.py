@@ -74,7 +74,7 @@ try:
     bot.dev_ids_str = options_dict['owner-ids'].split(",")
     bot.support_server = options_dict['support-server']
     bot.cog_blacklist = options_dict['cog-blacklist']
-    bot.blocked_ids_str = options_dict['user-blacklist'].split(",")
+    # bot.blocked_ids_str = options_dict['user-blacklist'].split(",")
 
     if options_dict['cog-dir'] == '':
         bot.cog_dir = f"{path}{pathtype}commands{pathtype}"
@@ -91,10 +91,10 @@ try:
     for id in bot.dev_ids_str:
         bot.dev_ids.append(int(id))
 
-    # Convert Dev IDs from str to int
-    bot.blocked_ids = []
-    for id in bot.blocked_ids_str:
-        bot.blocked_ids.append(int(id))
+    ## Convert Dev IDs from str to int
+    # bot.blocked_ids = []
+    # for id in bot.blocked_ids_str:
+        # bot.blocked_ids.append(int(id))
     
     print("[INIT] Config files read.")
 except Exception as error:
