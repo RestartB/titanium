@@ -21,7 +21,15 @@ class song_url(commands.Cog):
     @app_commands.command(name = "song-url", description = "Get info about a song link.")
     @app_commands.describe(url = "The target URL. Run /song-link-help for supported link types.")
     @app_commands.checks.cooldown(1, 15)
-    async def spotify_url(self, interaction: discord.Interaction, url: str):
+    @app_commands.choices(platform_select=[
+            app_commands.Choice(name="Amazon Music", value="amazonMusic"),
+            app_commands.Choice(name="Apple Music", value="appleMusic"),
+            app_commands.Choice(name="Deezer", value="deezer"),
+            app_commands.Choice(name="Spotify", value="spotify"),
+            app_commands.Choice(name="YouTube", value="youtube"),
+            ])
+    @app_commands.describe(platform_select = "Optional: select a platform to get a link for. Only works with song links.")
+    async def spotify_url(self, interaction: discord.Interaction, url: str, platform_select: app_commands.Choice[str] = None):
         await interaction.response.defer()
 
         embed = discord.Embed(title = "Please wait...", description = "For non Spotify links, this may take a moment. Hold tight!", color = Color.orange())
@@ -30,7 +38,7 @@ class song_url(commands.Cog):
         
         artist_string = ""
 
-        if not("spotify" in url):
+        if not("spotify" in url) or platform_select != None:
             try:
                 processed_source = quote(url, safe='()*!\'')
                 request_url = f"https://api.song.link/v1-alpha.1/links?url={processed_source}&userCountry=GB"
@@ -142,13 +150,17 @@ class song_url(commands.Cog):
                 spotify_button = discord.ui.Button(label=f'Play on Spotify ({int(minutes):02d}:{int(seconds):02d})', style=discord.ButtonStyle.url, url=result["external_urls"]["spotify"], row = 0)
                 view.add_item(spotify_button)
 
-                # Show OG Platform button if OG platform isn't Spotify
-                if platform != "spotify":
+                # Show OG Platform button if OG platform isn't Spotify or another platform was chosen
+                if platform != "spotify" or platform_select != None:
                     ogservice_button = discord.ui.Button(label=platform, style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_api]['url'], row = 0)
                     view.add_item(ogservice_button)
 
+                if platform_select != None:
+                    ogservice_button = discord.ui.Button(label=f"Play on {platform_select.name}", style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_select.value]['url'], row = 0)
+                    view.add_item(ogservice_button)
+
                 if platform != "spotify":
-                    songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=request_data['pageUrl'], row = 0)
+                    songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=request_data['pageUrl'], row = 1)
                     view.add_item(songlink_button)
                 
                 # Add Search on YT Music button
@@ -233,7 +245,7 @@ class song_url(commands.Cog):
                 view.add_item(spotify_button)
 
                 # Add song.link button                
-                songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 0)
+                songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 1)
                 view.add_item(songlink_button)
 
                 # Add Search on YT Music button
@@ -338,7 +350,7 @@ class song_url(commands.Cog):
                 view.add_item(spotify_button)
 
                 # Add song.link button                
-                songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 0)
+                songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 1)
                 view.add_item(songlink_button)
 
                 # Add Search on YT Music button
@@ -482,9 +494,6 @@ class song_url(commands.Cog):
                         self.pages = pages
                         spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"])
                         self.add_item(spotify_button)
-                        # Add song.link button                
-                        songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 0)
-                        self.add_item(songlink_button)
                 
                     @discord.ui.button(label="<", style=ButtonStyle.green, custom_id="prev")
                     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -518,10 +527,6 @@ class song_url(commands.Cog):
                     view = View()
                     spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"])
                     view.add_item(spotify_button)
-
-                    # Add song.link button                
-                    songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 0)
-                    view.add_item(songlink_button)
                     
                     await interaction.edit_original_response(embed = embed, view = view)
                 # Else, make embed with page buttons
