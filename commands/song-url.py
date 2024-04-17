@@ -18,7 +18,7 @@ class song_url(commands.Cog):
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
     
     # Song URL command
-    @app_commands.command(name = "song-url", description = "Get info about a song link")
+    @app_commands.command(name = "song-url", description = "Get info about a song link.")
     @app_commands.describe(url = "The target URL. Run /song-link-help for supported link types.")
     @app_commands.checks.cooldown(1, 15)
     async def spotify_url(self, interaction: discord.Interaction, url: str):
@@ -44,7 +44,7 @@ class song_url(commands.Cog):
                 if request_status == 400:
                     embed = discord.Embed(title = "Invalid Link", description = "The link entered is not valid. Please ensure you are sending a valid link.", color = Color.red())
                     embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song Only")
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
                     await interaction.edit_original_response(embed = embed)
                     return
                 if not(request_status <= 200 or request_status >= 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
@@ -52,13 +52,13 @@ class song_url(commands.Cog):
                     embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
                     if interaction.user.id in self.bot.dev_ids:
                         embed.add_field(name = "Error Code (Dev)", value = request_status)
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
                     await interaction.edit_original_response(embed = embed)
                     return
                 elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'song':
                     embed = discord.Embed(title = "Unsupported Link Type", description = f"{request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type']} link types from this service are unsupported.", color = Color.red())
                     embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
                     await interaction.edit_original_response(embed = embed)
                     return
                 else:
@@ -181,7 +181,7 @@ class song_url(commands.Cog):
                 # Remove file when done
                 os.remove(f'{filename}.jpg')
 
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
                 embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
 
                 await interaction.edit_original_response(embed = embed)
