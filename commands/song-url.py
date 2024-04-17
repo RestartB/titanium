@@ -19,8 +19,8 @@ class song_url(commands.Cog):
     
     # Song URL command
     @app_commands.command(name = "song-url", description = "Get info about a song link")
-    @app_commands.describe(url = "The target URL. For Spotify, song, artist, album, playlist and spotify.link URLs are supported. For everything else, only URLs links are supported.")
-    @app_commands.checks.cooldown(1, 10, commands.BucketType.default)
+    @app_commands.describe(url = "The target URL. Run /song-link-help for supported link types.")
+    @app_commands.checks.cooldown(1, 15)
     async def spotify_url(self, interaction: discord.Interaction, url: str):
         await interaction.response.defer()
 
@@ -67,18 +67,23 @@ class song_url(commands.Cog):
                 embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
                 await interaction.edit_original_response(embed = embed)
         
-        if request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "amazon":
-            platform = "Play on Amazon Music"
-        elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "itunes":
-            platform = "Play on Apple Music"
-        elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "soundcloud":
-            platform = "Play on SoundCloud"
-        elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "youtube":
-            platform = "Play on YouTube"
-        elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "spotify":
-            platform = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+            # Set Platform Strings
+            if request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "amazon":
+                platform = "Play on Amazon Music"
+                platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+            elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "itunes":
+                platform = "Play on Apple Music"
+                platform_api = "appleMusic"
+            elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "soundcloud":
+                platform = "Play on SoundCloud"
+                platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+            elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "youtube":
+                platform = "Play on YouTube"
+                platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+            else:
+                platform = f"Play on {request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'].title()}"
         else:
-            platform = f"Play on {request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'].title()}"
+            platform = "spotify"
         
         try:
             if "spotify.link" in url:
@@ -112,29 +117,10 @@ class song_url(commands.Cog):
                 
                 image_url = result["album"]["images"][0]["url"]
 
-                # Generate random filename
-                letters = string.ascii_lowercase
-                filename = ''.join(random.choice(letters) for i in range(8))
-
-                # Save image
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
-                        file = open(f'{filename}.jpg', 'wb')
-                        async for chunk in request.content.iter_chunked(10):
-                            file.write(chunk)
-                        file.close()
-                        
-                # Get dominant colour for embed
-                color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
-
-                # Remove file when done
-                os.remove(f'{filename}.jpg')
-                
                 if result['explicit'] == True:
-                    embed = discord.Embed(title = f"{result['name']} (Explicit)", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                    embed = discord.Embed(title = f"{result['name']} (Explicit)", color = Color.from_rgb(r = 255, g = 255, b = 255))
                 else:
-                    embed = discord.Embed(title = f"{result['name']}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                    embed = discord.Embed(title = f"{result['name']}", color = Color.from_rgb(r = 255, g = 255, b = 255))
 
                 for artist in result['artists']:
                     if artist_string == "":
@@ -153,19 +139,24 @@ class song_url(commands.Cog):
                 minutes, seconds = divmod(seconds, 60)
 
                 # Add Open in Spotify button
-                spotify_button = discord.ui.Button(label=f'Play on Spotify ({int(minutes):02d}:{int(seconds):02d})', style=discord.ButtonStyle.url, url=result["external_urls"]["spotify"])
+                spotify_button = discord.ui.Button(label=f'Play on Spotify ({int(minutes):02d}:{int(seconds):02d})', style=discord.ButtonStyle.url, url=result["external_urls"]["spotify"], row = 0)
                 view.add_item(spotify_button)
 
+                # Show OG Platform button if OG platform isn't Spotify
                 if platform != "spotify":
-                    ogservice_button = discord.ui.Button(label=platform, style=discord.ButtonStyle.url, url=result["external_urls"]["spotify"])
+                    ogservice_button = discord.ui.Button(label=platform, style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_api]['url'], row = 0)
                     view.add_item(ogservice_button)
+
+                if platform != "spotify":
+                    songlink_button = discord.ui.Button(label="Global Link", style=discord.ButtonStyle.url, url=request_data['pageUrl'], row = 0)
+                    view.add_item(songlink_button)
                 
                 # Add Search on YT Music button
-                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}')
+                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
                 view.add_item(ytm_button)
 
                 # Add Search on Google button
-                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}')
+                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
                 view.add_item(google_button)
                 
                 # Send new embed
@@ -203,30 +194,11 @@ class song_url(commands.Cog):
                 
                 image_url = result_info["images"][0]["url"]
 
-                # Generate random filename
-                letters = string.ascii_lowercase
-                filename = ''.join(random.choice(letters) for i in range(8))
-
-                # Save image
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
-                        file = open(f'{filename}.jpg', 'wb')
-                        async for chunk in request.content.iter_chunked(10):
-                            file.write(chunk)
-                        file.close()
-                        
-                # Get dominant colour for embed
-                color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
-
-                # Remove file when done
-                os.remove(f'{filename}.jpg')
-
                 embed = discord.Embed(title = "Parsing info...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
                 
-                embed = discord.Embed(title = f"{result_info['name']}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                embed = discord.Embed(title = f"{result_info['name']}", color = Color.from_rgb(r = 255, g = 255, b = 255))
                 embed.add_field(name = "Followers", value = f"{result_info['followers']['total']:,}")
                 embed.set_thumbnail(url = result_info["images"][0]["url"])
                 embed.set_footer(text = "Getting colour information...")
@@ -257,15 +229,15 @@ class song_url(commands.Cog):
                 view = View()
                 
                 # Add Open in Spotify button
-                spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"])
+                spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"], row = 0)
                 view.add_item(spotify_button)
 
                 # Add Search on YT Music button
-                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}')
+                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
                 view.add_item(ytm_button)
 
                 # Add Search on Google button
-                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}')
+                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
                 view.add_item(google_button)
 
                 await interaction.edit_original_response(embed = embed, view = view)
@@ -350,7 +322,7 @@ class song_url(commands.Cog):
                     else:
                         artist_string = artist_string + ", " + artist['name'].replace('*', '-')
                 
-                embed = discord.Embed(title = f"{result_info['name']} - {artist_string}", description = songlist_string, color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                embed = discord.Embed(title = f"{result_info['name']} - {artist_string}", description = songlist_string, color = Color.from_rgb(r = 255, g = 255, b = 255))
                 embed.set_footer(text = "Getting colour information...")
 
                 embed.set_thumbnail(url = result_info["images"][0]["url"])
@@ -358,15 +330,15 @@ class song_url(commands.Cog):
                 view = View()
                 
                 # Add Open in Spotify button
-                spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"])
+                spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"], row = 0)
                 view.add_item(spotify_button)
 
                 # Add Search on YT Music button
-                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}')
+                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
                 view.add_item(ytm_button)
 
                 # Add Search on Google button
-                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}')
+                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
                 view.add_item(google_button)
 
                 await interaction.edit_original_response(embed = embed, view = view)
