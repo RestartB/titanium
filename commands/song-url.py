@@ -38,62 +38,68 @@ class song_url(commands.Cog):
         
         artist_string = ""
 
-        if not("spotify" in url) or platform_select != None:
-            try:
-                processed_source = quote(url, safe='()*!\'')
-                request_url = f"https://api.song.link/v1-alpha.1/links?url={processed_source}&userCountry=GB"
-                
-                # Send request to song.link
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(request_url) as request:
-                        request_data = await request.json()
-                        request_status = request.status
-                
-                if request_status == 400:
-                    embed = discord.Embed(title = "Invalid Link", description = "The link entered is not valid. Please ensure you are sending a valid link.", color = Color.red())
-                    embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song Only")
-                    embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
-                    await interaction.edit_original_response(embed = embed)
-                    return
-                if not(request_status <= 200 or request_status >= 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
-                    embed = discord.Embed(title = "An error has occurred.", description = "An error has occurred while searching the URL.\n\n**Solutions:**\n1. Check the URL is a valid song URL.\n2. Try again later.", color = Color.red())
-                    embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
-                    if interaction.user.id in self.bot.dev_ids:
-                        embed.add_field(name = "Error Code (Dev)", value = request_status)
-                    embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
-                    await interaction.edit_original_response(embed = embed)
-                    return
-                elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'song':
-                    embed = discord.Embed(title = "Unsupported Link Type", description = f"{request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type']} link types from this service are unsupported.", color = Color.red())
-                    embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
-                    embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
-                    await interaction.edit_original_response(embed = embed)
-                    return
-                else:
-                    url = request_data['linksByPlatform']['spotify']['url']
-            except Exception:
-                embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-                await interaction.edit_original_response(embed = embed)
-        
-            # Set Platform Strings
-            if request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "amazon":
-                platform = "Play on Amazon Music"
-                platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
-            elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "itunes":
-                platform = "Play on Apple Music"
-                platform_api = "appleMusic"
-            elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "soundcloud":
-                platform = "Play on SoundCloud"
-                platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
-            elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "youtube":
-                platform = "Play on YouTube"
-                platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
-            else:
-                platform = f"Play on {request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'].title()}"
-        else:
-            platform = "spotify"
-        
         try:
+            if not("spotify" in url) or platform_select != None:
+                try:
+                    processed_source = quote(url, safe='()*!\'')
+                    request_url = f"https://api.song.link/v1-alpha.1/links?url={processed_source}&userCountry=GB"
+                    
+                    # Send request to song.link
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(request_url) as request:
+                            request_data = await request.json()
+                            request_status = request.status
+                    
+                    if request_status == 400:
+                        embed = discord.Embed(title = "Invalid Link", description = "The link entered is not valid. Please ensure you are sending a valid link.", color = Color.red())
+                        embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song Only")
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
+                        await interaction.edit_original_response(embed = embed)
+                        return
+                    if not(request_status <= 200 or request_status >= 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
+                        embed = discord.Embed(title = "An error has occurred.", description = "An error has occurred while searching the URL.\n\n**Solutions:**\n1. Check the URL is a valid song URL.\n2. Try again later.", color = Color.red())
+                        embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
+                        if interaction.user.id in self.bot.dev_ids:
+                            embed.add_field(name = "Error Code (Dev)", value = request_status)
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
+                        await interaction.edit_original_response(embed = embed)
+                        return
+                    elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'song':
+                        embed = discord.Embed(title = "Unsupported Link Type", description = f"{request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'].title()} link types from this service are unsupported.", color = Color.red())
+                        embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
+                        await interaction.edit_original_response(embed = embed)
+                        return
+                    else:
+                        url = request_data['linksByPlatform']['spotify']['url']
+                except KeyError:
+                    embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())
+                    await interaction.edit_original_response(embed = embed)
+                    return
+                except Exception:
+                    embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
+                    await interaction.edit_original_response(embed = embed)
+                    return
+            
+                # Set Platform Strings
+                if request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "amazon":
+                    platform = "Play on Amazon Music"
+                    platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+                elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "itunes":
+                    platform = "Play on Apple Music"
+                    platform_api = "appleMusic"
+                elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "soundcloud":
+                    platform = "Play on SoundCloud"
+                    platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+                elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "youtube":
+                    platform = "Play on YouTube"
+                    platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+                else:
+                    platform = f"Play on {request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'].title()}"
+            else:
+                platform = "spotify"
+                platform_api = "spotify"
+            
             if "spotify.link" in url:
                 try:
                     embed = discord.Embed(title = "Expanding URL...", color = Color.orange())
@@ -155,7 +161,7 @@ class song_url(commands.Cog):
                     ogservice_button = discord.ui.Button(label=platform, style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_api]['url'], row = 0)
                     view.add_item(ogservice_button)
 
-                if platform_select != None:
+                if platform_select != None and platform_select.value != platform_api:
                     ogservice_button = discord.ui.Button(label=f"Play on {platform_select.name}", style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_select.value]['url'], row = 0)
                     view.add_item(ogservice_button)
 
@@ -533,13 +539,18 @@ class song_url(commands.Cog):
                 else:
                     await interaction.edit_original_response(embed = embed, view = PlaylistPagesController(pages))
             else:
-                embed = discord.Embed(title = "Spotify - Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
+                embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
                 return
-        except Exception:
-            embed = discord.Embed(title = "Spotify - Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
+        except KeyError:
+            embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())
             await interaction.edit_original_response(embed = embed)
+            return
+        except Exception:
+            embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
+            await interaction.edit_original_response(embed = embed)
+            return
 
 async def setup(bot):
     await bot.add_cog(song_url(bot))
