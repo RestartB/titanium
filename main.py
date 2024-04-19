@@ -1,8 +1,6 @@
 # RestartBot v2
 # Made by Restart, 2024
 
-# Welcome to the rewritten version of RestartBot, now using cogs.
-
 # Imports
 import discord
 from discord.ext import commands
