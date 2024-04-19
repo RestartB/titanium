@@ -29,7 +29,7 @@ class song_url(commands.Cog):
             app_commands.Choice(name="YouTube", value="youtube"),
             ])
     @app_commands.describe(platform_select = "Optional: select a platform to get a link for. Only works with song links.")
-    async def spotify_url(self, interaction: discord.Interaction, url: str, platform_select: app_commands.Choice[str] = None):
+    async def song_url(self, interaction: discord.Interaction, url: str, platform_select: app_commands.Choice[str] = None):
         await interaction.response.defer()
 
         embed = discord.Embed(title = "Please wait...", description = "For non Spotify links, this may take a moment. Hold tight!", color = Color.orange())
