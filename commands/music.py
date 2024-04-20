@@ -171,65 +171,6 @@ class music(commands.Cog):
             print("[LYRICS] Error has occurred. Error below:")
             print(error)
             await interaction.edit_original_response(embed = embed, view = None, ephemeral = True)
-    
-    # Global Song URL command
-    @app_commands.command(name = "song-global-url", description = "Get links for many streaming platforms based on a URL.")
-    @app_commands.checks.cooldown(1, 10)
-    async def song_global_url(self, interaction: discord.Interaction, url: str):
-        await interaction.response.defer()
-
-        embed = discord.Embed(title = "Searching...", description = "This may take a moment. Please wait.", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-        await interaction.followup.send(embed = embed)
-        
-        try:
-            processed_source = quote(url, safe='()*!\'')
-            request_url = f"https://api.song.link/v1-alpha.1/links?url={processed_source}&userCountry=GB"
-            
-            # Send request to song.link
-            async with aiohttp.ClientSession() as session:
-                async with session.get(request_url) as request:
-                    request_data = await request.json()
-                    request_status = request.status
-            
-            if not(request_status <= 200 or request_status >= 299):
-                embed = discord.Embed(title = "An error has occurred.", description = "An error has occurred while finding song URLs.\n\n**Solutions:**\n1. Check the URL is a valid song URL.\n2. Check the URL is not for a playlist, album or artist.\n3. Try again later.", color = Color.red())
-                if interaction.user.id in self.bot.dev_ids:
-                    embed.add_field(name = "Error Code (Dev)", value = request_status)
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.edit_original_response(embed = embed)
-            else:
-                embed = discord.Embed(title = f"{request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['title']} ({request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type']})", color = Color.random())
-                embed.add_field(name = "Artists", value = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['artistName'])
-                if request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['thumbnailUrl'] != None:
-                    embed.set_thumbnail(url = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['thumbnailUrl'])
-                
-                view = View()
-
-                for link_type in request_data['linksByPlatform']:
-                    if link_type == "amazonMusic":
-                        amazon_button = discord.ui.Button(style = discord.ButtonStyle.url, url = request_data['linksByPlatform'][link_type]['url'], label = "Amazon Music", row = 0)
-                        view.add_item(amazon_button)
-                    elif link_type == "appleMusic":
-                        am_button = discord.ui.Button(style = discord.ButtonStyle.url, url = request_data['linksByPlatform'][link_type]['url'], label = "Apple Music", row = 0)
-                        view.add_item(am_button)
-                    elif link_type == "spotify":
-                        spotify_button = discord.ui.Button(style = discord.ButtonStyle.url, url = request_data['linksByPlatform'][link_type]['url'], label = "Spotify", row = 0)
-                        view.add_item(spotify_button)
-                    elif link_type == "tidal":
-                        tidal_button = discord.ui.Button(style = discord.ButtonStyle.url, url = request_data['linksByPlatform'][link_type]['url'], label = "Tidal", row = 0)
-                        view.add_item(tidal_button)
-                    elif link_type == "youtube":
-                        yt_button = discord.ui.Button(style = discord.ButtonStyle.url, url = request_data['linksByPlatform'][link_type]['url'], label = "YouTube", row = 1)
-                        view.add_item(yt_button)
-                    elif link_type == "youtubeMusic":
-                        ytm_button = discord.ui.Button(style = discord.ButtonStyle.url, url = request_data['linksByPlatform'][link_type]['url'], label = "YouTube Music", row = 1)
-                        view.add_item(ytm_button)
-
-                await interaction.edit_original_response(embed = embed, view = view)
-        except Exception:
-            embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-            await interaction.edit_original_response(embed = embed, view = None)
 
 async def setup(bot):
     await bot.add_cog(music(bot))
