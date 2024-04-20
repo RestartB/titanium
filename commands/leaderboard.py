@@ -25,10 +25,10 @@ class leaderboard(commands.Cog):
                     # Check if user is already on leaderboard
                     if self.cursor.execute(f"SELECT userMention FROM '{message.guild.id}' WHERE userMention = '{message.author.mention}';").fetchone() != None:
                         # User is on the leaderboard, update their values
-                        self.cursor.execute(f"UPDATE '{message.guild.id}' SET messageCount = messageCount + 1, wordCount = wordCount + {len((message.content).split(" "))} WHERE userMention = '{message.author.mention}'")
+                        self.cursor.execute(f"UPDATE '{message.guild.id}' SET messageCount = messageCount + 1, wordCount = wordCount + {len((message.content).split(' '))} WHERE userMention = '{message.author.mention}'")
                     else:
                         # User is not on leaderboard, add them to the leaderboard
-                        self.cursor.execute(f"INSERT INTO '{message.guild.id}' (userMention, messageCount, wordCount) VALUES ('{message.author.mention}', 1, {len((message.content).split(" "))})")
+                        self.cursor.execute(f"INSERT INTO '{message.guild.id}' (userMention, messageCount, wordCount) VALUES ('{message.author.mention}', 1, {len((message.content).split(' '))})")
                     
                     # Commit to DB
                     self.connection.commit()
