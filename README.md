@@ -19,6 +19,10 @@ Have an improvement you want to make? Developed a new cog that you want to be in
 ## Why?
 The old code of RestartBot was very hard to work on. Every command was in the main.py file, meaning that at times it would be over 1800 lines long. This made it difficult to look at and edit. Therefore, by using cogs, each group of commands can be split into their own file, so I only need to see the commands that are relavent to what I am currently working on.
 
+## Credit
+**Main Code:** me\
+**Paged View for Playlist, Lyrics, Leaderboard, etc:** [RVZWN on Stack Overflow](https://stackoverflow.com/a/77463524), modified by me
+
 ## Self Hosting RestartBot
 Self-hosting RestartBot is possible, however you must get the required modules and API tokens first.
 
