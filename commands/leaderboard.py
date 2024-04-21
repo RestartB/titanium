@@ -47,6 +47,7 @@ class leaderboard(commands.Cog):
         app_commands.Choice(name="Messages Sent", value="messageCount"),
         app_commands.Choice(name="Words Sent", value="wordCount"),
         ])
+    @app_commands.checks.cooldown(1, 10)
     async def leaderboard(self, interaction: discord.Interaction, sort_type: app_commands.Choice[str]):
         await interaction.response.defer()
         
@@ -65,7 +66,7 @@ class leaderboard(commands.Cog):
             
             if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(interaction.guild.id)}';").fetchone() != None:
                 vals = self.cursor.execute(f"SELECT userMention, {sort_type.value} FROM '{interaction.guild.id}' ORDER BY {sort_type.value} DESC").fetchall()
-                if len(val) != 0:
+                if vals != []:
                     for val in vals:
                         if (i + 1) % 11 == 0:
                             pages.append(page_str)
@@ -141,6 +142,7 @@ class leaderboard(commands.Cog):
     
     # Enable LB command
     @app_commands.command(name = "enable-lb", description = "Enable the message leaderboard.")
+    @app_commands.default_permissions(administrator = True)
     async def enable_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
@@ -161,6 +163,7 @@ class leaderboard(commands.Cog):
     
     # Disable LB command
     @app_commands.command(name = "disable-lb", description = "Disable the message leaderboard.")
+    @app_commands.default_permissions(administrator = True)
     async def disable_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
@@ -189,6 +192,41 @@ class leaderboard(commands.Cog):
 
         embed = discord.Embed(title = "Are you sure?", description = "The leaderboard will be disabled, and data for this server will be deleted!", color = Color.orange())
         await interaction.followup.send(embed = embed, view = view, ephemeral = True)
+    
+    # Reset LB command
+    @app_commands.command(name = "reset-lb", description = "Resets the message leaderboard.")
+    @app_commands.default_permissions(administrator = True)
+    async def reset_lb(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral = True)
+        
+        embed = discord.Embed(title = "Loading...", color = Color.orange())
+        await interaction.followup.send(embed = embed, ephemeral = True)
+        
+        if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';").fetchone() == None:
+            embed = discord.Embed(title = "Disabled", description = "Leaderboard is disabled in this server.", color = Color.red())
+            await interaction.edit_original_response(embed = embed)
+        else:
+            async def delete_callback(interaction: discord.Interaction):
+                await interaction.response.defer(ephemeral = True)
+
+                embed = discord.Embed(title = "Resetting...", color = Color.orange())
+                await interaction.edit_original_response(embed = embed, view = None)
+
+                try:
+                    self.cursor.execute(f"DELETE FROM '{interaction.guild.id}';")
+                    embed = discord.Embed(title = "Reset.", color = Color.green())
+                    await interaction.edit_original_response(embed = embed)
+                except Exception:
+                    embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+                    await interaction.edit_original_response(embed = embed, view = None)
+                    
+            view = View()
+            delete_button = discord.ui.Button(label='Reset', style=discord.ButtonStyle.red)
+            delete_button.callback = delete_callback
+            view.add_item(delete_button)
+
+            embed = discord.Embed(title = "Are you sure?", description = "The leaderboard will be reset and all data will be removed!", color = Color.orange())
+            await interaction.edit_original_response(embed = embed, view = view)
         
 async def setup(bot):
     await bot.add_cog(leaderboard(bot))
