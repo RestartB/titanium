@@ -100,15 +100,21 @@ except Exception as error:
     print(error)
     exit()
 
+
+
 # Sync bot cogs when started
 @bot.event
 async def on_ready():
+    # support_invite = await bot.fetch_invite(bot.support_server)
+    # control_server = support_invite.guild
+    # bot.control_server_id = control_server.id
+    
     print("[INIT] Loading cogs...")
     # Find all cogs in command dir
     for filename in os.listdir(bot.cog_dir):
         # Determine if file is a python file
         if filename.endswith("py"):
-            # Don't load it if it's in the blocklist
+            # Don't load it if it's in the blocklist (untested)
             if filename[:-3] in bot.cog_blacklist:
                 pass
             else:
@@ -151,6 +157,11 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
     await interaction.response.defer(ephemeral=True)
     if isinstance(error, discord.app_commands.errors.CommandOnCooldown):
         embed = discord.Embed(title = "Cooldown", description = error, color = Color.red())
+        msg = await interaction.followup.send(embed = embed, ephemeral = True)
+        await asyncio.sleep(5)
+        await msg.delete()
+    elif isinstance(error, discord.app_commands.errors.MissingPermissions):
+        embed = discord.Embed(title = "Missing Permissions", description = error, color = Color.red())
         msg = await interaction.followup.send(embed = embed, ephemeral = True)
         await asyncio.sleep(5)
         await msg.delete()
