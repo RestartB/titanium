@@ -63,25 +63,29 @@ class leaderboard(commands.Cog):
             i = 0
             page_str = ""
             
-            if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(message.guild.id)}';").fetchone() != None:
-                for val in self.cursor.execute(f"SELECT userMention, {sort_type.value} FROM '{interaction.guild.id}' ORDER BY {sort_type.value} DESC").fetchall():
-                    if (i + 1) % 11 == 0:
-                        pages.append(page_str)
-                        page_str = ""
-                        i += 1
-                        if page_str == "":
-                            page_str += f"{i}. {val[0]}: {val[1]}"
+            if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(interaction.guild.id)}';").fetchone() != None:
+                vals = self.cursor.execute(f"SELECT userMention, {sort_type.value} FROM '{interaction.guild.id}' ORDER BY {sort_type.value} DESC").fetchall()
+                if len(val) != 0:
+                    for val in vals:
+                        if (i + 1) % 11 == 0:
+                            pages.append(page_str)
+                            page_str = ""
+                            i += 1
+                            if page_str == "":
+                                page_str += f"{i}. {val[0]}: {val[1]}"
+                            else:
+                                page_str += f"\n{i}. {val[0]}: {val[1]}"
                         else:
-                            page_str += f"\n{i}. {val[0]}: {val[1]}"
-                    else:
-                        i += 1
-                        if page_str == "":
-                            page_str += f"{i}. {val[0]}: {val[1]}"
-                        else:
-                            page_str += f"\n{i}. {val[0]}: {val[1]}"
+                            i += 1
+                            if page_str == "":
+                                page_str += f"{i}. {val[0]}: {val[1]}"
+                            else:
+                                page_str += f"\n{i}. {val[0]}: {val[1]}"
 
-                if page_str != "":
-                    pages.append(page_str)
+                    if page_str != "":
+                        pages.append(page_str)
+                else:
+                    pages.append("No Data")
                 
                 class Leaderboard(View):
                     def __init__(self, pages):
