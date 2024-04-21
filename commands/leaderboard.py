@@ -64,7 +64,7 @@ class leaderboard(commands.Cog):
             page_str = ""
 
             for val in self.cursor.execute(f"SELECT userMention, {sort_type.value} FROM '{interaction.guild.id}' ORDER BY {sort_type.value} DESC").fetchall():
-                if (i + 1) % 26 == 0:
+                if (i + 1) % 11 == 0:
                     pages.append(page_str)
                     page_str = ""
                     i += 1
