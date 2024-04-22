@@ -81,6 +81,20 @@ class utils(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
 
         await interaction.edit_original_response(embed = embed)
+    
+    # Send Message command
+    @app_commands.command(name = "send-message", description = "Admin Only: send debug message.")
+    async def send_message(self, interaction: discord.Interaction, message: str, channel_id: str):
+        await interaction.response.defer(ephemeral = True)
+        
+        if interaction.user.id in self.bot.dev_ids:
+            channel = self.bot.get_channel(int(channel_id))
+            await channel.send(message)
+
+            await interaction.followup.send(f"Message sent to channel ID {channel_id}.\n\nContent: {message}", ephemeral = True)
+        else:
+            embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
+            await interaction.followup.send(embed = embed, ephemeral = True)
 
 async def setup(bot):
     await bot.add_cog(utils(bot))
