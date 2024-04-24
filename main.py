@@ -8,6 +8,7 @@ from discord import Color
 import os
 import asyncio
 import logging
+from commands_private.rules import agree_class
 
 print("Welcome to TitaniumCore.")
 print("https://github.com/restartb/titaniumcore")
@@ -123,7 +124,7 @@ async def on_ready():
     # Read cogs from private commands folder if it exists
     if os.path.exists(f"{path}{pathtype}commands-private{pathtype}"):
         # Find all cogs in private command dir
-        for filename in os.listdir(f"{path}{pathtype}commands-private{pathtype}"):
+        for filename in os.listdir(f"{path}{pathtype}commands_private{pathtype}"):
             # Determine if file is a python file
             if filename.endswith("py"):
                 # Don't load it if it's in the blocklist
@@ -131,7 +132,7 @@ async def on_ready():
                     pass
                 else:
                     # We load it into the bot
-                    await bot.load_extension(f"commands-private.{filename[:-3]}")
+                    await bot.load_extension(f"commands_private.{filename[:-3]}")
 
     print("[INIT] Loaded cogs.")
 

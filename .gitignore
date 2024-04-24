@@ -1,10 +1,11 @@
 /content
 /assets
 /commands/__pycache__
-/commands-private
+/commands_private
 /.vscode
 /test
 .cache
+main-private.py
 *.json
 *.db
 *.log
