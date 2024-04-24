@@ -5,7 +5,7 @@
 /.vscode
 /test
 .cache
-main-private.py
+main-pp.py
 *.json
 *.db
 *.log
