@@ -1,4 +1,4 @@
-# Titanium Core
+# TitaniumCore
 # Made by Restart, 2024
 
 # Imports
