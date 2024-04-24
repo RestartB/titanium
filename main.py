@@ -1,4 +1,4 @@
-# RestartBot v2
+# Titanium Core
 # Made by Restart, 2024
 
 # Imports
@@ -9,7 +9,8 @@ import os
 import asyncio
 import logging
 
-print("Welcome to RestartBot!")
+print("Welcome to Titanium Core.")
+print("https://github.com/restartb/titaniumcore")
 
 # Current Running Path
 path = os.getcwd()
@@ -99,8 +100,6 @@ except Exception as error:
     print("[INIT] Bad value in config file! Exiting.")
     print(error)
     exit()
-
-
 
 # Sync bot cogs when started
 @bot.event
