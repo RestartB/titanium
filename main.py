@@ -9,7 +9,7 @@ import os
 import asyncio
 import logging
 
-print("Welcome to Titanium Core.")
+print("Welcome to TitaniumCore.")
 print("https://github.com/restartb/titaniumcore")
 
 # Current Running Path
