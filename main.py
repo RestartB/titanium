@@ -165,5 +165,9 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
         await asyncio.sleep(5)
         await msg.delete()
 
-# Run bot with token
-bot.run(bot.token, log_handler=handler, log_level=logging.CRITICAL)
+try:
+    # Run bot with token
+    bot.run(bot.token, log_handler=handler, log_level=logging.CRITICAL)
+except discord.errors.PrivilegedIntentsRequired:
+    print("[FATAL] Bot is missing the Message Content intent! Please enable it in the Discord Developers web portal. Exiting...")
+    exit()
