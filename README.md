@@ -1,5 +1,5 @@
-# Titanium Core
-Welcome to Titanium Core, the open source core of the Titanium Discord Bot.
+# TitaniumCore
+Welcome to TitaniumCore, the open source core of the Titanium Discord Bot.
 
 ## Contributions Welcome!
 Have an improvement you want to make? Developed a new cog that you want to be in the main bot? Contributions are welcome! Make a pull request and I'll take a look. :)
@@ -20,8 +20,8 @@ The old code of Titanium was very hard to work on. Every command was in the main
 **Main Code:** me\
 **Paged View for Playlist, Lyrics, Leaderboard, etc:** [RVZWN on Stack Overflow](https://stackoverflow.com/a/77463524), modified by me
 
-## Self Hosting Titanium Core
-Self-hosting Titanium Core is possible, however you must get the required modules and API tokens first.
+## Self Hosting TitaniumCore
+Self-hosting TitaniumCore is possible, however you must get the required modules and API tokens first.
 
 > [!IMPORTANT]
 > While I have taken every precaution to block offensive content from being displayed without a disclaimer, it is your responsibility as the bot host to monitor for any offensive content posted using the bot.
@@ -30,13 +30,13 @@ Self-hosting Titanium Core is possible, however you must get the required module
 > When generating Bot Tokens and API Secrets, do not share them with anybody!
 
 ### Python Modules
-Titanium Core relies on several Python modules to function. These modules can be installed from Pypi using Pip or your preferred package manager.\
+TitaniumCore relies on several Python modules to function. These modules can be installed from Pypi using Pip or your preferred package manager.\
 \
 **Installation Command:**\
 `pip install discord.py spotipy wikipedia colorthief py-cpuinfo psutil`
 
 ### Discord Bot Token
-Titanium Core requires a Discord Bot Token to function. The steps to get one are as follows:
+TitaniumCore requires a Discord Bot Token to function. The steps to get one are as follows:
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and log in with your Discord Account.
 2. Create a new application and fill in the information required.
 3. Go to the `Bot` section, and generate a new bot.
@@ -44,7 +44,7 @@ Titanium Core requires a Discord Bot Token to function. The steps to get one are
 5. Copy the Bot Token, and paste it into the bot token field in the config file. Due to security reasons, you will only be able to view the bot token once from Discord Developer Portal before having to generate a new one.
 
 ### Spotify API Key
-To use the Spotify commands in Titanium Core, a Spotify Client ID and Secret are required. If you do not provide these, Spotify commands will automatically be disabled. The steps to get these are as follows:
+To use the Spotify commands in TitaniumCore, a Spotify Client ID and Secret are required. If you do not provide these, Spotify commands will automatically be disabled. The steps to get these are as follows:
 1. Go to the [Spotify Developers dashboard](https://developer.spotify.com/dashboard). A free or premium Spotify account is required.
 2. Create a new app, set the app name and description to whatever you please.  No additional APIs are required.
 3. Set the Redirect URI to any valid URL. `http://example.com` is known to work. Then, create the app.
@@ -52,18 +52,18 @@ To use the Spotify commands in Titanium Core, a Spotify Client ID and Secret are
 
 ### Starting the Bot
 Once you have have installed the required Python modules and generated your tokens, you can run the bot as follows:
-1. Navigate to the Titanium Core directory through the terminal.
-2. Once you are at the Titanium Core directory, run `python main.py`, and monitor for any errors in the terminal.
+1. Navigate to the TitaniumCore directory through the terminal.
+2. Once you are at the TitaniumCore directory, run `python main.py`, and monitor for any errors in the terminal.
 
 If an error occurs, please create a GitHub issue and I will take a look.
 
 ### Generating a Bot Invite
-To invite your instance of Titanium Core to your server, an invite is required. You can use the following template to make a bot invite URL:\
+To invite your instance of TitaniumCore to your server, an invite is required. You can use the following template to make a bot invite URL:\
 `https://discord.com/oauth2/authorize?client_id=(YOUR CLIENT ID)&permissions=964220546112&scope=bot`\
 You will need your Discord Client ID to make this URL. You can get this from the General Information page of your Application you generated earlier in Discord Developer Portal.
 
 ## Included Commands
-Titanium Core comes with some included commands. Below is a list of what commands are in each cog file:
+TitaniumCore comes with some included commands. Below is a list of what commands are in each cog file:
 - **Utility Commands** *(utils.py)*
   - **ping:** see the bot's latency.
   - **restart:** restart the bot. Only available to the bot owner.
@@ -95,12 +95,12 @@ Titanium Core comes with some included commands. Below is a list of what command
   - **wikipedia:** search Wikipedia for an answer.
 
 ## Included Cogs
-Titanium Core also includes some non command cogs, which are also stored in the command folder. The list is below:
+TitaniumCore also includes some non command cogs, which are also stored in the command folder. The list is below:
 - **spotify_autoembed.py**
   - Stores the event handler for Spotify Auto-embedding.
 
 ## Developing your own Cogs
-Titanium Core is modular and will load compatible cogs automatically.
+TitaniumCore is modular and will load compatible cogs automatically.
 
 ### Cogs Path
 The default cogs path is:\
