@@ -10,7 +10,7 @@ import asyncio
 import logging
 
 print("Welcome to TitaniumCore.")
-print("https://github.com/restartb/titaniumcore")
+print("https://github.com/restartb/titaniumcore\n")
 
 # Current Running Path
 path = os.getcwd()
