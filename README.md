@@ -13,9 +13,6 @@ Have an improvement you want to make? Developed a new cog that you want to be in
 - Get URLs for a song link from any popular streaming service
 - Expandable cog system to allow you to make your own commands
 
-## Why?
-The old code of Titanium was very hard to work on. Every command was in the main.py file, meaning that at times it would be over 2000 lines long. This made it difficult to look at and edit. Therefore, by using cogs, each group of commands can be split into their own file, so I only need to see the commands that are relavent to what I am currently working on.
-
 ## Credit
 **Main Code:** me\
 **Paged View for Playlist, Lyrics, Leaderboard, etc:** [RVZWN on Stack Overflow](https://stackoverflow.com/a/77463524), modified by me
