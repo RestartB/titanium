@@ -25,7 +25,6 @@ class song_url(commands.Cog):
             app_commands.Choice(name="Amazon Music", value="amazonMusic"),
             app_commands.Choice(name="Apple Music", value="appleMusic"),
             app_commands.Choice(name="Deezer", value="deezer"),
-            app_commands.Choice(name="Spotify", value="spotify"),
             app_commands.Choice(name="YouTube", value="youtube"),
             ])
     @app_commands.describe(platform_select = "Optional: select a platform to get a link for. Only works with song links.")
@@ -96,6 +95,7 @@ class song_url(commands.Cog):
                     platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
                 else:
                     platform = f"Play on {request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'].title()}"
+                    platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
             else:
                 platform = "spotify"
                 platform_api = "spotify"
@@ -156,18 +156,22 @@ class song_url(commands.Cog):
                 spotify_button = discord.ui.Button(label=f'Play on Spotify ({int(minutes):02d}:{int(seconds):02d})', style=discord.ButtonStyle.url, url=result["external_urls"]["spotify"], row = 0)
                 view.add_item(spotify_button)
 
-                # Show OG Platform button if OG platform isn't Spotify or another platform was chosen
-                if platform != "spotify" or platform_select != None:
+                # Add OG platform button when OG platform isnt Spotify
+                if platform_api != "spotify":
                     ogservice_button = discord.ui.Button(label=platform, style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_api]['url'], row = 0)
                     view.add_item(ogservice_button)
 
-                if platform_select != None and platform_select.value != platform_api:
-                    ogservice_button = discord.ui.Button(label=f"Play on {platform_select.name}", style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_select.value]['url'], row = 0)
-                    view.add_item(ogservice_button)
+                # if platform_select != None and platform_select.value != platform_api:
+                #     ogservice_button = discord.ui.Button(label=f"Play on {platform_select.name}", style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_select.value]['url'], row = 0)
+                #     view.add_item(ogservice_button)
 
-                if platform != "spotify":
-                    songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=request_data['pageUrl'], row = 1)
-                    view.add_item(songlink_button)
+                if platform_select != None:
+                    if platform_select.value != platform_api:
+                        usrservice_button = discord.ui.Button(label=f"Play on {platform_select.name}", style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_select.value]['url'], row = 0)
+                        view.add_item(usrservice_button)
+
+                songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 1)
+                view.add_item(songlink_button)
 
                 # Add Search on Google button
                 google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
@@ -535,10 +539,10 @@ class song_url(commands.Cog):
             embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())
             await interaction.edit_original_response(embed = embed)
             return
-        except Exception:
-            embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
-            await interaction.edit_original_response(embed = embed)
-            return
+        # except Exception:
+        #     embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
+        #     await interaction.edit_original_response(embed = embed)
+        #     return
 
 async def setup(bot):
     await bot.add_cog(song_url(bot))
