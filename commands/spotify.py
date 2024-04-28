@@ -405,7 +405,7 @@ class spotify(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = None, ephemeral = True)
 
     # Spotify Image command
-    @app_commands.command(name = "spotify-image", description = "Get album art from a Spotify URL.")
+    @app_commands.command(name = "spotify-image", description = "Get high quality album art from a Spotify URL.")
     @app_commands.describe(url = "The target Spotify URL. Song, album, playlist and spotify.link URLs are supported.")
     @app_commands.checks.cooldown(1, 10)
     async def spotify_image(self, interaction: discord.Interaction, url: str):
