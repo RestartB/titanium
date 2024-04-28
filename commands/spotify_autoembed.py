@@ -137,10 +137,10 @@ class spotify_autoembed(commands.Cog):
                                 # If string is empty...
                                 if topsong_string == "":
                                     # Set topsong_string to song
-                                    topsong_string = f"**{i + 1}. {result_top_tracks['tracks'][i]['name']}** - {artist_string}"
+                                    topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name']}** - {artist_string}"
                                 else:
                                     # Add current song to topsong_string, separated with new line
-                                    topsong_string = f"{topsong_string}\n**{i + 1}. {result_top_tracks['tracks'][i]['name']}** - {artist_string}"
+                                    topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name']}** - {artist_string}"
                             
                             # Add top songs to embed
                             embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
@@ -199,9 +199,9 @@ class spotify_autoembed(commands.Cog):
                                         
                                 # Add song listing to song list
                                 if songlist_string == "":
-                                    songlist_string = f"**{i + 1}. {result_info['tracks']['items'][i]['name']}** - {artist_string}"
+                                    songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name']}** - {artist_string}"
                                 else:
-                                    songlist_string = f"{songlist_string}\n**{i + 1}. {result_info['tracks']['items'][i]['name']}** - {artist_string}"
+                                    songlist_string = f"{songlist_string}\n**{i + 1}: {result_info['tracks']['items'][i]['name']}** - {artist_string}"
 
                             # Add all artists for album to comma separated string
                             # Example: artist1, artist2, artist3
@@ -288,24 +288,24 @@ class spotify_autoembed(commands.Cog):
                                     
                                     # If there's nothing in the current page, make a new one
                                     if pageStr == "":
-                                        pageStr = f"**{i}. {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
+                                        pageStr = f"**{i}: {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
                                     # Else, add string to existing page
                                     else:
-                                        pageStr = f"{pageStr}\n**{i}. {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
+                                        pageStr = f"{pageStr}\n**{i}: {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
                                 elif playlist_item['track']['type'] == "episode":
                                     # Item is a podcast
                                     if pageStr == "":
-                                        pageStr = f"**{i}. {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
+                                        pageStr = f"**{i}: {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
                                     else:
-                                        pageStr = f"{pageStr}\n**{i}. {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
+                                        pageStr = f"{pageStr}\n**{i}: {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
                                 else:
                                     # Item type is unknown / unsupported
                                     # If there's nothing in the current page, make a new one
                                     if pageStr == "":
-                                        pageStr = f"**{i}.** *(Unknown Media Type)*"
+                                        pageStr = f"**{i}:** *(Unknown Media Type)*"
                                     # Else, add string to existing page
                                     else:
-                                        pageStr = f"{pageStr}\n**{i}.** *(Unknown Media Type)*"
+                                        pageStr = f"{pageStr}\n**{i}:** *(Unknown Media Type)*"
 
                                 # If there's 25 items in the current page, we split it into a new page
                                 if i % 25 == 0:

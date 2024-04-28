@@ -38,6 +38,7 @@ class song_url(commands.Cog):
         artist_string = ""
 
         try:
+            # Query song.link if required
             if not("spotify" in url) or platform_select != None:
                 try:
                     processed_source = quote(url, safe='()*!\'')
@@ -49,32 +50,37 @@ class song_url(commands.Cog):
                             request_data = await request.json()
                             request_status = request.status
                     
+                    # Invalid Link
                     if request_status == 400:
                         embed = discord.Embed(title = "Invalid Link", description = "The link entered is not valid. Please ensure you are sending a valid link.", color = Color.red())
                         embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song Only")
                         embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
                         await interaction.edit_original_response(embed = embed)
                         return
+                    # Unknown Error
                     if not(request_status <= 200 or request_status >= 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
                         embed = discord.Embed(title = "An error has occurred.", description = "An error has occurred while searching the URL.\n\n**Solutions:**\n1. Check the URL is a valid song URL.\n2. Try again later.", color = Color.red())
                         embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
-                        if interaction.user.id in self.bot.dev_ids:
-                            embed.add_field(name = "Error Code (Dev)", value = request_status)
+                        embed.add_field(name = "Error Code from song.link", value = request_status)
                         embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
                         await interaction.edit_original_response(embed = embed)
                         return
+                    # Data returned is not song
                     elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'song':
                         embed = discord.Embed(title = "Unsupported Link Type", description = f"{request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'].title()} link types from this service are unsupported.", color = Color.red())
                         embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
                         embed.set_footer(text = f"Requested by {interaction.user.name} - powered by song.link", icon_url = interaction.user.avatar.url)
                         await interaction.edit_original_response(embed = embed)
                         return
+                    # Data valid
                     else:
                         url = request_data['linksByPlatform']['spotify']['url']
+                # Required platforms not returned from song.link
                 except KeyError:
                     embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())
                     await interaction.edit_original_response(embed = embed)
                     return
+                # Generic Exception
                 except Exception:
                     embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
                     await interaction.edit_original_response(embed = embed)
@@ -100,6 +106,7 @@ class song_url(commands.Cog):
                 platform = "spotify"
                 platform_api = "spotify"
             
+            # Expand spotify.link URL if present
             if "spotify.link" in url:
                 try:
                     embed = discord.Embed(title = "Expanding URL...", color = Color.orange())
@@ -126,22 +133,26 @@ class song_url(commands.Cog):
                         await interaction.edit_original_response(embed = embed)
                         return
             
+            # Track URL
             if "track" in url:
+                # Get info and links
                 result = self.sp.track(url)
-                
                 image_url = result["album"]["images"][0]["url"]
 
+                # Create embed
                 if result['explicit'] == True:
                     embed = discord.Embed(title = f"{result['name']} (Explicit)", color = Color.from_rgb(r = 255, g = 255, b = 255))
                 else:
                     embed = discord.Embed(title = f"{result['name']}", color = Color.from_rgb(r = 255, g = 255, b = 255))
 
+                # Generate artist string
                 for artist in result['artists']:
                     if artist_string == "":
                         artist_string = artist['name'].replace('*', '-')
                     else:
                         artist_string = f"{artist_string}, {artist['name']}".replace('*', '-')
                 
+                # Add info to embed
                 embed.add_field(name = "Artists", value = artist_string, inline = True)
                 embed.add_field(name = "Album", value = result['album']["name"], inline = True)
                 embed.set_thumbnail(url = result["album"]["images"][0]["url"])
@@ -149,6 +160,7 @@ class song_url(commands.Cog):
 
                 view = View()
                             
+                # Work out song duration
                 seconds, result['duration_ms'] = divmod(result['duration_ms'], 1000)
                 minutes, seconds = divmod(seconds, 60)
 
@@ -161,15 +173,13 @@ class song_url(commands.Cog):
                     ogservice_button = discord.ui.Button(label=platform, style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_api]['url'], row = 0)
                     view.add_item(ogservice_button)
 
-                # if platform_select != None and platform_select.value != platform_api:
-                #     ogservice_button = discord.ui.Button(label=f"Play on {platform_select.name}", style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_select.value]['url'], row = 0)
-                #     view.add_item(ogservice_button)
-
+                # Add Target Platform button when selected platform is not the same as OG link
                 if platform_select != None:
                     if platform_select.value != platform_api:
                         usrservice_button = discord.ui.Button(label=f"Play on {platform_select.name}", style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_select.value]['url'], row = 0)
                         view.add_item(usrservice_button)
 
+                # Add song.link button
                 songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 1)
                 view.add_item(songlink_button)
 
@@ -203,6 +213,7 @@ class song_url(commands.Cog):
                 embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
 
                 await interaction.edit_original_response(embed = embed)
+            # Artist URL
             elif "artist" in url:
                 # Fetch artist info
                 result_info = self.sp.artist(url)
@@ -233,14 +244,14 @@ class song_url(commands.Cog):
                     # Hide artist string from song listing if there is only one artist
                     if len(result_top_tracks['tracks'][i]['artists']) == 1:
                         if topsong_string == "":
-                            topsong_string = f"**{i + 1}. {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
+                            topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
                         else:
-                            topsong_string = f"{topsong_string}\n**{i + 1}. {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
+                            topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
                     else:
                         if topsong_string == "":
-                            topsong_string = f"**{i + 1}. {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
+                            topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                         else:
-                            topsong_string = f"{topsong_string}\n**{i + 1}. {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
+                            topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                 
                 embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
 
@@ -283,6 +294,7 @@ class song_url(commands.Cog):
                 embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
 
                 await interaction.edit_original_response(embed = embed)
+            # Album URL
             elif "album" in url:
                 # Fetch artist info
                 result_info = self.sp.album(url)
@@ -324,14 +336,14 @@ class song_url(commands.Cog):
                     # Hide artist string from song listing if there is only one artist
                     if len(result_info['tracks']['items'][i]['artists']) == 1:
                         if songlist_string == "":
-                            songlist_string = f"**{i + 1}. {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
+                            songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
                         else:
-                            songlist_string = f"{songlist_string}\n**{i + 1}. {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
+                            songlist_string += f"\n**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
                     else:
                         if songlist_string == "":
-                            songlist_string = f"**{i + 1}. {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
+                            songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
                         else:
-                            songlist_string = f"{songlist_string}\n**{i + 1}. {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
+                            songlist_string += f"\n**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
 
                 artist_string = ""
                 for artist in result_info['artists']:
@@ -384,6 +396,7 @@ class song_url(commands.Cog):
                 embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
 
                 await interaction.edit_original_response(embed = embed)
+            # Playlist URL
             elif "playlist" in url:
                 # Search playlist on Spotify
                 result_info = self.sp.playlist(url, market="GB")
@@ -433,10 +446,10 @@ class song_url(commands.Cog):
                         # Item type is unavailable in the GB reigon
                         # If there's nothing in the current page, make a new one
                         if pageStr == "":
-                            pageStr = f"**{i}.** *(Media Unavailable)*"
+                            pageStr = f"**{i}:** *(Media Unavailable)*"
                         # Else, add string to existing page
                         else:
-                            pageStr = f"{pageStr}\n**{i}.** *(Media Unavailable)*"
+                            pageStr = f"{pageStr}\n**{i}:** *(Media Unavailable)*"
                     elif playlist_item['track']['type'] == "track":
                         # Item is a track
                         # Work through all artists of item
@@ -451,24 +464,24 @@ class song_url(commands.Cog):
                         
                         # If there's nothing in the current page, make a new one
                         if pageStr == "":
-                            pageStr = f"**{i}. {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
+                            pageStr = f"**{i}: {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
                         # Else, add string to existing page
                         else:
-                            pageStr = f"{pageStr}\n**{i}. {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
+                            pageStr = f"{pageStr}\n**{i}: {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
                     elif playlist_item['track']['type'] == "episode":
                         # Item is a podcast
                         if pageStr == "":
-                            pageStr = f"**{i}. {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
+                            pageStr = f"**{i}: {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
                         else:
-                            pageStr = f"{pageStr}\n**{i}. {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
+                            pageStr = f"{pageStr}\n**{i}: {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
                     else:
                         # Item type is unknown / unsupported
                         # If there's nothing in the current page, make a new one
                         if pageStr == "":
-                            pageStr = f"**{i}.** *(Unknown Media Type)*"
+                            pageStr = f"**{i}:** *(Unknown Media Type)*"
                         # Else, add string to existing page
                         else:
-                            pageStr = f"{pageStr}\n**{i}.** *(Unknown Media Type)*"
+                            pageStr = f"{pageStr}\n**{i}:** *(Unknown Media Type)*"
 
                     # If there's 25 items in the current page, we split it into a new page
                     if i % 25 == 0:

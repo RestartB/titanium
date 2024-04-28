@@ -217,14 +217,14 @@ class spotify(commands.Cog):
                             # Hide artist string from song listing if there is only one artist
                             if len(result_top_tracks['tracks'][i]['artists']) == 1:
                                 if topsong_string == "":
-                                    topsong_string = f"**{i + 1}. {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
+                                    topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
                                 else:
-                                    topsong_string = f"{topsong_string}\n**{i + 1}. {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
+                                    topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
                             else:
                                 if topsong_string == "":
-                                    topsong_string = f"**{i + 1}. {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
+                                    topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                                 else:
-                                    topsong_string = f"{topsong_string}\n**{i + 1}. {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
+                                    topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                         
                         embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
 
@@ -329,14 +329,14 @@ class spotify(commands.Cog):
                             # Hide artist string from song listing if there is only one artist
                             if len(result_info['tracks']['items'][i]['artists']) == 1:
                                 if songlist_string == "":
-                                    songlist_string = f"**{i + 1}. {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
+                                    songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
                                 else:
-                                    songlist_string = f"{songlist_string}\n**{i + 1}. {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
+                                    songlist_string = f"{songlist_string}\n**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
                             else:
                                 if songlist_string == "":
-                                    songlist_string = f"**{i + 1}. {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
+                                    songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
                                 else:
-                                    songlist_string = f"{songlist_string}\n**{i + 1}. {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
+                                    songlist_string = f"{songlist_string}\n**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
 
                         artist_string = ""
                         for artist in result_info['artists']:
