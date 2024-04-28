@@ -168,10 +168,6 @@ class song_url(commands.Cog):
                 if platform != "spotify":
                     songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=request_data['pageUrl'], row = 1)
                     view.add_item(songlink_button)
-                
-                # Add Search on YT Music button
-                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
-                view.add_item(ytm_button)
 
                 # Add Search on Google button
                 google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
@@ -250,12 +246,8 @@ class song_url(commands.Cog):
                 spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"], row = 0)
                 view.add_item(spotify_button)
 
-                # Add song.link button                
-                songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 1)
-                view.add_item(songlink_button)
-
                 # Add Search on YT Music button
-                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
+                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}', row = 1)
                 view.add_item(ytm_button)
 
                 # Add Search on Google button
@@ -358,10 +350,6 @@ class song_url(commands.Cog):
                 # Add song.link button                
                 songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 1)
                 view.add_item(songlink_button)
-
-                # Add Search on YT Music button
-                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
-                view.add_item(ytm_button)
 
                 # Add Search on Google button
                 google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
