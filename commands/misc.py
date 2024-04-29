@@ -40,6 +40,12 @@ class misc(commands.Cog):
     @app_commands.command(name = "first-message", description = "Get the first message in a channel, uses current channel by default.")
     async def first_message(self, interaction: discord.Interaction, channel: discord.TextChannel = None):
         await interaction.response.defer(ephemeral=True)
+        
+        # Send initial embed
+        embed = discord.Embed(title = "Loading...", color = Color.orange())
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        await interaction.followup.send(embed = embed, ephemeral = True)
+
         try:
             if channel == None:
                 channel = interaction.channel
@@ -48,10 +54,13 @@ class misc(commands.Cog):
                 embed.set_footer(text = f"{msg.author.name} - {(msg.created_at).hour}:{(msg.created_at).minute} {(msg.created_at).day}/{(msg.created_at).month}/{(msg.created_at).year} UTC", icon_url = msg.author.avatar.url)
                 view = View()
                 view.add_item(discord.ui.Button(style = discord.ButtonStyle.url, url = msg.jump_url, label = "Jump to Message"))
-                await interaction.followup.send(ephemeral=True, embed=embed, view=view)
+                await interaction.edit_original_response(embed=embed, view=view)
+        except discord.errors.Forbidden:
+            embed = discord.Embed(title = "Forbidden", description = "The bot may not have permissions to view messages in the selected channel.", color = Color.red())
+            await interaction.edit_original_response(embed=embed)
         except Exception:
             embed = discord.Embed(title = "Error", description = "**An error has occurred.\n\nSolutions**\n- Is the channel a text channel?\n- Has a message been sent here yet?\n- Try again later.", color = Color.red())
-            interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.edit_original_response(embed=embed)
     
     # Fish Command
     @app_commands.command(name = "fish", description = "Fish!")
