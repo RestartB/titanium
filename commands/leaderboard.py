@@ -68,20 +68,17 @@ class leaderboard(commands.Cog):
                 vals = self.cursor.execute(f"SELECT userMention, {sort_type.value} FROM '{interaction.guild.id}' ORDER BY {sort_type.value} DESC").fetchall()
                 if vals != []:
                     for val in vals:
-                        if (i + 1) % 11 == 0:
-                            pages.append(page_str)
-                            page_str = ""
-                            i += 1
-                            if page_str == "":
-                                page_str += f"{i}. {val[0]}: {val[1]}"
-                            else:
-                                page_str += f"\n{i}. {val[0]}: {val[1]}"
+                        i += 1
+                        
+                        if page_str == "":
+                            page_str += f"{i}. {val[0]}: {val[1]}"
                         else:
-                            i += 1
-                            if page_str == "":
-                                page_str += f"{i}. {val[0]}: {val[1]}"
-                            else:
-                                page_str += f"\n{i}. {val[0]}: {val[1]}"
+                            page_str += f"\n{i}. {val[0]}: {val[1]}"
+
+                        # If there's 10 items in the current page, we split it into a new page
+                        if i % 10 == 0:
+                            pages.append(pageStr)
+                            pageStr = ""
 
                     if page_str != "":
                         pages.append(page_str)
