@@ -10,12 +10,14 @@ class animals(commands.Cog):
 
     global cat_titles, dog_titles
     
+    animalGroup = app_commands.Group(name="animals", description="See cute animals.")
+    
     # Cat / Dog Embed Titles
     cat_titles = ["Aww!", "Cute cat!", "Adorable!", "Meow!", "Purrfect!", "Cat!", ":3"]
     dog_titles = ["Aww!", "Cute dog!", "Adorable!", "Woof!", "Woof woof!", "Dog!", "Bark!"]
     
     # Cat command
-    @app_commands.command(name = "cat", description = "Get a random cat picture.")
+    @animalGroup.command(name = "cat", description = "Get a random cat picture.")
     @app_commands.checks.cooldown(1, 5)
     async def cat(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -29,7 +31,7 @@ class animals(commands.Cog):
                 await interaction.followup.send(embed = embed)
 
     # Dog command
-    @app_commands.command(name = "dog", description = "Get a random dog picture.")
+    @animalGroup.command(name = "dog", description = "Get a random dog picture.")
     @app_commands.checks.cooldown(1, 5)
     async def dog(self, interaction: discord.Interaction):
         await interaction.response.defer()

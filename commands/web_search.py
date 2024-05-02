@@ -9,8 +9,10 @@ class web_search(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    searchGroup = app_commands.Group(name="search", description="Search the web using various services.")
+    
     # Equation Solver command (broken)
-    # @tree.command(name = "equation_solver", description= "Solve an equation or expression.")
+    # @searchGroup.command(name = "equation-solver", description= "Solve an equation or expression.")
     # @app_commands.checks.cooldown(1, 10)
     # async def self(interaction: discord.Interaction, equation: str):
     #     await interaction.response.defer()
@@ -35,7 +37,7 @@ class web_search(commands.Cog):
     #         await interaction.edit_original_response(embed = embed)
 
     # Urban Dictionary command
-    @app_commands.command(name = "urban-dictionary", description = "Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!")
+    @searchGroup.command(name = "urban-dictionary", description = "Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!")
     @app_commands.checks.cooldown(1,10)
     async def urban_dict(self, interaction: discord.Interaction, query: str):
         await interaction.response.defer()
@@ -109,7 +111,7 @@ class web_search(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = None)
 
     # Wikipedia command
-    @app_commands.command(name = "wikipedia", description = "Search Wikipedia for information.")
+    @searchGroup.command(name = "wikipedia", description = "Search Wikipedia for information.")
     @app_commands.checks.cooldown(1, 5)
     async def wiki(self, interaction: discord.Interaction, search: str):
         await interaction.response.defer()

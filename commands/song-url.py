@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands, Color, ButtonStyle
 from discord.ext import commands
-from discord.ui import View, Select
+from discord.ui import View
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from urllib.parse import quote

@@ -9,8 +9,10 @@ class misc(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
+    funGroup = app_commands.Group(name="fun", description="Various fun commands.")
+    
     # 8 Ball command
-    @app_commands.command(name = "8ball", description = "Get an answer from the mystical 8 ball.")
+    @funGroup.command(name = "8ball", description = "Get an answer from the mystical 8 ball.")
     async def ball(self, interaction: discord.Interaction, question: str):
         await interaction.response.defer()
 
@@ -36,6 +38,16 @@ class misc(commands.Cog):
 
         await interaction.edit_original_response(embed = embed)
     
+    # Fish Command
+    @funGroup.command(name = "fish", description = "Fish!")
+    @app_commands.checks.cooldown(1,5)
+    async def fish(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        embed = discord.Embed(title = "Fish!", color = Color.random())
+        file = discord.File(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}video_file{self.bot.pathtype}fish.mp4", filename = "fish.mp4")
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        await interaction.followup.send(embed = embed, file = file)
+
     # First Message command
     @app_commands.command(name = "first-message", description = "Get the first message in a channel, uses current channel by default.")
     async def first_message(self, interaction: discord.Interaction, channel: discord.TextChannel = None):
@@ -62,15 +74,16 @@ class misc(commands.Cog):
             embed = discord.Embed(title = "Error", description = "**An error has occurred.\n\nSolutions**\n- Is the channel a text channel?\n- Has a message been sent here yet?\n- Try again later.", color = Color.red())
             await interaction.edit_original_response(embed=embed)
     
-    # Fish Command
-    @app_commands.command(name = "fish", description = "Fish!")
-    @app_commands.checks.cooldown(1,5)
-    async def fish(self, interaction: discord.Interaction):
+    # PFP command
+    @app_commands.command(name = "pfp", description = "Show a user's PFP.")
+    async def pfp(self, interaction: discord.Interaction, user: discord.User):
         await interaction.response.defer()
-        embed = discord.Embed(title = "Fish!", color = Color.random())
-        file = discord.File(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}video_file{self.bot.pathtype}fish.mp4", filename = "fish.mp4")
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-        await interaction.followup.send(embed = embed, file = file)
+        # Idea: set embed colour to user's banner colour'
+        embed = discord.Embed(title = f"PFP - {user.name}", color = Color.random())
+        embed.set_image(url = user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.avatar.url)
+        # Send Embed
+        await interaction.followup.send(embed = embed)
         
 async def setup(bot):
     await bot.add_cog(misc(bot))

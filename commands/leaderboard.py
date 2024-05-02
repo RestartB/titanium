@@ -140,8 +140,10 @@ class leaderboard(commands.Cog):
             embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed, view = None)
     
+    lbGroup = app_commands.Group(name="lb-control", description="Control the leaderboard.")
+    
     # Enable LB command
-    @app_commands.command(name = "enable-lb", description = "Enable the message leaderboard.")
+    @lbGroup.command(name = "enable", description = "Enable the message leaderboard.")
     @app_commands.default_permissions(administrator = True)
     async def enable_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
@@ -162,7 +164,7 @@ class leaderboard(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = None)
     
     # Disable LB command
-    @app_commands.command(name = "disable-lb", description = "Disable the message leaderboard.")
+    @app_commands.command(name = "disable", description = "Disable the message leaderboard.")
     @app_commands.default_permissions(administrator = True)
     async def disable_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
@@ -194,7 +196,7 @@ class leaderboard(commands.Cog):
         await interaction.followup.send(embed = embed, view = view, ephemeral = True)
     
     # Reset LB command
-    @app_commands.command(name = "reset-lb", description = "Resets the message leaderboard.")
+    @lbGroup.command(name = "reset", description = "Resets the message leaderboard.")
     @app_commands.default_permissions(administrator = True)
     async def reset_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)

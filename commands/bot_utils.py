@@ -9,12 +9,14 @@ import os
 import sys
 import time
 
-class utils(commands.Cog):
+class bot_utils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    botGroup = app_commands.Group(name="bot", description="Bot related commands.")
+    
     # Ping command
-    @app_commands.command(name = "ping", description = "Ping the bot.")
+    @botGroup.command(name = "ping", description = "Ping the bot.")
     async def ping(self, interaction: discord.Interaction):
         await interaction.response.defer()
         embed = discord.Embed(title = "Pong!")
@@ -22,7 +24,7 @@ class utils(commands.Cog):
         await interaction.followup.send(embed = embed)
 
     # Restart Bot command
-    @app_commands.command(name = "restart", description = "Restart the bot.")
+    @botGroup.command(name = "restart", description = "Restart the bot.")
     @commands.is_owner()
     async def restart(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
@@ -36,26 +38,15 @@ class utils(commands.Cog):
             await interaction.followup.send(embed = embed, ephemeral = True)
 
     # Info command
-    @app_commands.command(name = "info", description = "Info about the bot.")
+    @botGroup.command(name = "info", description = "Info about the bot.")
     async def info(self, interaction: discord.Interaction):
         await interaction.response.defer()
         embed = discord.Embed(title = "Info")
         embed.add_field(name = "Credit", value = "Bot created by Restart (<@563372552643149825>)\n\nBot Framework\n[discord.py](https://github.com/Rapptz/discord.py)\n\nAPIs and Modules:\n[Cat API](https://thecatapi.com/)\n[Dog API](https://dog.ceo/dog-api/)\n[Lyrics API](https://lrclib.net/)\n[Spotipy Module](https://github.com/spotipy-dev/spotipy)\n[Wikipedia Module](https://github.com/goldsmith/Wikipedia)")
         await interaction.followup.send(embed = embed)
 
-    # PFP command
-    @app_commands.command(name = "pfp", description = "Show a user's PFP.")
-    async def pfp(self, interaction: discord.Interaction, user: discord.User):
-        await interaction.response.defer()
-        # Idea: set embed colour to user's banner colour'
-        embed = discord.Embed(title = f"PFP - {user.name}", color = Color.random())
-        embed.set_image(url = user.avatar.url)
-        embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.avatar.url)
-        # Send Embed
-        await interaction.followup.send(embed = embed)
-    
     # Host Info command
-    @app_commands.command(name = "host-info", description = "Info about the bot host.")
+    @botGroup.command(name = "host-info", description = "Info about the bot host.")
     async def host_info(self, interaction: discord.Interaction):
         await interaction.response.defer()
         
@@ -81,9 +72,9 @@ class utils(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
 
         await interaction.edit_original_response(embed = embed)
-    
+
     # Send Message command
-    @app_commands.command(name = "send-message", description = "Admin Only: send debug message.")
+    @botGroup.command(name = "send-message", description = "Admin Only: send debug message.")
     async def send_message(self, interaction: discord.Interaction, message: str, channel_id: str):
         await interaction.response.defer(ephemeral = True)
         
@@ -97,4 +88,4 @@ class utils(commands.Cog):
             await interaction.followup.send(embed = embed, ephemeral = True)
 
 async def setup(bot):
-    await bot.add_cog(utils(bot))
+    await bot.add_cog(bot_utils(bot))

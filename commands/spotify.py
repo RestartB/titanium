@@ -1,5 +1,5 @@
 import discord
-from discord import app_commands, Color, ButtonStyle
+from discord import app_commands, Color
 from discord.ext import commands
 from discord.ui import View, Select
 import spotipy
@@ -17,8 +17,10 @@ class spotify(commands.Cog):
         self.auth_manager = SpotifyClientCredentials(client_id = self.bot.spotify_id, client_secret = self.bot.spotify_secret)
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
 
+    spotifyGroup = app_commands.Group(name="spotify", description="Spotify related commands.")
+    
     # Spotify Search command
-    @app_commands.command(name = "spotify", description = "Search Spotify.")
+    @spotifyGroup.command(name = "search", description = "Search Spotify.")
     @app_commands.checks.cooldown(1, 10)
     @app_commands.choices(search_type=[
             app_commands.Choice(name="Song", value="song"),
@@ -405,8 +407,8 @@ class spotify(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = None, ephemeral = True)
 
     # Spotify Image command
-    @app_commands.command(name = "spotify-image", description = "Get high quality album art from a Spotify URL.")
-    @app_commands.describe(url = "The target Spotify URL. Song, album, playlist and spotify.link URLs are supported.")
+    @spotifyGroup.command(name = "image", description = "Get high quality album art from a Spotify URL.")
+    @app_commands.describe(url = "The target Spotify URL. Song and album URLs are supported.")
     @app_commands.checks.cooldown(1, 10)
     async def spotify_image(self, interaction: discord.Interaction, url: str):
         await interaction.response.defer()
