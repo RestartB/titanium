@@ -164,7 +164,7 @@ class leaderboard(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = None)
     
     # Disable LB command
-    @app_commands.command(name = "disable", description = "Disable the message leaderboard.")
+    @lbGroup.command(name = "disable", description = "Disable the message leaderboard.")
     @app_commands.default_permissions(administrator = True)
     async def disable_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
