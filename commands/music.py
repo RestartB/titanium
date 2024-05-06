@@ -59,7 +59,7 @@ class music(commands.Cog):
 
                 # Generate dropdown values
                 if len(song_list) > 5:
-                    embed = discord.Embed(title = "Select Song", description = f'Found {len(song_list)}, showing 5 results for "{search}".\n\nCan{"'"}t find what you{"'"}re looking for? Try to be more specific with your query, for example, specifying the author.', color = Color.orange())
+                    embed = discord.Embed(title = "Select Song", description = f'Found {len(song_list)} results, showing 5 results for "{search}".\n\nCan\u0027t find what you\u0027re looking for? Try to be more specific with your query, for example, specifying the author.', color = Color.orange())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                     for i in range(0,5):
                         # Handle strings being too long
@@ -73,7 +73,7 @@ class music(commands.Cog):
                             list_description = f"{artist_list[i]} - {album_list[i]}"
                         options.append(discord.SelectOption(label = song_name, description = list_description, value = id_list[i]))
                 else:
-                    embed = discord.Embed(title = "Select Song", description = f'Found {len(song_list)} , {len(song_list)} showing results for "{search}".\n\nCan{"'"}t find what you{"'"}re looking for? Try to be more specific with your query, for example, specifying the author.', color = Color.orange())
+                    embed = discord.Embed(title = "Select Song", description = f'Found {len(song_list)} results, {len(song_list)} showing results for "{search}".\n\nCan\u0027t find what you\u0027re looking for? Try to be more specific with your query, for example, specifying the author.', color = Color.orange())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                     for i in range(0, len(song_list)):
                         # Handle strings being too long
