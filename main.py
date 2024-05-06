@@ -69,7 +69,7 @@ try:
     bot.token = tokens_dict['discord-bot-token']
     bot.spotify_id = tokens_dict['spotify-api-id']
     bot.spotify_secret = tokens_dict['spotify-api-secret']
-
+    
     bot.dev_ids_str = options_dict['owner-ids'].split(",")
     bot.support_server = options_dict['support-server']
     bot.cog_blacklist = options_dict['cog-blacklist']
