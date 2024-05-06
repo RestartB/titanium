@@ -440,6 +440,8 @@ class spotify(commands.Cog):
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                     await interaction.edit_original_response(embed = embed)
                     return
+        else:
+            url_expanded = False
         
         embed = discord.Embed(title = "Getting images...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
