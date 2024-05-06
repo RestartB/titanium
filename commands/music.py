@@ -113,7 +113,7 @@ class music(commands.Cog):
                         paged_lyrics.append(current_page)
 
                         # Create lyric embed
-                        embed = discord.Embed(title = f"{song_list[list_place]} - {artist_list[list_place]}", description = paged_lyrics[0], color = Color.random())
+                        embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = paged_lyrics[0], color = Color.random())
                         
                         class PaginationView(View):
                             def __init__(self, pages):
@@ -129,8 +129,8 @@ class music(commands.Cog):
                                     self.page -= 1
                                 else:
                                     self.page = len(self.pages) - 1
-                                embed = discord.Embed(title = f"{song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
-                                embed.set_footer(text = f"Page {self.page + 1}/{len(paged_lyrics)}")
+                                embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
+                                embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
                                 await interaction.response.edit_message(embed = embed)
 
                             @discord.ui.button(label=">", style=ButtonStyle.green, custom_id="next")
@@ -139,18 +139,18 @@ class music(commands.Cog):
                                     self.page += 1
                                 else:
                                     self.page = 0
-                                embed = discord.Embed(title = f"{song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
-                                embed.set_footer(text = f"Page {self.page + 1}/{len(paged_lyrics)}")
+                                embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
+                                embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
                                 await interaction.response.edit_message(embed = embed)
 
                         if len(paged_lyrics) == 1:
                             google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
                             view = View()
                             view.add_item(google_button)
-                            embed.set_footer(text = f"Lryics - Page 1/1")
+                            embed.set_footer(text = f"lrclib.net - Page 1/1")
                             await interaction.edit_original_response(embed = embed, view = view)
                         else:
-                            embed.set_footer(text = f"Lyrics - Page 1/{len(paged_lyrics)}")
+                            embed.set_footer(text = f"lrclib.net - Page 1/{len(paged_lyrics)}")
                             await interaction.edit_original_response(embed = embed, view = PaginationView(paged_lyrics))
                     except AttributeError:
                         google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
