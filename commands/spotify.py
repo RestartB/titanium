@@ -408,7 +408,7 @@ class spotify(commands.Cog):
 
     # Spotify Image command
     @spotifyGroup.command(name = "image", description = "Get high quality album art from a Spotify URL.")
-    @app_commands.describe(url = "The target Spotify URL. Song and album URLs are supported.")
+    @app_commands.describe(url = "The target Spotify URL. Song, album, playlist and spotify.link URLs are supported.")
     @app_commands.checks.cooldown(1, 10)
     async def spotify_image(self, interaction: discord.Interaction, url: str):
         await interaction.response.defer()
@@ -532,6 +532,44 @@ class spotify(commands.Cog):
                     await interaction.edit_original_response(embed = embed)
                 else:
                     embed = discord.Embed(title = "No album art available.", color = Color.red)
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    await interaction.edit_original_response(embed = embed)
+            # Playlist URL
+            elif "playlist" in url:
+                # Search playlist on Spotify
+                result = self.sp.playlist(url, market="GB")
+
+                image_url = result["images"][0]["url"]
+
+                # Generate random filename
+                letters = string.ascii_lowercase
+                filename = ''.join(random.choice(letters) for i in range(8))
+
+                # Save image
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(image_url) as request:
+                        file = open(f'{filename}.jpg', 'wb')
+                        async for chunk in request.content.iter_chunked(10):
+                            file.write(chunk)
+                        file.close()
+                        
+                # Get dominant colour for embed
+                color_thief = ColorThief(f'{filename}.jpg')
+                dominant_color = color_thief.get_color(quality=1)
+
+                # Remove file when done
+                os.remove(f'{filename}.jpg')
+
+                if result["images"] != None:
+                    if result["images"][0]['height'] == None or result["images"][0]['width'] == None:
+                        embed = discord.Embed(title = f"{result['name']} - {result['owner']['display_name']} (Playlist) - Cover Art", description = "Viewing highest quality (Resolution unknown)", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                    else:
+                        embed = discord.Embed(title = f"{result['name']} - {result['owner']['display_name']} (Playlist) - Cover Art", description = f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                    embed.set_image(url = result["images"][0]["url"])
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    await interaction.edit_original_response(embed = embed)
+                else:
+                    embed = discord.Embed(title = "No cover art available.", color = Color.red)
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                     await interaction.edit_original_response(embed = embed)
             else:
