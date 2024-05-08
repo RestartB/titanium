@@ -28,7 +28,8 @@ class song_url(commands.Cog):
             app_commands.Choice(name="YouTube", value="youtube"),
             ])
     @app_commands.describe(platform_select = "Optional: select a platform to get a link for. Only works with song links.")
-    async def song_url(self, interaction: discord.Interaction, url: str, platform_select: app_commands.Choice[str] = None):
+    @app_commands.describe(compact = "Optional: whether to display embed in a more compact format.")
+    async def song_url(self, interaction: discord.Interaction, url: str, platform_select: app_commands.Choice[str] = None, compact: bool = False):
         await interaction.response.defer()
 
         embed = discord.Embed(title = "Please wait...", description = "For non Spotify links, this may take a moment. Hold tight!", color = Color.orange())
@@ -153,8 +154,8 @@ class song_url(commands.Cog):
                         artist_string = f"{artist_string}, {artist['name']}".replace('*', '-')
                 
                 # Add info to embed
-                embed.add_field(name = "Artists", value = artist_string, inline = True)
-                embed.add_field(name = "Album", value = result['album']["name"], inline = True)
+                embed.add_field(name = "Artists", value = artist_string, inline = compact)
+                embed.add_field(name = "Album", value = result['album']["name"], inline = compact)
                 embed.set_thumbnail(url = result["album"]["images"][0]["url"])
                 embed.set_footer(text = "Getting colour information...")
 
@@ -228,7 +229,7 @@ class song_url(commands.Cog):
                 await interaction.edit_original_response(embed = embed)
                 
                 embed = discord.Embed(title = f"{result_info['name']}", color = Color.from_rgb(r = 255, g = 255, b = 255))
-                embed.add_field(name = "Followers", value = f"{result_info['followers']['total']:,}")
+                embed.add_field(name = "Followers", value = f"{result_info['followers']['total']:,}", inline = False)
                 embed.set_thumbnail(url = result_info["images"][0]["url"])
                 embed.set_footer(text = "Getting colour information...")
                 
@@ -552,10 +553,10 @@ class song_url(commands.Cog):
             embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())
             await interaction.edit_original_response(embed = embed)
             return
-        # except Exception:
-        #     embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
-        #     await interaction.edit_original_response(embed = embed)
-        #     return
+        except Exception:
+            embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
+            await interaction.edit_original_response(embed = embed)
+            return
 
 async def setup(bot):
     await bot.add_cog(song_url(bot))
