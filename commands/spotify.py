@@ -29,7 +29,8 @@ class spotify(commands.Cog):
             ])
     @app_commands.describe(search_type = "The type of media you are searching for. Supported types are song, artist and album.")
     @app_commands.describe(search = "What you are searching for.")
-    async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str):
+    @app_commands.describe(compact = "Optional: whether to display song embed in a more compact format. Defaults to false.")
+    async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str, compact: bool = False):
         await interaction.response.defer()
 
         options_list = []
@@ -110,8 +111,8 @@ class spotify(commands.Cog):
                         else:
                             embed = discord.Embed(title = item['name'], color = Color.from_rgb(r = 255, g = 255, b = 255))
                         embed.set_thumbnail(url = item['album']['images'][0]['url'])
-                        embed.add_field(name = "Artists", value = artist_string, inline = True)
-                        embed.add_field(name = "Album", value = item['album']['name'], inline = True)
+                        embed.add_field(name = "Artists", value = artist_string, inline = compact)
+                        embed.add_field(name = "Album", value = item['album']['name'], inline = compact)
                         embed.set_footer(text = "Getting colour information...")
 
                         # Define View
