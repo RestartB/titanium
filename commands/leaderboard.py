@@ -99,7 +99,7 @@ class leaderboard(commands.Cog):
                             else:
                                 self.page = len(self.pages) - 1
                             embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.random())
-                            embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                            embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
                             await interaction.response.edit_message(embed = embed)
                         else:
                             embed = discord.Embed(title = f"Error", description = f"{interaction.user.mention}, you are not the command runner.", color = Color.red())
@@ -115,7 +115,7 @@ class leaderboard(commands.Cog):
                             else:
                                 self.page = 0
                             embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.red())
-                            embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                            embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
                             await interaction.response.edit_message(embed = embed)
                         else:
                             embed = discord.Embed(title = f"Error", description = f"{interaction.user.mention}, you are not the command runner.", color = Color.red())
