@@ -60,82 +60,82 @@ class leaderboard(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
 
-        # try:
-        i = 0
-        pageStr = ""
-        
-        if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(interaction.guild.id)}';").fetchone() != None:
-            vals = self.cursor.execute(f"SELECT userMention, {sort_type.value} FROM '{interaction.guild.id}' ORDER BY {sort_type.value} DESC").fetchall()
-            if vals != []:
-                for val in vals:
-                    i += 1
-                    
-                    if pageStr == "":
-                        pageStr += f"{i}. {val[0]}: {val[1]}"
-                    else:
-                        pageStr += f"\n{i}. {val[0]}: {val[1]}"
+        try:
+            i = 0
+            pageStr = ""
+            
+            if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(interaction.guild.id)}';").fetchone() != None:
+                vals = self.cursor.execute(f"SELECT userMention, {sort_type.value} FROM '{interaction.guild.id}' ORDER BY {sort_type.value} DESC").fetchall()
+                if vals != []:
+                    for val in vals:
+                        i += 1
+                        
+                        if pageStr == "":
+                            pageStr += f"{i}. {val[0]}: {val[1]}"
+                        else:
+                            pageStr += f"\n{i}. {val[0]}: {val[1]}"
 
-                    # If there's 10 items in the current page, we split it into a new page
-                    if i % 10 == 0:
+                        # If there's 10 items in the current page, we split it into a new page
+                        if i % 10 == 0:
+                            pages.append(pageStr)
+                            pageStr = ""
+
+                    if pageStr != "":
                         pages.append(pageStr)
-                        pageStr = ""
+                else:
+                    pages.append("No Data")
+                
+                class Leaderboard(View):
+                    def __init__(self, pages):
+                        super().__init__()
+                        self.page = 0
+                        self.pages = pages
+                
+                    @discord.ui.button(label="<", style=discord.ButtonStyle.green, custom_id="prev")
+                    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                        if user_id == interaction.user.id:
+                            if self.page > 0:
+                                self.page -= 1
+                            else:
+                                self.page = len(self.pages) - 1
+                            embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.random())
+                            embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                            await interaction.response.edit_message(embed = embed)
+                        else:
+                            embed = discord.Embed(title = f"Error", description = f"{interaction.user.mention}, you are not the command runner.", color = Color.red())
+                            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                            await interaction.channel.send(embed = embed, delete_after = 5.0, view = None)
+                            await interaction.channel.send(f"{interaction.user.mention}", delete_after=5.0)
 
-                if pageStr != "":
-                    pages.append(pageStr)
+                    @discord.ui.button(label=">", style=discord.ButtonStyle.green, custom_id="next")
+                    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                        if user_id == interaction.user.id:
+                            if self.page < len(self.pages) - 1:
+                                self.page += 1
+                            else:
+                                self.page = 0
+                            embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.red())
+                            embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                            await interaction.response.edit_message(embed = embed)
+                        else:
+                            embed = discord.Embed(title = f"Error", description = f"{interaction.user.mention}, you are not the command runner.", color = Color.red())
+                            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                            await interaction.channel.send(embed = embed, delete_after = 5.0, view = None)
+                            await interaction.channel.send(f"{interaction.user.mention}", delete_after=5.0)
+
+                embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description=pages[0], color = Color.random())
+                embed.set_footer(text = f"Requested by {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.avatar.url)
+                
+                if len(pages) == 1:
+                    await interaction.edit_original_response(embed = embed)
+                else:
+                    await interaction.edit_original_response(embed = embed, view = Leaderboard(pages))
             else:
-                pages.append("No Data")
-            
-            class Leaderboard(View):
-                def __init__(self, pages):
-                    super().__init__()
-                    self.page = 0
-                    self.pages = pages
-            
-                @discord.ui.button(label="<", style=discord.ButtonStyle.green, custom_id="prev")
-                async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    if user_id == interaction.user.id:
-                        if self.page > 0:
-                            self.page -= 1
-                        else:
-                            self.page = len(self.pages) - 1
-                        embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.random())
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
-                        await interaction.response.edit_message(embed = embed)
-                    else:
-                        embed = discord.Embed(title = f"Error", description = f"{interaction.user.mention}, you are not the command runner.", color = Color.red())
-                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.channel.send(embed = embed, delete_after = 5.0, view = None)
-                        await interaction.channel.send(f"{interaction.user.mention}", delete_after=5.0)
-
-                @discord.ui.button(label=">", style=discord.ButtonStyle.green, custom_id="next")
-                async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    if user_id == interaction.user.id:
-                        if self.page < len(self.pages) - 1:
-                            self.page += 1
-                        else:
-                            self.page = 0
-                        embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.red())
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
-                        await interaction.response.edit_message(embed = embed)
-                    else:
-                        embed = discord.Embed(title = f"Error", description = f"{interaction.user.mention}, you are not the command runner.", color = Color.red())
-                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.channel.send(embed = embed, delete_after = 5.0, view = None)
-                        await interaction.channel.send(f"{interaction.user.mention}", delete_after=5.0)
-
-            embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description=pages[0], color = Color.random())
-            embed.set_footer(text = f"Requested by {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.avatar.url)
-            
-            if len(pages) == 1:
+                embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server.", color = Color.red())
                 await interaction.edit_original_response(embed = embed)
-            else:
-                await interaction.edit_original_response(embed = embed, view = Leaderboard(pages))
-        else:
-            embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server.", color = Color.red())
-            await interaction.edit_original_response(embed = embed)
-        # except Exception:
-        #     embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-        #     await interaction.edit_original_response(embed = embed, view = None)
+        except Exception:
+            embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+            await interaction.edit_original_response(embed = embed, view = None)
     
     lbGroup = app_commands.Group(name="lb-control", description="Control the leaderboard.")
     
