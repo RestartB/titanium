@@ -62,7 +62,7 @@ class leaderboard(commands.Cog):
 
         # try:
         i = 0
-        page_str = ""
+        pageStr = ""
         
         if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(interaction.guild.id)}';").fetchone() != None:
             vals = self.cursor.execute(f"SELECT userMention, {sort_type.value} FROM '{interaction.guild.id}' ORDER BY {sort_type.value} DESC").fetchall()
@@ -70,18 +70,18 @@ class leaderboard(commands.Cog):
                 for val in vals:
                     i += 1
                     
-                    if page_str == "":
-                        page_str += f"{i}. {val[0]}: {val[1]}"
+                    if pageStr == "":
+                        pageStr += f"{i}. {val[0]}: {val[1]}"
                     else:
-                        page_str += f"\n{i}. {val[0]}: {val[1]}"
+                        pageStr += f"\n{i}. {val[0]}: {val[1]}"
 
                     # If there's 10 items in the current page, we split it into a new page
                     if i % 10 == 0:
                         pages.append(pageStr)
                         pageStr = ""
 
-                if page_str != "":
-                    pages.append(page_str)
+                if pageStr != "":
+                    pages.append(pageStr)
             else:
                 pages.append("No Data")
             
