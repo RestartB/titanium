@@ -93,35 +93,23 @@ class leaderboard(commands.Cog):
                 
                     @discord.ui.button(label="<", style=discord.ButtonStyle.green, custom_id="prev")
                     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if user_id == interaction.user.id:
-                            if self.page > 0:
-                                self.page -= 1
-                            else:
-                                self.page = len(self.pages) - 1
-                            embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.random())
-                            embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
-                            await interaction.response.edit_message(embed = embed)
+                        if self.page > 0:
+                            self.page -= 1
                         else:
-                            embed = discord.Embed(title = f"Error", description = f"{interaction.user.mention}, you are not the command runner.", color = Color.red())
-                            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                            await interaction.channel.send(embed = embed, delete_after = 5.0, view = None)
-                            await interaction.channel.send(f"{interaction.user.mention}", delete_after=5.0)
+                            self.page = len(self.pages) - 1
+                        embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.random())
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                        await interaction.response.edit_message(embed = embed)
 
                     @discord.ui.button(label=">", style=discord.ButtonStyle.green, custom_id="next")
                     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if user_id == interaction.user.id:
-                            if self.page < len(self.pages) - 1:
-                                self.page += 1
-                            else:
-                                self.page = 0
-                            embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.red())
-                            embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
-                            await interaction.response.edit_message(embed = embed)
+                        if self.page < len(self.pages) - 1:
+                            self.page += 1
                         else:
-                            embed = discord.Embed(title = f"Error", description = f"{interaction.user.mention}, you are not the command runner.", color = Color.red())
-                            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                            await interaction.channel.send(embed = embed, delete_after = 5.0, view = None)
-                            await interaction.channel.send(f"{interaction.user.mention}", delete_after=5.0)
+                            self.page = 0
+                        embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.red())
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                        await interaction.response.edit_message(embed = embed)
 
                 embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description=pages[0], color = Color.random())
                 embed.set_footer(text = f"Requested by {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.avatar.url)
