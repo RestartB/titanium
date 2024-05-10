@@ -119,6 +119,7 @@ async def on_ready():
             else:
                 # We load it into the bot
                 await bot.load_extension(f"commands.{filename[:-3]}")
+                print(f"[INIT] Loaded cog: {filename}")
     
     # Read cogs from private commands folder if it exists
     if os.path.exists(f"{path}{pathtype}commands_private{pathtype}"):
