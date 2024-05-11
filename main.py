@@ -21,10 +21,10 @@ handler = logging.FileHandler(filename='discord_critical.log', encoding='utf-8',
 # Set path type
 if f"{os.name}" == "nt":
     pathtype = "\\"
-    print(f"[INIT] OS name is {os.name}, path type {pathtype}")
+    print(f"[INIT] OS name is {os.name}, path type {pathtype}\n")
 else:
     pathtype = "/"
-    print(f"[INIT] OS name is {os.name}, path type {pathtype}")
+    print(f"[INIT] OS name is {os.name}, path type {pathtype}\n")
 
 # ------ Config File Reader ------
 def readconfigfile(path):
@@ -95,7 +95,7 @@ try:
     # for id in bot.blocked_ids_str:
         # bot.blocked_ids.append(int(id))
     
-    print("[INIT] Config files read.")
+    print("[INIT] Config files read.\n")
 except Exception as error:
     print("[INIT] Bad value in config file! Exiting.")
     print(error)
@@ -119,10 +119,13 @@ async def on_ready():
             else:
                 # We load it into the bot
                 await bot.load_extension(f"commands.{filename[:-3]}")
-                print(f"[INIT] Loaded cog: {filename}")
+                print(f"[INIT] Loaded normal cog: {filename}")
+    
+    print("[INIT] Loaded normal cogs.\n")
     
     # Read cogs from private commands folder if it exists
     if os.path.exists(f"{path}{pathtype}commands_private{pathtype}"):
+        print("[INIT] Loading private cogs...")
         # Find all cogs in private command dir
         for filename in os.listdir(f"{path}{pathtype}commands_private{pathtype}"):
             # Determine if file is a python file
@@ -133,8 +136,11 @@ async def on_ready():
                 else:
                     # We load it into the bot
                     await bot.load_extension(f"commands_private.{filename[:-3]}")
+                    print(f"[INIT] Loaded private cog: {filename}")
 
-    print("[INIT] Loaded cogs.")
+        print("[INIT] Loaded private cogs.\n")
+    else:
+        print("[INIT] Skipping private cogs.\n")
 
     # Sync tree if sync on start is enabled
     if bot.sync_on_start == True:
@@ -151,7 +157,7 @@ async def on_ready():
 async def on_message(message):
     pass
 
-# Cooldown Handler
+# Cooldown / No Permissions Handler
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     await interaction.response.defer(ephemeral=True)
