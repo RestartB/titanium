@@ -129,7 +129,7 @@ class leaderboard(commands.Cog):
     
     # Enable LB command
     @lbGroup.command(name = "enable", description = "Enable the message leaderboard.")
-    @app_commands.default_permissions(administrator = True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def enable_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
@@ -150,7 +150,7 @@ class leaderboard(commands.Cog):
     
     # Disable LB command
     @lbGroup.command(name = "disable", description = "Disable the message leaderboard.")
-    @app_commands.default_permissions(administrator = True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def disable_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
@@ -182,7 +182,7 @@ class leaderboard(commands.Cog):
     
     # Reset LB command
     @lbGroup.command(name = "reset", description = "Resets the message leaderboard.")
-    @app_commands.default_permissions(administrator = True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def reset_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
