@@ -23,20 +23,6 @@ class bot_utils(commands.Cog):
         embed.add_field(name = "Latency", value = f"{round(self.bot.latency*1000, 2)}ms")
         await interaction.followup.send(embed = embed)
 
-    # Restart Bot command
-    @botGroup.command(name = "restart", description = "Restart the bot.")
-    @commands.is_owner()
-    async def restart(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral = True)
-        
-        if interaction.user.id in self.bot.dev_ids:
-            embed = discord.Embed(title = "The bot will restart.", color = Color.green())
-            await interaction.followup.send(embed = embed, ephemeral = True)
-            os.execv(sys.executable, ['python'] + sys.argv)
-        else:
-            embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
-            await interaction.followup.send(embed = embed, ephemeral = True)
-
     # Info command
     @botGroup.command(name = "info", description = "Info about the bot.")
     async def info(self, interaction: discord.Interaction):
