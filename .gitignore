@@ -10,3 +10,6 @@ main-pp.py
 *.db
 *.log
 config.cfg
+.replit
+*.lock
+*.toml
