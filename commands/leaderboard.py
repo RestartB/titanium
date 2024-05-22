@@ -215,6 +215,41 @@ class leaderboard(commands.Cog):
             embed = discord.Embed(title = "Are you sure?", description = "The leaderboard will be reset and all data will be removed!", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = view)
 
+    # Reset LB command
+    @lbGroup.command(name = "reset-user", description = "Resets a user on the leaderboard.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def reset_userlb(self, interaction: discord.Interaction, user: discord.User):
+        await interaction.response.defer(ephemeral = True)
+        
+        embed = discord.Embed(title = "Loading...", color = Color.orange())
+        await interaction.followup.send(embed = embed, ephemeral = True)
+        
+        if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';").fetchone() == None:
+            embed = discord.Embed(title = "Disabled", description = "Leaderboard is disabled in this server.", color = Color.red())
+            await interaction.edit_original_response(embed = embed)
+        else:
+            async def delete_callback(interaction: discord.Interaction):
+                await interaction.response.defer(ephemeral = True)
+
+                embed = discord.Embed(title = "Removing...", color = Color.orange())
+                await interaction.edit_original_response(embed = embed, view = None)
+
+                try:
+                    self.cursor.execute(f"DELETE FROM '{interaction.guild.id}' WHERE userMention = '{user.mention}';")
+                    embed = discord.Embed(title = "Removed.", color = Color.green())
+                    await interaction.edit_original_response(embed = embed)
+                except Exception:
+                    embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+                    await interaction.edit_original_response(embed = embed, view = None)
+                    
+            view = View()
+            delete_button = discord.ui.Button(label='Remove', style=discord.ButtonStyle.red)
+            delete_button.callback = delete_callback
+            view.add_item(delete_button)
+
+            embed = discord.Embed(title = "Are you sure?", description = f"Are you sure you want to remove {user.mention} from the leaderboard?", color = Color.orange())
+            await interaction.edit_original_response(embed = embed, view = view)
+
     # Privacy command
     @lbGroup.command(name = "privacy", description = "View the leaderboard privacy disclaimer.")
     async def privacy(self, interaction: discord.Interaction):
