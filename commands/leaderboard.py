@@ -51,8 +51,6 @@ class leaderboard(commands.Cog):
     async def leaderboard(self, interaction: discord.Interaction, sort_type: app_commands.Choice[str]):
         await interaction.response.defer()
         
-        user_id = interaction.user.id
-        
         pages = []
         
         # Send initial embed
@@ -98,7 +96,7 @@ class leaderboard(commands.Cog):
                         else:
                             self.page = len(self.pages) - 1
                         embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.random())
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                        embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
                         await interaction.response.edit_message(embed = embed)
 
                     @discord.ui.button(label=">", style=discord.ButtonStyle.green, custom_id="next")
@@ -108,11 +106,11 @@ class leaderboard(commands.Cog):
                         else:
                             self.page = 0
                         embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.red())
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                        embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
                         await interaction.response.edit_message(embed = embed)
 
                 embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description=pages[0], color = Color.random())
-                embed.set_footer(text = f"Requested by {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.avatar.url)
                 
                 if len(pages) == 1:
                     await interaction.edit_original_response(embed = embed)
