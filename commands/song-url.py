@@ -70,9 +70,9 @@ class song_url(commands.Cog):
                         await interaction.edit_original_response(embed = embed)
                         return
                     # Data returned is not song
-                    elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'song':
+                    elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'song' and request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'album':
                         embed = discord.Embed(title = "Unsupported Link Type", description = f"{request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'].title()} link types from this service are unsupported.", color = Color.red())
-                        embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
+                        embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song, Album *(unstable)*")
                         embed.set_footer(text = f"Requested by {interaction.user.name} - Assisted by song.link", icon_url = interaction.user.avatar.url)
                         await interaction.edit_original_response(embed = embed)
                         return
