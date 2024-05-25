@@ -256,14 +256,14 @@ class song_url(commands.Cog):
                     # Hide artist string from song listing if there is only one artist
                     if len(result_top_tracks['tracks'][i]['artists']) == 1:
                         if topsong_string == "":
-                            topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
+                            topsong_string = f"{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
                         else:
-                            topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
+                            topsong_string += f"\n{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
                     else:
                         if topsong_string == "":
-                            topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
+                            topsong_string = f"{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                         else:
-                            topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
+                            topsong_string += f"\n{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                 
                 embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
 
@@ -348,14 +348,14 @@ class song_url(commands.Cog):
                     # Hide artist string from song listing if there is only one artist
                     if len(result_info['tracks']['items'][i]['artists']) == 1:
                         if songlist_string == "":
-                            songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
+                            songlist_string = f"{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
                         else:
-                            songlist_string += f"\n**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
+                            songlist_string += f"\n{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
                     else:
                         if songlist_string == "":
-                            songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
+                            songlist_string = f"{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
                         else:
-                            songlist_string += f"\n**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
+                            songlist_string += f"\n{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
 
                 artist_string = ""
                 for artist in result_info['artists']:
@@ -465,10 +465,10 @@ class song_url(commands.Cog):
                             # Item type is unavailable in the GB reigon
                             # If there's nothing in the current page, make a new one
                             if pageStr == "":
-                                pageStr = f"**{i}:** *(Media Unavailable)*"
+                                pageStr = f"{i}. *(Media Unavailable)*"
                             # Else, add string to existing page
                             else:
-                                pageStr = f"{pageStr}\n**{i}:** *(Media Unavailable)*"
+                                pageStr += f"\n{i}. *(Media Unavailable)*"
                         elif playlist_item['track']['type'] == "track":
                             # Item is a track
                             # Work through all artists of item
@@ -479,28 +479,28 @@ class song_url(commands.Cog):
                                     artist_string = artist['name'].replace("*", "-")
                                 else:
                                     # Else, we add the current artist to the existing artist string
-                                    artist_string = f"{artist_string}, {artist['name']}".replace("*", "-")
+                                    artist_string += f", {artist['name']}".replace("*", "-")
                             
                             # If there's nothing in the current page, make a new one
                             if pageStr == "":
-                                pageStr = f"**{i}: {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
+                                pageStr = f"{i}. **{playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
                             # Else, add string to existing page
                             else:
-                                pageStr = f"{pageStr}\n**{i}: {playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
+                                pageStr += f"\n{i}. **{playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
                         elif playlist_item['track']['type'] == "episode":
                             # Item is a podcast
                             if pageStr == "":
-                                pageStr = f"**{i}: {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
+                                pageStr = f"{i}. **{playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
                             else:
-                                pageStr = f"{pageStr}\n**{i}: {playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
+                                pageStr += f"\n{i}. **{playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
                         else:
                             # Item type is unknown / unsupported
                             # If there's nothing in the current page, make a new one
                             if pageStr == "":
-                                pageStr = f"**{i}:** *(Unknown Media Type)*"
+                                pageStr = f"{i}. *(Unknown Media Type)*"
                             # Else, add string to existing page
                             else:
-                                pageStr = f"{pageStr}\n**{i}:** *(Unknown Media Type)*"
+                                pageStr += f"\n{i}. *(Unknown Media Type)*"
 
                         # If there's 25 items in the current page, we split it into a new page
                         if i % 25 == 0:
