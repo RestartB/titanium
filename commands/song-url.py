@@ -42,6 +42,10 @@ class song_url(commands.Cog):
             # Query song.link if required
             if not("spotify" in url) or platform_select != None:
                 try:
+                    embed = discord.Embed(title = "Communicating with song.link...", description = "This may take a moment.", color = Color.orange())
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    await interaction.followup.send(embed = embed)
+
                     processed_source = quote(url, safe='()*!\'')
                     request_url = f"https://api.song.link/v1-alpha.1/links?url={processed_source}&userCountry=GB"
                     
@@ -107,6 +111,10 @@ class song_url(commands.Cog):
                 platform = "spotify"
                 platform_api = "spotify"
             
+            embed = discord.Embed(title = "Please wait...", color = Color.orange())
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            await interaction.followup.send(embed = embed)
+
             # Expand spotify.link URL if present
             if "spotify.link" in url:
                 try:
