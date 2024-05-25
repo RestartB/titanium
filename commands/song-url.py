@@ -31,17 +31,16 @@ class song_url(commands.Cog):
     @app_commands.describe(compact = "Optional: whether to display song embed in a more compact format. Defaults to false.")
     async def song_url(self, interaction: discord.Interaction, url: str, platform_select: app_commands.Choice[str] = None, compact: bool = False):
         await interaction.response.defer()
-
-        embed = discord.Embed(title = "Please wait...", description = "For non Spotify links, this may take a moment. Hold tight!", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-        await interaction.followup.send(embed = embed)
         
         artist_string = ""
+        processed = False
 
         try:
             # Query song.link if required
             if not("spotify" in url) or platform_select != None:
                 try:
+                    processed = True
+
                     embed = discord.Embed(title = "Communicating with song.link...", description = "This may take a moment.", color = Color.orange())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                     await interaction.followup.send(embed = embed)
@@ -113,7 +112,11 @@ class song_url(commands.Cog):
             
             embed = discord.Embed(title = "Please wait...", color = Color.orange())
             embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-            await interaction.followup.send(embed = embed)
+            
+            if processed == True:
+                await interaction.edit_original_response(embed = embed)
+            else:
+                await interaction.followup.send(embed = embed)
 
             # Expand spotify.link URL if present
             if "spotify.link" in url:
