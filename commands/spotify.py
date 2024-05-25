@@ -70,7 +70,7 @@ class spotify(commands.Cog):
                             if artist_string == "":
                                 artist_string = artist['name']
                             else:
-                                artist_string = f"{artist_string}, {artist['name']}"
+                                artist_string += f", {artist['name']}"
                         
                         if len(f"{artist_string} - {item['album']['name']}") > 100:
                             description = f"{artist_string} - {item['album']['name']}"[:97] + "..."
@@ -103,7 +103,7 @@ class spotify(commands.Cog):
                             if artist_string == "":
                                 artist_string = artist['name']
                             else:
-                                artist_string = f"{artist_string}, {artist['name']}"
+                                artist_string += f", {artist['name']}"
                         
                         # Set up new embed
                         if item['explicit'] == True:
@@ -215,19 +215,19 @@ class spotify(commands.Cog):
                                 if artist_string == "":
                                     artist_string = artist['name'].replace('*', '-') 
                                 else:
-                                    artist_string = f"{artist_string}, {artist['name']}".replace('*', '-')
+                                    artist_string += f", {artist['name']}".replace('*', '-')
                                     
                             # Hide artist string from song listing if there is only one artist
                             if len(result_top_tracks['tracks'][i]['artists']) == 1:
                                 if topsong_string == "":
-                                    topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
+                                    topsong_string = f"{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
                                 else:
-                                    topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
+                                    topsong_string += f"\n{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
                             else:
                                 if topsong_string == "":
-                                    topsong_string = f"**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
+                                    topsong_string = f"{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                                 else:
-                                    topsong_string = f"{topsong_string}\n**{i + 1}: {result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
+                                    topsong_string += f"\n{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
                         
                         embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
 
@@ -295,7 +295,7 @@ class spotify(commands.Cog):
                             if artist_string == "":
                                 artist_string = artist['name'].replace('*', '-') 
                             else:
-                                artist_string = artist_string + ", " + artist['name'].replace('*', '-')
+                                artist_string += f", {artist['name']}".replace('*', '-')
                         
                         options_list.append(discord.SelectOption(label = item['name'], description = artist_string, value = i))
                         i += 1
@@ -327,19 +327,19 @@ class spotify(commands.Cog):
                                 if artist_string == "":
                                     artist_string = artist['name'].replace('*', '-') 
                                 else:
-                                    artist_string = artist_string + ", " + artist['name'].replace('*', '-')
+                                    artist_string += ", " + artist['name'].replace('*', '-')
                                     
                             # Hide artist string from song listing if there is only one artist
                             if len(result_info['tracks']['items'][i]['artists']) == 1:
                                 if songlist_string == "":
-                                    songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
+                                    songlist_string = f"{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
                                 else:
-                                    songlist_string = f"{songlist_string}\n**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
+                                    songlist_string += f"\n{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
                             else:
                                 if songlist_string == "":
-                                    songlist_string = f"**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
+                                    songlist_string = f"{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
                                 else:
-                                    songlist_string = f"{songlist_string}\n**{i + 1}: {result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
+                                    songlist_string += f"\n{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
 
                         artist_string = ""
                         for artist in result_info['artists']:
@@ -461,7 +461,7 @@ class spotify(commands.Cog):
                     if artist_string == "":
                         artist_string = artist['name'] 
                     else:
-                        artist_string = f"{artist_string}, {artist['name']}"
+                        artist_string += f", {artist['name']}"
 
                 if result["album"]["images"] != None:
                     image_url = result["album"]["images"][0]["url"]
@@ -521,7 +521,7 @@ class spotify(commands.Cog):
                     if artist_string == "":
                         artist_string = artist['name'] 
                     else:
-                        artist_string = f"{artist_string}, {artist['name']}"
+                        artist_string += f", {artist['name']}"
 
                 if result["images"] != None:
                     if result["images"][0]['height'] == None or result["images"][0]['width'] == None:
