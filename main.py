@@ -54,6 +54,7 @@ def readconfigfile(path):
 # Bot Setup
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 bot = commands.Bot(intents = intents, command_prefix = '')
 
 print("[INIT] Reading config files.")
@@ -176,5 +177,5 @@ try:
     # Run bot with token
     bot.run(bot.token, log_handler=handler, log_level=logging.CRITICAL)
 except discord.errors.PrivilegedIntentsRequired:
-    print("[FATAL] Bot is missing the Message Content intent! Please enable it in the Discord Developers web portal. Exiting...")
+    print("[FATAL] Bot is missing the Message Content and/or Server Members intent! Please enable it in the Discord Developers web portal. Exiting...")
     exit()
