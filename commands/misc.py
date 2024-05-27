@@ -84,6 +84,17 @@ class misc(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.avatar.url)
         # Send Embed
         await interaction.followup.send(embed = embed)
+    
+    # Server Icon command
+    @app_commands.command(name = "server-icon", description = "Show the server's icon.")
+    async def server_icon(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        # Idea: set embed colour to user's banner colour'
+        embed = discord.Embed(title = f"PFP - {interaction.guild.name}", color = Color.random())
+        embed.set_image(url = interaction.guild.icon.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.avatar.url)
+        # Send Embed
+        await interaction.followup.send(embed = embed)
         
 async def setup(bot):
     await bot.add_cog(misc(bot))
