@@ -64,7 +64,7 @@ class animals(commands.Cog):
             await interaction.followup.send(file=file, embed = embed)
         except Exception:
             embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-            await interaction.edit_original_response(embed = embed, view = None)
+            await interaction.edit_original_response(embed = embed, file = None)
 
 async def setup(bot):
     await bot.add_cog(animals(bot))
