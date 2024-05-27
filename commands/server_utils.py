@@ -2,6 +2,7 @@ import discord
 from discord import app_commands, Color
 import discord.ext
 from discord.ext import commands
+from discord.ui import View
 
 class bot_utils(commands.Cog):
     def __init__(self, bot):
