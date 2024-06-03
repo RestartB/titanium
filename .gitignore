@@ -13,3 +13,4 @@ config.cfg
 .replit
 *.lock
 *.toml
+TEST_*.py
