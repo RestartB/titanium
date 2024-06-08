@@ -12,7 +12,9 @@ class music(commands.Cog):
     # Lyrics command
     @app_commands.command(name = "lyrics", description = "Find Lyrics to a song.")
     @app_commands.checks.cooldown(1, 10)
-    async def lyrics(self, interaction: discord.Interaction, search: str):
+    @app_commands.describe(search = "The song you're seaching for.")
+    @app_commands.describe(longer_pages = "Optional: allows a max of 4096 characters per page instead of 1500. Defaults to false.")
+    async def lyrics(self, interaction: discord.Interaction, search: str, longer_pages: bool = False):
         try:    
             await interaction.response.defer()
 
@@ -103,12 +105,20 @@ class music(commands.Cog):
                         current_page = ""
 
                         for paragraph in lyrics_split:
-                            if len(paragraph) + len(current_page) < 2200:
-                                current_page = current_page + "\n\n" + paragraph
+                            if longer_pages == True:
+                                if len(paragraph) + len(current_page) < 4096:
+                                    current_page = current_page + "\n\n" + paragraph
+                                else:
+                                    paged_lyrics.append(current_page)
+                                    current_page = ""
+                                    current_page = current_page + paragraph
                             else:
-                                paged_lyrics.append(current_page)
-                                current_page = ""
-                                current_page = current_page + paragraph
+                                if len(paragraph) + len(current_page) < 1600:
+                                    current_page = current_page + "\n\n" + paragraph
+                                else:
+                                    paged_lyrics.append(current_page)
+                                    current_page = ""
+                                    current_page = current_page + paragraph
 
                         paged_lyrics.append(current_page)
 
@@ -117,7 +127,7 @@ class music(commands.Cog):
                         
                         class PaginationView(View):
                             def __init__(self, pages):
-                                super().__init__()
+                                super().__init__(timeout = 3600)
                                 self.page = 0
                                 self.pages = pages
                                 google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={song_list[list_place].replace(" ", "+")}+{artist_list[list_place].replace(" ", "+")}')
