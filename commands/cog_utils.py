@@ -40,10 +40,14 @@ class cog_utils(commands.Cog):
             await interaction.followup.send(embed = embed, ephemeral = True)
 
             try:
-                await self.bot.unload_extension(f"commands.{cog}")
+                if cog != "reminders":
+                    await self.bot.unload_extension(f"commands.{cog}")
 
-                embed = discord.Embed(title = f"Unloaded {cog}!", color = Color.green())
-                await interaction.edit_original_response(embed = embed)
+                    embed = discord.Embed(title = f"Unloaded {cog}!", color = Color.green())
+                    await interaction.edit_original_response(embed = embed)
+                else:
+                    embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\nCog is protected from unloading. Please reload the bot without the cog present to unload.", color = Color.red())
+                    await interaction.edit_original_response(embed = embed)
             except Exception as error:
                 embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\n{error}", color = Color.red())
                 await interaction.edit_original_response(embed = embed)
@@ -61,10 +65,14 @@ class cog_utils(commands.Cog):
             await interaction.followup.send(embed = embed, ephemeral = True)
 
             try:
-                await self.bot.reload_extension(f"commands.{cog}")
+                if cog != "reminders":
+                    await self.bot.reload_extension(f"commands.{cog}")
 
-                embed = discord.Embed(title = f"Reloaded {cog}!", color = Color.green())
-                await interaction.edit_original_response(embed = embed)
+                    embed = discord.Embed(title = f"Reloaded {cog}!", color = Color.green())
+                    await interaction.edit_original_response(embed = embed)
+                else:
+                    embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\nCog is protected from reloading.", color = Color.red())
+                    await interaction.edit_original_response(embed = embed)
             except Exception as error:
                 embed = discord.Embed(title = "Error", description = f"Error while reloading {cog}.\n\n{error}", color = Color.red())
                 await interaction.edit_original_response(embed = embed)
