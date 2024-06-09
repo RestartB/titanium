@@ -140,6 +140,8 @@ class leaderboard(commands.Cog):
                 await interaction.edit_original_response(embed = embed)
             else:
                 self.cursor.execute(f"CREATE TABLE '{interaction.guild.id}' (userMention text, messageCount integer, wordCount integer)")
+                self.connection.commit()
+                
                 embed = discord.Embed(title = "Success", description = "Enabled message leaderboard for this server.", color = Color.green())
                 await interaction.edit_original_response(embed = embed)
         except Exception:
@@ -164,6 +166,8 @@ class leaderboard(commands.Cog):
                     await interaction.edit_original_response(embed = embed)
                 else:
                     self.cursor.execute(f"DROP TABLE '{interaction.guild.id}'")
+                    self.connection.commit()
+
                     embed = discord.Embed(title = "Disabled.", color = Color.green())
                     await interaction.edit_original_response(embed = embed)
             except Exception:
@@ -199,6 +203,8 @@ class leaderboard(commands.Cog):
 
                 try:
                     self.cursor.execute(f"DELETE FROM '{interaction.guild.id}';")
+                    self.connection.commit()
+
                     embed = discord.Embed(title = "Reset.", color = Color.green())
                     await interaction.edit_original_response(embed = embed)
                 except Exception:
@@ -234,6 +240,8 @@ class leaderboard(commands.Cog):
 
                 try:
                     self.cursor.execute(f"DELETE FROM '{interaction.guild.id}' WHERE userMention = '{user.mention}';")
+                    self.connection.commit()
+
                     embed = discord.Embed(title = "Removed.", color = Color.green())
                     await interaction.edit_original_response(embed = embed)
                 except Exception:
