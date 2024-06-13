@@ -125,6 +125,7 @@ class spotify(commands.Cog):
                         spotify_button = discord.ui.Button(label=f'Play on Spotify ({int(minutes):02d}:{int(seconds):02d})', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
                         view.add_item(spotify_button)
 
+                        # More Button Callback
                         async def more_callback(interaction: discord.Interaction):
                             await interaction.response.defer()
 
@@ -315,6 +316,7 @@ class spotify(commands.Cog):
                         spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info['external_urls']['spotify'], row = 0)
                         view.add_item(spotify_button)
 
+                        # More Button Callback
                         async def more_callback(interaction: discord.Interaction):
                             await interaction.response.defer()
 
@@ -456,6 +458,7 @@ class spotify(commands.Cog):
                         spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info['external_urls']['spotify'], row = 0)
                         view.add_item(spotify_button)
 
+                        # More Button Callback
                         async def more_callback(interaction: discord.Interaction):
                             await interaction.response.defer()
 
