@@ -70,7 +70,7 @@ class misc(commands.Cog):
 
         userValue = int(dice.value)
         
-        value = random.randint(userValue)
+        value = random.randint(1, userValue)
         diceDots = ""
         
         dotFullAmount = value // 3
