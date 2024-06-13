@@ -76,10 +76,10 @@ class misc(commands.Cog):
         dotFullAmount = value // 3
         
         for i in range(dotFullAmount):
-            diceDots += f"{"\n" if diceDots == "" else ""}. . ."
+            diceDots += f"{'\n' if diceDots == '' else ''}. . ."
         
         for i in range(dotFullAmount % 3):
-            diceDots += f"{"\n" if diceDots != "" else ""}. "
+            diceDots += f"{'\n' if diceDots != '' else ''}. "
         
         if wait == True:        
             await asyncio.sleep(3)
