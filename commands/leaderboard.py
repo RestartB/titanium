@@ -14,6 +14,7 @@ class leaderboard(commands.Cog):
         self.cursor = self.connection.cursor()
 
         #self.optOutList = self.cursor.execute(f"SELECT userID FROM optOutList;").fetchall()
+        self.optOutList = []
 
     # # Refresh opt out list function
     # async def refreshOptOutList(self):
