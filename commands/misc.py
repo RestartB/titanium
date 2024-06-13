@@ -51,12 +51,12 @@ class misc(commands.Cog):
     # 8 Ball command
     @funGroup.command(name = "dice", description = "Roll the dice.")
     @app_commands.choices(dice=[
-        app_commands.Choice(name="4 sides", value=4),
-        app_commands.Choice(name="6 sides", value=6),
-        app_commands.Choice(name="8 sides", value=8),
-        app_commands.Choice(name="10 sides", value=10),
-        app_commands.Choice(name="12 sides", value=12),
-        app_commands.Choice(name="20 sides", value=20),
+        app_commands.Choice(name="4 sides", value="4"),
+        app_commands.Choice(name="6 sides", value="6"),
+        app_commands.Choice(name="8 sides", value="8"),
+        app_commands.Choice(name="10 sides", value="10"),
+        app_commands.Choice(name="12 sides", value="12"),
+        app_commands.Choice(name="20 sides", value="20"),
         ])
     @app_commands.describe(dice = "Select how many sides you want your dice to have.")
     @app_commands.describe(wait = "Optional: whether to add a 3 second wait for suspense. Defaults to true.")
@@ -68,15 +68,17 @@ class misc(commands.Cog):
 
         await interaction.followup.send(embed = embed)
 
-        value = random.randint(dice.value)
+        userValue = int(dice.value)
+        
+        value = random.randint(userValue)
         diceDots = ""
         
-        rollAmount = value // 3
+        dotFullAmount = value // 3
         
-        for i in range(rollAmount):
+        for i in range(dotFullAmount):
             diceDots += f"{"\n" if diceDots == "" else ""}. . ."
         
-        for i in range(diceDots % 3):
+        for i in range(dotFullAmount % 3):
             diceDots += f"{"\n" if diceDots != "" else ""}. "
         
         if wait == True:        
