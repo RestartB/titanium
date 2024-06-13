@@ -25,10 +25,10 @@ class leaderboard(commands.Cog):
                     # Check if user is already on leaderboard
                     if self.cursor.execute(f"SELECT userMention FROM '{message.guild.id}' WHERE userMention = '{message.author.mention}';").fetchone() != None:
                         # User is on the leaderboard, update their values
-                        self.cursor.execute(f"UPDATE '{message.guild.id}' SET messageCount = messageCount + 1, wordCount = wordCount + {len((message.content).split())} WHERE userMention = '{message.author.mention}'")
+                        self.cursor.execute(f"UPDATE '{message.guild.id}' SET messageCount = messageCount + 1, wordCount = wordCount + {len((message.content).split())}, attachmentCount = attachmentCount + {len(message.attachments)} WHERE userMention = ?", (message.author.mention,))
                     else:
                         # User is not on leaderboard, add them to the leaderboard
-                        self.cursor.execute(f"INSERT INTO '{message.guild.id}' (userMention, messageCount, wordCount) VALUES ('{message.author.mention}', 1, {len((message.content).split())})")
+                        self.cursor.execute(f"INSERT INTO '{message.guild.id}' (userMention, messageCount, wordCount, attachmentCount) VALUES (?, 1, {len((message.content).split())}, {len(message.attachments)})", (message.author.mention,))
                     
                     # Commit to DB
                     self.connection.commit()
@@ -46,6 +46,7 @@ class leaderboard(commands.Cog):
     @app_commands.choices(sort_type=[
         app_commands.Choice(name="Messages Sent", value="messageCount"),
         app_commands.Choice(name="Words Sent", value="wordCount"),
+        app_commands.Choice(name="Attachments Sent", value="attachmentCount"),
         ])
     @app_commands.checks.cooldown(1, 10)
     async def leaderboard(self, interaction: discord.Interaction, sort_type: app_commands.Choice[str]):
@@ -139,7 +140,7 @@ class leaderboard(commands.Cog):
                 embed = discord.Embed(title = "Success", description = "Already enabled for this server.", color = Color.green())
                 await interaction.edit_original_response(embed = embed)
             else:
-                self.cursor.execute(f"CREATE TABLE '{interaction.guild.id}' (userMention text, messageCount integer, wordCount integer)")
+                self.cursor.execute(f"CREATE TABLE '{interaction.guild.id}' (userMention text, messageCount integer, wordCount integer, attachmentCount integer)")
                 self.connection.commit()
                 
                 embed = discord.Embed(title = "Success", description = "Enabled message leaderboard for this server.", color = Color.green())
@@ -263,11 +264,12 @@ class leaderboard(commands.Cog):
 
         title = "Leaderboard Privacy Disclaimer"
         description = "The leaderboard system tracks the following information:"
-        description += "\n\n-User Mention\n-Message Count\n-Word Count\n-Server ID"
-        description += "Message content is temporarily stored while word count is processed."
-        description += "The content cannot be accessed and is not saved anywhere."
+        description += "\n\n-User Mention\n-Message Count\n-Word Count\n-Attachment Count\n-Server ID"
+        description += "Message content is temporarily stored while word count is processed. "
+        description += "A list of attachments in the target message is also temporarily stored, so we can work out how many attachments are in your message. "
+        description += "Message content and attachment data can not be viewed at any point during the tracking process, and is not saved after it has been processed."
         description += "The leaderboard does not contain any sensitive information, such as:"
-        description += "\n\n-Username\n-User PFP\n-Message Content\n-Message Attachments"
+        description += "\n\n-User PFP\n-Message Content\n-Attachment Data"
         
         embed = discord.Embed(title = title, description = description)
         await interaction.followup.send(embed = embed, ephemeral = True)
