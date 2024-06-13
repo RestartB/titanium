@@ -14,3 +14,5 @@ config.cfg
 *.lock
 *.toml
 TEST_*.py
+/venv
+.idea

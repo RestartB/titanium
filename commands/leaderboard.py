@@ -13,6 +13,21 @@ class leaderboard(commands.Cog):
         self.connection = sqlite3.connect(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}sql{self.bot.pathtype}lb.db")
         self.cursor = self.connection.cursor()
 
+        self.optOutList = self.cursor.execute(f"SELECT userID FROM optOutList;").fetchall()
+
+    # Refresh opt out list function
+    async def refreshOptOutList(self):
+        try:
+            self.cursor.execute(f"DELETE FROM optOut;")
+            self.connection.commit()
+
+            for id in self.optOutList:
+                self.cursor.execute(f"INSERT INTO optOut (userID) VALUES (?)", (id,))
+            
+            return True, ""
+        except Exception as e:
+            return False, e
+                
     # Listen for Messages
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -20,20 +35,21 @@ class leaderboard(commands.Cog):
         try:
             # Check if user is Bot
             if message.author.bot != True:
-                # Check if server is in DB
-                if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(message.guild.id)}';").fetchone() != None:
-                    # Check if user is already on leaderboard
-                    if self.cursor.execute(f"SELECT userMention FROM '{message.guild.id}' WHERE userMention = '{message.author.mention}';").fetchone() != None:
-                        # User is on the leaderboard, update their values
-                        self.cursor.execute(f"UPDATE '{message.guild.id}' SET messageCount = messageCount + 1, wordCount = wordCount + {len((message.content).split())}, attachmentCount = attachmentCount + {len(message.attachments)} WHERE userMention = ?", (message.author.mention,))
+                if not(message.author.id in self.optOutList):
+                    # Check if server is in DB
+                    if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(message.guild.id)}';").fetchone() != None:
+                        # Check if user is already on leaderboard
+                        if self.cursor.execute(f"SELECT userMention FROM '{message.guild.id}' WHERE userMention = '{message.author.mention}';").fetchone() != None:
+                            # User is on the leaderboard, update their values
+                            self.cursor.execute(f"UPDATE '{message.guild.id}' SET messageCount = messageCount + 1, wordCount = wordCount + {len((message.content).split())}, attachmentCount = attachmentCount + {len(message.attachments)} WHERE userMention = ?", (message.author.mention,))
+                        else:
+                            # User is not on leaderboard, add them to the leaderboard
+                            self.cursor.execute(f"INSERT INTO '{message.guild.id}' (userMention, messageCount, wordCount, attachmentCount) VALUES (?, 1, {len((message.content).split())}, {len(message.attachments)})", (message.author.mention,))
+                        
+                        # Commit to DB
+                        self.connection.commit()
                     else:
-                        # User is not on leaderboard, add them to the leaderboard
-                        self.cursor.execute(f"INSERT INTO '{message.guild.id}' (userMention, messageCount, wordCount, attachmentCount) VALUES (?, 1, {len((message.content).split())}, {len(message.attachments)})", (message.author.mention,))
-                    
-                    # Commit to DB
-                    self.connection.commit()
-                else:
-                    pass
+                        pass
             else:
                 pass
         # This should never happen, but if there is an error, log it
@@ -181,6 +197,80 @@ class leaderboard(commands.Cog):
         view.add_item(delete_button)
 
         embed = discord.Embed(title = "Are you sure?", description = "The leaderboard will be disabled, and data for this server will be deleted!", color = Color.orange())
+        await interaction.followup.send(embed = embed, view = view, ephemeral = True)
+    
+    # Opt out command
+    @lbGroup.command(name = "opt-out", description = "Opt out of the leaderboard globally as a user.")
+    async def optOut_lb(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral = True)
+        
+        async def delete_callback(interaction: discord.Interaction):
+            await interaction.response.defer(ephemeral = True)
+
+            embed = discord.Embed(title = "Disabling...", color = Color.orange())
+            await interaction.edit_original_response(embed = embed, view = None)
+
+            try:
+                if interaction.user.id in self.optOutList:
+                    embed = discord.Embed(title = "Failed", description = "You have already opted out.", color = Color.red())
+                    await interaction.edit_original_response(embed = embed)
+                else:
+                    self.optOutList.remove(interaction.user.id)
+                    status, error = await self.refreshOptOutList(self)
+
+                    if status == False:
+                        embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+                        await interaction.edit_original_response(embed = embed, view = None)
+
+                    embed = discord.Embed(title = "You have opted out.", color = Color.green())
+                    await interaction.edit_original_response(embed = embed)
+            except Exception:
+                embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+                await interaction.edit_original_response(embed = embed, view = None)
+                
+        view = View()
+        delete_button = discord.ui.Button(label='Opt Out', style=discord.ButtonStyle.red)
+        delete_button.callback = delete_callback
+        view.add_item(delete_button)
+
+        embed = discord.Embed(title = "Are you sure?", description = "By opting out of the leaderboard, you will be unable to contribute to the Titanium leaderboard in any server.", color = Color.orange())
+        await interaction.followup.send(embed = embed, view = view, ephemeral = True)
+    
+    # Opt out command
+    @lbGroup.command(name = "opt-in", description = "Opt back in to the leaderboard globally as a user.")
+    async def optOut_lb(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral = True)
+        
+        async def delete_callback(interaction: discord.Interaction):
+            await interaction.response.defer(ephemeral = True)
+
+            embed = discord.Embed(title = "Disabling...", color = Color.orange())
+            await interaction.edit_original_response(embed = embed, view = None)
+
+            try:
+                if interaction.user.id in self.optOutList:
+                    embed = discord.Embed(title = "Failed", description = "You have already opted out.", color = Color.red())
+                    await interaction.edit_original_response(embed = embed)
+                else:
+                    self.optOutList.remove(interaction.user.id)
+                    status, error = await self.refreshOptOutList(self)
+
+                    if status == False:
+                        embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+                        await interaction.edit_original_response(embed = embed, view = None)
+
+                    embed = discord.Embed(title = "You have opted in.", color = Color.green())
+                    await interaction.edit_original_response(embed = embed)
+            except Exception:
+                embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+                await interaction.edit_original_response(embed = embed, view = None)
+                
+        view = View()
+        delete_button = discord.ui.Button(label='Opt In', style=discord.ButtonStyle.green)
+        delete_button.callback = delete_callback
+        view.add_item(delete_button)
+
+        embed = discord.Embed(title = "Are you sure?", description = "By opting in to the leaderboard, you will be able to contribute to the Titanium leaderboard in any server again.", color = Color.orange())
         await interaction.followup.send(embed = embed, view = view, ephemeral = True)
     
     # Reset LB command
