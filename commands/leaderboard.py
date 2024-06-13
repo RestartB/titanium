@@ -207,7 +207,7 @@ class leaderboard(commands.Cog):
         async def delete_callback(interaction: discord.Interaction):
             await interaction.response.defer(ephemeral = True)
 
-            embed = discord.Embed(title = "Disabling...", color = Color.orange())
+            embed = discord.Embed(title = "Opting out...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
             try:
@@ -217,6 +217,11 @@ class leaderboard(commands.Cog):
                 else:
                     self.optOutList.remove(interaction.user.id)
                     status, error = await self.refreshOptOutList(self)
+
+                    for server in self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';").fetchall():
+                        self.cursor.execute(f"DELETE FROM '{server}' WHERE userMention = '<@{interaction.user.id}>';")
+                    
+                    self.connection.commit()
 
                     if status == False:
                         embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
@@ -244,7 +249,7 @@ class leaderboard(commands.Cog):
         async def delete_callback(interaction: discord.Interaction):
             await interaction.response.defer(ephemeral = True)
 
-            embed = discord.Embed(title = "Disabling...", color = Color.orange())
+            embed = discord.Embed(title = "Opting in...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
             try:
