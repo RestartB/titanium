@@ -238,7 +238,7 @@ class leaderboard(commands.Cog):
     
     # Opt out command
     @lbGroup.command(name = "opt-in", description = "Opt back in to the leaderboard globally as a user.")
-    async def optOut_lb(self, interaction: discord.Interaction):
+    async def optIn_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
         async def delete_callback(interaction: discord.Interaction):
@@ -248,8 +248,8 @@ class leaderboard(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = None)
 
             try:
-                if interaction.user.id in self.optOutList:
-                    embed = discord.Embed(title = "Failed", description = "You have already opted out.", color = Color.red())
+                if not(interaction.user.id in self.optOutList):
+                    embed = discord.Embed(title = "Failed", description = "You are already opted in.", color = Color.red())
                     await interaction.edit_original_response(embed = embed)
                 else:
                     self.optOutList.remove(interaction.user.id)
