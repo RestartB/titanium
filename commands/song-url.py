@@ -175,114 +175,30 @@ class song_url(commands.Cog):
                 # Work out song duration
                 seconds, result['duration_ms'] = divmod(result['duration_ms'], 1000)
                 minutes, seconds = divmod(seconds, 60)
-                
+
+                # Add Open in Spotify button
+                spotify_button = discord.ui.Button(label=f'Play on Spotify ({int(minutes):02d}:{int(seconds):02d})', style=discord.ButtonStyle.url, url=result["external_urls"]["spotify"], row = 0)
+                view.add_item(spotify_button)
+
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
                     ogservice_button = discord.ui.Button(label=platform, style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_api]['url'], row = 0)
                     view.add_item(ogservice_button)
-                else:
-                    # Add Open in Spotify button
-                    spotify_button = discord.ui.Button(label=f'Play on Spotify ({int(minutes):02d}:{int(seconds):02d})', style=discord.ButtonStyle.url, url=result["external_urls"]["spotify"], row = 0)
-                    view.add_item(spotify_button)
 
                 # Add Target Platform button when selected platform is not the same as OG link
                 if platform_select != None:
                     if platform_select.value != platform_api:
                         usrservice_button = discord.ui.Button(label=f"Play on {platform_select.name}", style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_select.value]['url'], row = 0)
                         view.add_item(usrservice_button)
+
+                # Add song.link button
+                songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 1)
+                view.add_item(songlink_button)
+
+                # Add Search on Google button
+                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
+                view.add_item(google_button)
                 
-                # More Button Callback
-                async def more_callback(interaction: discord.Interaction):
-                    await interaction.response.defer()
-
-                    view = View()
-
-                    # Add OG platform button when OG platform isnt Spotify
-                    if platform_api != "spotify":
-                        ogservice_button = discord.ui.Button(label=platform, style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_api]['url'], row = 0)
-                        view.add_item(ogservice_button)
-                    
-                    # Add song.link button                
-                    songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{result['external_urls']['spotify']}", row = 0)
-                    view.add_item(songlink_button)
-
-                    # Add Search on Google button
-                    google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 0)
-                    view.add_item(google_button)
-
-                    # Album Art Callback
-                    async def art_callback(interaction: discord.Interaction):
-                        await interaction.response.defer()
-                        
-                        embed = discord.Embed(title = "Getting images...", color = Color.orange())
-                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.edit_original_response(embed = embed, view = None)
-                        
-                        if result["album"]["images"] != None:
-                            image_url = result["album"]["images"][0]["url"]
-
-                            if result["album"]["images"][0]['height'] == None or result["album"]["images"][0]['width'] == None:
-                                embed = discord.Embed(title = f"{result['name']} ({artist_string}) - Album Art", description = "Viewing highest quality (Resolution unknown)", color = Color.from_rgb(r = 255, g = 255, b = 255))
-                                embed.set_footer(text = "Getting colour information...")
-                            else:
-                                embed = discord.Embed(title = f"{result['name']} ({artist_string}) - Album Art", description = f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})", color = Color.from_rgb(r = 255, g = 255, b = 255))
-                                embed.set_footer(text = "Getting colour information...")
-                            
-                            embed.set_image(url = result["album"]["images"][0]["url"])
-                            await interaction.edit_original_response(embed = embed)
-
-                            letters = string.ascii_lowercase
-                            filename = ''.join(random.choice(letters) for i in range(8))
-
-                            async with aiohttp.ClientSession() as session:
-                                async with session.get(image_url) as request:
-                                    file = open(f'{filename}.jpg', 'wb')
-                                    async for chunk in request.content.iter_chunked(10):
-                                        file.write(chunk)
-                                    file.close()
-                                    
-                            color_thief = ColorThief(f'{filename}.jpg')
-                            dominant_color = color_thief.get_color(quality=1)
-
-                            os.remove(f'{filename}.jpg')
-
-                            if result["album"]["images"][0]['height'] == None or result["album"]["images"][0]['width'] == None:
-                                embed = discord.Embed(title = f"{result['name']} ({artist_string}) - Album Art", description = "Viewing highest quality (Resolution unknown)", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
-                                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                            else:
-                                embed = discord.Embed(title = f"{result['name']} ({artist_string}) - Album Art", description = f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
-                                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                            
-                            embed.set_image(url = result["album"]["images"][0]["url"])
-                            await interaction.edit_original_response(embed = embed)
-                        else:
-                            embed = discord.Embed(title = "No album art available.", color = Color.red())
-                            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                            await interaction.edit_original_response(embed = embed)
-                    
-                    # Add Album Art button
-                    art_button = discord.ui.Button(label='Album Art', style=discord.ButtonStyle.gray, row = 1)
-                    art_button.callback = art_callback
-                    view.add_item(art_button)
-
-                    # Close Button Callback
-                    async def delete_callback(interaction: discord.Interaction):
-                        await interaction.response.defer()
-                        
-                        await msg.delete()
-                    
-                    # Add Close button
-                    close_button = discord.ui.Button(label='Close', style = discord.ButtonStyle.red, row = 1)
-                    close_button.callback = delete_callback
-                    view.add_item(close_button)
-
-                    msg = await interaction.followup.send(view = view)
-                
-                # Add More Options button
-                more_button = discord.ui.Button(label=f'More', style=discord.ButtonStyle.gray, row = 0)
-                more_button.callback = more_callback
-                view.add_item(more_button)
-
                 # Send new embed
                 await interaction.edit_original_response(embed = embed, view = view)
 
@@ -357,33 +273,13 @@ class song_url(commands.Cog):
                 spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"], row = 0)
                 view.add_item(spotify_button)
 
-                # More Button Callback
-                async def more_callback(interaction: discord.Interaction):
-                    await interaction.response.defer()
+                # Add Search on YT Music button
+                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}', row = 1)
+                view.add_item(ytm_button)
 
-                    view = View(timeout=300)
-
-                    # Add Search on Google button
-                    google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}', row = 1)
-                    view.add_item(google_button)
-
-                    # Close Button Callback
-                    async def delete_callback(interaction: discord.Interaction):
-                        await interaction.response.defer()
-                        
-                        await msg.delete()
-                    
-                    # Add Close button
-                    close_button = discord.ui.Button(label='Close', style = discord.ButtonStyle.red, row = 1)
-                    close_button.callback = delete_callback
-                    view.add_item(close_button)
-
-                    msg = await interaction.followup.send(view = view)
-                
-                # Add More Options button
-                more_button = discord.ui.Button(label=f'More', style=discord.ButtonStyle.gray, row = 0)
-                more_button.callback = more_callback
-                view.add_item(more_button)
+                # Add Search on Google button
+                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
+                view.add_item(google_button)
 
                 await interaction.edit_original_response(embed = embed, view = view)
 
@@ -475,108 +371,18 @@ class song_url(commands.Cog):
 
                 view = View()
                 
-                # Add OG platform button when OG platform isnt Spotify
-                if platform_api != "spotify":
-                    ogservice_button = discord.ui.Button(label=platform, style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_api]['url'], row = 0)
-                    view.add_item(ogservice_button)
-                else:
-                    # Add Open in Spotify button
-                    spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result["external_urls"]["spotify"], row = 0)
-                    view.add_item(spotify_button)
+                # Add Open in Spotify button
+                spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"], row = 0)
+                view.add_item(spotify_button)
 
-                # Add Target Platform button when selected platform is not the same as OG link
-                if platform_select != None:
-                    if platform_select.value != platform_api:
-                        usrservice_button = discord.ui.Button(label=f"Play on {platform_select.name}", style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_select.value]['url'], row = 0)
-                        view.add_item(usrservice_button)
-                
-                # More Button Callback
-                async def more_callback(interaction: discord.Interaction):
-                    await interaction.response.defer()
+                # Add song.link button                
+                songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 1)
+                view.add_item(songlink_button)
 
-                    view = View()
+                # Add Search on Google button
+                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
+                view.add_item(google_button)
 
-                    # Add song.link button                
-                    songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{result_info['external_urls']['spotify']}", row = 1)
-                    view.add_item(songlink_button)
-
-                    # Add Search on Google button
-                    google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
-                    view.add_item(google_button)
-
-                    # Album Art Callback
-                    async def art_callback(interaction: discord.Interaction):
-                        await interaction.response.defer()
-                        
-                        embed = discord.Embed(title = "Getting images...", color = Color.orange())
-                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.edit_original_response(embed = embed, view = None)
-                        
-                        if result_info["images"] != None:
-                            image_url = result_info["images"][0]["url"]
-
-                            if result_info["images"][0]['height'] == None or result_info["images"][0]['width'] == None:
-                                embed = discord.Embed(title = f"{result_info['name']} ({artist_string}) - Album Art", description = "Viewing highest quality (Resolution unknown)", color = Color.from_rgb(r = 255, g = 255, b = 255))
-                                embed.set_footer(text = "Getting colour information...")
-                            else:
-                                embed = discord.Embed(title = f"{result_info['name']} ({artist_string}) - Album Art", description = f"Viewing highest quality ({result_info['images'][0]['width']}x{result_info['images'][0]['height']})", color = Color.from_rgb(r = 255, g = 255, b = 255))
-                                embed.set_footer(text = "Getting colour information...")
-                            
-                            embed.set_image(url = result_info["images"][0]["url"])
-                            await interaction.edit_original_response(embed = embed)
-
-                            letters = string.ascii_lowercase
-                            filename = ''.join(random.choice(letters) for i in range(8))
-
-                            async with aiohttp.ClientSession() as session:
-                                async with session.get(image_url) as request:
-                                    file = open(f'{filename}.jpg', 'wb')
-                                    async for chunk in request.content.iter_chunked(10):
-                                        file.write(chunk)
-                                    file.close()
-                                    
-                            color_thief = ColorThief(f'{filename}.jpg')
-                            dominant_color = color_thief.get_color(quality=1)
-
-                            os.remove(f'{filename}.jpg')
-
-                            if result_info["images"][0]['height'] == None or result_info["images"][0]['width'] == None:
-                                embed = discord.Embed(title = f"{result_info['name']} ({artist_string}) - Album Art", description = "Viewing highest quality (Resolution unknown)", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
-                                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                            else:
-                                embed = discord.Embed(title = f"{result_info['name']} ({artist_string}) - Album Art", description = f"Viewing highest quality ({result_info['images'][0]['width']}x{result_info['images'][0]['height']})", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
-                                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                            
-                            embed.set_image(url = result_info["images"][0]["url"])
-                            await interaction.edit_original_response(embed = embed)
-                        else:
-                            embed = discord.Embed(title = "No album art available.", color = Color.red())
-                            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                            await interaction.edit_original_response(embed = embed)
-                    
-                    # Add Album Art button
-                    art_button = discord.ui.Button(label='Album Art', style=discord.ButtonStyle.gray, row = 2)
-                    art_button.callback = art_callback
-                    view.add_item(art_button)
-
-                    # Close Button Callback
-                    async def delete_callback(interaction: discord.Interaction):
-                        await interaction.response.defer()
-                        
-                        await msg.delete()
-                    
-                    # Add Close button
-                    close_button = discord.ui.Button(label='Close', style = discord.ButtonStyle.red, row = 2)
-                    close_button.callback = delete_callback
-                    view.add_item(close_button)
-
-                    msg = await interaction.followup.send(view = view)
-                
-                # Add More Options button
-                more_button = discord.ui.Button(label=f'More', style=discord.ButtonStyle.gray, row = 0)
-                more_button.callback = more_callback
-                view.add_item(more_button)
-                
                 await interaction.edit_original_response(embed = embed, view = view)
 
                 # Generate random filename
