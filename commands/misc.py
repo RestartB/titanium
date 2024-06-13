@@ -38,16 +38,57 @@ class misc(commands.Cog):
 
         await interaction.edit_original_response(embed = embed)
     
-    # Fish Command
-    @funGroup.command(name = "fish", description = "Fish!")
-    @app_commands.checks.cooldown(1,5)
-    async def fish(self, interaction: discord.Interaction):
+    # 8 Ball command
+    @funGroup.command(name = "random-num", description = "Get a random number.")
+    async def ran_num(self, interaction: discord.Interaction, min: int, max: int):
         await interaction.response.defer()
-        embed = discord.Embed(title = "Fish!", color = Color.random())
-        file = discord.File(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}video_file{self.bot.pathtype}fish.mp4", filename = "fish.mp4")
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-        await interaction.followup.send(embed = embed, file = file)
 
+        embed = discord.Embed(title = "Random Number", description = random.randint(min, max), color = Color.random())
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+
+        await interaction.followup.send(embed = embed)
+    
+    # 8 Ball command
+    @funGroup.command(name = "dice", description = "Roll the dice.")
+    @app_commands.choices(dice=[
+        app_commands.Choice(name="4 sides", value=4),
+        app_commands.Choice(name="6 sides", value=6),
+        app_commands.Choice(name="8 sides", value=8),
+        app_commands.Choice(name="10 sides", value=10),
+        app_commands.Choice(name="12 sides", value=12),
+        app_commands.Choice(name="20 sides", value=20),
+        ])
+    @app_commands.describe(dice = "Select how many sides you want your dice to have.")
+    @app_commands.describe(wait = "Optional: whether to add a 3 second wait for suspense. Defaults to true.")
+    async def dice_roll(self, interaction: discord.Interaction, dice: app_commands.Choice[str], wait: bool = True):
+        await interaction.response.defer()
+
+        embed = discord.Embed(title = "Rolling...", color = Color.random())
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+
+        await interaction.followup.send(embed = embed)
+
+        value = random.randint(dice.value)
+        diceDots = ""
+        
+        rollAmount = value // 3
+        
+        for i in range(rollAmount):
+            diceDots += f"{"\n" if diceDots == "" else ""}. . ."
+        
+        for i in range(diceDots % 3):
+            diceDots += f"{"\n" if diceDots != "" else ""}. "
+        
+        if wait == True:        
+            await asyncio.sleep(3)
+
+        embed = discord.Embed(title = f"Dice Roll - {dice.name}", color = Color.random())
+        embed.add_field(name = "Dots", value = diceDots, inline = False)
+        embed.add_field(name = "Value", value = value)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+
+        await interaction.edit_original_response(embed = embed)
+    
     # First Message command
     @app_commands.command(name = "first-message", description = "Get the first message in a channel, uses current channel by default.")
     async def first_message(self, interaction: discord.Interaction, channel: discord.TextChannel = None):
