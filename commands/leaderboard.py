@@ -142,7 +142,7 @@ class leaderboard(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = None)
     
     lbGroup = app_commands.Group(name="lb-control", description="Control the leaderboard.")
-    
+
     # Enable LB command
     @lbGroup.command(name = "enable", description = "Enable the message leaderboard.")
     @app_commands.checks.has_permissions(administrator=True)
