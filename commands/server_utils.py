@@ -22,7 +22,7 @@ class server_utils(commands.Cog):
 
         # Handle no icon
         try:
-            embed = discord.Embed(title = f"PFP - {interaction.guild.name}", color = Color.random())
+            embed = discord.Embed(title = f"Server Icon - {interaction.guild.name}", color = Color.random())
             embed.set_image(url = interaction.guild.icon.url)
             embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.avatar.url)
 
