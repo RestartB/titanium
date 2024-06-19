@@ -5,7 +5,6 @@ from discord.ui import View
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from urllib.parse import quote
-import asyncio
 import re
 
 class spotify_autoembed(commands.Cog):

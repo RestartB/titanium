@@ -6,7 +6,6 @@ from datetime import timedelta
 import cpuinfo
 import psutil
 import os
-import sys
 import time
 
 class bot_utils(commands.Cog):
