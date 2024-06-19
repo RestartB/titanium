@@ -61,32 +61,40 @@ You will need your Discord Client ID to make this URL. You can get this from the
 
 ## Included Commands
 TitaniumCore comes with some included commands. Below is a list of what commands are in each cog file:
-- **Utility Commands** *(utils.py)*
-  - **ping:** see the bot's latency.
-  - **restart:** restart the bot. Only available to the bot owner.
-  - **info:** view info about the bot.
-  - **pfp:** see a user's PFP.
-  - **host-info:** see information about the bot's hosting server.
-- **Cog Utility Commands (bot owner only)** *(cog-utils.py)*
-  - **sync-cogs:** sync cogs.
-  - **load-cog:** load a new cog.
-  - **unload-cog:** unload a loaded cog.
-  - **reload-cog:** reload a loaded cog.
-  - **sync-tree:** sync the command tree.
 - **Animal Commands** *(animals.py)*
-  - **cat:** see a random image of a cat.
-  - **dog:** see a random image of a dog.
+  - **animals cat:** see a random image of a cat.
+  - **animals dog:** see a random image of a dog.
+  - **animals sand-cat:** get a random sand cat - requires /content/sand-cat to be present and have images inside
+- **Bot Utility Commands** *(bot_utils.py)*
+  - **bot ping:** see the bot's latency.
+  - **bot info:** view info about the bot.
+  - **bot host-info:** see information about the bot's hosting server.
+  - **bot send-message:** send a message through the bot (bot owner only).
+- **Cog Utility Commands (bot owner only)** *(cog_utils.py)*
+  - **cogs load:** load a new cog.
+  - **cogs unload:** unload a loaded cog.
+  - **cogs reload:** reload a loaded cog.
+  - **cogs sync:** sync the command tree.
+- **Leaderboard Commands** *(leaderboard.py)*
+  - **leaderboard:** see the server leaderboard.
+  - **lb-control enable:** enable the server leaderboard.
+  - **lb-control enable:** disable the server leaderboard.
+  - **lb-control reset:** reset the server leaderboard.
+  - **lb-control reset-user:** reset a user on the leaderboard.
 - **Misc Commands** *(misc.py)*
-  - **8ball:** consult the mystical 8 ball for an answer to a question.
-  - **first-message:** get the first message in a channel.
-  - **fish:** see the fish video.
+  - **fun 8ball:** consult the mystical 8 ball for an answer to a question.
+  - **fun random-num:** get a random number.
+  - **fun dice:** roll a dice.
 - **Music Commands** *(music.py)*
   - **lyrics:** get the lyrics to a song.
-- **Music Link Commands** *(song-url.py)*
-  - **song-url:** get a list of streaming service URLs based on a song URL. Powered by https://song.link.
+- **Bot Utility Commands** *(server_utils.py)*
+  - **server icon:** get the current server's icon.
+  - **server info:** get info about the current server.
+- **Song URL Command** *(song-url.py)*
+  - **song-url:** get info about a music streaming service URL. Powered by https://song.link.
 - **Spotify Commands** *(spotify.py)*
-  - **spotify:** search Spotify for a song, artist or album.
-  - **spotify-image:** get album art for a Spotify song or album URL.
+  - **spotify search:** search Spotify for a song, artist or album.
+  - **spotify image:** get album art for a Spotify song, album or playlist URL.
 - **Web Search Commands** *(web_search.py)*
   - **urban-dictionary:** search Urban Dictionary. Results are mainly unmoderated and may be inappropriate.
   - **wikipedia:** search Wikipedia for an answer.
