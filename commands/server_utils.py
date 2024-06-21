@@ -52,6 +52,9 @@ class server_utils(commands.Cog):
                 else:
                     memberCount += 1
             
+            memberCount = f"{memberCount} ({round((memberCount / interaction.guild.member_count * 100), 1)}% total)"
+            botCount = f"{botCount} ({round((botCount / interaction.guild.member_count * 100), 1)}% total)"
+            
             embed = discord.Embed(title = f"{interaction.guild.name} - Info", color = Color.random())
             
             # Member counts
