@@ -14,6 +14,8 @@ class music(commands.Cog):
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(search = "The song you're seaching for.")
     @app_commands.describe(longer_pages = "Optional: allows a max of 4096 characters per page instead of 1500. Defaults to false.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def lyrics(self, interaction: discord.Interaction, search: str, longer_pages: bool = False):
         try:    
             await interaction.response.defer()

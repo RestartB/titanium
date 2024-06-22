@@ -17,7 +17,9 @@ class spotify(commands.Cog):
         self.auth_manager = SpotifyClientCredentials(client_id = self.bot.spotify_id, client_secret = self.bot.spotify_secret)
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
 
-    spotifyGroup = app_commands.Group(name="spotify", description="Spotify related commands.")
+    context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
+    installs = discord.app_commands.AppInstallationType(guild=True, user=True)
+    spotifyGroup = app_commands.Group(name="spotify", description="Spotify related commands.", allowed_contexts=context, allowed_installs=installs)
     
     # Spotify Search command
     @spotifyGroup.command(name = "search", description = "Search Spotify.")

@@ -9,7 +9,9 @@ class web_search(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    searchGroup = app_commands.Group(name="search", description="Search the web using various services.")
+    context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
+    installs = discord.app_commands.AppInstallationType(guild=True, user=True)
+    searchGroup = app_commands.Group(name="search", description="Search the web using various services.", allowed_contexts=context, allowed_installs=installs)
     
     # Equation Solver command (broken)
     # @searchGroup.command(name = "equation-solver", description= "Solve an equation or expression.")

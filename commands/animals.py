@@ -13,7 +13,9 @@ class animals(commands.Cog):
 
     global cat_titles, dog_titles
     
-    animalGroup = app_commands.Group(name="animals", description="See cute animals.")
+    context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
+    installs = discord.app_commands.AppInstallationType(guild=True, user=True)
+    animalGroup = app_commands.Group(name="animals", description="See cute animals.", allowed_contexts=context, allowed_installs=installs)
     
     # Cat / Dog Embed Titles
     cat_titles = ["Aww!", "Cute cat!", "Adorable!", "Meow!", "Purrfect!", "Cat!", ":3"]

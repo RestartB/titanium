@@ -8,7 +8,9 @@ class server_utils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    serverGroup = app_commands.Group(name="server", description="Server related commands.")
+    context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
+    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
+    serverGroup = app_commands.Group(name="server", description="Server related commands.", allowed_contexts=context, allowed_installs=installs)
 
     # Server Icon command
     @serverGroup.command(name = "icon", description = "Show the server's icon.")
@@ -32,7 +34,7 @@ class server_utils(commands.Cog):
             embed = discord.Embed(title = "Server has no icon!", color = Color.red())
             await interaction.edit_original_response(embed = embed, view = None)
         
-    # Server Icon command
+    # Server Info command
     @serverGroup.command(name = "info", description = "Get info about the server.")
     async def server_info(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -52,8 +54,8 @@ class server_utils(commands.Cog):
                 else:
                     memberCount += 1
             
-            memberCount = f"{memberCount} ({round((memberCount / interaction.guild.member_count * 100), 1)}% total)"
-            botCount = f"{botCount} ({round((botCount / interaction.guild.member_count * 100), 1)}% total)"
+            memberCount = f"{memberCount} ({round((memberCount / interaction.guild.member_count * 100), 1)}%)"
+            botCount = f"{botCount} ({round((botCount / interaction.guild.member_count * 100), 1)}%)"
             
             embed = discord.Embed(title = f"{interaction.guild.name} - Info", color = Color.random())
             
@@ -103,7 +105,30 @@ class server_utils(commands.Cog):
             embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed, view = None)
 
-    # Add server boost info command here
-      
+    # Server Info command
+    @serverGroup.command(name = "boosts", description = "Get info about this server's boost stats.")
+    async def server_boost(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        
+        # Send initial embed
+        embed = discord.Embed(title = "Loading...", color = Color.orange())
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        await interaction.followup.send(embed = embed)
+
+        boostAmount = interaction.guild.premium_subscription_count
+        boostLevel = interaction.guild.premium_tier
+        
+        embed = discord.Embed(title = f"{interaction.guild.name} - Info", color = Color.random())
+        
+        # Member counts
+        embed.add_field(name = "Total Boosts", value = boostAmount)
+        embed.add_field(name = "Level", value = boostLevel, inline = True)
+        #embed.add_field(name = "Boosts Needed for Next Level", value = memberCount, inline = True)
+
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        
+        # Send Embed
+        await interaction.edit_original_response(embed = embed)
+
 async def setup(bot):
     await bot.add_cog(server_utils(bot))

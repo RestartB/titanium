@@ -29,6 +29,8 @@ class song_url(commands.Cog):
             ])
     @app_commands.describe(platform_select = "Optional: select a platform to get a link for. Only works with song links.")
     @app_commands.describe(compact = "Optional: whether to display song embed in a more compact format. Defaults to false.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def song_url(self, interaction: discord.Interaction, url: str, platform_select: app_commands.Choice[str] = None, compact: bool = False):
         await interaction.response.defer()
         

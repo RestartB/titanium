@@ -9,7 +9,9 @@ class misc(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
-    funGroup = app_commands.Group(name="fun", description="Various fun commands.")
+    context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
+    installs = discord.app_commands.AppInstallationType(guild=True, user=True)
+    funGroup = app_commands.Group(name="fun", description="Various fun commands.", allowed_contexts=context, allowed_installs=installs)
     
     # 8 Ball command
     @funGroup.command(name = "8ball", description = "Get an answer from the mystical 8 ball.")
@@ -58,8 +60,6 @@ class misc(commands.Cog):
         app_commands.Choice(name="12 sides", value="12"),
         app_commands.Choice(name="20 sides", value="20"),
         ])
-    @app_commands.describe(dice = "Select how many sides you want your dice to have.")
-    @app_commands.describe(wait = "Optional: whether to add a 3 second wait for suspense. Defaults to true.")
     async def dice_roll(self, interaction: discord.Interaction, dice: app_commands.Choice[str], wait: bool = True):
         await interaction.response.defer()
 
@@ -99,6 +99,8 @@ class misc(commands.Cog):
     
     # First Message command
     @app_commands.command(name = "first-message", description = "Get the first message in a channel, uses current channel by default.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def first_message(self, interaction: discord.Interaction, channel: discord.TextChannel = None):
         await interaction.response.defer(ephemeral=True)
         
@@ -125,6 +127,8 @@ class misc(commands.Cog):
     
     # PFP command
     @app_commands.command(name = "pfp", description = "Show a user's PFP.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def pfp(self, interaction: discord.Interaction, user: discord.User):
         await interaction.response.defer()
         # Idea: set embed colour to user's banner colour'

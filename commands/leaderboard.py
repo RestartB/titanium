@@ -66,6 +66,8 @@ class leaderboard(commands.Cog):
         app_commands.Choice(name="Attachments Sent", value="attachmentCount"),
         ])
     @app_commands.checks.cooldown(1, 10)
+    @app_commands.allowed_installs(guilds=True, users=False)
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     async def leaderboard(self, interaction: discord.Interaction, sort_type: app_commands.Choice[str]):
         await interaction.response.defer()
         
@@ -141,7 +143,9 @@ class leaderboard(commands.Cog):
             embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed, view = None)
     
-    lbGroup = app_commands.Group(name="lb-control", description="Control the leaderboard.")
+    context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
+    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
+    lbGroup = app_commands.Group(name="lb-control", description="Control the leaderboard.", allowed_contexts=context, allowed_installs=installs)
 
     # Enable LB command
     @lbGroup.command(name = "enable", description = "Enable the message leaderboard.")

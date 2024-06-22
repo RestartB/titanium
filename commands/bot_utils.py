@@ -12,7 +12,9 @@ class bot_utils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    botGroup = app_commands.Group(name="bot", description="Bot related commands.")
+    context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
+    installs = discord.app_commands.AppInstallationType(guild=True, user=True)
+    botGroup = app_commands.Group(name="bot", description="Bot related commands.", allowed_contexts=context, allowed_installs=installs)
     
     # Ping command
     @botGroup.command(name = "ping", description = "Ping the bot.")
