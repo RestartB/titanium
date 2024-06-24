@@ -122,7 +122,7 @@ class server_utils(commands.Cog):
         
         # Member counts
         embed.add_field(name = "Total Boosts", value = boostAmount)
-        embed.add_field(name = "Level", value = boostLevel, inline = True)
+        embed.add_field(name = "Level", value = f"Level {boostLevel}", inline = True)
         #embed.add_field(name = "Boosts Needed for Next Level", value = memberCount, inline = True)
 
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
