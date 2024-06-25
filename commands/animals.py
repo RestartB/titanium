@@ -108,7 +108,7 @@ class animals(commands.Cog):
             
             embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
             
-            await interaction.edit_original_response(file=file, embed = embed)
+            await interaction.edit_original_response(attachments=[file], embed = embed)
         except Exception:
             embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed, file = None)
