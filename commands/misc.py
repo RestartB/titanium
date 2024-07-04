@@ -60,6 +60,8 @@ class misc(commands.Cog):
         app_commands.Choice(name="12 sides", value="12"),
         app_commands.Choice(name="20 sides", value="20"),
         ])
+    @app_commands.describe(dice = "Select from a range of dices.")
+    @app_commands.describe(dice = "Optional: whether to wait before getting a response. Defaults to true.")
     async def dice_roll(self, interaction: discord.Interaction, dice: app_commands.Choice[str], wait: bool = True):
         await interaction.response.defer()
 
@@ -71,28 +73,12 @@ class misc(commands.Cog):
         userValue = int(dice.value)
         
         value = random.randint(1, userValue)
-        diceDots = ""
-        
-        dotFullAmount = value // 3
-        
-        for i in range(dotFullAmount):
-            if diceDots == "":
-                diceDots += ". . ."
-            else:
-                diceDots += "\n. . ."
-        
-        for i in range(dotFullAmount % 3):
-            if diceDots == "":
-                diceDots += f". "
-            else:
-                diceDots += f"\n. "
         
         if wait == True:        
             await asyncio.sleep(3)
 
-        embed = discord.Embed(title = f"Dice Roll - {dice.name}", color = Color.random())
-        embed.add_field(name = "Dots", value = diceDots, inline = False)
-        embed.add_field(name = "Value", value = value)
+        # Send Embed
+        embed = discord.Embed(title = f"Dice Roll - {dice.name}", description=value, color = Color.random())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
 
         await interaction.edit_original_response(embed = embed)
