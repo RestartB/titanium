@@ -78,10 +78,11 @@ class reviewCom(commands.Cog):
                     for item in self.pages[self.page]:
                         if item[0]["id"] == 0:
                             reviewContent = item[0]["comment"]
-                            reviewTimestamp = item[0]["timestamp"]
                             
                             embed.add_field(name = "System", value = reviewContent, inline = False)
                         else:
+                            reviewTimestamp = item[0]["timestamp"]
+                            
                             # Handle strings being too long
                             if len(item[0]["comment"]) > 1024:
                                 reviewContent = item[0]["comment"][:1021] + "..."
@@ -112,13 +113,15 @@ class reviewCom(commands.Cog):
                     
                             embed.add_field(name = "System", value = reviewContent, inline = False)
                         else:
+                            reviewTimestamp = item[0]["timestamp"]
+                            
                             # Handle strings being too long
                             if len(item[0]["comment"]) > 1024:
                                 reviewContent = item[0]["comment"][:1021] + "..."
                             else:
                                 reviewContent = item[0]["comment"]
                             
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']}", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
 
                             i += 1
 
@@ -136,13 +139,15 @@ class reviewCom(commands.Cog):
                         
                         embed.add_field(name = "System", value = reviewContent, inline = False)
                     else:
+                        reviewTimestamp = item[0]["timestamp"]
+                            
                         # Handle strings being too long
                         if len(item[0]["comment"]) > 1024:
                             reviewContent = item[0]["comment"][:1021] + "..."
                         else:
                             reviewContent = item[0]["comment"]
                         
-                        embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']}", value = reviewContent, inline = False)
+                        embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
 
                         i += 1
                 
