@@ -60,7 +60,7 @@ class reviewCom(commands.Cog):
             
             class pageView(View):
                 def __init__(self, pages):
-                    super().__init__()
+                    super().__init__(timeout = 43200)
                     self.page = 0
                     self.pages = pages
             
