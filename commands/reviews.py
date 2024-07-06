@@ -78,6 +78,7 @@ class reviewCom(commands.Cog):
                     for item in self.pages[self.page]:
                         if item[0]["id"] == 0:
                             reviewContent = item[0]["comment"]
+                            reviewTimestamp = item[0]["timestamp"]
                             
                             embed.add_field(name = "System", value = reviewContent, inline = False)
                         else:
@@ -87,7 +88,7 @@ class reviewCom(commands.Cog):
                             else:
                                 reviewContent = item[0]["comment"]
                             
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']}", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
 
                             i += 1
 
