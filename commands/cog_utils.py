@@ -8,8 +8,7 @@ class cog_utils(commands.Cog):
         self.bot = bot
 
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=False)
-    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
-    cogsGroup = app_commands.Group(name="cogs", description="Control cogs. (admin only)", allowed_contexts=context, allowed_installs=installs)
+    cogsGroup = app_commands.Group(name="cogs", description="Control cogs. (admin only)", allowed_contexts=context)
 
     # Load cog command
     @cogsGroup.command(name = "load", description = "Load a cog.")
