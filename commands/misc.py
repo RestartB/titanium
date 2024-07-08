@@ -13,6 +13,29 @@ class misc(commands.Cog):
     installs = discord.app_commands.AppInstallationType(guild=True, user=True)
     funGroup = app_commands.Group(name="fun", description="Various fun commands.", allowed_contexts=context, allowed_installs=installs)
     
+    @funGroup.command(name = "mod", description="Pretend to run moderation commands, the target user won't be moderated.")
+    @app_commands.choices(mod_type=[
+            app_commands.Choice(name="Timeout", value="timed out"),
+            app_commands.Choice(name="Kick", value="kicked"),
+            app_commands.Choice(name="Ban", value="banned"),
+    ])
+    @app_commands.describe(mod_type = "Select the moderation action.")
+    @app_commands.describe(user = "Select the uesr for the moderation action.")
+    @app_commands.describe(duration = "Optional: enter a duration for the moderation action.")
+    @app_commands.describe(reason = "Optional: enter a reason for the moderation action.")
+    async def fakemod(self, interaction: discord.Interaction, mod_type: app_commands.Choice[str], user: discord.User, duration: str = None, reason: str = None):
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            embed = discord.Embed(title = "Alert", description=f"{user.mention} has been {mod_type.value}!", color=Color.red())
+            embed.add_field(name = "Reason", value = (reason if reason != None else "No Reason Provided"), inline = False)
+            embed.add_field(name = "Duration", value=duration, inline = False)
+
+            await interaction.followup.send(embed = embed)
+        except Exception as error:
+            embed = discord.Embed(title = "An error has occurred.", description = error, color = Color.red())
+            await interaction.followup.send(embed = embed, ephemeral = True)
+        
     # 8 Ball command
     @funGroup.command(name = "8ball", description = "Get an answer from the mystical 8 ball.")
     async def ball(self, interaction: discord.Interaction, question: str):
