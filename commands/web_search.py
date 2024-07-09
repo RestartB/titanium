@@ -75,7 +75,7 @@ class web_search(commands.Cog):
                             self.page -= 1
                         else:
                             self.page = len(self.pages) - 1
-                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", color = Color.random())
+                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
                         embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
                         embed_list.append(embed)
                         await interaction.response.edit_message(embeds = embed_list)
@@ -87,7 +87,7 @@ class web_search(commands.Cog):
                             self.page += 1
                         else:
                             self.page = 0
-                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", color = Color.random())
+                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
                         embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
                         embed_list.append(embed)
                         await interaction.response.edit_message(embeds = embed_list)
@@ -95,7 +95,7 @@ class web_search(commands.Cog):
                 embed = discord.Embed(title = "Content Warning", description = "Urban Dictionary has very little moderation and content may be inappropriate! View at your own risk.", color = Color.orange())
                 embed_list.append(embed)
                 
-                embed = discord.Embed(title = f"{item_list[0]['word']} (Urban Dictionary)", description = f"**Author: {item_list[0]['author']}**\n\n||{(item_list[0]['definition'].replace('[', '')).replace(']', '')}||", color = Color.random())
+                embed = discord.Embed(title = f"{item_list[0]['word']} (Urban Dictionary)", description = f"**Author: {item_list[0]['author']}**\n\n||{(item_list[0]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
                 embed.set_footer(text = f"Requested by {interaction.user.name} - Page 1/{len(item_list)}", icon_url = interaction.user.avatar.url)
                 embed_list.append(embed)
                 
