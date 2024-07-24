@@ -107,12 +107,15 @@ class web_search(commands.Cog):
                 embed = discord.Embed(title = "No results found.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
-        except discord.app_commands.errors.CommandInvokeError:
-            embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
-            await interaction.edit_original_response(embed = embed, view = None)
+        except discord.errors.HTTPException as e:
+            if "automod" in str(e).lower():
+                embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies.", color = Color.red())
+                await interaction.edit_original_response(embed = embed, view = None)
+            else:
+                embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
+                await interaction.edit_original_response(embed = embed, view = None)
         except Exception:
-            embed = discord.Embed(title = "An error has occurred.", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed, view = None)
 
     # Wikipedia command
@@ -140,12 +143,15 @@ class web_search(commands.Cog):
             embed.add_field(name = "Information", value = error)
             embed.set_footer(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             await interaction.edit_original_response(embed = embed)
-        except discord.app_commands.errors.CommandInvokeError:
-            embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
-            await interaction.edit_original_response(embed = embed, view = None)
+        except discord.errors.HTTPException as e:
+            if "automod" in str(e).lower():
+                embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies.", color = Color.red())
+                await interaction.edit_original_response(embed = embed, view = None)
+            else:
+                embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
+                await interaction.edit_original_response(embed = embed, view = None)
         except Exception:
-            embed = discord.Embed(title = "An error has occurred.", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed, view = None)
 
 async def setup(bot):
