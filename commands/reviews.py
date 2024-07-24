@@ -162,9 +162,13 @@ class reviewCom(commands.Cog):
                 embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
             
                 await interaction.edit_original_response(embed = embed)
-        except discord.app_commands.errors.CommandInvokeError:
-            embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
-            await interaction.edit_original_response(embed = embed, view = None)
+        except discord.errors.HTTPException as e:
+            if "automod" in str(e).lower():
+                embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies.", color = Color.red())
+                await interaction.edit_original_response(embed = embed, view = None)
+            else:
+                embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
+                await interaction.edit_original_response(embed = embed, view = None)
         except Exception:
             embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed, view = None)
