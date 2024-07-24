@@ -144,8 +144,7 @@ class leaderboard(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = None)
     
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
-    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
-    lbGroup = app_commands.Group(name="lb-control", description="Control the leaderboard.", allowed_contexts=context, allowed_installs=installs)
+    lbGroup = app_commands.Group(name="lb-control", description="Control the leaderboard.", allowed_contexts=context)
 
     # Enable LB command
     @lbGroup.command(name = "enable", description = "Enable the message leaderboard.")
