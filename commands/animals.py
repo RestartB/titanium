@@ -9,7 +9,6 @@ from pathlib import Path
 class animals(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.sandcat_files = os.listdir(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}sand-cat{self.bot.pathtype}")
 
         self.cat_titles = ["Aww!", "Cute cat!", "Adorable!", "Meow!", "Purrfect!", "Cat!", ":3"]
         self.dog_titles = ["Aww!", "Cute dog!", "Adorable!", "Woof!", "Woof woof!", "Dog!", "Bark!"]
@@ -98,17 +97,24 @@ class animals(commands.Cog):
         await interaction.followup.send(embed = embed)
         
         try:
-            target_file = random.choice(self.sandcat_files)
+            # Fetch image
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://ees4.dev/betterapi") as request:
+                    if request.status == 429:
+                        embed = discord.Embed(title = "The service has been rate limited. Try again later.", color = Color.red())
+                        await interaction.edit_original_response(embed = embed)
+                        return
+                    else:
+                        request_data = await request.json()
             
-            # Make embed, send it
-            embed = discord.Embed(title = random.choice(self.cat_titles), description = "Image credit: https://display-a.sand.cat/", color = Color.random())
-            
-            file = discord.File(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}sand-cat{self.bot.pathtype}{target_file}", filename = target_file)
-            embed.set_image(url = f"attachment://{target_file}")
-            
+            # Create and send embed
+            embed_title = random.choice(self.cat_titles)
+
+            embed = discord.Embed(title = embed_title, description="Source: https://ees4.dev/", color = Color.random())
+            embed.set_image(url = request_data["url"])
             embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-            
-            await interaction.edit_original_response(attachments=[file], embed = embed)
+
+            await interaction.edit_original_response(embed = embed)
         except Exception:
             embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed, file = None)
