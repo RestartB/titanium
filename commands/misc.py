@@ -4,6 +4,7 @@ from discord.ext import commands
 from discord.ui import View
 import asyncio
 import random
+import aiohttp
 
 class misc(commands.Cog):
     def __init__(self, bot):
@@ -73,6 +74,27 @@ class misc(commands.Cog):
 
         await interaction.followup.send(embed = embed)
     
+    # 8 Ball command
+    @funGroup.command(name = "github-roast", description = "Generate a random GitHub account roast.")
+    async def ran_num(self, interaction: discord.Interaction, username: str):
+        await interaction.response.defer()
+
+        embed = discord.Embed(title = "Loading...", color = Color.orange())
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+
+        await interaction.followup.send(embed = embed)
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.requests.post(url="https://github-roast.pages.dev/llama", json={"username": "restartb", "language": "english"}) as request:
+                    embed = discord.Embed(title=f"AI GitHub Roast: {username}", description=await request.json()["roast"], color=Color.random())
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+
+                    await interaction.edit_original_response(embed=embed)
+        except Exception:
+            embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
+            await interaction.edit_original_response(embed = embed)
+
     # 8 Ball command
     @funGroup.command(name = "dice", description = "Roll the dice.")
     @app_commands.choices(dice=[
