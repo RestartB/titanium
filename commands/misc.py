@@ -14,6 +14,9 @@ class misc(commands.Cog):
     installs = discord.app_commands.AppInstallationType(guild=True, user=True)
     funGroup = app_commands.Group(name="fun", description="Various fun commands.", allowed_contexts=context, allowed_installs=installs)
     
+    # --- Fun Commands --- #
+    
+    # Fake Mod command
     @funGroup.command(name = "mod", description="Pretend to run moderation commands, the target user won't be moderated.")
     @app_commands.choices(mod_type=[
             app_commands.Choice(name="Timeout", value="timed out"),
@@ -64,7 +67,7 @@ class misc(commands.Cog):
 
         await interaction.edit_original_response(embed = embed)
     
-    # 8 Ball command
+    # Random Number command
     @funGroup.command(name = "random-num", description = "Get a random number.")
     async def ran_num(self, interaction: discord.Interaction, min: int, max: int):
         await interaction.response.defer()
@@ -74,8 +77,8 @@ class misc(commands.Cog):
 
         await interaction.followup.send(embed = embed)
     
-    # 8 Ball command
-    @funGroup.command(name = "github-roast", description = "Generate a random GitHub account roast.")
+    # GitHub Roast command
+    @funGroup.command(name = "github-roast", description = "Generate a random GitHub account roast. - https://github-roast.pages.dev")
     async def ran_num(self, interaction: discord.Interaction, username: str):
         await interaction.response.defer()
 
@@ -88,14 +91,14 @@ class misc(commands.Cog):
             async with aiohttp.ClientSession() as session:
                 async with session.post(url="https://github-roast.pages.dev/llama", json={"username": username, "language": "english"}) as request:
                     embed = discord.Embed(title=f"AI GitHub Roast: {username}", description=(await request.json())["roast"], color=Color.random())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name} - https://github-roast.pages.dev", icon_url = interaction.user.avatar.url)
 
                     await interaction.edit_original_response(embed=embed)
         except Exception:
             embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed)
 
-    # 8 Ball command
+    # Dice command
     @funGroup.command(name = "dice", description = "Roll the dice.")
     @app_commands.choices(dice=[
         app_commands.Choice(name="4 sides", value="4"),
@@ -127,6 +130,8 @@ class misc(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
 
         await interaction.edit_original_response(embed = embed)
+
+    # --- Misc Utility Commands --- #
     
     # First Message command
     @app_commands.command(name = "first-message", description = "Get the first message in a channel, uses current channel by default.")
@@ -167,8 +172,6 @@ class misc(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.avatar.url)
         # Send Embed
         await interaction.followup.send(embed = embed)
-    
-    
         
 async def setup(bot):
     await bot.add_cog(misc(bot))
