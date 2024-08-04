@@ -94,6 +94,9 @@ class misc(commands.Cog):
                     embed.set_footer(text = f"Requested by {interaction.user.name} - https://github-roast.pages.dev", icon_url = interaction.user.avatar.url)
 
                     await interaction.edit_original_response(embed=embed)
+        except KeyError:
+            embed = discord.Embed(title = "Error", description = "No roast was generated. Does the user exist?", color = Color.red())
+            await interaction.edit_original_response(embed = embed)
         except Exception:
             embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed)
