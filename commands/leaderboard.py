@@ -370,11 +370,12 @@ class leaderboard(commands.Cog):
         description += "\n\n-User Mention\n-Message Count\n-Word Count\n-Attachment Count\n-Server ID"
         description += "Message content is temporarily stored while word count is processed. "
         description += "A list of attachments in the target message is also temporarily stored, so we can work out how many attachments are in your message. "
-        description += "Message content and attachment data can not be viewed at any point during the tracking process, and is not saved after it has been processed."
+        description += "Message content and attachment data can not be viewed at any point during the tracking process, and is deleted immediately after it has been processed."
         description += "The leaderboard does not contain any sensitive information, such as:"
         description += "\n\n-User PFP\n-Message Content\n-Attachment Data"
         
         embed = discord.Embed(title = title, description = description)
+        embed.add_field(name = "Opting Out", value="If you wish to opt out, use the following commands:\n**/lb-control opt-out - to opt out\n**/lb-control opt-in** - to opt back in")
         await interaction.followup.send(embed = embed, ephemeral = True)
         
 async def setup(bot):
