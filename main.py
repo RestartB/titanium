@@ -119,6 +119,7 @@ async def on_ready():
                 pass
             else:
                 # We load it into the bot
+                print(f"[INIT] Loading normal cog: {filename}...")
                 await bot.load_extension(f"commands.{filename[:-3]}")
                 print(f"[INIT] Loaded normal cog: {filename}")
     
@@ -136,6 +137,7 @@ async def on_ready():
                     pass
                 else:
                     # We load it into the bot
+                    print(f"[INIT] Loading private cog: {filename}...")
                     await bot.load_extension(f"commands_private.{filename[:-3]}")
                     print(f"[INIT] Loaded private cog: {filename}")
 
