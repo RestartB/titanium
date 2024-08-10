@@ -60,10 +60,16 @@ class reviewCom(commands.Cog):
             
             class pageView(View):
                 def __init__(self, pages):
-                    super().__init__(timeout = 43200)
+                    super().__init__(timeout = 1800)
                     self.page = 0
                     self.pages = pages
             
+                async def on_timeout(self) -> None:
+                    for item in self.children:
+                        item.disabled = True
+
+                    await self.message.edit(view=self)
+                
                 @discord.ui.button(label="<", style=discord.ButtonStyle.green, custom_id="prev")
                 async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                     if self.page > 0:
@@ -157,6 +163,8 @@ class reviewCom(commands.Cog):
                     await interaction.edit_original_response(embed = embed)
                 else:
                     await interaction.edit_original_response(embed = embed, view = pageView(pages))
+
+                    pageView.message = await interaction.original_response()
             else:
                 embed = discord.Embed(title = "review.db User Reviews", description="This user has no reviews!", color = Color.red())
                 embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)

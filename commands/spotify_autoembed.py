@@ -350,6 +350,13 @@ class spotify_autoembed(commands.Cog):
                                         delete_button = discord.ui.Button(label=f'Dismiss Embed', style=discord.ButtonStyle.red)
                                         delete_button.callback = deleteCallback
                                         view.add_item(delete_button)
+                                    
+                                    async def on_timeout(self) -> None:
+                                        for item in self.children:
+                                            if item.style != discord.ButtonStyle.url:
+                                                item.disabled = True
+
+                                        await self.message.edit(view=self)
                                 
                                     # Previous page button
                                     @discord.ui.button(label="<", style=ButtonStyle.green, custom_id="prev")

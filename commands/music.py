@@ -134,6 +134,12 @@ class music(commands.Cog):
                                 self.pages = pages
                                 google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={song_list[list_place].replace(" ", "+")}+{artist_list[list_place].replace(" ", "+")}')
                                 self.add_item(google_button)
+                            
+                            async def on_timeout(self) -> None:
+                                for item in self.children:
+                                    item.disabled = True
+
+                                await self.message.edit(view=self)
                         
                             @discord.ui.button(label="<", style=ButtonStyle.green, custom_id="prev")
                             async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -164,6 +170,8 @@ class music(commands.Cog):
                         else:
                             embed.set_footer(text = f"lrclib.net - Page 1/{len(paged_lyrics)}")
                             await interaction.edit_original_response(embed = embed, view = PaginationView(paged_lyrics))
+
+                            PaginationView.message = await interaction.original_response()
                     except AttributeError:
                         google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
                         view = View()

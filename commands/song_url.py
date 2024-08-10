@@ -522,6 +522,13 @@ class song_url(commands.Cog):
                         self.pages = pages
                         spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"])
                         self.add_item(spotify_button)
+                    
+                    async def on_timeout(self) -> None:
+                        for item in self.children:
+                            if item.style != discord.ButtonStyle.url:
+                                item.disabled = True
+
+                        await self.message.edit(view=self)
                 
                     @discord.ui.button(label="<", style=ButtonStyle.green, custom_id="prev")
                     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -560,6 +567,8 @@ class song_url(commands.Cog):
                 # Else, make embed with page buttons
                 else:
                     await interaction.edit_original_response(embed = embed, view = PlaylistPagesController(pages))
+
+                    PlaylistPagesController.message = await interaction.original_response()
             else:
                 embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)

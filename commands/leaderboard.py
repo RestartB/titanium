@@ -112,6 +112,12 @@ class leaderboard(commands.Cog):
                         super().__init__()
                         self.page = 0
                         self.pages = pages
+
+                    async def on_timeout(self) -> None:
+                        for item in self.children:
+                            item.disabled = True
+
+                        await self.message.edit(view=self)
                 
                     @discord.ui.button(label="<", style=discord.ButtonStyle.green, custom_id="prev")
                     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -140,6 +146,8 @@ class leaderboard(commands.Cog):
                     await interaction.edit_original_response(embed = embed)
                 else:
                     await interaction.edit_original_response(embed = embed, view = Leaderboard(pages))
+
+                    Leaderboard.message = await interaction.original_response()
             else:
                 embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server.", color = Color.red())
                 await interaction.edit_original_response(embed = embed)
