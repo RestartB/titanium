@@ -137,7 +137,8 @@ class music(commands.Cog):
                             
                             async def on_timeout(self) -> None:
                                 for item in self.children:
-                                    item.disabled = True
+                                    if item.style != discord.ButtonStyle.url:
+                                        item.disabled = True
 
                                 await self.message.edit(view=self)
                         
