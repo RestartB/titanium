@@ -9,8 +9,7 @@ class server_utils(commands.Cog):
         self.bot = bot
 
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
-    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
-    serverGroup = app_commands.Group(name="server", description="Server related commands.", allowed_contexts=context, allowed_installs=installs)
+    serverGroup = app_commands.Group(name="server", description="Server related commands.", allowed_contexts=context)
 
     # Server Icon command
     @serverGroup.command(name = "icon", description = "Show the server's icon.")
