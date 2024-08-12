@@ -18,7 +18,6 @@ class leaderboard(commands.Cog):
             self.connection.commit()
         
         self.optOutList = self.cursor.execute(f"SELECT userID FROM optOut;").fetchall()
-        self.optOutList = []
 
     # Refresh opt out list function
     async def refreshOptOutList(self):
@@ -63,10 +62,10 @@ class leaderboard(commands.Cog):
             print(error)
     
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
-    lbGroup = app_commands.Group(name="leaderboard", description="Control the leaderboard.", allowed_contexts=context)
+    lbGroup = app_commands.Group(name="lb-setup", description="Set up the leaderboard - server admins only.", allowed_contexts=context)
     
     # Leaderboard Command
-    @lbGroup.command(name = "view", description = "View the server message leaderboard.")
+    @app_commands.command(name = "leaderboard", description = "View the server message leaderboard.")
     @app_commands.choices(sort_type=[
         app_commands.Choice(name="Messages Sent", value="messageCount"),
         app_commands.Choice(name="Words Sent", value="wordCount"),
