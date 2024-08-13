@@ -61,9 +61,6 @@ class leaderboard(commands.Cog):
             print("Error occurred while logging message for leaderboard!")
             print(error)
     
-    context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
-    lbGroup = app_commands.Group(name="lb-setup", description="Set up the leaderboard - server admins only.", allowed_contexts=context)
-    
     # Leaderboard Command
     @app_commands.command(name = "leaderboard", description = "View the server message leaderboard.")
     @app_commands.choices(sort_type=[
@@ -155,6 +152,10 @@ class leaderboard(commands.Cog):
             embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
             await interaction.edit_original_response(embed = embed, view = None)
 
+    context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
+    perms = discord.Permissions()
+    lbGroup = app_commands.Group(name="lb-setup", description="Set up the leaderboard - server admins only.", allowed_contexts=context, default_permissions=perms)
+    
     # Enable LB command
     @lbGroup.command(name = "enable", description = "Enable the message leaderboard.")
     @app_commands.checks.has_permissions(administrator=True)
