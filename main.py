@@ -91,7 +91,7 @@ try:
     for id in bot.dev_ids_str:
         bot.dev_ids.append(int(id))
     
-    bot.loading_emoji = options_dict['loading-emoji']
+    bot.loading_emoji = str(options_dict['loading-emoji'])
 
     ## Convert Dev IDs from str to int
     # bot.blocked_ids = []
