@@ -16,7 +16,7 @@ class cog_utils(commands.Cog):
         await interaction.response.defer(ephemeral = True)
 
         if interaction.user.id in self.bot.dev_ids:
-            embed = discord.Embed(title = "Loading cog...", color = Color.orange())
+            embed = discord.Embed(title = "Loading cog...", description=f"{self.bot.loading_emoji} Loading {cog}.", color = Color.orange())
             await interaction.followup.send(embed = embed, ephemeral = True)
 
             try:
@@ -37,7 +37,7 @@ class cog_utils(commands.Cog):
         await interaction.response.defer(ephemeral = True)
 
         if interaction.user.id in self.bot.dev_ids:
-            embed = discord.Embed(title = "Unloading cog...", color = Color.orange())
+            embed = discord.Embed(title = "Unloading cog...", description=f"{self.bot.loading_emoji} Unloading {cog}.", color = Color.orange())
             await interaction.followup.send(embed = embed, ephemeral = True)
 
             try:
@@ -62,7 +62,7 @@ class cog_utils(commands.Cog):
         await interaction.response.defer(ephemeral = True)
 
         if interaction.user.id in self.bot.dev_ids:
-            embed = discord.Embed(title = "Reloading cog...", color = Color.orange())
+            embed = discord.Embed(title = "Reloading cog...", description=f"{self.bot.loading_emoji} Reloading {cog}.", color = Color.orange())
             await interaction.followup.send(embed = embed, ephemeral = True)
 
             try:
@@ -88,7 +88,7 @@ class cog_utils(commands.Cog):
         
         if interaction.user.id in self.bot.dev_ids:
             # Loading prompt
-            embed = discord.Embed(title = "Syncing tree...", color = Color.orange())
+            embed = discord.Embed(title = "Syncing tree...", description=f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
             await interaction.followup.send(embed = embed, ephemeral = True)
 
             sync = await self.bot.tree.sync()

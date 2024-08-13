@@ -33,7 +33,7 @@ class music(commands.Cog):
             search = search.lower()
 
             # Send initial embed
-            embed = discord.Embed(title = "Searching...", color = Color.orange())
+            embed = discord.Embed(title = "Searching...", description=f"{self.bot.loading_emoji} Contacting lyrics API. This may take a moment.", color = Color.orange())
             embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
             await interaction.followup.send(embed = embed)
 

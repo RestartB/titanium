@@ -37,7 +37,7 @@ class bot_utils(commands.Cog):
     async def host_info(self, interaction: discord.Interaction):
         await interaction.response.defer()
         
-        embed = discord.Embed(title = "Loading...", color = Color.random())
+        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting info...", color = Color.random())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
         

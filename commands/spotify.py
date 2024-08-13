@@ -38,7 +38,7 @@ class spotify(commands.Cog):
         options_list = []
         
         # Send initial embed
-        embed = discord.Embed(title = "Please wait...", color = Color.orange())
+        embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Searching...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
 
@@ -97,7 +97,7 @@ class spotify(commands.Cog):
                         
                         image_url = item['album']['images'][0]['url']
                         
-                        embed = discord.Embed(title = "Please wait...", color = Color.orange())
+                        embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting song...", color = Color.orange())
                         await interaction.edit_original_response(embed = embed, view = None)
                         
                         artist_string = ""
@@ -146,6 +146,7 @@ class spotify(commands.Cog):
                                 await interaction.response.defer()
                                 
                                 embed = discord.Embed(title = "Getting images...", color = Color.orange())
+                                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
                                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                                 await interaction.edit_original_response(embed = embed, view = None)
                                 
@@ -273,7 +274,7 @@ class spotify(commands.Cog):
                     async def response(interaction: discord.Interaction):
                         await interaction.response.defer()
                         
-                        embed = discord.Embed(title = "Please wait...", color = Color.orange())
+                        embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting artist info...", color = Color.orange())
                         await interaction.edit_original_response(embed = embed, view = None)
                         
                         item = result['artists']['items'][int(select.values[0])]
@@ -411,7 +412,7 @@ class spotify(commands.Cog):
                     async def response(interaction: discord.Interaction):
                         await interaction.response.defer()
                         
-                        embed = discord.Embed(title = "Please wait...", color = Color.orange())
+                        embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting album info...", color = Color.orange())
                         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                         await interaction.edit_original_response(embed = embed, view = None)
                         
@@ -478,7 +479,7 @@ class spotify(commands.Cog):
                             async def art_callback(interaction: discord.Interaction):
                                 await interaction.response.defer()
                                 
-                                embed = discord.Embed(title = "Getting images...", color = Color.orange())
+                                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
                                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                                 await interaction.edit_original_response(embed = embed, view = None)
                                 
@@ -596,7 +597,7 @@ class spotify(commands.Cog):
         
         if "spotify.link" in url:
             try:
-                embed = discord.Embed(title = "Expanding URL...", color = Color.orange())
+                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Expanding URL...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.followup.send(embed = embed)
                 
@@ -624,7 +625,7 @@ class spotify(commands.Cog):
         else:
             url_expanded = False
         
-        embed = discord.Embed(title = "Getting images...", color = Color.orange())
+        embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         if url_expanded == True:
                 await interaction.edit_original_response(embed = embed)

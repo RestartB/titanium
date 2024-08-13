@@ -79,7 +79,7 @@ class leaderboard(commands.Cog):
         pages = []
         
         # Send initial embed
-        embed = discord.Embed(title = "Loading...")
+        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting leaderboard...")
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
 
@@ -163,7 +163,7 @@ class leaderboard(commands.Cog):
     async def enable_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
-        embed = discord.Embed(title = "Enabling...", color = Color.orange())
+        embed = discord.Embed(title = "Enabling...", description=f"{self.bot.loading_emoji} Enabling the leaderboard...", color = Color.orange())
         await interaction.edit_original_response(embed = embed)
 
         try:
@@ -190,7 +190,7 @@ class leaderboard(commands.Cog):
         async def delete_callback(interaction: discord.Interaction):
             await interaction.response.defer(ephemeral = True)
 
-            embed = discord.Embed(title = "Disabling...", color = Color.orange())
+            embed = discord.Embed(title = "Disabling...", description=f"{self.bot.loading_emoji} Disabling the leaderboard...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
             try:
@@ -223,7 +223,7 @@ class leaderboard(commands.Cog):
         async def delete_callback(interaction: discord.Interaction):
             await interaction.response.defer(ephemeral = True)
 
-            embed = discord.Embed(title = "Opting out...", color = Color.orange())
+            embed = discord.Embed(title = "Opting out...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
             try:
@@ -265,7 +265,7 @@ class leaderboard(commands.Cog):
         async def delete_callback(interaction: discord.Interaction):
             await interaction.response.defer(ephemeral = True)
 
-            embed = discord.Embed(title = "Opting in...", color = Color.orange())
+            embed = discord.Embed(title = "Opting in...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
             try:
@@ -311,7 +311,7 @@ class leaderboard(commands.Cog):
             async def delete_callback(interaction: discord.Interaction):
                 await interaction.response.defer(ephemeral = True)
 
-                embed = discord.Embed(title = "Resetting...", color = Color.orange())
+                embed = discord.Embed(title = "Resetting...", description=f"{self.bot.loading_emoji} Resetting the leaderboard...", color = Color.orange())
                 await interaction.edit_original_response(embed = embed, view = None)
 
                 try:
@@ -349,7 +349,7 @@ class leaderboard(commands.Cog):
             async def delete_callback(interaction: discord.Interaction):
                 await interaction.response.defer(ephemeral = True)
 
-                embed = discord.Embed(title = "Removing...", color = Color.orange())
+                embed = discord.Embed(title = "Removing...", description=f"{self.bot.loading_emoji} Target: {user.mention}", color = Color.orange())
                 await interaction.edit_original_response(embed = embed, view = None)
 
                 try:

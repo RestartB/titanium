@@ -17,7 +17,7 @@ class server_utils(commands.Cog):
         await interaction.response.defer()
 
         # Send initial embed
-        embed = discord.Embed(title = "Loading...", color = Color.orange())
+        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Grabbing server icon...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
 
@@ -39,7 +39,7 @@ class server_utils(commands.Cog):
         await interaction.response.defer()
         
         # Send initial embed
-        embed = discord.Embed(title = "Loading...", color = Color.orange())
+        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting server info...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
         
@@ -105,12 +105,12 @@ class server_utils(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = None)
 
     # Server Info command
-    @serverGroup.command(name = "boosts", description = "Get info about this server's boost stats.")
+    @serverGroup.command(name = "boosts", description = "Beta: get info about this server's boost stats.")
     async def server_boost(self, interaction: discord.Interaction):
         await interaction.response.defer()
         
         # Send initial embed
-        embed = discord.Embed(title = "Loading...", color = Color.orange())
+        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting boost info. This command is in beta and may not function correctly.", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
 

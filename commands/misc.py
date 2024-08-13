@@ -83,7 +83,7 @@ class misc(commands.Cog):
     async def ran_num(self, interaction: discord.Interaction, username: str):
         await interaction.response.defer()
 
-        embed = discord.Embed(title = "Loading...", color = Color.orange())
+        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting your roast...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
 
         await interaction.followup.send(embed = embed)
@@ -145,7 +145,7 @@ class misc(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         
         # Send initial embed
-        embed = discord.Embed(title = "Loading...", color = Color.orange())
+        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Finding the first message. This may take a moment.", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed, ephemeral = True)
 

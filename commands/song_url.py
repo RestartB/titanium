@@ -43,7 +43,7 @@ class song_url(commands.Cog):
                 try:
                     processed = True
 
-                    embed = discord.Embed(title = "Communicating with song.link...", description = "This may take a moment.", color = Color.orange())
+                    embed = discord.Embed(title = "Communicating with song.link...", description = f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                     await interaction.followup.send(embed = embed)
 
@@ -64,7 +64,7 @@ class song_url(commands.Cog):
                         await interaction.edit_original_response(embed = embed)
                         return
                     # Unknown Error
-                    if not(request_status <= 200 or request_status >= 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
+                    if not(request_status < 200 or request_status > 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
                         embed = discord.Embed(title = "An error has occurred.", description = "An error has occurred while searching the URL.\n\n**Solutions:**\n1. Check the URL is a valid song URL.\n2. Try again later.", color = Color.red())
                         embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
                         embed.add_field(name = "Error Code from song.link", value = request_status)
@@ -123,7 +123,7 @@ class song_url(commands.Cog):
             # Expand spotify.link URL if present
             if "spotify.link" in url:
                 try:
-                    embed = discord.Embed(title = "Expanding URL...", color = Color.orange())
+                    embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Expanding URL...", color = Color.orange())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                     await interaction.edit_original_response(embed = embed)
                     
@@ -237,7 +237,7 @@ class song_url(commands.Cog):
                 
                 image_url = result_info["images"][0]["url"]
 
-                embed = discord.Embed(title = "Parsing info...", color = Color.orange())
+                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Parsing info...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
                 
@@ -334,7 +334,7 @@ class song_url(commands.Cog):
                 # Remove file when done
                 os.remove(f'{filename}.jpg')
                 
-                embed = discord.Embed(title = "Parsing info...", color = Color.orange())
+                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Parsing info...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
                 
@@ -425,7 +425,7 @@ class song_url(commands.Cog):
                 pages = []
                 pageStr = ""
 
-                embed = discord.Embed(title = "Getting images...", color = Color.orange())
+                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
                 
@@ -451,7 +451,7 @@ class song_url(commands.Cog):
                 # Remove file when done
                 os.remove(f'{filename}.jpg')
 
-                embed = discord.Embed(title = "Parsing info...", color = Color.orange())
+                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Parsing info...", color = Color.orange())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
                 
