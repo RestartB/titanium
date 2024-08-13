@@ -36,7 +36,7 @@ class misc(commands.Cog):
             embed.add_field(name = "Reason", value = (reason if reason != None else "No Reason Provided"), inline = False)
             embed.add_field(name = "Duration", value=duration, inline = False)
 
-            await interaction.followup.send(embed = embed)
+            await interaction.followup.send(embed = embed, ephemeral=False)
         except Exception as error:
             embed = discord.Embed(title = "An error has occurred.", description = error, color = Color.red())
             await interaction.followup.send(embed = embed, ephemeral = True)
