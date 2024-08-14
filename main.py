@@ -16,7 +16,7 @@ print("https://github.com/restartb/titaniumcore\n")
 path = os.getcwd()
 
 # Logging handler
-handler = logging.FileHandler(filename='discord_critical.log', encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename='titanium.log', encoding='utf-8', mode='w')
 
 # Set path type
 if f"{os.name}" == "nt":
@@ -179,7 +179,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
 
 try:
     # Run bot with token
-    bot.run(bot.token, log_handler=handler, log_level=logging.CRITICAL)
+    bot.run(bot.token, log_handler=handler, log_level=logging.ERROR)
 except discord.errors.PrivilegedIntentsRequired:
     print("[FATAL] Bot is missing the Message Content and/or Server Members intent! Please enable it in the Discord Developers web portal. Exiting...")
     exit()
