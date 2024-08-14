@@ -1,18 +1,29 @@
+# Contents / Assets
 /content
 /assets
+# Commands
 /commands/__pycache__
 /commands_private
-/.vscode
+/utils/__pycache__
+
+# Testing
 /test
-.cache
+/.vscode
+TEST_*.py
 main-pp.py
-*.json
-*.db
-*.log
+
+# IDEs
 config.cfg
 .replit
 *.lock
 *.toml
-TEST_*.py
-/venv
 .idea
+
+# venv
+/venv
+
+# Misc
+.cache
+*.json
+*.db
+*.log
