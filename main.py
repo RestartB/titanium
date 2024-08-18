@@ -73,8 +73,7 @@ try:
     
     bot.dev_ids_str = options_dict['owner-ids'].split(",")
     bot.support_server = options_dict['support-server']
-    bot.cog_blacklist = options_dict['cog-blacklist']
-    # bot.blocked_ids_str = options_dict['user-blacklist'].split(",")
+    bot.control_server = options_dict['control-guild']
 
     if options_dict['cog-dir'] == '':
         bot.cog_dir = f"{path}{pathtype}commands{pathtype}"
@@ -116,14 +115,9 @@ async def on_ready():
     for filename in os.listdir(bot.cog_dir):
         # Determine if file is a python file
         if filename.endswith("py"):
-            # Don't load it if it's in the blocklist (untested)
-            if filename[:-3] in bot.cog_blacklist:
-                pass
-            else:
-                # We load it into the bot
-                print(f"[INIT] Loading normal cog: {filename}...")
-                await bot.load_extension(f"commands.{filename[:-3]}")
-                print(f"[INIT] Loaded normal cog: {filename}")
+            print(f"[INIT] Loading normal cog: {filename}...")
+            await bot.load_extension(f"commands.{filename[:-3]}")
+            print(f"[INIT] Loaded normal cog: {filename}")
     
     print("[INIT] Loaded normal cogs.\n")
     
@@ -134,14 +128,10 @@ async def on_ready():
         for filename in os.listdir(f"{path}{pathtype}commands_private{pathtype}"):
             # Determine if file is a python file
             if filename.endswith("py"):
-                # Don't load it if it's in the blocklist
-                if filename[:-3] in bot.cog_blacklist:
-                    pass
-                else:
-                    # We load it into the bot
-                    print(f"[INIT] Loading private cog: {filename}...")
-                    await bot.load_extension(f"commands_private.{filename[:-3]}")
-                    print(f"[INIT] Loaded private cog: {filename}")
+                # We load it into the bot
+                print(f"[INIT] Loading private cog: {filename}...")
+                await bot.load_extension(f"commands_private.{filename[:-3]}")
+                print(f"[INIT] Loaded private cog: {filename}")
 
         print("[INIT] Loaded private cogs.\n")
     else:
@@ -149,9 +139,17 @@ async def on_ready():
 
     # Sync tree if sync on start is enabled
     if bot.sync_on_start == True:
-        print("[INIT] Syncing command tree...")
+        # Global Sync
+        print("[INIT] Syncing global command tree...")
         sync = await bot.tree.sync()
-        print(f"[INIT] Command tree synced. {len(sync)} commands loaded.")
+        print(f"[INIT] Global command tree synced. {len(sync)} commands loaded.")
+        
+        # Control Server Sync
+        print("[INIT] Syncing control server command tree...")
+        guild = bot.get_guild(1213954608632700989)
+        bot.tree.copy_global_to(guild=guild)
+        sync = await bot.tree.sync(guild=guild)
+        print(f"[INIT] Control server command tree synced. {len(sync)} commands loaded.")
     else:
         print("[INIT] Skipping command tree sync. Please manually sync commands later.")
 
