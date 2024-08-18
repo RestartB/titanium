@@ -64,7 +64,7 @@ class song_url(commands.Cog):
                         await interaction.edit_original_response(embed = embed)
                         return
                     # Unknown Error
-                    if not(request_status < 200 or request_status > 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
+                    if not(request_status <= 200 or request_status >= 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
                         embed = discord.Embed(title = "An error has occurred.", description = "An error has occurred while searching the URL.\n\n**Solutions:**\n1. Check the URL is a valid song URL.\n2. Try again later.", color = Color.red())
                         embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
                         embed.add_field(name = "Error Code from song.link", value = request_status)
