@@ -4,15 +4,17 @@ import discord.ext
 from discord.ext import commands
 import os
 import utils.return_ctrlguild as ctrl
+import asyncio
 
 class cog_utils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=False)
+    perms = discord.Permissions()
 
     target = ctrl.return_ctrlguild()
-    adminGroup = app_commands.Group(name="cogs", description="Control the bot. (admin only)", allowed_contexts=context, guild_ids=[target])
+    adminGroup = app_commands.Group(name="cogs", description="Control the bot. (admin only)", allowed_contexts=context, guild_ids=[target], default_permissions=perms)
     
     # Load cog command
     @adminGroup.command(name = "load", description = "Load a cog.")
@@ -95,7 +97,17 @@ class cog_utils(commands.Cog):
             embed = discord.Embed(title = "Syncing tree...", description=f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
             await interaction.followup.send(embed = embed, ephemeral = True)
 
+            # Global Sync
+            print("[INIT] Syncing global command tree...")
             sync = await self.bot.tree.sync()
+            print(f"[INIT] Global command tree synced.")
+            
+            # Control Server Sync
+            print("[INIT] Syncing control server command tree...")
+            guild = self.bot.get_guild(1213954608632700989)
+            self.bot.tree.copy_global_to(guild=guild)
+            sync = await self.bot.tree.sync(guild=guild)
+
             embed = discord.Embed(title =  "Success!", description = f"Tree synced. {len(sync)} commands loaded.", color = Color.green())
             await interaction.edit_original_response(embed = embed)
         else:
@@ -128,6 +140,19 @@ class cog_utils(commands.Cog):
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
             await interaction.followup.send(embed = embed, ephemeral = True)
+    
+    # Send Message command
+    @adminGroup.command(name = "error-test", description = "Admin Only: test the error handler. This WILL cause an error to occur!")
+    async def send_message(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral = True)
+
+        embed = discord.Embed(title=f"Error Test", description="Error in 3 seconds...")
+        
+        await interaction.followup.send(embed=embed)
+
+        await asyncio.sleep(3)
+
+        raise Exception
 
 async def setup(bot):
     await bot.add_cog(cog_utils(bot))

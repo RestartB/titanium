@@ -32,8 +32,7 @@ class spotify(commands.Cog):
             ])
     @app_commands.describe(search_type = "The type of media you are searching for. Supported types are song, artist and album.")
     @app_commands.describe(search = "What you are searching for.")
-    @app_commands.describe(compact = "Optional: whether to display song embed in a more compact format. Defaults to false.")
-    async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str, compact: bool = False):
+    async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str):
         await interaction.response.defer()
 
         options_list = []
@@ -99,7 +98,7 @@ class spotify(commands.Cog):
                         embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting song...", color = Color.orange())
                         await interaction.edit_original_response(embed = embed, view = None)
 
-                        await elements.song(self=self, item=item, interaction=interaction, compact=compact)
+                        await elements.song(self=self, item=item, interaction=interaction)
                 # Set up list with provided values
                 select.callback = response
                 view = View()

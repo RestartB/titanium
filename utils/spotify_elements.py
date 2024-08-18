@@ -1,20 +1,23 @@
 import discord
 from discord import Color
-from discord.ui import View, Select
+from discord.ui import View
 from urllib.parse import quote
 import random
 import aiohttp
 import string
 from colorthief import ColorThief
 import os
+import spotipy
 
 # Song parse function
-async def song(self, item: dict, interaction: discord.Interaction, compact: bool):
+async def song(self, item: spotipy.Spotify.track, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None):
     """
     Handle Spotify song embeds.
     """
        
     image_url = item['album']['images'][0]['url']
+
+    artist_img = self.sp.artist(item["artists"][0]["external_urls"]["spotify"])["images"][0]["url"]
     
     artist_string = ""
     for artist in item['artists']:
@@ -24,13 +27,10 @@ async def song(self, item: dict, interaction: discord.Interaction, compact: bool
             artist_string += f", {artist['name']}"
     
     # Set up new embed
-    if item['explicit'] == True:
-        embed = discord.Embed(title = f"{item['name']} (Explicit)", color = Color.from_rgb(r = 255, g = 255, b = 255))
-    else:
-        embed = discord.Embed(title = item['name'], color = Color.from_rgb(r = 255, g = 255, b = 255))
+    embed = discord.Embed(title = f"{item['name']}{' (Explicit)' if item['explicit'] else ''}", description=f"on **[{str(item['album']['name']).replace('*', '')}](<{item['album']['external_urls']["spotify"]}>)**", color = Color.from_rgb(r = 255, g = 255, b = 255))
+    
     embed.set_thumbnail(url = item['album']['images'][0]['url'])
-    embed.add_field(name = "Artists", value = artist_string, inline = compact)
-    embed.add_field(name = "Album", value = item['album']['name'], inline = compact)
+    embed.set_author(name = artist_string, url=item["artists"][0]["external_urls"]["spotify"], icon_url=artist_img)
     embed.set_footer(text = "Getting colour information...")
     
     # Define View
@@ -49,6 +49,11 @@ async def song(self, item: dict, interaction: discord.Interaction, compact: bool
 
         view = View(timeout=300)
 
+        if not(add_button_url == None or add_button_text == None):
+            # Add additional button                
+            add_button = discord.ui.Button(label=add_button_text, style=discord.ButtonStyle.url, url=add_button_url, row = 1)
+            view.add_item(add_button)
+        
         # Add song.link button                
         songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{item['external_urls']['spotify']}", row = 1)
         view.add_item(songlink_button)
@@ -159,7 +164,7 @@ async def song(self, item: dict, interaction: discord.Interaction, compact: bool
     await interaction.edit_original_response(embed = embed)
 
 # Artist parse function
-async def artist(item: dict, top_tracks: dict, interaction: discord.Interaction):
+async def artist(item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify.artist_top_tracks, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None):
     """
     Handle Spotify artist embeds.
     """
@@ -206,6 +211,11 @@ async def artist(item: dict, top_tracks: dict, interaction: discord.Interaction)
 
         view = View(timeout=300)
 
+        if not(add_button_url == None or add_button_text == None):
+            # Add additional button                
+            add_button = discord.ui.Button(label=add_button_text, style=discord.ButtonStyle.url, url=add_button_url, row = 1)
+            view.add_item(add_button)
+        
         # Add Search on Google button
         google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}', row = 1)
         view.add_item(google_button)
@@ -255,7 +265,7 @@ async def artist(item: dict, top_tracks: dict, interaction: discord.Interaction)
     await interaction.edit_original_response(embed = embed)
 
 # Album parse function
-async def album(self, item: dict, interaction: discord.Interaction):
+async def album(self, item: spotipy.Spotify.album, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None):
     """
     Handle Spotify album embeds.
     """
@@ -307,6 +317,11 @@ async def album(self, item: dict, interaction: discord.Interaction):
 
         view = View()
 
+        if not(add_button_url == None or add_button_text == None):
+            # Add additional button                
+            add_button = discord.ui.Button(label=add_button_text, style=discord.ButtonStyle.url, url=add_button_url, row = 1)
+            view.add_item(add_button)
+        
         # Add song.link button                
         songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{item['external_urls']['spotify']}", row = 1)
         view.add_item(songlink_button)

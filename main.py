@@ -142,14 +142,14 @@ async def on_ready():
         # Global Sync
         print("[INIT] Syncing global command tree...")
         sync = await bot.tree.sync()
-        print(f"[INIT] Global command tree synced. {len(sync)} commands loaded.")
+        print(f"[INIT] Global command tree synced.")
         
         # Control Server Sync
         print("[INIT] Syncing control server command tree...")
         guild = bot.get_guild(1213954608632700989)
         bot.tree.copy_global_to(guild=guild)
         sync = await bot.tree.sync(guild=guild)
-        print(f"[INIT] Control server command tree synced. {len(sync)} commands loaded.")
+        print(f"[INIT] Control server command tree synced. {len(sync)} commands total.")
     else:
         print("[INIT] Skipping command tree sync. Please manually sync commands later.")
 
@@ -174,6 +174,10 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
         msg = await interaction.followup.send(embed = embed, ephemeral = True)
         await asyncio.sleep(5)
         await msg.delete()
+    else:
+        embed = discord.Embed(title = "Unexpected Error", description = "An unexpected error has occurred. Try again later. Info has been sent to the bot owner.", color = Color.red())
+        msg = await interaction.edit_original_response(embed = embed)
+        print(error)
 
 try:
     # Run bot with token

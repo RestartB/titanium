@@ -10,6 +10,7 @@ import aiohttp
 import string
 from colorthief import ColorThief
 import os
+import utils.spotify_elements as elements
 
 class song_url(commands.Cog):
     def __init__(self, bot):
@@ -21,17 +22,9 @@ class song_url(commands.Cog):
     @app_commands.command(name = "song-url", description = "Get info about a song link.")
     @app_commands.describe(url = "The target URL. Run /song-link-help for supported link types.")
     @app_commands.checks.cooldown(1, 15)
-    @app_commands.choices(platform_select=[
-            app_commands.Choice(name="Amazon Music", value="amazonMusic"),
-            app_commands.Choice(name="Apple Music", value="appleMusic"),
-            app_commands.Choice(name="Deezer", value="deezer"),
-            app_commands.Choice(name="YouTube", value="youtube"),
-            ])
-    @app_commands.describe(platform_select = "Optional: select a platform to get a link for. Only works with song links.")
-    @app_commands.describe(compact = "Optional: whether to display song embed in a more compact format. Defaults to false.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def song_url(self, interaction: discord.Interaction, url: str, platform_select: app_commands.Choice[str] = None, compact: bool = False):
+    async def song_url(self, interaction: discord.Interaction, url: str, platform_select: app_commands.Choice[str] = None):
         await interaction.response.defer()
         
         artist_string = ""
@@ -151,82 +144,12 @@ class song_url(commands.Cog):
             if "track" in url:
                 # Get info and links
                 result = self.sp.track(url)
-                image_url = result["album"]["images"][0]["url"]
-
-                # Create embed
-                if result['explicit'] == True:
-                    embed = discord.Embed(title = f"{result['name']} (Explicit)", color = Color.from_rgb(r = 255, g = 255, b = 255))
-                else:
-                    embed = discord.Embed(title = f"{result['name']}", color = Color.from_rgb(r = 255, g = 255, b = 255))
-
-                # Generate artist string
-                for artist in result['artists']:
-                    if artist_string == "":
-                        artist_string = artist['name'].replace('*', '-')
-                    else:
-                        artist_string = f"{artist_string}, {artist['name']}".replace('*', '-')
                 
-                # Add info to embed
-                embed.add_field(name = "Artists", value = artist_string, inline = compact)
-                embed.add_field(name = "Album", value = result['album']["name"], inline = compact)
-                embed.set_thumbnail(url = result["album"]["images"][0]["url"])
-                embed.set_footer(text = "Getting colour information...")
-
-                view = View()
-                            
-                # Work out song duration
-                seconds, result['duration_ms'] = divmod(result['duration_ms'], 1000)
-                minutes, seconds = divmod(seconds, 60)
-
-                # Add Open in Spotify button
-                spotify_button = discord.ui.Button(label=f'Play on Spotify ({int(minutes):02d}:{int(seconds):02d})', style=discord.ButtonStyle.url, url=result["external_urls"]["spotify"], row = 0)
-                view.add_item(spotify_button)
-
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
-                    ogservice_button = discord.ui.Button(label=platform, style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_api]['url'], row = 0)
-                    view.add_item(ogservice_button)
-
-                # Add Target Platform button when selected platform is not the same as OG link
-                if platform_select != None:
-                    if platform_select.value != platform_api:
-                        usrservice_button = discord.ui.Button(label=f"Play on {platform_select.name}", style=discord.ButtonStyle.url, url=request_data['linksByPlatform'][platform_select.value]['url'], row = 0)
-                        view.add_item(usrservice_button)
-
-                # Add song.link button
-                songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 1)
-                view.add_item(songlink_button)
-
-                # Add Search on Google button
-                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
-                view.add_item(google_button)
-                
-                # Send new embed
-                await interaction.edit_original_response(embed = embed, view = view)
-
-                # Generate random filename
-                letters = string.ascii_lowercase
-                filename = ''.join(random.choice(letters) for i in range(8))
-
-                # Save image
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
-                        file = open(f'{filename}.jpg', 'wb')
-                        async for chunk in request.content.iter_chunked(10):
-                            file.write(chunk)
-                        file.close()
-                        
-                # Get dominant colour for embed
-                color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
-
-                # Remove file when done
-                os.remove(f'{filename}.jpg')
-
-                embed.set_footer(text = f"Requested by {interaction.user.name} - Assisted by song.link", icon_url = interaction.user.avatar.url)
-                embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
-
-                await interaction.edit_original_response(embed = embed)
+                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=request_data['linksByPlatform'][platform_api]['url'], add_button_text=platform)
+                else:
+                    await elements.song(self=self, item=result, interaction=interaction)
             # Artist URL
             elif "artist" in url:
                 # Fetch artist info
@@ -235,181 +158,13 @@ class song_url(commands.Cog):
                 # Fetch artist top songs
                 result_top_tracks = self.sp.artist_top_tracks(url)
                 
-                image_url = result_info["images"][0]["url"]
-
-                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Parsing info...", color = Color.orange())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.edit_original_response(embed = embed)
-                
-                embed = discord.Embed(title = f"{result_info['name']}", color = Color.from_rgb(r = 255, g = 255, b = 255))
-                embed.add_field(name = "Followers", value = f"{result_info['followers']['total']:,}", inline = False)
-                embed.set_thumbnail(url = result_info["images"][0]["url"])
-                embed.set_footer(text = "Getting colour information...")
-                
-                topsong_string = ""
-                for i in range(0,5):
-                    artist_string = ""
-                    for artist in result_top_tracks['tracks'][i]['artists']:
-                        if artist_string == "":
-                            artist_string = artist['name'].replace('*', '-') 
-                        else:
-                            artist_string = f"{artist_string}, {artist['name']}".replace('*', '-')
-                            
-                    # Hide artist string from song listing if there is only one artist
-                    if len(result_top_tracks['tracks'][i]['artists']) == 1:
-                        if topsong_string == "":
-                            topsong_string = f"{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
-                        else:
-                            topsong_string += f"\n{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}**"
-                    else:
-                        if topsong_string == "":
-                            topsong_string = f"{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
-                        else:
-                            topsong_string += f"\n{i + 1}. **{result_top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
-                
-                embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
-
-                view = View()
-                
-                # Add Open in Spotify button
-                spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"], row = 0)
-                view.add_item(spotify_button)
-
-                # Add Search on YT Music button
-                ytm_button = discord.ui.Button(label='Search on YT Music', style=discord.ButtonStyle.url, url=f'https://music.youtube.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}', row = 1)
-                view.add_item(ytm_button)
-
-                # Add Search on Google button
-                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
-                view.add_item(google_button)
-
-                await interaction.edit_original_response(embed = embed, view = view)
-
-                # Generate random filename
-                letters = string.ascii_lowercase
-                filename = ''.join(random.choice(letters) for i in range(8))
-
-                # Save image
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
-                        file = open(f'{filename}.jpg', 'wb')
-                        async for chunk in request.content.iter_chunked(10):
-                            file.write(chunk)
-                        file.close()
-                        
-                # Get dominant colour for embed
-                color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
-
-                # Remove file when done
-                os.remove(f'{filename}.jpg')
-
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
-
-                await interaction.edit_original_response(embed = embed)
+                await elements.artist(item=result_info, top_tracks=result_top_tracks, interaction=interaction)
             # Album URL
             elif "album" in url:
                 # Fetch artist info
                 result_info = self.sp.album(url)
                 
-                image_url = result_info["images"][0]["url"]
-
-                # Generate random filename
-                letters = string.ascii_lowercase
-                filename = ''.join(random.choice(letters) for i in range(8))
-
-                # Save image
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
-                        file = open(f'{filename}.jpg', 'wb')
-                        async for chunk in request.content.iter_chunked(10):
-                            file.write(chunk)
-                        file.close()
-                        
-                # Get dominant colour for embed
-                color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
-
-                # Remove file when done
-                os.remove(f'{filename}.jpg')
-                
-                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Parsing info...", color = Color.orange())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                await interaction.edit_original_response(embed = embed)
-                
-                songlist_string = ""
-                for i in range(len(result_info['tracks']['items'])):
-                    artist_string = ""
-                    for artist in result_info['tracks']['items'][i]['artists']:
-                        if artist_string == "":
-                            artist_string = artist['name'].replace('*', '-') 
-                        else:
-                            artist_string = artist_string + ", " + artist['name'].replace('*', '-')
-                            
-                    # Hide artist string from song listing if there is only one artist
-                    if len(result_info['tracks']['items'][i]['artists']) == 1:
-                        if songlist_string == "":
-                            songlist_string = f"{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
-                        else:
-                            songlist_string += f"\n{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}**"
-                    else:
-                        if songlist_string == "":
-                            songlist_string = f"{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
-                        else:
-                            songlist_string += f"\n{i + 1}. **{result_info['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
-
-                artist_string = ""
-                for artist in result_info['artists']:
-                    if artist_string == "":
-                        artist_string = artist['name'].replace('*', '-') 
-                    else:
-                        artist_string = artist_string + ", " + artist['name'].replace('*', '-')
-                
-                embed = discord.Embed(title = f"{result_info['name']} - {artist_string}", description = songlist_string, color = Color.from_rgb(r = 255, g = 255, b = 255))
-                embed.set_footer(text = "Getting colour information...")
-
-                embed.set_thumbnail(url = result_info["images"][0]["url"])
-
-                view = View()
-                
-                # Add Open in Spotify button
-                spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"], row = 0)
-                view.add_item(spotify_button)
-
-                # Add song.link button                
-                songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{url}", row = 1)
-                view.add_item(songlink_button)
-
-                # Add Search on Google button
-                google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(result_info["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
-                view.add_item(google_button)
-
-                await interaction.edit_original_response(embed = embed, view = view)
-
-                # Generate random filename
-                letters = string.ascii_lowercase
-                filename = ''.join(random.choice(letters) for i in range(8))
-
-                # Save image
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
-                        file = open(f'{filename}.jpg', 'wb')
-                        async for chunk in request.content.iter_chunked(10):
-                            file.write(chunk)
-                        file.close()
-                        
-                # Get dominant colour for embed
-                color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
-
-                # Remove file when done
-                os.remove(f'{filename}.jpg')
-
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
-
-                await interaction.edit_original_response(embed = embed)
+                await elements.album(self=self, item=result_info, interaction=interaction)
             # Playlist URL
             elif "playlist" in url:
                 # Search playlist on Spotify
