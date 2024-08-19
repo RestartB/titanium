@@ -14,7 +14,7 @@ class cog_utils(commands.Cog):
     perms = discord.Permissions()
 
     target = ctrl.return_ctrlguild()
-    adminGroup = app_commands.Group(name="cogs", description="Control the bot. (admin only)", allowed_contexts=context, guild_ids=[target], default_permissions=perms)
+    adminGroup = app_commands.Group(name="admin", description="Control the bot. (admin only)", allowed_contexts=context, guild_ids=[target], default_permissions=perms)
     
     # Load cog command
     @adminGroup.command(name = "load", description = "Load a cog.")
@@ -147,11 +147,9 @@ class cog_utils(commands.Cog):
         await interaction.response.defer(ephemeral = True)
 
         embed = discord.Embed(title=f"Error Test", description="Error in 3 seconds...")
-        
         await interaction.followup.send(embed=embed)
 
         await asyncio.sleep(3)
-
         raise Exception
 
 async def setup(bot):
