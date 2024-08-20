@@ -185,7 +185,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
 
                 embed.add_field(name="User", value=f"{interaction.user.mention}")
                 embed.add_field(name="Channel", value=interaction.channel.jump_url)
-                embed.add_field(name="Time", value=interaction.created_at.strftime("%d/%m//%Y, %H:%M:%S"))
+                embed.add_field(name="Time", value=interaction.created_at.strftime("%d/%m/%Y, %H:%M:%S"))
 
                 embed.add_field(name="Command", value=interaction.command.name)
                 embed.add_field(name="Parameters", value=", ".join(f"{param.name}: {interaction.namespace[param.name]}" for param in interaction.command.parameters))
