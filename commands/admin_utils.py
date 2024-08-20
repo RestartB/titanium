@@ -153,124 +153,132 @@ class cog_utils(commands.Cog):
     async def server_list(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
 
-        page = []
-        pages = []
-        
-        for i, server in enumerate(self.bot.guilds):
-            page.append(f"{i + 1}. {server}")
+        if interaction.user.id in self.bot.dev_ids:
+            page = []
+            pages = []
             
-            if (i + 1) % 20 == 0:
+            for i, server in enumerate(self.bot.guilds):
+                page.append(f"{i + 1}. {server}")
+                
+                if (i + 1) % 20 == 0:
+                    pages.append(page)
+                    page = []
+            
+            if page != []:
                 pages.append(page)
-                page = []
-        
-        if page != []:
-            pages.append(page)
-        
-        class serversPageView(View):
-            def __init__(self, pages):
-                super().__init__(timeout = 10800)
-                
-                self.page = 0
-                self.pages = pages
-
-                for item in self.children:
-                    if item.custom_id == "first" or item.custom_id == "prev":
-                        item.disabled = True
             
-            async def on_timeout(self) -> None:
-                for item in self.children:
-                    item.disabled = True
-
-                await self.message.edit(view=self)
-        
-            @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
-            async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                self.page = 0
-
-                for item in self.children:
-                    item.disabled = False
+            class serversPageView(View):
+                def __init__(self, pages):
+                    super().__init__(timeout = 10800)
                     
-                    if item.custom_id == "first" or item.custom_id == "prev":
-                        item.disabled = True
-                
-                embed = discord.Embed(title="Bot Servers", description="\n".join(self.pages[self.page]), color=Color.random())
-                embed.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
-
-                await interaction.response.edit_message(embed = embed, view = self)
-            
-            @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
-            async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                if self.page - 1 == 0:
-                    self.page -= 1
+                    self.page = 0
+                    self.pages = pages
 
                     for item in self.children:
                         if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True
-                else:
-                    self.page -= 1
-
-                    for item in self.children:
-                        item.disabled = False
                 
-                embed = discord.Embed(title="Bot Servers", description="\n".join(self.pages[self.page]), color=Color.random())
-                embed.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
+                async def on_timeout(self) -> None:
+                    for item in self.children:
+                        item.disabled = True
 
-                await interaction.response.edit_message(embed = embed, view = self)
-
-            @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
-            async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                if (self.page + 1) == (len(self.pages) - 1):
-                    self.page += 1
+                    await self.message.edit(view=self)
+            
+                @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
+                async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    self.page = 0
 
                     for item in self.children:
                         item.disabled = False
                         
-                        if item.custom_id == "next" or item.custom_id == "last":
+                        if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True
-                else:
-                    self.page += 1
+                    
+                    embed = discord.Embed(title="Bot Servers", description="\n".join(self.pages[self.page]), color=Color.random())
+                    embed.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
+
+                    await interaction.response.edit_message(embed = embed, view = self)
+                
+                @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
+                async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    if self.page - 1 == 0:
+                        self.page -= 1
+
+                        for item in self.children:
+                            if item.custom_id == "first" or item.custom_id == "prev":
+                                item.disabled = True
+                    else:
+                        self.page -= 1
+
+                        for item in self.children:
+                            item.disabled = False
+                    
+                    embed = discord.Embed(title="Bot Servers", description="\n".join(self.pages[self.page]), color=Color.random())
+                    embed.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
+
+                    await interaction.response.edit_message(embed = embed, view = self)
+
+                @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
+                async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    if (self.page + 1) == (len(self.pages) - 1):
+                        self.page += 1
+
+                        for item in self.children:
+                            item.disabled = False
+                            
+                            if item.custom_id == "next" or item.custom_id == "last":
+                                item.disabled = True
+                    else:
+                        self.page += 1
+
+                        for item in self.children:
+                            item.disabled = False
+                    
+                    embed = discord.Embed(title="Bot Servers", description="\n".join(self.pages[self.page]), color=Color.random())
+                    embed.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
+                    
+                    await interaction.response.edit_message(embed = embed, view = self)
+                
+                @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
+                async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    self.page = len(self.pages) - 1
 
                     for item in self.children:
                         item.disabled = False
-                
-                embed = discord.Embed(title="Bot Servers", description="\n".join(self.pages[self.page]), color=Color.random())
-                embed.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
-                
-                await interaction.response.edit_message(embed = embed, view = self)
-            
-            @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
-            async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                self.page = len(self.pages) - 1
 
-                for item in self.children:
-                    item.disabled = False
-
-                    if item.custom_id == "next" or item.custom_id == "last":
-                        item.disabled = True
+                        if item.custom_id == "next" or item.custom_id == "last":
+                            item.disabled = True
+                    
+                    embed = discord.Embed(title="Bot Servers", description="\n".join(self.pages[self.page]), color=Color.random())
+                    embed.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
+                    
+                    await interaction.response.edit_message(embed = embed, view = self)
                 
-                embed = discord.Embed(title="Bot Servers", description="\n".join(self.pages[self.page]), color=Color.random())
-                embed.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
-                
-                await interaction.response.edit_message(embed = embed, view = self)
+            embed = discord.Embed(title="Bot Servers", description="\n".join(pages[0]), color=Color.random())
+            embed.set_footer(text=f"Page 1/{len(pages)}")
             
-        embed = discord.Embed(title="Bot Servers", description="\n".join(pages[0]), color=Color.random())
-        embed.set_footer(text=f"Page 1/{len(pages)}")
-        
-        if len(pages) == 1:
-            await interaction.edit_original_response(embed = embed)
+            if len(pages) == 1:
+                await interaction.edit_original_response(embed = embed)
+            else:
+                await interaction.edit_original_response(embed = embed, view = serversPageView(pages))
         else:
-            await interaction.edit_original_response(embed = embed, view = serversPageView(pages))
+            embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
+            await interaction.followup.send(embed = embed, ephemeral = True)
     
     # Error Test command
     @adminGroup.command(name = "error-test", description = "Admin Only: test the error handler. This WILL cause an error to occur!")
     async def error_test(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
 
-        embed = discord.Embed(title=f"Error Test", description="Error in 3 seconds...")
-        await interaction.followup.send(embed=embed)
+        if interaction.user.id in self.bot.dev_ids:
+            embed = discord.Embed(title=f"Error Test", description="Error in 3 seconds...")
+            await interaction.followup.send(embed=embed)
 
-        await asyncio.sleep(3)
-        raise Exception
+            await asyncio.sleep(3)
+            raise Exception
+        else:
+            embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
+            await interaction.followup.send(embed = embed, ephemeral = True)
 
 async def setup(bot):
     await bot.add_cog(cog_utils(bot))
