@@ -254,7 +254,7 @@ class cog_utils(commands.Cog):
                 await interaction.response.edit_message(embed = embed, view = self)
             
         embed = discord.Embed(title="Bot Servers", description="\n".join(pages[0]), color=Color.random())
-        embed.set_footer(text=f"Page 1/{len(self.pages)}")
+        embed.set_footer(text=f"Page 1/{len(pages)}")
         
         if len(pages) == 1:
             await interaction.edit_original_response(embed = embed)
