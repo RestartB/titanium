@@ -14,7 +14,7 @@ class status_update(commands.Cog):
         for guild in self.bot.guilds:
             members += guild.member_count
 
-        await self.bot.change_presence(activity=discord.ActivityType.listening(name=f"{members} users in {len(self.bot.guilds)} servers - / to see commands"))
+        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=f"{members} users in {len(self.bot.guilds)} servers - / to see commands"))
 
         await asyncio.sleep(86400)
 

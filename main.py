@@ -104,9 +104,8 @@ except Exception as error:
     print(error)
     exit()
 
-# Sync bot cogs when started
-@bot.event
-async def on_ready():
+# Cog loading
+async def cog_load():
     print("[INIT] Loading cogs...")
     # Find all cogs in command dir
     for filename in os.listdir(bot.cog_dir):
@@ -134,6 +133,13 @@ async def on_ready():
     else:
         print("[INIT] Skipping private cogs.\n")
 
+    
+
+asyncio.run(cog_load())
+
+# Sync bot cogs when started
+@bot.event
+async def on_ready():
     # Sync tree if sync on start is enabled
     if bot.sync_on_start == True:
         # Global Sync
@@ -149,7 +155,7 @@ async def on_ready():
         print(f"[INIT] Control server command tree synced. {len(sync)} commands total.")
     else:
         print("[INIT] Skipping command tree sync. Please manually sync commands later.")
-
+    
     print(f"[INIT] Bot is ready and connected as {bot.user}.")
 
 # Ignore normal user messages
