@@ -26,8 +26,10 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         else:
             artist_string += f", {artist['name']}"
     
+    explicit = item['explicit']
+    
     # Set up new embed
-    embed = discord.Embed(title = f"{item['name']}{f' {self.bot.explicit_emoji}' if item['explicit'] else ''}", description=f"on **[{str(item['album']['name']).replace('*', '')}](<{item['album']['external_urls']["spotify"]}>)**", color = Color.from_rgb(r = 255, g = 255, b = 255))
+    embed = discord.Embed(title = f"{item['name']}{f' {self.bot.explicit_emoji}' if explicit else ''}", description=f"on **[{str(item['album']['name']).replace('*', '')}](<{item['album']['external_urls']["spotify"]}>)**", color = Color.from_rgb(r = 255, g = 255, b = 255))
     
     embed.set_thumbnail(url = item['album']['images'][0]['url'])
     embed.set_author(name = artist_string, url=item["artists"][0]["external_urls"]["spotify"], icon_url=artist_img)
