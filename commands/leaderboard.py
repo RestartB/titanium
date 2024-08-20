@@ -151,74 +151,74 @@ class leaderboard(commands.Cog):
             embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server.", color = Color.red())
             await interaction.edit_original_response(embed = embed)
 
-    # Opt out command
-    @lbGroup.command(name = "opt-out", description = "Opt out of the leaderboard globally as a user.")
-    async def optOut_lb(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral = True)
+    # # Opt out command
+    # @lbGroup.command(name = "opt-out", description = "Opt out of the leaderboard globally as a user.")
+    # async def optOut_lb(self, interaction: discord.Interaction):
+    #     await interaction.response.defer(ephemeral = True)
         
-        async def delete_callback(interaction: discord.Interaction):
-            await interaction.response.defer(ephemeral = True)
+    #     async def delete_callback(interaction: discord.Interaction):
+    #         await interaction.response.defer(ephemeral = True)
 
-            embed = discord.Embed(title = "Opting out...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
-            await interaction.edit_original_response(embed = embed, view = None)
+    #         embed = discord.Embed(title = "Opting out...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
+    #         await interaction.edit_original_response(embed = embed, view = None)
 
-            if interaction.user.id in self.optOutList:
-                embed = discord.Embed(title = "Failed", description = "You have already opted out.", color = Color.red())
-                await interaction.edit_original_response(embed = embed)
-            else:
-                self.optOutList.remove(interaction.user.id)
-                status, error = await self.refreshOptOutList(self)
+    #         if interaction.user.id in self.optOutList:
+    #             embed = discord.Embed(title = "Failed", description = "You have already opted out.", color = Color.red())
+    #             await interaction.edit_original_response(embed = embed)
+    #         else:
+    #             self.optOutList.remove(interaction.user.id)
+    #             status, error = await self.refreshOptOutList(self)
 
-                for server in self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';").fetchall():
-                    self.cursor.execute(f"DELETE FROM '{server}' WHERE userMention = '<@{interaction.user.id}>';")
+    #             for server in self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';").fetchall():
+    #                 self.cursor.execute(f"DELETE FROM '{server}' WHERE userMention = '<@{interaction.user.id}>';")
                 
-                self.connection.commit()
+    #             self.connection.commit()
 
-                if status == False:
-                    raise error
+    #             if status == False:
+    #                 raise error
 
-                embed = discord.Embed(title = "You have opted out.", color = Color.green())
-                await interaction.edit_original_response(embed = embed)
+    #             embed = discord.Embed(title = "You have opted out.", color = Color.green())
+    #             await interaction.edit_original_response(embed = embed)
                 
-        view = View()
-        delete_button = discord.ui.Button(label='Opt Out', style=discord.ButtonStyle.red)
-        delete_button.callback = delete_callback
-        view.add_item(delete_button)
+    #     view = View()
+    #     delete_button = discord.ui.Button(label='Opt Out', style=discord.ButtonStyle.red)
+    #     delete_button.callback = delete_callback
+    #     view.add_item(delete_button)
 
-        embed = discord.Embed(title = "Are you sure?", description = "By opting out of the leaderboard, you will be unable to contribute to the Titanium leaderboard in any server.", color = Color.orange())
-        await interaction.followup.send(embed = embed, view = view, ephemeral = True)
+    #     embed = discord.Embed(title = "Are you sure?", description = "By opting out of the leaderboard, you will be unable to contribute to the Titanium leaderboard in any server.", color = Color.orange())
+    #     await interaction.followup.send(embed = embed, view = view, ephemeral = True)
     
-    # Opt out command
-    @lbGroup.command(name = "opt-in", description = "Opt back in to the leaderboard globally as a user.")
-    async def optIn_lb(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral = True)
+    # # Opt out command
+    # @lbGroup.command(name = "opt-in", description = "Opt back in to the leaderboard globally as a user.")
+    # async def optIn_lb(self, interaction: discord.Interaction):
+    #     await interaction.response.defer(ephemeral = True)
         
-        async def delete_callback(interaction: discord.Interaction):
-            await interaction.response.defer(ephemeral = True)
+    #     async def delete_callback(interaction: discord.Interaction):
+    #         await interaction.response.defer(ephemeral = True)
 
-            embed = discord.Embed(title = "Opting in...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
-            await interaction.edit_original_response(embed = embed, view = None)
+    #         embed = discord.Embed(title = "Opting in...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
+    #         await interaction.edit_original_response(embed = embed, view = None)
 
-            if not(interaction.user.id in self.optOutList):
-                embed = discord.Embed(title = "Failed", description = "You are already opted in.", color = Color.red())
-                await interaction.edit_original_response(embed = embed)
-            else:
-                self.optOutList.remove(interaction.user.id)
-                status, error = await self.refreshOptOutList(self)
+    #         if not(interaction.user.id in self.optOutList):
+    #             embed = discord.Embed(title = "Failed", description = "You are already opted in.", color = Color.red())
+    #             await interaction.edit_original_response(embed = embed)
+    #         else:
+    #             self.optOutList.remove(interaction.user.id)
+    #             status, error = await self.refreshOptOutList(self)
 
-                if status == False:
-                    raise error
+    #             if status == False:
+    #                 raise error
 
-                embed = discord.Embed(title = "You have opted in.", color = Color.green())
-                await interaction.edit_original_response(embed = embed)
+    #             embed = discord.Embed(title = "You have opted in.", color = Color.green())
+    #             await interaction.edit_original_response(embed = embed)
                 
-        view = View()
-        delete_button = discord.ui.Button(label='Opt In', style=discord.ButtonStyle.green)
-        delete_button.callback = delete_callback
-        view.add_item(delete_button)
+    #     view = View()
+    #     delete_button = discord.ui.Button(label='Opt In', style=discord.ButtonStyle.green)
+    #     delete_button.callback = delete_callback
+    #     view.add_item(delete_button)
 
-        embed = discord.Embed(title = "Are you sure?", description = "By opting in to the leaderboard, you will be able to contribute to the Titanium leaderboard in any server again.", color = Color.orange())
-        await interaction.followup.send(embed = embed, view = view, ephemeral = True)
+    #     embed = discord.Embed(title = "Are you sure?", description = "By opting in to the leaderboard, you will be able to contribute to the Titanium leaderboard in any server again.", color = Color.orange())
+    #     await interaction.followup.send(embed = embed, view = view, ephemeral = True)
     
     # Privacy command
     @lbGroup.command(name = "privacy", description = "View the leaderboard privacy disclaimer.")
