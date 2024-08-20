@@ -5,10 +5,13 @@
 import discord
 from discord.ext import commands
 from discord import Color
+
 import os
 import asyncio
 import logging
-from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
+import traceback
+import datetime
+import aiohttp
 
 print("Welcome to TitaniumCore.")
 print("https://github.com/restartb/titaniumcore\n")
@@ -94,11 +97,6 @@ try:
     
     bot.loading_emoji = str(options_dict['loading-emoji'])
     bot.explicit_emoji = str(options_dict['explicit-emoji'])
-
-    ## Convert Dev IDs from str to int
-    # bot.blocked_ids = []
-    # for id in bot.blocked_ids_str:
-        # bot.blocked_ids.append(int(id))
     
     print("[INIT] Config files read.\n")
 except Exception as error:
@@ -109,10 +107,6 @@ except Exception as error:
 # Sync bot cogs when started
 @bot.event
 async def on_ready():
-    # support_invite = await bot.fetch_invite(bot.support_server)
-    # control_server = support_invite.guild
-    # bot.control_server_id = control_server.id
-    
     print("[INIT] Loading cogs...")
     # Find all cogs in command dir
     for filename in os.listdir(bot.cog_dir):
@@ -179,27 +173,30 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
             
             await interaction.edit_original_response(embed = embed, view=None)
 
-            webhookEmbed = DiscordEmbed(title="Error")
-            webhookEmbed.set_timestamp()
-            webhookEmbed.set_author(name=str(bot.user))
+            async with aiohttp.ClientSession() as session:
+                embed = discord.Embed(title="Error", description=f"""```python\n{traceback.format_exc()}```""", color=Color.red())
+                
+                embed.timestamp = datetime.datetime.now()
+                embed.set_author(name=str(bot.user))
 
-            webhookEmbed.add_embed_field(name="User", value=f"{interaction.user.mention}")
-            webhookEmbed.add_embed_field(name="Channel", value=interaction.channel.jump_url)
-            webhookEmbed.add_embed_field(name="Time", value=interaction.created_at.strftime("%d/%m//%Y, %H:%M:%S"))
+                embed.add_field(name="User", value=f"{interaction.user.mention}")
+                embed.add_field(name="Channel", value=interaction.channel.jump_url)
+                embed.add_field(name="Time", value=interaction.created_at.strftime("%d/%m//%Y, %H:%M:%S"))
 
-            webhookEmbed.add_embed_field(name="Command", value=interaction.command.name)
-            # webhookEmbed.add_embed_field(name="Arguments", value=", ".join(interaction.command.parameters))
-            
-            webhook = AsyncDiscordWebhook(url=str(bot.error_webhook), rate_limit_retry=True)
-            webhook.add_embed(webhookEmbed)
-            await webhook.execute()
+                embed.add_field(name="Command", value=interaction.command.name)
+                embed.add_field(name="Parameters", value=", ".join(f"{param.name}: {interaction.namespace[param.name]}" for param in interaction.command.parameters))
+
+                webhook = discord.Webhook.from_url(str(bot.error_webhook), session=session)
+                await webhook.send(embed=embed)
     # Cooldown
     elif isinstance(error, discord.app_commands.errors.CommandOnCooldown):
         await interaction.response.defer(ephemeral=True)
 
         embed = discord.Embed(title = "Cooldown", description = error, color = Color.red())
         msg = await interaction.followup.send(embed = embed, ephemeral = True)
+        
         await asyncio.sleep(5)
+        
         await msg.delete()
     # Missing Perms
     elif isinstance(error, discord.app_commands.errors.MissingPermissions):
@@ -207,7 +204,9 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
 
         embed = discord.Embed(title = "Missing Permissions", description = error, color = Color.red())
         msg = await interaction.followup.send(embed = embed, ephemeral = True)
+        
         await asyncio.sleep(5)
+        
         await msg.delete()
 
 try:
