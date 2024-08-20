@@ -181,16 +181,16 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
 
             webhookEmbed = DiscordEmbed(title="Error")
             webhookEmbed.set_timestamp()
-            webhookEmbed.set_author(name=bot.user)
+            webhookEmbed.set_author(name=str(bot.user))
 
             webhookEmbed.add_embed_field(name="User", value=f"{interaction.user.mention}")
             webhookEmbed.add_embed_field(name="Channel", value=interaction.channel.jump_url)
             webhookEmbed.add_embed_field(name="Time", value=interaction.created_at.strftime("%d/%m//%Y, %H:%M:%S"))
 
             webhookEmbed.add_embed_field(name="Command", value=interaction.command.name)
-            webhookEmbed.add_embed_field(name="Channel", value=interaction.channel.jump_url)
+            # webhookEmbed.add_embed_field(name="Arguments", value=", ".join(interaction.command.parameters))
             
-            webhook = AsyncDiscordWebhook(url=bot.error_webhook, rate_limit_retry=True)
+            webhook = AsyncDiscordWebhook(url=str(bot.error_webhook), rate_limit_retry=True)
             webhook.add_embed(webhookEmbed)
             await webhook.execute()
     # Cooldown
