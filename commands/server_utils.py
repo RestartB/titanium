@@ -43,66 +43,62 @@ class server_utils(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
         
+        memberCount = 0
+        botCount = 0
+        
+        for member in interaction.guild.members:
+            if member.bot == True:
+                botCount += 1
+            else:
+                memberCount += 1
+        
+        memberCount = f"{memberCount} ({round((memberCount / interaction.guild.member_count * 100), 1)}%)"
+        botCount = f"{botCount} ({round((botCount / interaction.guild.member_count * 100), 1)}%)"
+        
+        embed = discord.Embed(title = f"{interaction.guild.name} - Info", color = Color.random())
+        
+        # Member counts
+        embed.add_field(name = "Total Members", value = interaction.guild.member_count)
+        embed.add_field(name = "People", value = memberCount, inline = True)
+        embed.add_field(name = "Bots", value = botCount, inline = True)
+
+        # Channel counts
+        embed.add_field(name = "Text Channels", value = len(interaction.guild.text_channels))
+        embed.add_field(name = "Voice Channels", value = len(interaction.guild.voice_channels))
+        embed.add_field(name = "Categories", value = len(interaction.guild.categories))
+
+        creationDate = interaction.guild.created_at
+        
+        # Other info
+        embed.add_field(name = "Creation Date", value = f"{creationDate.day}/{creationDate.month}/{creationDate.year}")
+        
+        # Handle when owner can't be found
         try:
-            memberCount = 0
-            botCount = 0
-            
-            for member in interaction.guild.members:
-                if member.bot == True:
-                    botCount += 1
-                else:
-                    memberCount += 1
-            
-            memberCount = f"{memberCount} ({round((memberCount / interaction.guild.member_count * 100), 1)}%)"
-            botCount = f"{botCount} ({round((botCount / interaction.guild.member_count * 100), 1)}%)"
-            
-            embed = discord.Embed(title = f"{interaction.guild.name} - Info", color = Color.random())
-            
-            # Member counts
-            embed.add_field(name = "Total Members", value = interaction.guild.member_count)
-            embed.add_field(name = "People", value = memberCount, inline = True)
-            embed.add_field(name = "Bots", value = botCount, inline = True)
-
-            # Channel counts
-            embed.add_field(name = "Text Channels", value = len(interaction.guild.text_channels))
-            embed.add_field(name = "Voice Channels", value = len(interaction.guild.voice_channels))
-            embed.add_field(name = "Categories", value = len(interaction.guild.categories))
-
-            creationDate = interaction.guild.created_at
-            
-            # Other info
-            embed.add_field(name = "Creation Date", value = f"{creationDate.day}/{creationDate.month}/{creationDate.year}")
-            
-            # Handle when owner can't be found
-            try:
-                embed.add_field(name = "Owner", value = interaction.guild.owner.mention)
-            except AttributeError:
-                embed.add_field(name = "Owner", value = "Unknown")
-            
-            embed.add_field(name = "Server ID", value = interaction.guild.id)
-            
-            view = View()
-            
-            # Skip button when there's no vanity invite
-            try:
-                if interaction.guild.vanity_url != None:
-                    view.add_item(discord.ui.Button(style = discord.ButtonStyle.url, url = interaction.guild.vanity_url, label = "Vanity Invite"))
-            except Exception:
-                pass
-            
-            # Handle no icon
-            try:
-                embed.set_thumbnail(url = interaction.guild.icon.url)
-            except AttributeError:
-                pass
-            
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-            
-            # Send Embed
-            await interaction.edit_original_response(embed = embed, view = view)
+            embed.add_field(name = "Owner", value = interaction.guild.owner.mention)
+        except AttributeError:
+            embed.add_field(name = "Owner", value = "Unknown")
+        
+        embed.add_field(name = "Server ID", value = interaction.guild.id)
+        
+        view = View()
+        
+        # Skip button when there's no vanity invite
+        try:
+            if interaction.guild.vanity_url != None:
+                view.add_item(discord.ui.Button(style = discord.ButtonStyle.url, url = interaction.guild.vanity_url, label = "Vanity Invite"))
         except Exception:
-            embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-            await interaction.edit_original_response(embed = embed, view = None)
+            pass
+        
+        # Handle no icon
+        try:
+            embed.set_thumbnail(url = interaction.guild.icon.url)
+        except AttributeError:
+            pass
+        
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        
+        # Send Embed
+        await interaction.edit_original_response(embed = embed, view = view)
 
     # Server Info command
     @serverGroup.command(name = "boosts", description = "Beta: get info about this server's boost stats.")

@@ -42,63 +42,104 @@ class spotify(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
         await interaction.followup.send(embed = embed)
 
-        try:
-            if search_type.value == "song":
-                # Search Spotify
-                result = self.sp.search(search, type = 'track', limit = 5)
+        if search_type.value == "song":
+            # Search Spotify
+            result = self.sp.search(search, type = 'track', limit = 5)
 
-                # Check if result is blank
-                if len(result['tracks']['items']) == 0:
-                    embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
-                    await interaction.edit_original_response(embed = embed)
-                else:
-                    # Sort through request data
-                    i = 0
-                    for item in result['tracks']['items']:   
-                        if item['explicit'] == True:
-                            if len(item['name']) > 86:
-                                label = item['name'][:86] + "... (Explicit)"
-                            else:
-                                label = item['name'] + " (Explicit)"
+            # Check if result is blank
+            if len(result['tracks']['items']) == 0:
+                embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
+                await interaction.edit_original_response(embed = embed)
+            else:
+                # Sort through request data
+                i = 0
+                for item in result['tracks']['items']:   
+                    if item['explicit'] == True:
+                        if len(item['name']) > 86:
+                            label = item['name'][:86] + "... (Explicit)"
                         else:
-                            if len(item['name']) > 100:
-                                label = item['name'][:97] + "..."
-                            else:
-                                label = item['name']
-                        
-                        artist_string = ""
-                        
-                        for artist in item['artists']:
-                            if artist_string == "":
-                                artist_string = artist['name']
-                            else:
-                                artist_string += f", {artist['name']}"
-                        
-                        if len(f"{artist_string} - {item['album']['name']}") > 100:
-                            description = f"{artist_string} - {item['album']['name']}"[:97] + "..."
+                            label = item['name'] + " (Explicit)"
+                    else:
+                        if len(item['name']) > 100:
+                            label = item['name'][:97] + "..."
                         else:
-                            description = f"{artist_string} - {item['album']['name']}"
-                        
-                        options_list.append(discord.SelectOption(label = label, description = description, value = i))
-                        i += 1
+                            label = item['name']
                     
-                    # Define options
-                    select = Select(options = options_list)
+                    artist_string = ""
+                    
+                    for artist in item['artists']:
+                        if artist_string == "":
+                            artist_string = artist['name']
+                        else:
+                            artist_string += f", {artist['name']}"
+                    
+                    if len(f"{artist_string} - {item['album']['name']}") > 100:
+                        description = f"{artist_string} - {item['album']['name']}"[:97] + "..."
+                    else:
+                        description = f"{artist_string} - {item['album']['name']}"
+                    
+                    options_list.append(discord.SelectOption(label = label, description = description, value = i))
+                    i += 1
+                
+                # Define options
+                select = Select(options = options_list)
 
-                    embed = discord.Embed(title = "Select Song", description = f'Showing {len(result["tracks"]["items"])} results for "{search}"', color = Color.random())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed = discord.Embed(title = "Select Song", description = f'Showing {len(result["tracks"]["items"])} results for "{search}"', color = Color.random())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
 
-                    # Response to user selection
-                    async def response(interaction: discord.Interaction):
-                        await interaction.response.defer()
-                        
-                        # Find unique ID of selection in the list
-                        item = result['tracks']['items'][int(select.values[0])]
-                        
-                        embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting song...", color = Color.orange())
-                        await interaction.edit_original_response(embed = embed, view = None)
+                # Response to user selection
+                async def response(interaction: discord.Interaction):
+                    await interaction.response.defer()
+                    
+                    # Find unique ID of selection in the list
+                    item = result['tracks']['items'][int(select.values[0])]
+                    
+                    embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting song...", color = Color.orange())
+                    await interaction.edit_original_response(embed = embed, view = None)
 
-                        await elements.song(self=self, item=item, interaction=interaction)
+                    await elements.song(self=self, item=item, interaction=interaction)
+            # Set up list with provided values
+            select.callback = response
+            view = View()
+            view.add_item(select)
+
+            # Edit initial message to show dropdown
+            await interaction.edit_original_response(embed = embed, view = view)
+        elif search_type.value == "artist":
+            # Search Spotify
+            result = self.sp.search(search, type = 'artist', limit = 5)
+
+            # Check if result is blank
+            if len(result['artists']['items']) == 0:
+                embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
+                await interaction.edit_original_response(embed = embed)
+            else:
+                # Sort through request data
+                i = 0
+                for item in result['artists']['items']:
+                    options_list.append(discord.SelectOption(label = item['name'], value = i))
+                    i += 1
+                
+                # Define options
+                select = Select(options=options_list)
+
+                embed = discord.Embed(title = "Select Artist", description = f'Showing {len(result["artists"]["items"])} results for "{search}"', color = Color.random())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+
+                # Response to user selection
+                async def response(interaction: discord.Interaction):
+                    await interaction.response.defer()
+                    
+                    embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting artist info...", color = Color.orange())
+                    await interaction.edit_original_response(embed = embed, view = None)
+                    
+                    item = result['artists']['items'][int(select.values[0])]
+
+                    result_info = self.sp.artist(item['id'])
+
+                    result_top_tracks = self.sp.artist_top_tracks(item['id'])
+                    
+                    await elements.artist(item=result_info, top_tracks=result_top_tracks, interaction=interaction)
                 # Set up list with provided values
                 select.callback = response
                 view = View()
@@ -106,102 +147,54 @@ class spotify(commands.Cog):
 
                 # Edit initial message to show dropdown
                 await interaction.edit_original_response(embed = embed, view = view)
-            elif search_type.value == "artist":
-                # Search Spotify
-                result = self.sp.search(search, type = 'artist', limit = 5)
+        elif search_type.value == "album":
+            # Search Spotify
+            result = self.sp.search(search, type = 'album', limit = 5)
 
-                # Check if result is blank
-                if len(result['artists']['items']) == 0:
-                    embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
-                    await interaction.edit_original_response(embed = embed)
-                else:
-                    # Sort through request data
-                    i = 0
-                    for item in result['artists']['items']:
-                        options_list.append(discord.SelectOption(label = item['name'], value = i))
-                        i += 1
+            # Check if result is blank
+            if len(result['albums']['items']) == 0:
+                embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
+                await interaction.edit_original_response(embed = embed)
+            else:
+                # Sort through request data
+                i = 0
+                for item in result['albums']['items']:
+                    artist_string = ""
+                    for artist in item['artists']:
+                        if artist_string == "":
+                            artist_string = artist['name'].replace('*', '-') 
+                        else:
+                            artist_string += f", {artist['name']}".replace('*', '-')
                     
-                    # Define options
-                    select = Select(options=options_list)
+                    options_list.append(discord.SelectOption(label = item['name'], description = artist_string, value = i))
+                    i += 1
+                
+                # Define options
+                select = Select(options=options_list)
 
-                    embed = discord.Embed(title = "Select Artist", description = f'Showing {len(result["artists"]["items"])} results for "{search}"', color = Color.random())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed = discord.Embed(title = "Select Album", description = f'Showing {len(result["albums"]["items"])} results for "{search}"', color = Color.random())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
 
-                    # Response to user selection
-                    async def response(interaction: discord.Interaction):
-                        await interaction.response.defer()
-                        
-                        embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting artist info...", color = Color.orange())
-                        await interaction.edit_original_response(embed = embed, view = None)
-                        
-                        item = result['artists']['items'][int(select.values[0])]
-
-                        result_info = self.sp.artist(item['id'])
-
-                        result_top_tracks = self.sp.artist_top_tracks(item['id'])
-                        
-                        await elements.artist(item=result_info, top_tracks=result_top_tracks, interaction=interaction)
-                    # Set up list with provided values
-                    select.callback = response
-                    view = View()
-                    view.add_item(select)
-
-                    # Edit initial message to show dropdown
-                    await interaction.edit_original_response(embed = embed, view = view)
-            elif search_type.value == "album":
-                # Search Spotify
-                result = self.sp.search(search, type = 'album', limit = 5)
-
-                # Check if result is blank
-                if len(result['albums']['items']) == 0:
-                    embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
-                    await interaction.edit_original_response(embed = embed)
-                else:
-                    # Sort through request data
-                    i = 0
-                    for item in result['albums']['items']:
-                        artist_string = ""
-                        for artist in item['artists']:
-                            if artist_string == "":
-                                artist_string = artist['name'].replace('*', '-') 
-                            else:
-                                artist_string += f", {artist['name']}".replace('*', '-')
-                        
-                        options_list.append(discord.SelectOption(label = item['name'], description = artist_string, value = i))
-                        i += 1
+                # Response to user selection
+                async def response(interaction: discord.Interaction):
+                    await interaction.response.defer()
                     
-                    # Define options
-                    select = Select(options=options_list)
-
-                    embed = discord.Embed(title = "Select Album", description = f'Showing {len(result["albums"]["items"])} results for "{search}"', color = Color.random())
+                    embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting album info...", color = Color.orange())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    await interaction.edit_original_response(embed = embed, view = None)
+                    
+                    item = result['albums']['items'][int(select.values[0])]
 
-                    # Response to user selection
-                    async def response(interaction: discord.Interaction):
-                        await interaction.response.defer()
-                        
-                        embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting album info...", color = Color.orange())
-                        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-                        await interaction.edit_original_response(embed = embed, view = None)
-                        
-                        item = result['albums']['items'][int(select.values[0])]
+                    result_info = self.sp.album(item['id'])
+                    
+                    await elements.album(self=self, item=result_info, interaction=interaction)
+                # Set up list with provided values
+                select.callback = response
+                view = View()
+                view.add_item(select)
 
-                        result_info = self.sp.album(item['id'])
-                        
-                        await elements.album(self=self, item=result_info, interaction=interaction)
-                    # Set up list with provided values
-                    select.callback = response
-                    view = View()
-                    view.add_item(select)
-
-                    # Edit initial message to show dropdown
-                    await interaction.edit_original_response(embed = embed, view = view)
-        except Exception as error:
-            await interaction.response.defer(ephemeral = True)
-            embed = discord.Embed(title = "Spotify - Error", description = "An unknown error has occurred. The error has been logged.")
-            print("[SPOTIFY] Error has occurred. Error below:")
-            print(error)
-            await interaction.edit_original_response(embed = embed, view = None, ephemeral = True)
+                # Edit initial message to show dropdown
+                await interaction.edit_original_response(embed = embed, view = view)
 
     # Spotify Image command
     @spotifyGroup.command(name = "image", description = "Get high quality album art from a Spotify URL.")
@@ -377,10 +370,6 @@ class spotify(commands.Cog):
             embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
             embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
             await interaction.edit_original_response(embed = embed)
-        except Exception:
-            embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-            await interaction.edit_original_response(embed = embed, view = None)
 
 async def setup(bot):
     await bot.add_cog(spotify(bot))

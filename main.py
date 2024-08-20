@@ -8,6 +8,7 @@ from discord import Color
 import os
 import asyncio
 import logging
+from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
 print("Welcome to TitaniumCore.")
 print("https://github.com/restartb/titaniumcore\n")
@@ -74,6 +75,7 @@ try:
     bot.dev_ids_str = options_dict['owner-ids'].split(",")
     bot.support_server = options_dict['support-server']
     bot.control_server = options_dict['control-guild']
+    bot.error_webhook = str(options_dict['error-webhook'])
 
     if options_dict['cog-dir'] == '':
         bot.cog_dir = f"{path}{pathtype}commands{pathtype}"
@@ -91,6 +93,7 @@ try:
         bot.dev_ids.append(int(id))
     
     bot.loading_emoji = str(options_dict['loading-emoji'])
+    bot.explicit_emoji = str(options_dict['explicit-emoji'])
 
     ## Convert Dev IDs from str to int
     # bot.blocked_ids = []
@@ -160,28 +163,56 @@ async def on_ready():
 async def on_message(message):
     pass
 
-# Cooldown / No Permissions Handler
+# Cooldown / No Permissions / Error Handler
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
-    await interaction.response.defer(ephemeral=True)
-    if isinstance(error, discord.app_commands.errors.CommandOnCooldown):
+    # Unexpected Error
+    if isinstance(error, discord.app_commands.errors.CommandInvokeError):
+        if bot.error_webhook == "":
+            embed = discord.Embed(title = "Unexpected Error", description = "An unexpected error has occurred. Try again later.", color = Color.red())
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            
+            await interaction.edit_original_response(embed = embed, view=None)
+        else:
+            embed = discord.Embed(title = "Unexpected Error", description = "An unexpected error has occurred. Try again later. Info has been sent to the bot owner.", color = Color.red())
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            
+            await interaction.edit_original_response(embed = embed, view=None)
+
+            webhookEmbed = DiscordEmbed(title="Error")
+            webhookEmbed.set_timestamp()
+            webhookEmbed.set_author(name=bot.user)
+
+            webhookEmbed.add_embed_field(name="User", value=f"{interaction.user.mention}")
+            webhookEmbed.add_embed_field(name="Channel", value=interaction.channel.jump_url)
+            webhookEmbed.add_embed_field(name="Time", value=interaction.created_at.strftime("%d/%m//%Y, %H:%M:%S"))
+
+            webhookEmbed.add_embed_field(name="Command", value=interaction.command.name)
+            webhookEmbed.add_embed_field(name="Channel", value=interaction.channel.jump_url)
+            
+            webhook = AsyncDiscordWebhook(url=bot.error_webhook, rate_limit_retry=True)
+            webhook.add_embed(webhookEmbed)
+            await webhook.execute()
+    # Cooldown
+    elif isinstance(error, discord.app_commands.errors.CommandOnCooldown):
+        await interaction.response.defer(ephemeral=True)
+
         embed = discord.Embed(title = "Cooldown", description = error, color = Color.red())
         msg = await interaction.followup.send(embed = embed, ephemeral = True)
         await asyncio.sleep(5)
         await msg.delete()
+    # Missing Perms
     elif isinstance(error, discord.app_commands.errors.MissingPermissions):
+        await interaction.response.defer(ephemeral=True)
+
         embed = discord.Embed(title = "Missing Permissions", description = error, color = Color.red())
         msg = await interaction.followup.send(embed = embed, ephemeral = True)
         await asyncio.sleep(5)
         await msg.delete()
-    else:
-        embed = discord.Embed(title = "Unexpected Error", description = "An unexpected error has occurred. Try again later. Info has been sent to the bot owner.", color = Color.red())
-        msg = await interaction.edit_original_response(embed = embed)
-        print(error)
 
 try:
     # Run bot with token
-    bot.run(bot.token, log_handler=handler, log_level=logging.ERROR)
+    bot.run(bot.token, log_level=logging.ERROR)
 except discord.errors.PrivilegedIntentsRequired:
     print("[FATAL] Bot is missing the Message Content and/or Server Members intent! Please enable it in the Discord Developers web portal. Exiting...")
     exit()

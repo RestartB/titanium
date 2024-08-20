@@ -117,51 +117,58 @@ class web_search(commands.Cog):
                 await interaction.edit_original_response(embed = embed)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
-                embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies.", color = Color.red())
+                embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed, view = None)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed, view = None)
-        except Exception as e:
-            print(e)
-            embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-            await interaction.edit_original_response(embed = embed, view = None)
 
     # Wikipedia command
     @searchGroup.command(name = "wikipedia", description = "Search Wikipedia for information.")
     @app_commands.checks.cooldown(1, 5)
     async def wiki(self, interaction: discord.Interaction, search: str):
         await interaction.response.defer()
+        
         embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
-        await interaction.followup.send(embed = embed)
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        
+        await interaction.followup.send(embed = embed)
+        
         try:
             page = wikipedia.page(search)
+            
             embed = discord.Embed(title = f"Search: {search}", color=Color.from_rgb(r = 255, g = 255, b = 255))
             embed.add_field(name = f"{page.title}", value = wikipedia.summary(search, sentences = 3))
-            embed.set_footer(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
+            
             view = View()
             view.add_item(discord.ui.Button(label = "Read More", style = discord.ButtonStyle.url, url = page.url))
+            
             await interaction.edit_original_response(embed = embed, view = view)
         except wikipedia.exceptions.PageError:
             embed = discord.Embed(title = "Error", description = f"No page was found on Wikipedia matching {search}. Try another search.", color = Color.red())
-            embed.set_footer(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
+            
             await interaction.edit_original_response(embed = embed)
         except wikipedia.exceptions.DisambiguationError as error:
-            embed = discord.Embed(title = "Please be more specific with your query.", color = Color.red())
-            embed.add_field(name = "Information", value = error)
-            embed.set_footer(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
+            embed = discord.Embed(title = "Please be more specific with your query.", description=error, color = Color.red())
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
+            
             await interaction.edit_original_response(embed = embed)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies.", color = Color.red())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed, view = None)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed, view = None)
-        except Exception:
-            embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-            await interaction.edit_original_response(embed = embed, view = None)
 
 async def setup(bot):
     await bot.add_cog(web_search(bot))

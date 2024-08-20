@@ -25,21 +25,17 @@ class misc(commands.Cog):
             app_commands.Choice(name="Ban", value="banned"),
     ])
     @app_commands.describe(mod_type = "Select the moderation action.")
-    @app_commands.describe(user = "Select the uesr for the moderation action.")
+    @app_commands.describe(user = "Select the user for the moderation action.")
     @app_commands.describe(duration = "Optional: enter a duration for the moderation action.")
     @app_commands.describe(reason = "Optional: enter a reason for the moderation action.")
     async def fakemod(self, interaction: discord.Interaction, mod_type: app_commands.Choice[str], user: discord.User, duration: str = None, reason: str = None):
         await interaction.response.defer(ephemeral=True)
 
-        try:
-            embed = discord.Embed(title = "Alert", description=f"{user.mention} has been {mod_type.value}!", color=Color.red())
-            embed.add_field(name = "Reason", value = (reason if reason != None else "No Reason Provided"), inline = False)
-            embed.add_field(name = "Duration", value=duration, inline = False)
+        embed = discord.Embed(title = "Alert", description=f"{user.mention} has been {mod_type.value}!", color=Color.red())
+        embed.add_field(name = "Reason", value = (reason if reason != None else "No Reason Provided"), inline = False)
+        embed.add_field(name = "Duration", value=duration, inline = False)
 
-            await interaction.followup.send(embed = embed, ephemeral=False)
-        except Exception as error:
-            embed = discord.Embed(title = "An error has occurred.", description = error, color = Color.red())
-            await interaction.followup.send(embed = embed, ephemeral = True)
+        await interaction.followup.send(embed = embed, ephemeral=False)
         
     # 8 Ball command
     @funGroup.command(name = "8ball", description = "Get an answer from the mystical 8 ball.")
@@ -99,9 +95,6 @@ class misc(commands.Cog):
         except KeyError:
             embed = discord.Embed(title = "Error", description = "No roast was generated. Does the user exist?", color = Color.red())
             await interaction.edit_original_response(embed = embed)
-        except Exception:
-            embed = discord.Embed(title = "Unexpected Error", description = "Please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-            await interaction.edit_original_response(embed = embed)
 
     # Dice command
     @funGroup.command(name = "dice", description = "Roll the dice.")
@@ -150,8 +143,9 @@ class misc(commands.Cog):
         await interaction.followup.send(embed = embed, ephemeral = True)
 
         try:
-            if channel == None:
+            if channel is None:
                 channel = interaction.channel
+            
             async for msg in channel.history(limit = 1, oldest_first = True):
                 embed = discord.Embed(title = f"#{channel.name} - First Message", description=f"{msg.content}", color = Color.random())
                 embed.set_footer(text = f"{msg.author.name} - {(msg.created_at).hour}:{(msg.created_at).minute} {(msg.created_at).day}/{(msg.created_at).month}/{(msg.created_at).year} UTC", icon_url = msg.author.avatar.url)

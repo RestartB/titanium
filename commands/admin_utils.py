@@ -5,6 +5,7 @@ from discord.ext import commands
 import os
 import utils.return_ctrlguild as ctrl
 import asyncio
+import datetime
 
 class cog_utils(commands.Cog):
     def __init__(self, bot):
@@ -17,7 +18,7 @@ class cog_utils(commands.Cog):
     adminGroup = app_commands.Group(name="admin", description="Control the bot. (admin only)", allowed_contexts=context, guild_ids=[target], default_permissions=perms)
     
     # Load cog command
-    @adminGroup.command(name = "load", description = "Load a cog.")
+    @adminGroup.command(name = "load", description = "Admin Only: load a cog.")
     async def load(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
 
@@ -38,7 +39,7 @@ class cog_utils(commands.Cog):
             await interaction.followup.send(embed = embed, ephemeral = True)
 
     # Unload cog command
-    @adminGroup.command(name = "unload", description = "Unload a cog.")
+    @adminGroup.command(name = "unload", description = "Admin Only: unload a cog.")
     async def unload(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
 
@@ -63,7 +64,7 @@ class cog_utils(commands.Cog):
             await interaction.followup.send(embed = embed, ephemeral = True)
 
     # Reload cog command
-    @adminGroup.command(name = "reload", description = "Reload a cog.")
+    @adminGroup.command(name = "reload", description = "Admin Only: reload a cog.")
     async def reload(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
 
@@ -88,7 +89,7 @@ class cog_utils(commands.Cog):
             await interaction.followup.send(embed = embed, ephemeral = True)
     
     # Tree sync command
-    @adminGroup.command(name = "sync", description = "Sync the command tree.")
+    @adminGroup.command(name = "sync", description = "Admin Only: sync the command tree.")
     async def tree_sync(self, interaction:discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
@@ -134,6 +135,9 @@ class cog_utils(commands.Cog):
         
         if interaction.user.id in self.bot.dev_ids:
             channel = self.bot.get_channel(int(channel_id))
+            embed = discord.Embed(title="Message from Bot Admin", description=message, color=Color.random())
+            embed.timestamp = datetime.datetime.now()
+            
             await channel.send(message)
 
             await interaction.followup.send(f"Message sent to channel ID {channel_id}.\n\nContent: {message}", ephemeral = True)
@@ -141,9 +145,20 @@ class cog_utils(commands.Cog):
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
             await interaction.followup.send(embed = embed, ephemeral = True)
     
-    # Send Message command
+    # Server List command
+    @adminGroup.command(name = "server-list", description = "Admin Only: get a list of all server guilds.")
+    async def server_list(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral = True)
+
+        embed = discord.Embed(title=f"Error Test", description="Error in 3 seconds...")
+        await interaction.followup.send(embed=embed)
+
+        await asyncio.sleep(3)
+        raise Exception
+    
+    # Error Test command
     @adminGroup.command(name = "error-test", description = "Admin Only: test the error handler. This WILL cause an error to occur!")
-    async def send_message(self, interaction: discord.Interaction):
+    async def error_test(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
 
         embed = discord.Embed(title=f"Error Test", description="Error in 3 seconds...")
