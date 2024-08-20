@@ -234,9 +234,9 @@ class leaderboard(commands.Cog):
         description += "The leaderboard does not contain any sensitive information, such as:"
         description += "\n\n-User PFP\n-Message Content\n-Attachment Data"
         
-        embed = discord.Embed(title = title, description = description)
-        embed.add_field(name = "Opting Out", value="If you wish to opt out, use the following commands:\n**/lb-control opt-out - to opt out\n**/lb-control opt-in** - to opt back in")
-        await interaction.followup.send(embed = embed, ephemeral = True)
+        # embed = discord.Embed(title = title, description = description)
+        # embed.add_field(name = "Opting Out", value="If you wish to opt out, use the following commands:\n**/lb-control opt-out - to opt out\n**/lb-control opt-in** - to opt back in")
+        # await interaction.followup.send(embed = embed, ephemeral = True)
     
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
     perms = discord.Permissions()
