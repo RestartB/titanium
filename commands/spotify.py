@@ -34,7 +34,7 @@ class spotify(commands.Cog):
     @app_commands.describe(search = "What you are searching for.")
     async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str):
         await interaction.response.defer()
-
+        
         options_list = []
         
         # Send initial embed
@@ -139,7 +139,7 @@ class spotify(commands.Cog):
 
                     result_top_tracks = self.sp.artist_top_tracks(item['id'])
                     
-                    await elements.artist(item=result_info, top_tracks=result_top_tracks, interaction=interaction)
+                    await elements.artist(self=self, item=result_info, top_tracks=result_top_tracks, interaction=interaction)
                 # Set up list with provided values
                 select.callback = response
                 view = View()

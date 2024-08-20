@@ -158,7 +158,7 @@ class song_url(commands.Cog):
                 # Fetch artist top songs
                 result_top_tracks = self.sp.artist_top_tracks(url)
                 
-                await elements.artist(item=result_info, top_tracks=result_top_tracks, interaction=interaction)
+                await elements.artist(self=self, item=result_info, top_tracks=result_top_tracks, interaction=interaction)
             # Album URL
             elif "album" in url:
                 # Fetch artist info

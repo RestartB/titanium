@@ -133,8 +133,6 @@ async def cog_load():
     else:
         print("[INIT] Skipping private cogs.\n")
 
-    
-
 asyncio.run(cog_load())
 
 # Sync bot cogs when started

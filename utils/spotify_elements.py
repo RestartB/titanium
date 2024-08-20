@@ -27,43 +27,37 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             artist_string += f", {artist['name']}"
     
     # Set up new embed
-    embed = discord.Embed(title = f"{item['name']}{' (Explicit)' if item['explicit'] else ''}", description=f"on **[{str(item['album']['name']).replace('*', '')}](<{item['album']['external_urls']["spotify"]}>)**", color = Color.from_rgb(r = 255, g = 255, b = 255))
+    embed = discord.Embed(title = f"{item['name']}{f' {self.bot.explicit_emoji}' if item['explicit'] else ''}", description=f"on **[{str(item['album']['name']).replace('*', '')}](<{item['album']['external_urls']["spotify"]}>)**", color = Color.from_rgb(r = 255, g = 255, b = 255))
     
     embed.set_thumbnail(url = item['album']['images'][0]['url'])
     embed.set_author(name = artist_string, url=item["artists"][0]["external_urls"]["spotify"], icon_url=artist_img)
     embed.set_footer(text = "Getting colour information...")
-    
-    # Define View
-    view = View(timeout=1800)
-    
-    seconds, item['duration_ms'] = divmod(item['duration_ms'], 1000)
-    minutes, seconds = divmod(seconds, 60)
 
-    # Add Open in Spotify button
-    spotify_button = discord.ui.Button(label=f'Play on Spotify ({int(minutes):02d}:{int(seconds):02d})', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
-    view.add_item(spotify_button)
+    class spotifyButtonsMenu(View):
+        def __init__(self, bot):
+            super().__init__(timeout=60)
 
-    # More Button Callback
-    async def more_callback(interaction: discord.Interaction):
-        await interaction.response.defer()
+            self.bot = bot
+            
+            if not(add_button_url == None or add_button_text == None):
+                # Add additional button                
+                add_button = discord.ui.Button(label=add_button_text, style=discord.ButtonStyle.url, url=add_button_url, row = 0)
+                self.add_item(add_button)
 
-        view = View(timeout=300)
+            songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{item['external_urls']['spotify']}", row = 0)
+            self.add_item(songlink_button)
 
-        if not(add_button_url == None or add_button_text == None):
-            # Add additional button                
-            add_button = discord.ui.Button(label=add_button_text, style=discord.ButtonStyle.url, url=add_button_url, row = 1)
-            view.add_item(add_button)
+            google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 0)
+            self.add_item(google_button)
+
+        async def on_timeout(self) -> None:
+            try:
+                await self.message.delete()
+            except discord.errors.NotFound:
+                pass
         
-        # Add song.link button                
-        songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{item['external_urls']['spotify']}", row = 1)
-        view.add_item(songlink_button)
-
-        # Add Search on Google button
-        google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
-        view.add_item(google_button)
-
-        # Album Art Callback
-        async def art_callback(interaction: discord.Interaction):
+        @discord.ui.button(label='Album Art', style=discord.ButtonStyle.gray, row = 1)
+        async def art(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
             
             embed = discord.Embed(title = "Getting images...", color = Color.orange())
@@ -113,31 +107,44 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
         
-        # Add Album Art button
-        art_button = discord.ui.Button(label='Album Art', style=discord.ButtonStyle.gray, row = 2)
-        art_button.callback = art_callback
-        view.add_item(art_button)
-
-        # Close Button Callback
-        async def delete_callback(interaction: discord.Interaction):
+        @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
+        async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
             
-            await msg.delete()
-        
-        # Add Close button
-        close_button = discord.ui.Button(label='Close', style = discord.ButtonStyle.red, row = 2)
-        close_button.callback = delete_callback
-        view.add_item(close_button)
-
-        msg = await interaction.followup.send(view = view)
+            await self.message.delete()
     
-    # Add More Options button
-    more_button = discord.ui.Button(label=f'More', style=discord.ButtonStyle.gray, row = 0)
-    more_button.callback = more_callback
-    view.add_item(more_button)
+    class spotifyEmbedView(View):
+        def __init__(self, bot):
+            super().__init__(timeout=10800)
+
+            self.bot = bot.bot
+
+            seconds, item['duration_ms'] = divmod(item['duration_ms'], 1000)
+            minutes, seconds = divmod(seconds, 60)
+
+            # Add Open in Spotify button
+            spotify_button = discord.ui.Button(label=f'Play on Spotify ({int(minutes):02d}:{int(seconds):02d})', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
+            self.add_item(spotify_button)
+        
+        async def on_timeout(self) -> None:
+            for item in self.children:
+                if item.style != discord.ButtonStyle.url:
+                    item.disabled = True
+
+            await self.message.edit(view=self)
+        
+        @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
+        async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.defer()
+
+            msg = await interaction.followup.send(view=spotifyButtonsMenu(self.bot))
+
+            spotifyButtonsMenu.message = msg
 
     # Send new embed
-    await interaction.edit_original_response(embed = embed, view = view)
+    await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+
+    spotifyEmbedView.message = await interaction.original_response()
 
     # Generate random filename
     letters = string.ascii_lowercase
@@ -164,7 +171,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     await interaction.edit_original_response(embed = embed)
 
 # Artist parse function
-async def artist(item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify.artist_top_tracks, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None):
+async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify.artist_top_tracks, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None):
     """
     Handle Spotify artist embeds.
     """
@@ -199,46 +206,61 @@ async def artist(item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify.artis
     
     embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
 
-    view = View(timeout=1800)
-    
-    # Add Open in Spotify button
-    spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
-    view.add_item(spotify_button)
+    class spotifyButtonsMenu(View):
+        def __init__(self, bot):
+            super().__init__(timeout=60)
 
-    # More Button Callback
-    async def more_callback(interaction: discord.Interaction):
-        await interaction.response.defer()
+            self.bot = bot
+            
+            if not(add_button_url == None or add_button_text == None):
+                # Add additional button                
+                add_button = discord.ui.Button(label=add_button_text, style=discord.ButtonStyle.url, url=add_button_url, row = 0)
+                self.add_item(add_button)
 
-        view = View(timeout=300)
+            google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 0)
+            self.add_item(google_button)
 
-        if not(add_button_url == None or add_button_text == None):
-            # Add additional button                
-            add_button = discord.ui.Button(label=add_button_text, style=discord.ButtonStyle.url, url=add_button_url, row = 1)
-            view.add_item(add_button)
+        async def on_timeout(self) -> None:
+            try:
+                await self.message.delete()
+            except discord.errors.NotFound:
+                pass
         
-        # Add Search on Google button
-        google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}', row = 1)
-        view.add_item(google_button)
-
-        # Close Button Callback
-        async def delete_callback(interaction: discord.Interaction):
+        @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
+        async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
             
-            await msg.delete()
-        
-        # Add Close button
-        close_button = discord.ui.Button(label='Close', style = discord.ButtonStyle.red, row = 1)
-        close_button.callback = delete_callback
-        view.add_item(close_button)
-
-        msg = await interaction.followup.send(view = view)
+            await self.message.delete()
     
-    # Add More Options button
-    more_button = discord.ui.Button(label=f'More', style=discord.ButtonStyle.gray, row = 0)
-    more_button.callback = more_callback
-    view.add_item(more_button)
+    class spotifyEmbedView(View):
+        def __init__(self, bot):
+            super().__init__(timeout=10800)
 
-    await interaction.edit_original_response(embed = embed, view = view)
+            self.bot = bot.bot
+
+            # Add Open in Spotify button
+            spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
+            self.add_item(spotify_button)
+        
+        async def on_timeout(self) -> None:
+            for item in self.children:
+                if item.style != discord.ButtonStyle.url:
+                    item.disabled = True
+
+            await self.message.edit(view=self)
+        
+        @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
+        async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.defer()
+
+            msg = await interaction.followup.send(view=spotifyButtonsMenu(self.bot))
+
+            spotifyButtonsMenu.message = msg
+
+    # Send new embed
+    await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+
+    spotifyEmbedView.message = await interaction.original_response()
 
     # Generate random filename
     letters = string.ascii_lowercase
@@ -305,33 +327,33 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
 
     embed.set_thumbnail(url = item["images"][0]["url"])
 
-    view = View(timeout=1800)
-    
-    # Add Open in Spotify button
-    spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
-    view.add_item(spotify_button)
+    class spotifyButtonsMenu(View):
+        def __init__(self, bot):
+            super().__init__(timeout=60)
 
-    # More Button Callback
-    async def more_callback(interaction: discord.Interaction):
-        await interaction.response.defer()
-
-        view = View()
-
-        if not(add_button_url == None or add_button_text == None):
-            # Add additional button                
-            add_button = discord.ui.Button(label=add_button_text, style=discord.ButtonStyle.url, url=add_button_url, row = 1)
-            view.add_item(add_button)
+            self.bot = bot
+            
+            if not(add_button_url == None or add_button_text == None):
+                # Add additional button                
+                add_button = discord.ui.Button(label=add_button_text, style=discord.ButtonStyle.url, url=add_button_url, row = 0)
+                self.add_item(add_button)
         
-        # Add song.link button                
-        songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{item['external_urls']['spotify']}", row = 1)
-        view.add_item(songlink_button)
+            # Add song.link button                
+            songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{item['external_urls']['spotify']}", row = 0)
+            self.add_item(songlink_button)
 
-        # Add Search on Google button
-        google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 1)
-        view.add_item(google_button)
+            # Add Search on Google button
+            google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 0)
+            self.add_item(google_button)
 
-        # Album Art Callback
-        async def art_callback(interaction: discord.Interaction):
+        async def on_timeout(self) -> None:
+            try:
+                await self.message.delete()
+            except discord.errors.NotFound:
+                pass
+        
+        @discord.ui.button(label='Album Art', style=discord.ButtonStyle.gray, row = 1)
+        async def art(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
             
             embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
@@ -380,30 +402,41 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
                 await interaction.edit_original_response(embed = embed)
         
-        # Add Album Art button
-        art_button = discord.ui.Button(label='Album Art', style=discord.ButtonStyle.gray, row = 2)
-        art_button.callback = art_callback
-        view.add_item(art_button)
-
-        # Close Button Callback
-        async def delete_callback(interaction: discord.Interaction):
+        @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
+        async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
             
-            await msg.delete()
-        
-        # Add Close button
-        close_button = discord.ui.Button(label='Close', style = discord.ButtonStyle.red, row = 2)
-        close_button.callback = delete_callback
-        view.add_item(close_button)
-
-        msg = await interaction.followup.send(view = view)
+            await self.message.delete()
     
-    # Add More Options button
-    more_button = discord.ui.Button(label=f'More', style=discord.ButtonStyle.gray, row = 0)
-    more_button.callback = more_callback
-    view.add_item(more_button)
+    class spotifyEmbedView(View):
+        def __init__(self, bot):
+            super().__init__(timeout=10800)
 
-    await interaction.edit_original_response(embed = embed, view = view)
+            self.bot = bot.bot
+
+            # Add Open in Spotify button
+            spotify_button = discord.ui.Button(label=f'Play on Spotify', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
+            self.add_item(spotify_button)
+        
+        async def on_timeout(self) -> None:
+            for item in self.children:
+                if item.style != discord.ButtonStyle.url:
+                    item.disabled = True
+
+            await self.message.edit(view=self)
+        
+        @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
+        async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.defer()
+
+            msg = await interaction.followup.send(view=spotifyButtonsMenu(self.bot))
+
+            spotifyButtonsMenu.message = msg
+
+    # Send new embed
+    await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+
+    spotifyEmbedView.message = await interaction.original_response()
 
     # Generate random filename
     letters = string.ascii_lowercase
