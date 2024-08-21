@@ -4,6 +4,11 @@ Welcome to Titanium, the open source core of the Titanium Discord Bot.
 ## Contributions Welcome!
 Have an improvement you want to make? Developed a new cog that you want to be in the main bot? Contributions are welcome! Make a pull request and I'll take a look. :)
 
+### Licence
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License in the [licence file](/LICENSE) for more details.
+
 ## Included Features
 - Wikipedia and Urban Dictionary search
 - Random Dog and Cat images
@@ -12,10 +17,6 @@ Have an improvement you want to make? Developed a new cog that you want to be in
 - Get lyrics for songs
 - Get URLs for a song link from any popular streaming service
 - Expandable cog system to allow you to make your own commands
-
-## Credit
-**Main Code:** me\
-**Paged View for Playlist, Lyrics, Leaderboard, etc:** [RVZWN on Stack Overflow](https://stackoverflow.com/a/77463524), modified by me
 
 ## Self Hosting TitaniumCore
 Self-hosting TitaniumCore is possible, however you must get the required modules and API tokens first.
