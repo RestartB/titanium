@@ -1,5 +1,5 @@
-# TitaniumCore
-Welcome to TitaniumCore, the open source core of the Titanium Discord Bot.
+# Titanium
+Welcome to Titanium, the open source core of the Titanium Discord Bot.
 
 ## Contributions Welcome!
 Have an improvement you want to make? Developed a new cog that you want to be in the main bot? Contributions are welcome! Make a pull request and I'll take a look. :)
