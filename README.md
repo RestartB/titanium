@@ -28,10 +28,14 @@ Self-hosting Titanium is possible, however you must get the required modules and
 > When generating Bot Tokens and API Secrets, do not share them with anybody!
 
 ### Python Modules
-Titanium relies on several Python modules to function. These modules can be installed from Pypi using Pip or your preferred package manager.\
+Titanium relies on several Python packages. The recommended way to install these packages is with `pipenv`. A `Pipfile` and `Pipfile.lock` have been provided, see the instructions below to use it:\
 \
-**Installation Command:**\
-`pip install discord.py spotipy wikipedia colorthief py-cpuinfo psutil`
+**Installation**\
+1. Run `pip install pipenv --user` to install pipenv
+2. Open a terminal inside Titanium's root directory
+3. Run `pipenv install` to install all required packages
+4. Run `pipenv shell` to start a shell in Titanium's venv
+5. Run `python main.py` to start the bot.
 
 ### Discord Bot Token
 Titanium requires a Discord Bot Token to function. The steps to get one are as follows:
