@@ -138,42 +138,94 @@ class music(commands.Cog):
                             self.page = 0
                             self.pages = pages
                             
-                            google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={song_list[list_place].replace(" ", "+")}+{artist_list[list_place].replace(" ", "+")}')
+                            google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={song_list[list_place].replace(" ", "+")}+{artist_list[list_place].replace(" ", "+")}')
                             self.add_item(google_button)
+
+                            for item in self.children:
+                                if item.custom_id == "first" or item.custom_id == "prev":
+                                    item.disabled = True
                         
                         async def on_timeout(self) -> None:
                             for item in self.children:
-                                if item.style != discord.ButtonStyle.url:
+                                if item.style != ButtonStyle.url:
                                     item.disabled = True
 
                             await self.message.edit(view=self)
                     
-                        @discord.ui.button(label="<", style=ButtonStyle.green, custom_id="prev")
-                        async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                            if self.page > 0:
-                                self.page -= 1
-                            else:
-                                self.page = len(self.pages) - 1
-                            
-                            embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
-                            embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
-                            
-                            await interaction.response.edit_message(embed = embed)
+                        @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
+                        async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                            self.page = 0
 
-                        @discord.ui.button(label=">", style=ButtonStyle.green, custom_id="next")
-                        async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                            if self.page < len(self.pages) - 1:
-                                self.page += 1
-                            else:
-                                self.page = 0
+                            for item in self.children:
+                                item.disabled = False
+                                
+                                if item.custom_id == "first" or item.custom_id == "prev":
+                                    item.disabled = True
                             
                             embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
                             embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
                             
-                            await interaction.response.edit_message(embed = embed)
+                            await interaction.response.edit_message(embed = embed, view = self)
+                        
+                        @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
+                        async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                            if self.page - 1 == 0:
+                                self.page -= 1
+
+                                for item in self.children:
+                                    item.disabled = False
+
+                                    if item.custom_id == "first" or item.custom_id == "prev":
+                                        item.disabled = True
+                            else:
+                                self.page -= 1
+
+                                for item in self.children:
+                                    item.disabled = False
+                            
+                            embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
+                            embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
+                            
+                            await interaction.response.edit_message(embed = embed, view = self)
+
+                        @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
+                        async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                            if (self.page + 1) == (len(self.pages) - 1):
+                                self.page += 1
+
+                                for item in self.children:
+                                    item.disabled = False
+                                    
+                                    if item.custom_id == "next" or item.custom_id == "last":
+                                        item.disabled = True
+                            else:
+                                self.page += 1
+
+                                for item in self.children:
+                                    item.disabled = False
+                            
+                            embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
+                            embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
+                            
+                            await interaction.response.edit_message(embed = embed, view = self)
+                        
+                        @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
+                        async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                            self.page = len(self.pages) - 1
+
+                            for item in self.children:
+                                item.disabled = False
+
+                                if item.custom_id == "next" or item.custom_id == "last":
+                                    item.disabled = True
+                            
+                            embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
+                            embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
+                            
+                            await interaction.response.edit_message(embed = embed, view = self)
 
                     if len(paged_lyrics) == 1:
-                        google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
+                        google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
                         
                         view = View()
                         view.add_item(google_button)
@@ -187,7 +239,7 @@ class music(commands.Cog):
 
                         lyricPages.message = await interaction.original_response()
                 except AttributeError:
-                    google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
+                    google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
                     
                     view = View()
                     view.add_item(google_button)

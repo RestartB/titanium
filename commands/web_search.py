@@ -12,31 +12,6 @@ class web_search(commands.Cog):
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
     installs = discord.app_commands.AppInstallationType(guild=True, user=True)
     searchGroup = app_commands.Group(name="search", description="Search the web using various services.", allowed_contexts=context, allowed_installs=installs)
-    
-    # Equation Solver command (broken)
-    # @searchGroup.command(name = "equation-solver", description= "Solve an equation or expression.")
-    # @app_commands.checks.cooldown(1, 10)
-    # async def self(interaction: discord.Interaction, equation: str):
-    #     await interaction.response.defer()
-        
-    #     try:
-    #         # Send request to mathjs
-    #         request_url = f"http://api.mathjs.org/v4/?expr={equation.replace(' ', '%20')}"
-    #         request = requests.get(request_url)
-    #         request_data = request.json()
-
-    #         # Generate embed
-    #         embed = discord.Embed(title = "Equation Solver")
-    #         embed.add_field(name = "Equation / Expression", value = equation)
-    #         embed.add_field(name = "Solution", value = request_data)
-    #         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-
-    #         # Edit loading message with new embed
-    #         await interaction.edit_original_response(embed = embed)
-    #     except Exception:
-    #         embed = discord.Embed(title = "Error", description = "An error has occurred. Solutions:\n\n**1.** Is the expression / equation valid?\n**2.** Are you using any forbidden characters?\n**3.** Try again later.")
-    #         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
-    #         await interaction.edit_original_response(embed = embed)
 
     # Urban Dictionary command
     @searchGroup.command(name = "urban-dictionary", description = "Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!")
@@ -65,8 +40,13 @@ class web_search(commands.Cog):
                 class UrbanDictPageView(View):
                     def __init__(self, pages):
                         super().__init__(timeout = 1800)
+                        
                         self.page = 0
                         self.pages = pages
+
+                        for item in self.children:
+                            if item.custom_id == "first" or item.custom_id == "prev":
+                                item.disabled = True
                 
                     async def on_timeout(self) -> None:
                         for item in self.children:
@@ -74,29 +54,93 @@ class web_search(commands.Cog):
 
                         await self.message.edit(view=self)
                     
-                    @discord.ui.button(label="<", style=ButtonStyle.green, custom_id="prev")
+                    @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
+                    async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                        embed_list.pop()
+
+                        self.page = 0
+
+                        for item in self.children:
+                            item.disabled = False
+                            
+                            if item.custom_id == "first" or item.custom_id == "prev":
+                                item.disabled = True
+                        
+                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
+                        embed_list.append(embed)
+                        
+                        await interaction.response.edit_message(embeds = embed_list, view = self)
+                    
+                    @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
                     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                         embed_list.pop()
-                        if self.page > 0:
+                        
+                        if self.page - 1 == 0:
                             self.page -= 1
+
+                            for item in self.children:
+                                item.disabled = False
+
+                                if item.custom_id == "first" or item.custom_id == "prev":
+                                    item.disabled = True
                         else:
-                            self.page = len(self.pages) - 1
+                            self.page -= 1
+
+                            for item in self.children:
+                                item.disabled = False
+                        
                         embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        
                         embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
                         embed_list.append(embed)
-                        await interaction.response.edit_message(embeds = embed_list)
+                        
+                        await interaction.response.edit_message(embeds = embed_list, view = self)
 
-                    @discord.ui.button(label=">", style=ButtonStyle.green, custom_id="next")
+                    @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
                     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                         embed_list.pop()
-                        if self.page < len(self.pages) - 1:
+                        
+                        if (self.page + 1) == (len(self.pages) - 1):
                             self.page += 1
+
+                            for item in self.children:
+                                item.disabled = False
+                                
+                                if item.custom_id == "next" or item.custom_id == "last":
+                                    item.disabled = True
                         else:
-                            self.page = 0
+                            self.page += 1
+
+                            for item in self.children:
+                                item.disabled = False
+                        
                         embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        
                         embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
                         embed_list.append(embed)
-                        await interaction.response.edit_message(embeds = embed_list)
+                        
+                        await interaction.response.edit_message(embeds = embed_list, view = self)
+                    
+                    @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
+                    async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                        embed_list.pop()
+                        
+                        self.page = len(self.pages) - 1
+
+                        for item in self.children:
+                            item.disabled = False
+
+                            if item.custom_id == "next" or item.custom_id == "last":
+                                item.disabled = True
+                        
+                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
+                        embed_list.append(embed)
+                        
+                        await interaction.response.edit_message(embeds = embed_list, view = self)
 
                 embed = discord.Embed(title = "Content Warning", description = "Urban Dictionary has very little moderation and content may be inappropriate! View at your own risk.", color = Color.orange())
                 embed_list.append(embed)
@@ -114,15 +158,18 @@ class web_search(commands.Cog):
             else:
                 embed = discord.Embed(title = "No results found.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                
                 await interaction.edit_original_response(embed = embed)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                
                 await interaction.edit_original_response(embed = embed, view = None)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                
                 await interaction.edit_original_response(embed = embed, view = None)
 
     # Wikipedia command

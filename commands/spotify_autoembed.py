@@ -7,6 +7,8 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from urllib.parse import quote
 import re
 
+# This cog is OUT OF DATE and pending a rewrite
+
 class spotify_autoembed(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

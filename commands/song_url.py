@@ -273,41 +273,106 @@ class song_url(commands.Cog):
                 class PlaylistPagesController(View):
                     def __init__(self, pages):
                         super().__init__(timeout = 10800)
+                        
                         self.page = 0
                         self.pages = pages
-                        spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"])
+                        
+                        spotify_button = discord.ui.Button(label=f'Show on Spotify', style=ButtonStyle.url, url=result_info["external_urls"]["spotify"])
                         self.add_item(spotify_button)
+
+                        for item in self.children:
+                            if item.custom_id == "first" or item.custom_id == "prev":
+                                item.disabled = True
                     
                     async def on_timeout(self) -> None:
                         for item in self.children:
-                            if item.style != discord.ButtonStyle.url:
+                            if item.style != ButtonStyle.url:
                                 item.disabled = True
 
                         await self.message.edit(view=self)
-                
-                    @discord.ui.button(label="<", style=ButtonStyle.green, custom_id="prev")
-                    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if self.page > 0:
-                            self.page -= 1
-                        else:
-                            self.page = len(self.pages) - 1
-                        embed = discord.Embed(title = f"{result_info['name']} (Playlist)", description = f"by {result_info['owner']['display_name']} - {result_info['tracks']['total']} items\n\n{self.pages[self.page]}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
-                        embed.set_thumbnail(url = result_info['images'][0]['url'])
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(pages)}", icon_url = interaction.user.avatar.url)
-                        await interaction.response.edit_message(embed = embed)
+                    
+                    @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
+                    async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                        self.page = 0
 
-                    @discord.ui.button(label=">", style=ButtonStyle.green, custom_id="next")
-                    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if self.page < len(self.pages) - 1:
-                            self.page += 1
-                        else:
-                            self.page = 0
+                        for item in self.children:
+                            item.disabled = False
+                            
+                            if item.custom_id == "first" or item.custom_id == "prev":
+                                item.disabled = True
+                            
                         embed = discord.Embed(title = f"{result_info['name']} (Playlist)", description = f"by {result_info['owner']['display_name']} - {result_info['tracks']['total']} items\n\n{self.pages[self.page]}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                        
                         embed.set_thumbnail(url = result_info['images'][0]['url'])
                         embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(pages)}", icon_url = interaction.user.avatar.url)
-                        await interaction.response.edit_message(embed = embed)
+
+                        await interaction.response.edit_message(embed = embed, view = self)
+                
+                    @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
+                    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                        if self.page - 1 == 0:
+                            self.page -= 1
+
+                            for item in self.children:
+                                item.disabled = False
+
+                                if item.custom_id == "first" or item.custom_id == "prev":
+                                    item.disabled = True
+                        else:
+                            self.page -= 1
+
+                            for item in self.children:
+                                item.disabled = False
+                        
+                        embed = discord.Embed(title = f"{result_info['name']} (Playlist)", description = f"by {result_info['owner']['display_name']} - {result_info['tracks']['total']} items\n\n{self.pages[self.page]}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                        
+                        embed.set_thumbnail(url = result_info['images'][0]['url'])
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(pages)}", icon_url = interaction.user.avatar.url)
+                        
+                        await interaction.response.edit_message(embed = embed, view = self)
+
+                    @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
+                    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                        if (self.page + 1) == (len(self.pages) - 1):
+                            self.page += 1
+
+                            for item in self.children:
+                                item.disabled = False
+                                
+                                if item.custom_id == "next" or item.custom_id == "last":
+                                    item.disabled = True
+                        else:
+                            self.page += 1
+
+                            for item in self.children:
+                                item.disabled = False
+                        
+                        embed = discord.Embed(title = f"{result_info['name']} (Playlist)", description = f"by {result_info['owner']['display_name']} - {result_info['tracks']['total']} items\n\n{self.pages[self.page]}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                        
+                        embed.set_thumbnail(url = result_info['images'][0]['url'])
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(pages)}", icon_url = interaction.user.avatar.url)
+                        
+                        await interaction.response.edit_message(embed = embed, view = self)
+                    
+                    @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
+                    async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                        self.page = len(self.pages) - 1
+
+                        for item in self.children:
+                            item.disabled = False
+
+                            if item.custom_id == "next" or item.custom_id == "last":
+                                item.disabled = True
+                        
+                        embed = discord.Embed(title = f"{result_info['name']} (Playlist)", description = f"by {result_info['owner']['display_name']} - {result_info['tracks']['total']} items\n\n{self.pages[self.page]}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                        
+                        embed.set_thumbnail(url = result_info['images'][0]['url'])
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(pages)}", icon_url = interaction.user.avatar.url)
+                        
+                        await interaction.response.edit_message(embed = embed, view = self)
 
                 embed = discord.Embed(title = f"{result_info['name']} (Playlist)", description = f"by {result_info['owner']['display_name']} - {result_info['tracks']['total']} items\n\n{pages[0]}", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
+                
                 embed.set_thumbnail(url = result_info['images'][0]['url'])
                 embed.set_footer(text = f"Requested by {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.avatar.url)
                 
@@ -315,7 +380,7 @@ class song_url(commands.Cog):
                 if len(pages) == 1:
                     # Add Open in Spotify button
                     view = View()
-                    spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=result_info["external_urls"]["spotify"])
+                    spotify_button = discord.ui.Button(label=f'Show on Spotify', style=ButtonStyle.url, url=result_info["external_urls"]["spotify"])
                     view.add_item(spotify_button)
                     
                     await interaction.edit_original_response(embed = embed, view = view)
