@@ -77,7 +77,7 @@ class reviewCom(commands.Cog):
                     else:
                         self.page = len(self.pages) - 1
 
-                    embed = discord.Embed(title = f"review.db User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
+                    embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
                     embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
 
                     i = 1
@@ -109,7 +109,7 @@ class reviewCom(commands.Cog):
                     else:
                         self.page = 0
                     
-                    embed = discord.Embed(title = f"review.db User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
+                    embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
                     embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
 
                     i = 1
@@ -134,7 +134,7 @@ class reviewCom(commands.Cog):
                     embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
                     await interaction.response.edit_message(embed = embed)
 
-            embed = discord.Embed(title = f"review.db User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
+            embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
             embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
             
             if not(len(pages) == 0):
@@ -166,7 +166,7 @@ class reviewCom(commands.Cog):
 
                     pageView.message = await interaction.original_response()
             else:
-                embed = discord.Embed(title = "review.db User Reviews", description="This user has no reviews!", color = Color.red())
+                embed = discord.Embed(title = "ReviewDB User Reviews", description="This user has no reviews!", color = Color.red())
                 embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
             
                 await interaction.edit_original_response(embed = embed)
