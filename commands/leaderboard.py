@@ -108,7 +108,7 @@ class leaderboard(commands.Cog):
             
             class Leaderboard(View):
                 def __init__(self, pages):
-                    super().__init__()
+                    super().__init__(timeout = 900)
                     self.page = 0
                     self.pages = pages
 
