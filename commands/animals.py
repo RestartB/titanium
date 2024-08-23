@@ -83,11 +83,6 @@ class animals(commands.Cog):
     async def sand_cat(self, interaction: discord.Interaction):
         await interaction.response.defer()
         
-        # Send initial embed
-        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Fetching image...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
-        
         # Fetch image
         async with aiohttp.ClientSession() as session:
             async with session.get("https://ees4.dev/betterapi") as request:
