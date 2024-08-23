@@ -38,7 +38,7 @@ class bot_utils(commands.Cog):
         await interaction.response.defer()
         
         embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting info...", color = Color.random())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
         
         embed = discord.Embed(title = "Host Info", color=Color.random())
@@ -56,7 +56,7 @@ class bot_utils(commands.Cog):
         embed.add_field(name = "Python Version", value = sysinfo['python_version'])
         embed.add_field(name = "Bot Latency", value = f"{round(self.bot.latency*1000, 2)}ms", inline = False)
         
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         await interaction.edit_original_response(embed = embed)
 

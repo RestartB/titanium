@@ -79,7 +79,7 @@ class leaderboard(commands.Cog):
         
         # Send initial embed
         embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting leaderboard...")
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
 
         i = 0
@@ -133,7 +133,7 @@ class leaderboard(commands.Cog):
                             item.disabled = True
                     
                     embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.random())
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
 
                     await interaction.response.edit_message(embed = embed, view = self)
                 
@@ -154,7 +154,7 @@ class leaderboard(commands.Cog):
                             item.disabled = False
                     
                     embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.random())
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
 
                     await interaction.response.edit_message(embed = embed, view = self)
 
@@ -175,7 +175,7 @@ class leaderboard(commands.Cog):
                             item.disabled = False
 
                     embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.red())
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
 
                     await interaction.response.edit_message(embed = embed, view = self)
                 
@@ -190,12 +190,12 @@ class leaderboard(commands.Cog):
                             item.disabled = True
                     
                     embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description = self.pages[self.page], color = Color.random())
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
 
                     await interaction.response.edit_message(embed = embed, view = self)
 
             embed = discord.Embed(title = f"Server Leaderboard - {sort_type.name}", description=pages[0], color = Color.random())
-            embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.avatar.url)
+            embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
             
             if len(pages) == 1:
                 await interaction.edit_original_response(embed = embed)

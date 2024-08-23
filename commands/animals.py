@@ -25,7 +25,7 @@ class animals(commands.Cog):
 
         # Send initial embed
         embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Fetching image...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
         
         # Fetch image
@@ -43,7 +43,7 @@ class animals(commands.Cog):
 
         embed = discord.Embed(title = embed_title, color = Color.random())
         embed.set_image(url = request_data[0]["url"])
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         await interaction.edit_original_response(embed = embed)
 
@@ -55,7 +55,7 @@ class animals(commands.Cog):
 
         # Send initial embed
         embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Fetching image...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
         
         # Fetch image
@@ -73,7 +73,7 @@ class animals(commands.Cog):
         
         embed = discord.Embed(title = embed_title, color = Color.random())
         embed.set_image(url = request_data["message"])
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         await interaction.edit_original_response(embed = embed)
     
@@ -85,7 +85,7 @@ class animals(commands.Cog):
         
         # Send initial embed
         embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Fetching image...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
         
         # Fetch image
@@ -103,7 +103,7 @@ class animals(commands.Cog):
 
         embed = discord.Embed(title = embed_title, description="Source: https://ees4.dev/", color = Color.random())
         embed.set_image(url = request_data["url"])
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         await interaction.edit_original_response(embed = embed)
 

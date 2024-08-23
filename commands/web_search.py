@@ -20,7 +20,7 @@ class web_search(commands.Cog):
         await interaction.response.defer()
 
         embed = discord.Embed(title = "Searching...", description = f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
 
         embed_list = []
@@ -68,7 +68,7 @@ class web_search(commands.Cog):
                         
                         embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
                         
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
                         embed_list.append(embed)
                         
                         await interaction.response.edit_message(embeds = embed_list, view = self)
@@ -93,7 +93,7 @@ class web_search(commands.Cog):
                         
                         embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
                         
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
                         embed_list.append(embed)
                         
                         await interaction.response.edit_message(embeds = embed_list, view = self)
@@ -118,7 +118,7 @@ class web_search(commands.Cog):
                         
                         embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
                         
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
                         embed_list.append(embed)
                         
                         await interaction.response.edit_message(embeds = embed_list, view = self)
@@ -137,7 +137,7 @@ class web_search(commands.Cog):
                         
                         embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
                         
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.avatar.url)
+                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
                         embed_list.append(embed)
                         
                         await interaction.response.edit_message(embeds = embed_list, view = self)
@@ -146,7 +146,7 @@ class web_search(commands.Cog):
                 embed_list.append(embed)
                 
                 embed = discord.Embed(title = f"{item_list[0]['word']} (Urban Dictionary)", description = f"**Author: {item_list[0]['author']}**\n\n||{(item_list[0]['definition'].replace('[', '')).replace(']', '')}||", url = item_list[0]['permalink'], color = Color.random())
-                embed.set_footer(text = f"Requested by {interaction.user.name} - Page 1/{len(item_list)}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name} - Page 1/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
                 embed_list.append(embed)
                 
                 if len(item_list) == 1:
@@ -157,18 +157,18 @@ class web_search(commands.Cog):
                     UrbanDictPageView.message = await interaction.original_response()
             else:
                 embed = discord.Embed(title = "No results found.", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
                 await interaction.edit_original_response(embed = embed)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
                 await interaction.edit_original_response(embed = embed, view = None)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
                 await interaction.edit_original_response(embed = embed, view = None)
 
@@ -179,7 +179,7 @@ class web_search(commands.Cog):
         await interaction.response.defer()
         
         embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         await interaction.followup.send(embed = embed)
         
@@ -188,7 +188,7 @@ class web_search(commands.Cog):
             
             embed = discord.Embed(title = f"Search: {search}", color=Color.from_rgb(r = 255, g = 255, b = 255))
             embed.add_field(name = f"{page.title}", value = wikipedia.summary(search, sentences = 3))
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             embed.set_author(name = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             
             view = View()
@@ -197,24 +197,24 @@ class web_search(commands.Cog):
             await interaction.edit_original_response(embed = embed, view = view)
         except wikipedia.exceptions.PageError:
             embed = discord.Embed(title = "Error", description = f"No page was found on Wikipedia matching {search}. Try another search.", color = Color.red())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             
             await interaction.edit_original_response(embed = embed)
         except wikipedia.exceptions.DisambiguationError as error:
             embed = discord.Embed(title = "Please be more specific with your query.", description=error, color = Color.red())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             
             await interaction.edit_original_response(embed = embed)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies.", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed, view = None)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed, view = None)
 
 async def setup(bot):

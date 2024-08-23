@@ -18,14 +18,14 @@ class server_utils(commands.Cog):
 
         # Send initial embed
         embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Grabbing server icon...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
 
         # Handle no icon
         try:
             embed = discord.Embed(title = f"Server Icon - {interaction.guild.name}", color = Color.random())
             embed.set_image(url = interaction.guild.icon.url)
-            embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.avatar.url)
+            embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.display_avatar.url)
 
             # Send Embed
             await interaction.edit_original_response(embed = embed)
@@ -40,7 +40,7 @@ class server_utils(commands.Cog):
         
         # Send initial embed
         embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting server info...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
         
         memberCount = 0
@@ -95,7 +95,7 @@ class server_utils(commands.Cog):
         except AttributeError:
             pass
         
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         # Send Embed
         await interaction.edit_original_response(embed = embed, view = view)
@@ -107,7 +107,7 @@ class server_utils(commands.Cog):
         
         # Send initial embed
         embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting boost info. This command is in beta and may not function correctly.", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
 
         boostAmount = interaction.guild.premium_subscription_count
@@ -120,7 +120,7 @@ class server_utils(commands.Cog):
         embed.add_field(name = "Level", value = f"Level {boostLevel}", inline = True)
         #embed.add_field(name = "Boosts Needed for Next Level", value = memberCount, inline = True)
 
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         # Send Embed
         await interaction.edit_original_response(embed = embed)

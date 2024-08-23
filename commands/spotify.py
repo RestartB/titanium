@@ -39,7 +39,7 @@ class spotify(commands.Cog):
         
         # Send initial embed
         embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Searching...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
 
         if search_type.value == "song":
@@ -85,7 +85,7 @@ class spotify(commands.Cog):
                 select = Select(options = options_list)
 
                 embed = discord.Embed(title = "Select Song", description = f'Showing {len(result["tracks"]["items"])} results for "{search}"', color = Color.random())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
                 # Response to user selection
                 async def response(interaction: discord.Interaction):
@@ -124,7 +124,7 @@ class spotify(commands.Cog):
                 select = Select(options=options_list)
 
                 embed = discord.Embed(title = "Select Artist", description = f'Showing {len(result["artists"]["items"])} results for "{search}"', color = Color.random())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
                 # Response to user selection
                 async def response(interaction: discord.Interaction):
@@ -173,14 +173,14 @@ class spotify(commands.Cog):
                 select = Select(options=options_list)
 
                 embed = discord.Embed(title = "Select Album", description = f'Showing {len(result["albums"]["items"])} results for "{search}"', color = Color.random())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
                 # Response to user selection
                 async def response(interaction: discord.Interaction):
                     await interaction.response.defer()
                     
                     embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting album info...", color = Color.orange())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed, view = None)
                     
                     item = result['albums']['items'][int(select.values[0])]
@@ -206,7 +206,7 @@ class spotify(commands.Cog):
         if "spotify.link" in url:
             try:
                 embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Expanding URL...", color = Color.orange())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.followup.send(embed = embed)
                 
                 url = url.replace('www.', '').replace('http://', '').replace('https://', '').rstrip('/')
@@ -222,19 +222,19 @@ class spotify(commands.Cog):
                 print(error)
                 if interaction.user.id in self.bot.dev_ids:
                     embed = discord.Embed(title = "Error occurred while expanding URL.", description = error, color = Color.red())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed)
                     return
                 else:
                     embed = discord.Embed(title = "Error occurred while expanding URL.", description = "A **spotify.link** was detected, but we could not expand it. Is it valid?\n\nIf you are sure the URL is valid and supported, please try again later or message <@563372552643149825> for assistance.", color = Color.red())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed)
                     return
         else:
             url_expanded = False
         
         embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         if url_expanded == True:
                 await interaction.edit_original_response(embed = embed)
         else:
@@ -276,11 +276,11 @@ class spotify(commands.Cog):
                         embed = discord.Embed(title = f"{result['name']} ({artist_string}) - Album Art", description = f"Viewing highest quality ({result['album']['images'][0]['width']}x{result['album']['images'][0]['height']})", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
                     
                     embed.set_image(url = result["album"]["images"][0]["url"])
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed)
                 else:
                     embed = discord.Embed(title = "No album art available.", color = Color.red())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed)
             elif "album" in url:
                 result = self.sp.album(url)
@@ -318,11 +318,11 @@ class spotify(commands.Cog):
                     else:
                         embed = discord.Embed(title = f"{result['name']} ({artist_string}) - Album Art", description = f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
                     embed.set_image(url = result["images"][0]["url"])
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed)
                 else:
                     embed = discord.Embed(title = "No album art available.", color = Color.red)
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed)
             # Playlist URL
             elif "playlist" in url:
@@ -356,19 +356,19 @@ class spotify(commands.Cog):
                     else:
                         embed = discord.Embed(title = f"{result['name']} - {result['owner']['display_name']} (Playlist) - Cover Art", description = f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
                     embed.set_image(url = result["images"][0]["url"])
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed)
                 else:
                     embed = discord.Embed(title = "No cover art available.", color = Color.red)
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed)
             else:
                 embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed)
         except spotipy.exceptions.SpotifyException:
             embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             await interaction.edit_original_response(embed = embed)
 
 async def setup(bot):
