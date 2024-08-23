@@ -112,6 +112,8 @@ class leaderboard(commands.Cog):
                     self.page = 0
                     self.pages = pages
 
+                    self.locked = False
+
                     for item in self.children:
                         if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True
@@ -122,6 +124,16 @@ class leaderboard(commands.Cog):
 
                     await self.message.edit(view=self)
             
+                async def interaction_check(self, interaction: discord.Interaction):
+                    if interaction.user.id != self.interaction.user.id:
+                        if self.locked:
+                            embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
+                            await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                        else:
+                            return True
+                    else:
+                        return True
+                
                 @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
                 async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                     self.page = 0
@@ -157,6 +169,23 @@ class leaderboard(commands.Cog):
                     embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
 
                     await interaction.response.edit_message(embed = embed, view = self)
+                
+                @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
+                async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    if interaction.user.id == self.interaction.user.id:
+                        self.locked = not self.locked
+
+                        if self.locked == True:
+                            button.emoji = "🔒"
+                            button.style = ButtonStyle.red
+                        else:
+                            button.emoji = "🔓"
+                            button.style = ButtonStyle.green
+                        
+                        await interaction.response.edit_message(view = self)
+                    else:
+                        embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
+                        await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
 
                 @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
                 async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):

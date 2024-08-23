@@ -109,15 +109,12 @@ class server_utils(commands.Cog):
         embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting boost info. This command is in beta and may not function correctly.", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
-
-        boostAmount = interaction.guild.premium_subscription_count
-        boostLevel = interaction.guild.premium_tier
         
         embed = discord.Embed(title = f"{interaction.guild.name} - Info", color = Color.random())
         
         # Member counts
-        embed.add_field(name = "Total Boosts", value = boostAmount)
-        embed.add_field(name = "Level", value = f"Level {boostLevel}", inline = True)
+        embed.add_field(name = "Total Boosts", value = interaction.guild.premium_subscription_count)
+        embed.add_field(name = "Level", value = f"Level {interaction.guild.premium_tier}", inline = True)
         #embed.add_field(name = "Boosts Needed for Next Level", value = memberCount, inline = True)
 
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)

@@ -5,6 +5,7 @@ from discord.ui import Select, View
 import aiohttp
 from urllib.parse import quote
 import json
+import asyncio
 
 class reviewCom(commands.Cog):
     def __init__(self, bot):
@@ -21,7 +22,7 @@ class reviewCom(commands.Cog):
             await interaction.response.defer()
 
             embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Fetching reviews...", color = Color.orange())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             await interaction.followup.send(embed = embed)
 
             # Create URL
@@ -64,6 +65,8 @@ class reviewCom(commands.Cog):
                     self.page = 0
                     self.pages = pages
 
+                    self.locked = False
+
                     for item in self.children:
                         if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True
@@ -73,6 +76,16 @@ class reviewCom(commands.Cog):
                         item.disabled = True
 
                     await self.message.edit(view=self)
+                
+                async def interaction_check(self, interaction: discord.Interaction):
+                    if interaction.user.id != self.interaction.user.id:
+                        if self.locked:
+                            embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
+                            await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                        else:
+                            return True
+                    else:
+                        return True
                 
                 @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
                 async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -85,7 +98,7 @@ class reviewCom(commands.Cog):
                             item.disabled = True
                     
                     embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
-                    embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
+                    embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
                     
                     i = 1
                     for item in self.pages[self.page]:
@@ -106,7 +119,7 @@ class reviewCom(commands.Cog):
 
                             i += 1
 
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
                 
                 @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
@@ -126,7 +139,7 @@ class reviewCom(commands.Cog):
                             item.disabled = False
 
                     embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
-                    embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
+                    embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
 
                     i = 1
                     for item in self.pages[self.page]:
@@ -147,9 +160,26 @@ class reviewCom(commands.Cog):
 
                             i += 1
 
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
 
+                @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
+                async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    if interaction.user.id == self.interaction.user.id:
+                        self.locked = not self.locked
+
+                        if self.locked == True:
+                            button.emoji = "🔒"
+                            button.style = ButtonStyle.red
+                        else:
+                            button.emoji = "🔓"
+                            button.style = ButtonStyle.green
+                        
+                        await interaction.response.edit_message(view = self)
+                    else:
+                        embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
+                        await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                
                 @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
                 async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                     if (self.page + 1) == (len(self.pages) - 1):
@@ -167,7 +197,7 @@ class reviewCom(commands.Cog):
                             item.disabled = False
                     
                     embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
-                    embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
+                    embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
 
                     i = 1
                     for item in self.pages[self.page]:
@@ -188,7 +218,7 @@ class reviewCom(commands.Cog):
 
                             i += 1
 
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
                 
                 @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
@@ -202,7 +232,7 @@ class reviewCom(commands.Cog):
                             item.disabled = True
                     
                     embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
-                    embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
+                    embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
 
                     i = 1
                     for item in self.pages[self.page]:
@@ -223,11 +253,11 @@ class reviewCom(commands.Cog):
 
                             i += 1
 
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.avatar.url)
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
 
             embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
-            embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
+            embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
             
             if not(len(pages) == 0):
                 i = 1
@@ -249,27 +279,28 @@ class reviewCom(commands.Cog):
 
                         i += 1
                 
-                embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
                 
                 if len(pages) == 1:
                     await interaction.edit_original_response(embed = embed)
                 else:
                     await interaction.edit_original_response(embed = embed, view = pageView(pages))
 
+                    pageView.interaction = interaction
                     pageView.message = await interaction.original_response()
             else:
                 embed = discord.Embed(title = "ReviewDB User Reviews", description="This user has no reviews!", color = Color.red())
-                embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.avatar.url)
+                embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
             
                 await interaction.edit_original_response(embed = embed)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed, view = None)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.avatar.url)
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed, view = None)
 
 async def setup(bot):
