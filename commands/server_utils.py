@@ -28,7 +28,7 @@ class server_utils(commands.Cog):
             embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.avatar.url)
 
             # Send Embed
-            await interaction.followup.send(embed = embed)
+            await interaction.edit_original_response(embed = embed)
         except AttributeError:
             embed = discord.Embed(title = "Server has no icon!", color = Color.red())
             await interaction.edit_original_response(embed = embed, view = None)
