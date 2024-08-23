@@ -266,6 +266,7 @@ class music(commands.Cog):
                         embed.set_footer(text = f"lrclib.net - Page 1/{len(paged_lyrics)}")
                         await interaction.edit_original_response(embed = embed, view = lyricPages(paged_lyrics))
 
+                        lyricPages.interaction = interaction
                         lyricPages.message = await interaction.original_response()
                 except AttributeError:
                     google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')

@@ -231,6 +231,7 @@ class leaderboard(commands.Cog):
             else:
                 await interaction.edit_original_response(embed = embed, view = Leaderboard(pages))
 
+                Leaderboard.interaction = interaction
                 Leaderboard.message = await interaction.original_response()
         else:
             embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server.", color = Color.red())

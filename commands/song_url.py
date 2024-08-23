@@ -418,6 +418,7 @@ class song_url(commands.Cog):
                     await interaction.edit_original_response(embed = embed, view = PlaylistPagesController(pages))
 
                     PlaylistPagesController.message = await interaction.original_response()
+                    PlaylistPagesController.interaction = interaction
             else:
                 embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)

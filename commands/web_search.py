@@ -183,6 +183,7 @@ class web_search(commands.Cog):
                 else:
                     await interaction.edit_original_response(embeds = embed_list, view = UrbanDictPageView(item_list))
 
+                    UrbanDictPageView.interaction = interaction
                     UrbanDictPageView.message = await interaction.original_response()
             else:
                 embed = discord.Embed(title = "No results found.", color = Color.red())
