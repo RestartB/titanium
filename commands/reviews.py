@@ -21,10 +21,6 @@ class reviewCom(commands.Cog):
         try:    
             await interaction.response.defer()
 
-            embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Fetching reviews...", color = Color.orange())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-            await interaction.followup.send(embed = embed)
-
             # Create URL
             request_url = f"https://manti.vendicated.dev/api/reviewdb/users/{user.id}/reviews"
 
@@ -81,7 +77,7 @@ class reviewCom(commands.Cog):
                     if interaction.user.id != self.interaction.user.id:
                         if self.locked:
                             embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                            await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                            await interaction.response.send_message(embed = embed, delete_after=5)
                         else:
                             return True
                     else:
@@ -178,7 +174,7 @@ class reviewCom(commands.Cog):
                         await interaction.response.edit_message(view = self)
                     else:
                         embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
-                        await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                        await interaction.response.send_message(embed = embed, delete_after=5)
                 
                 @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
                 async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -282,9 +278,9 @@ class reviewCom(commands.Cog):
                 embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
                 
                 if len(pages) == 1:
-                    await interaction.edit_original_response(embed = embed)
+                    await interaction.followup.send(embed = embed)
                 else:
-                    await interaction.edit_original_response(embed = embed, view = pageView(pages))
+                    await interaction.followup.send(embed = embed, view = pageView(pages))
 
                     pageView.interaction = interaction
                     pageView.message = await interaction.original_response()
@@ -292,16 +288,16 @@ class reviewCom(commands.Cog):
                 embed = discord.Embed(title = "ReviewDB User Reviews", description="This user has no reviews!", color = Color.red())
                 embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
             
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.edit_original_response(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, view = None)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.edit_original_response(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, view = None)
 
 async def setup(bot):
     await bot.add_cog(reviewCom(bot))

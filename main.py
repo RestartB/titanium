@@ -197,7 +197,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
         await interaction.response.defer(ephemeral=True)
 
         embed = discord.Embed(title = "Cooldown", description = error, color = Color.red())
-        msg = await interaction.followup.send(embed = embed, ephemeral = True)
+        msg = await interaction.followup.send(embed = embed)
         
         await asyncio.sleep(5)
         
@@ -207,7 +207,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
         await interaction.response.defer(ephemeral=True)
 
         embed = discord.Embed(title = "Missing Permissions", description = error, color = Color.red())
-        msg = await interaction.followup.send(embed = embed, ephemeral = True)
+        msg = await interaction.followup.send(embed = embed)
         
         await asyncio.sleep(5)
         

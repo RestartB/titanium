@@ -31,11 +31,6 @@ class music(commands.Cog):
         search = search.replace(" ", "%20")
         search = search.lower()
 
-        # Send initial embed
-        embed = discord.Embed(title = "Searching...", description=f"{self.bot.loading_emoji} Contacting lyrics API. This may take a moment.", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
-
         # Create URL
         request_url = f"https://lrclib.net/api/search?q={search}"
 
@@ -50,7 +45,7 @@ class music(commands.Cog):
         # Check if result is blank
         if request_data == []:
             embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
-            await interaction.edit_original_response(embed = embed)
+            await interaction.followup.send(embed = embed)
         else:
             # Sort through request data, add required info to lists
             for song in request_data:
@@ -285,7 +280,7 @@ class music(commands.Cog):
             view.add_item(select)
 
             # Edit initial message to show dropdown
-            await interaction.edit_original_response(embed = embed, view = view)
+            await interaction.followup.send(embed = embed, view = view)
 
 async def setup(bot):
     await bot.add_cog(music(bot))

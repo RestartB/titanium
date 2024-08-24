@@ -37,11 +37,6 @@ class spotify(commands.Cog):
         
         options_list = []
         
-        # Send initial embed
-        embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Searching...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
-
         if search_type.value == "song":
             # Search Spotify
             result = self.sp.search(search, type = 'track', limit = 5)
@@ -204,11 +199,7 @@ class spotify(commands.Cog):
         await interaction.response.defer()
         
         if "spotify.link" in url:
-            try:
-                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Expanding URL...", color = Color.orange())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed)
-                
+            try:  
                 url = url.replace('www.', '').replace('http://', '').replace('https://', '').rstrip('/')
                 url = f"https://{url}"
                 
@@ -223,22 +214,19 @@ class spotify(commands.Cog):
                 if interaction.user.id in self.bot.dev_ids:
                     embed = discord.Embed(title = "Error occurred while expanding URL.", description = error, color = Color.red())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    await interaction.edit_original_response(embed = embed)
+                    await interaction.followup.send(embed = embed)
                     return
                 else:
                     embed = discord.Embed(title = "Error occurred while expanding URL.", description = "A **spotify.link** was detected, but we could not expand it. Is it valid?\n\nIf you are sure the URL is valid and supported, please try again later or message <@563372552643149825> for assistance.", color = Color.red())
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    await interaction.edit_original_response(embed = embed)
+                    await interaction.followup.send(embed = embed)
                     return
         else:
             url_expanded = False
         
         embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        if url_expanded == True:
-                await interaction.edit_original_response(embed = embed)
-        else:
-            await interaction.followup.send(embed = embed)
+        await interaction.followup.send(embed = embed)
 
         artist_string = ""
 

@@ -19,10 +19,6 @@ class web_search(commands.Cog):
     async def urban_dict(self, interaction: discord.Interaction, query: str):
         await interaction.response.defer()
 
-        embed = discord.Embed(title = "Searching...", description = f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
-
         embed_list = []
 
         try:
@@ -60,7 +56,7 @@ class web_search(commands.Cog):
                         if interaction.user.id != self.interaction.user.id:
                             if self.locked:
                                 embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                                await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                                await interaction.response.send_message(embed = embed, delete_after=5)
                             else:
                                 return True
                         else:
@@ -125,7 +121,7 @@ class web_search(commands.Cog):
                             await interaction.response.edit_message(view = self)
                         else:
                             embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
-                            await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                            await interaction.response.send_message(embed = embed, delete_after=5)
                     
                     @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
                     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -179,9 +175,9 @@ class web_search(commands.Cog):
                 embed_list.append(embed)
                 
                 if len(item_list) == 1:
-                    await interaction.edit_original_response(embeds = embed_list)
+                    await interaction.followup.send(embeds = embed_list)
                 else:
-                    await interaction.edit_original_response(embeds = embed_list, view = UrbanDictPageView(item_list))
+                    await interaction.followup.send(embeds = embed_list, view = UrbanDictPageView(item_list))
 
                     UrbanDictPageView.interaction = interaction
                     UrbanDictPageView.message = await interaction.original_response()
@@ -189,29 +185,24 @@ class web_search(commands.Cog):
                 embed = discord.Embed(title = "No results found.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
-                await interaction.edit_original_response(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, view = None)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
-                await interaction.edit_original_response(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, view = None)
 
     # Wikipedia command
     @searchGroup.command(name = "wikipedia", description = "Search Wikipedia for information.")
     @app_commands.checks.cooldown(1, 5)
     async def wiki(self, interaction: discord.Interaction, search: str):
         await interaction.response.defer()
-        
-        embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        
-        await interaction.followup.send(embed = embed)
         
         try:
             page = wikipedia.page(search)
@@ -224,28 +215,28 @@ class web_search(commands.Cog):
             view = View()
             view.add_item(discord.ui.Button(label = "Read More", style = discord.ButtonStyle.url, url = page.url))
             
-            await interaction.edit_original_response(embed = embed, view = view)
+            await interaction.followup.send(embed = embed, view = view)
         except wikipedia.exceptions.PageError:
             embed = discord.Embed(title = "Error", description = f"No page was found on Wikipedia matching {search}. Try another search.", color = Color.red())
             embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             
-            await interaction.edit_original_response(embed = embed)
+            await interaction.followup.send(embed = embed)
         except wikipedia.exceptions.DisambiguationError as error:
             embed = discord.Embed(title = "Please be more specific with your query.", description=error, color = Color.red())
             embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             
-            await interaction.edit_original_response(embed = embed)
+            await interaction.followup.send(embed = embed)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.edit_original_response(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, view = None)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.edit_original_response(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, view = None)
 
 async def setup(bot):
     await bot.add_cog(web_search(bot))

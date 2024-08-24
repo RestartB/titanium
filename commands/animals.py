@@ -23,17 +23,12 @@ class animals(commands.Cog):
     async def cat(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
-        # Send initial embed
-        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Fetching image...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
-        
         # Fetch image
         async with aiohttp.ClientSession() as session:
             async with session.get("https://api.thecatapi.com/v1/images/search") as request:
                 if request.status == 429:
                     embed = discord.Embed(title = "The service has been rate limited. Try again later.", color = Color.red())
-                    await interaction.edit_original_response(embed = embed)
+                    await interaction.followup.send(embed = embed)
                     return
                 else:
                     request_data = await request.json()
@@ -45,7 +40,7 @@ class animals(commands.Cog):
         embed.set_image(url = request_data[0]["url"])
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
-        await interaction.edit_original_response(embed = embed)
+        await interaction.followup.send(embed = embed)
 
     # Dog command
     @animalGroup.command(name = "dog", description = "Get a random dog picture.")
@@ -53,17 +48,12 @@ class animals(commands.Cog):
     async def dog(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
-        # Send initial embed
-        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Fetching image...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
-        
         # Fetch image
         async with aiohttp.ClientSession() as session:
             async with session.get("https://dog.ceo/api/breeds/image/random") as request:
                 if request.status == 429:
                     embed = discord.Embed(title = "The service has been rate limited. Try again later.", color = Color.red())
-                    await interaction.edit_original_response(embed = embed)
+                    await interaction.followup.send(embed = embed)
                     return
                 else:
                     request_data = await request.json()
@@ -75,7 +65,7 @@ class animals(commands.Cog):
         embed.set_image(url = request_data["message"])
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
-        await interaction.edit_original_response(embed = embed)
+        await interaction.followup.send(embed = embed)
     
     # Sand Cat command
     @animalGroup.command(name = "sand-cat", description = "Get a random sand cat picture.")
@@ -88,7 +78,7 @@ class animals(commands.Cog):
             async with session.get("https://ees4.dev/betterapi") as request:
                 if request.status == 429:
                     embed = discord.Embed(title = "The service has been rate limited. Try again later.", color = Color.red())
-                    await interaction.edit_original_response(embed = embed)
+                    await interaction.followup.send(embed = embed)
                     return
                 else:
                     request_data = await request.json()
@@ -100,7 +90,7 @@ class animals(commands.Cog):
         embed.set_image(url = request_data["url"])
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
-        await interaction.edit_original_response(embed = embed)
+        await interaction.followup.send(embed = embed)
 
 async def setup(bot):
     await bot.add_cog(animals(bot))

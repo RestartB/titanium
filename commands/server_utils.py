@@ -16,11 +16,6 @@ class server_utils(commands.Cog):
     async def server_icon(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
-        # Send initial embed
-        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Grabbing server icon...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
-
         # Handle no icon
         try:
             embed = discord.Embed(title = f"Server Icon - {interaction.guild.name}", color = Color.random())
@@ -28,21 +23,16 @@ class server_utils(commands.Cog):
             embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.display_avatar.url)
 
             # Send Embed
-            await interaction.edit_original_response(embed = embed)
+            await interaction.followup.send(embed = embed)
         except AttributeError:
             embed = discord.Embed(title = "Server has no icon!", color = Color.red())
-            await interaction.edit_original_response(embed = embed, view = None)
+            await interaction.followup.send(embed = embed, view = None)
         
     # Server Info command
     @serverGroup.command(name = "info", description = "Get info about the server.")
     async def server_info(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
-        # Send initial embed
-        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting server info...", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
-        
+
         memberCount = 0
         botCount = 0
         
@@ -98,17 +88,12 @@ class server_utils(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         # Send Embed
-        await interaction.edit_original_response(embed = embed, view = view)
+        await interaction.followup.send(embed = embed, view = view)
 
     # Server Info command
     @serverGroup.command(name = "boosts", description = "Beta: get info about this server's boost stats.")
     async def server_boost(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
-        # Send initial embed
-        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting boost info. This command is in beta and may not function correctly.", color = Color.orange())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
         
         embed = discord.Embed(title = f"{interaction.guild.name} - Info", color = Color.random())
         
@@ -120,7 +105,7 @@ class server_utils(commands.Cog):
         embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         # Send Embed
-        await interaction.edit_original_response(embed = embed)
+        await interaction.followup.send(embed = embed)
 
 async def setup(bot):
     await bot.add_cog(server_utils(bot))

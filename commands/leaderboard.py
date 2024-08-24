@@ -77,11 +77,6 @@ class leaderboard(commands.Cog):
         
         pages = []
         
-        # Send initial embed
-        embed = discord.Embed(title = "Loading...", description=f"{self.bot.loading_emoji} Getting leaderboard...")
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
-
         i = 0
         pageStr = ""
         
@@ -128,7 +123,7 @@ class leaderboard(commands.Cog):
                     if interaction.user.id != self.interaction.user.id:
                         if self.locked:
                             embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                            await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                            await interaction.response.send_message(embed = embed, delete_after=5)
                         else:
                             return True
                     else:
@@ -185,7 +180,7 @@ class leaderboard(commands.Cog):
                         await interaction.response.edit_message(view = self)
                     else:
                         embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
-                        await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                        await interaction.response.send_message(embed = embed, delete_after=5)
 
                 @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
                 async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -227,15 +222,15 @@ class leaderboard(commands.Cog):
             embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
             
             if len(pages) == 1:
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
             else:
-                await interaction.edit_original_response(embed = embed, view = Leaderboard(pages))
+                await interaction.followup.send(embed = embed, view = Leaderboard(pages))
 
                 Leaderboard.interaction = interaction
                 Leaderboard.message = await interaction.original_response()
         else:
             embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server.", color = Color.red())
-            await interaction.edit_original_response(embed = embed)
+            await interaction.followup.send(embed = embed)
 
     # # Opt out command
     # @lbGroup.command(name = "opt-out", description = "Opt out of the leaderboard globally as a user.")
@@ -272,7 +267,7 @@ class leaderboard(commands.Cog):
     #     view.add_item(delete_button)
 
     #     embed = discord.Embed(title = "Are you sure?", description = "By opting out of the leaderboard, you will be unable to contribute to the Titanium leaderboard in any server.", color = Color.orange())
-    #     await interaction.followup.send(embed = embed, view = view, ephemeral = True)
+    #     await interaction.followup.send(embed = embed, view = view)
     
     # # Opt out command
     # @lbGroup.command(name = "opt-in", description = "Opt back in to the leaderboard globally as a user.")
@@ -304,7 +299,7 @@ class leaderboard(commands.Cog):
     #     view.add_item(delete_button)
 
     #     embed = discord.Embed(title = "Are you sure?", description = "By opting in to the leaderboard, you will be able to contribute to the Titanium leaderboard in any server again.", color = Color.orange())
-    #     await interaction.followup.send(embed = embed, view = view, ephemeral = True)
+    #     await interaction.followup.send(embed = embed, view = view)
     
     # Privacy command
     @lbGroup.command(name = "privacy", description = "View the leaderboard privacy disclaimer.")
@@ -322,7 +317,7 @@ class leaderboard(commands.Cog):
         
         embed = discord.Embed(title = title, description = description)
         # embed.add_field(name = "Opting Out", value="If you wish to opt out, use the following commands:\n**/lb-control opt-out - to opt out\n**/lb-control opt-in** - to opt back in")
-        await interaction.followup.send(embed = embed, ephemeral = True)
+        await interaction.followup.send(embed = embed)
     
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
     perms = discord.Permissions()
@@ -377,7 +372,7 @@ class leaderboard(commands.Cog):
         view.add_item(delete_button)
 
         embed = discord.Embed(title = "Are you sure?", description = "The leaderboard will be disabled, and data for this server will be deleted!", color = Color.orange())
-        await interaction.followup.send(embed = embed, view = view, ephemeral = True)
+        await interaction.followup.send(embed = embed, view = view)
     
     # Reset LB command
     @lbCtrlGroup.command(name = "reset", description = "Resets the message leaderboard.")
@@ -385,10 +380,7 @@ class leaderboard(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def reset_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
-        
-        embed = discord.Embed(title = "Loading...", color = Color.orange())
-        await interaction.followup.send(embed = embed, ephemeral = True)
-        
+
         if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';").fetchone() == None:
             embed = discord.Embed(title = "Disabled", description = "Leaderboard is disabled in this server.", color = Color.red())
             await interaction.edit_original_response(embed = embed)
@@ -419,10 +411,7 @@ class leaderboard(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def reset_userlb(self, interaction: discord.Interaction, user: discord.User):
         await interaction.response.defer(ephemeral = True)
-        
-        embed = discord.Embed(title = "Loading...", color = Color.orange())
-        await interaction.followup.send(embed = embed, ephemeral = True)
-        
+
         if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';").fetchone() == None:
             embed = discord.Embed(title = "Disabled", description = "Leaderboard is disabled in this server.", color = Color.red())
             await interaction.edit_original_response(embed = embed)

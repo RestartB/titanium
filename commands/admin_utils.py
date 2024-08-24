@@ -25,20 +25,17 @@ class cog_utils(commands.Cog):
         await interaction.response.defer(ephemeral = True)
 
         if interaction.user.id in self.bot.dev_ids:
-            embed = discord.Embed(title = "Loading cog...", description=f"{self.bot.loading_emoji} Loading {cog}.", color = Color.orange())
-            await interaction.followup.send(embed = embed, ephemeral = True)
-
             try:
                 await self.bot.load_extension(f"commands.{cog}")
 
                 embed = discord.Embed(title = f"Loaded {cog}!", color = Color.green())
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
             except Exception as error:
                 embed = discord.Embed(title = "Error", description = f"Error while loading {cog}.\n\n{error}", color = Color.red())
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
-            await interaction.followup.send(embed = embed, ephemeral = True)
+            await interaction.followup.send(embed = embed)
 
     # Unload cog command
     @adminGroup.command(name = "unload", description = "Admin Only: unload a cog.")
@@ -46,24 +43,21 @@ class cog_utils(commands.Cog):
         await interaction.response.defer(ephemeral = True)
 
         if interaction.user.id in self.bot.dev_ids:
-            embed = discord.Embed(title = "Unloading cog...", description=f"{self.bot.loading_emoji} Unloading {cog}.", color = Color.orange())
-            await interaction.followup.send(embed = embed, ephemeral = True)
-
             try:
                 if cog != "reminders":
                     await self.bot.unload_extension(f"commands.{cog}")
 
                     embed = discord.Embed(title = f"Unloaded {cog}!", color = Color.green())
-                    await interaction.edit_original_response(embed = embed)
+                    await interaction.followup.send(embed = embed)
                 else:
                     embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\nCog is protected from unloading. Please reload the bot without the cog present to unload.", color = Color.red())
-                    await interaction.edit_original_response(embed = embed)
+                    await interaction.followup.send(embed = embed)
             except Exception as error:
                 embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\n{error}", color = Color.red())
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
-            await interaction.followup.send(embed = embed, ephemeral = True)
+            await interaction.followup.send(embed = embed)
 
     # Reload cog command
     @adminGroup.command(name = "reload", description = "Admin Only: reload a cog.")
@@ -71,24 +65,21 @@ class cog_utils(commands.Cog):
         await interaction.response.defer(ephemeral = True)
 
         if interaction.user.id in self.bot.dev_ids:
-            embed = discord.Embed(title = "Reloading cog...", description=f"{self.bot.loading_emoji} Reloading {cog}.", color = Color.orange())
-            await interaction.followup.send(embed = embed, ephemeral = True)
-
             try:
                 if cog != "reminders":
                     await self.bot.reload_extension(f"commands.{cog}")
 
                     embed = discord.Embed(title = f"Reloaded {cog}!", color = Color.green())
-                    await interaction.edit_original_response(embed = embed)
+                    await interaction.followup.send(embed = embed)
                 else:
                     embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\nCog is protected from reloading.", color = Color.red())
-                    await interaction.edit_original_response(embed = embed)
+                    await interaction.followup.send(embed = embed)
             except Exception as error:
                 embed = discord.Embed(title = "Error", description = f"Error while reloading {cog}.\n\n{error}", color = Color.red())
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
-            await interaction.followup.send(embed = embed, ephemeral = True)
+            await interaction.followup.send(embed = embed)
     
     # Tree sync command
     @adminGroup.command(name = "sync", description = "Admin Only: sync the command tree.")
@@ -98,7 +89,7 @@ class cog_utils(commands.Cog):
         if interaction.user.id in self.bot.dev_ids:
             # Loading prompt
             embed = discord.Embed(title = "Syncing tree...", description=f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
-            await interaction.followup.send(embed = embed, ephemeral = True)
+            await interaction.followup.send(embed = embed)
 
             # Global Sync
             print("[INIT] Syncing global command tree...")
@@ -115,7 +106,7 @@ class cog_utils(commands.Cog):
             await interaction.edit_original_response(embed = embed)
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
-            await interaction.followup.send(embed = embed, ephemeral = True)
+            await interaction.followup.send(embed = embed)
     
     # Clear Console command
     @adminGroup.command(name = "clear-console", description = "Admin Only: clear the console.")
@@ -125,10 +116,10 @@ class cog_utils(commands.Cog):
         if interaction.user.id in self.bot.dev_ids:
             os.system('cls' if os.name=='nt' else 'clear')
 
-            await interaction.followup.send(f"Cleared the console.", ephemeral = True)
+            await interaction.followup.send(f"Cleared the console.")
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
-            await interaction.followup.send(embed = embed, ephemeral = True)
+            await interaction.followup.send(embed = embed)
     
     # Send Message command
     @adminGroup.command(name = "send-message", description = "Admin Only: send debug message.")
@@ -143,10 +134,10 @@ class cog_utils(commands.Cog):
             
             await channel.send(embed=embed)
 
-            await interaction.followup.send(f"Message sent to channel ID {channel_id}.\n\nContent: {message}", ephemeral = True)
+            await interaction.followup.send(f"Message sent to channel ID {channel_id}.\n\nContent: {message}")
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
-            await interaction.followup.send(embed = embed, ephemeral = True)
+            await interaction.followup.send(embed = embed)
     
     # Server List command
     @adminGroup.command(name = "server-list", description = "Admin Only: get a list of all server guilds.")
@@ -263,7 +254,7 @@ class cog_utils(commands.Cog):
                 await interaction.edit_original_response(embed = embed, view = serversPageView(pages))
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
-            await interaction.followup.send(embed = embed, ephemeral = True)
+            await interaction.followup.send(embed = embed)
     
     # Error Test command
     @adminGroup.command(name = "error-test", description = "Admin Only: test the error handler. This WILL cause an error to occur!")
@@ -278,7 +269,7 @@ class cog_utils(commands.Cog):
             raise Exception
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
-            await interaction.followup.send(embed = embed, ephemeral = True)
+            await interaction.followup.send(embed = embed)
 
 async def setup(bot):
     await bot.add_cog(cog_utils(bot))
