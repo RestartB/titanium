@@ -158,19 +158,6 @@ class misc(commands.Cog):
         except Exception:
             embed = discord.Embed(title = "Error", description = "**An error has occurred.\n\nSolutions**\n- Is the channel a text channel?\n- Has a message been sent here yet?\n- Try again later.", color = Color.red())
             await interaction.edit_original_response(embed=embed)
-    
-    # PFP command
-    @app_commands.command(name = "pfp", description = "Show a user's PFP.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def pfp(self, interaction: discord.Interaction, user: discord.User):
-        await interaction.response.defer()
-        # Idea: set embed colour to user's banner colour'
-        embed = discord.Embed(title = f"PFP - {user.name}", color = Color.random())
-        embed.set_image(url = user.display_avatar.url)
-        embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.display_avatar.url)
-        # Send Embed
-        await interaction.followup.send(embed = embed)
         
 async def setup(bot):
     await bot.add_cog(misc(bot))

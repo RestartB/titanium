@@ -24,7 +24,7 @@ class song_url(commands.Cog):
     @app_commands.checks.cooldown(1, 15)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def song_url(self, interaction: discord.Interaction, url: str, platform_select: app_commands.Choice[str] = None):
+    async def song_url(self, interaction: discord.Interaction, url: str):
         await interaction.response.defer()
         
         artist_string = ""
@@ -32,7 +32,7 @@ class song_url(commands.Cog):
 
         try:
             # Query song.link if required
-            if not("spotify" in url) or platform_select != None:
+            if not("spotify" in url):
                 try:
                     processed = True
 
