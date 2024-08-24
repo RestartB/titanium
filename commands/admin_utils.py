@@ -158,7 +158,7 @@ class cog_utils(commands.Cog):
             pages = []
             
             for i, server in enumerate(self.bot.guilds):
-                page.append(f"{i + 1}. {server}")
+                page.append(f"{i + 1}. {server} ({server.member_count} members)")
                 
                 if (i + 1) % 20 == 0:
                     pages.append(page)
