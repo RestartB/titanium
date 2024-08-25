@@ -18,15 +18,20 @@ class user_utils(commands.Cog):
     async def server_info(self, interaction: discord.Interaction, user: discord.User):
         await interaction.response.defer()
         
-        member = interaction.guild.get_member(user.id)
-        inGuild = True
+        try:
+            member = interaction.guild.get_member(user.id)
 
-        if member == None:
+            if member == None:
+                member = user
+                inGuild = False
+            else:
+                inGuild = True
+        except AttributeError:
             member = user
             inGuild = False
         
         embed = discord.Embed(title = f"User Info", color = Color.random())
-        embed.set_author(name=f"{member.display_name} ({member.name})")
+        embed.set_author(name=f"{member.display_name} (@{member.name})", icon_url=member.display_avatar.url)
 
         creationDate = int(member.created_at.timestamp())
         joinDate = (int(member.joined_at.timestamp()) if inGuild else None)
