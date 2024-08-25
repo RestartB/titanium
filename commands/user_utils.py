@@ -35,7 +35,7 @@ class user_utils(commands.Cog):
         
         # Other info
         embed.add_field(name = "Joined Discord", value = f"<t:{creationDate}:R> (<t:{creationDate}:f>)")
-        (embed.add_field(name = "Joined Server", value = f"<t:{joinDate}:R> (<t:{creationDate}:f>)") if inGuild else None)
+        (embed.add_field(name = "Joined Server", value = f"<t:{joinDate}:R> (<t:{joinDate}:f>)") if inGuild else None)
 
         if inGuild:
             roles = []
