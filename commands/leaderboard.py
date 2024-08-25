@@ -17,7 +17,11 @@ class leaderboard(commands.Cog):
             self.cursor.execute("CREATE TABLE optOut (userID int)")
             self.connection.commit()
         
-        self.optOutList = self.cursor.execute(f"SELECT userID FROM optOut;").fetchall()
+        self.optOutList = []
+        rawOptOutList = self.cursor.execute(f"SELECT userID FROM optOut;").fetchall()
+
+        for id in rawOptOutList:
+            self.optOutList.append(id[0])
 
     # Refresh opt out list function
     async def refreshOptOutList(self):
@@ -54,6 +58,8 @@ class leaderboard(commands.Cog):
                         self.connection.commit()
                     else:
                         pass
+                else:
+                    pass
             else:
                 pass
         # This should never happen, but if there is an error, log it
@@ -232,74 +238,74 @@ class leaderboard(commands.Cog):
             embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server.", color = Color.red())
             await interaction.followup.send(embed = embed)
 
-    # # Opt out command
-    # @lbGroup.command(name = "opt-out", description = "Opt out of the leaderboard globally as a user.")
-    # async def optOut_lb(self, interaction: discord.Interaction):
-    #     await interaction.response.defer(ephemeral = True)
+    # Opt out command
+    @lbGroup.command(name = "opt-out", description = "Opt out of the leaderboard globally as a user.")
+    async def optOut_lb(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral = True)
         
-    #     async def delete_callback(interaction: discord.Interaction):
-    #         await interaction.response.defer(ephemeral = True)
+        async def delete_callback(interaction: discord.Interaction):
+            await interaction.response.defer(ephemeral = True)
 
-    #         embed = discord.Embed(title = "Opting out...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
-    #         await interaction.edit_original_response(embed = embed, view = None)
+            embed = discord.Embed(title = "Opting out...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
+            await interaction.edit_original_response(embed = embed, view = None)
 
-    #         if interaction.user.id in self.optOutList:
-    #             embed = discord.Embed(title = "Failed", description = "You have already opted out.", color = Color.red())
-    #             await interaction.edit_original_response(embed = embed)
-    #         else:
-    #             self.optOutList.remove(interaction.user.id)
-    #             status, error = await self.refreshOptOutList(self)
+            if interaction.user.id in self.optOutList:
+                embed = discord.Embed(title = "Failed", description = "You have already opted out.", color = Color.red())
+                await interaction.edit_original_response(embed = embed)
+            else:
+                self.optOutList.append(interaction.user.id)
+                status, error = await self.refreshOptOutList()
 
-    #             for server in self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';").fetchall():
-    #                 self.cursor.execute(f"DELETE FROM '{server}' WHERE userMention = '<@{interaction.user.id}>';")
+                for server in self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND NOT name='optOut';").fetchall():
+                    self.cursor.execute(f"DELETE FROM '{int(server[0])}' WHERE userMention = ?;", (interaction.user.mention,))
                 
-    #             self.connection.commit()
+                self.connection.commit()
 
-    #             if status == False:
-    #                 raise error
+                if status == False:
+                    raise error
 
-    #             embed = discord.Embed(title = "You have opted out.", color = Color.green())
-    #             await interaction.edit_original_response(embed = embed)
+                embed = discord.Embed(title = "You have opted out.", color = Color.green())
+                await interaction.edit_original_response(embed = embed)
                 
-    #     view = View()
-    #     delete_button = discord.ui.Button(label='Opt Out', style=ButtonStyle.red)
-    #     delete_button.callback = delete_callback
-    #     view.add_item(delete_button)
+        view = View()
+        delete_button = discord.ui.Button(label='Opt Out', style=ButtonStyle.red)
+        delete_button.callback = delete_callback
+        view.add_item(delete_button)
 
-    #     embed = discord.Embed(title = "Are you sure?", description = "By opting out of the leaderboard, you will be unable to contribute to the Titanium leaderboard in any server.", color = Color.orange())
-    #     await interaction.followup.send(embed = embed, view = view)
+        embed = discord.Embed(title = "Are you sure?", description = "By opting out of the leaderboard, you will be unable to contribute to the Titanium leaderboard in any server. Additionally, your data will be deleted across all Titanium leaderboards.", color = Color.orange())
+        await interaction.followup.send(embed = embed, view = view)
     
-    # # Opt out command
-    # @lbGroup.command(name = "opt-in", description = "Opt back in to the leaderboard globally as a user.")
-    # async def optIn_lb(self, interaction: discord.Interaction):
-    #     await interaction.response.defer(ephemeral = True)
+    # Opt out command
+    @lbGroup.command(name = "opt-in", description = "Opt back in to the leaderboard globally as a user.")
+    async def optIn_lb(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral = True)
         
-    #     async def delete_callback(interaction: discord.Interaction):
-    #         await interaction.response.defer(ephemeral = True)
+        async def delete_callback(interaction: discord.Interaction):
+            await interaction.response.defer(ephemeral = True)
 
-    #         embed = discord.Embed(title = "Opting in...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
-    #         await interaction.edit_original_response(embed = embed, view = None)
+            embed = discord.Embed(title = "Opting in...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
+            await interaction.edit_original_response(embed = embed, view = None)
 
-    #         if not(interaction.user.id in self.optOutList):
-    #             embed = discord.Embed(title = "Failed", description = "You are already opted in.", color = Color.red())
-    #             await interaction.edit_original_response(embed = embed)
-    #         else:
-    #             self.optOutList.remove(interaction.user.id)
-    #             status, error = await self.refreshOptOutList(self)
+            if not(interaction.user.id in self.optOutList):
+                embed = discord.Embed(title = "Failed", description = "You are already opted in.", color = Color.red())
+                await interaction.edit_original_response(embed = embed)
+            else:
+                self.optOutList.remove(interaction.user.id)
+                status, error = await self.refreshOptOutList()
 
-    #             if status == False:
-    #                 raise error
+                if status == False:
+                    raise error
 
-    #             embed = discord.Embed(title = "You have opted in.", color = Color.green())
-    #             await interaction.edit_original_response(embed = embed)
+                embed = discord.Embed(title = "You have opted in.", color = Color.green())
+                await interaction.edit_original_response(embed = embed)
                 
-    #     view = View()
-    #     delete_button = discord.ui.Button(label='Opt In', style=ButtonStyle.green)
-    #     delete_button.callback = delete_callback
-    #     view.add_item(delete_button)
+        view = View()
+        delete_button = discord.ui.Button(label='Opt In', style=ButtonStyle.green)
+        delete_button.callback = delete_callback
+        view.add_item(delete_button)
 
-    #     embed = discord.Embed(title = "Are you sure?", description = "By opting in to the leaderboard, you will be able to contribute to the Titanium leaderboard in any server again.", color = Color.orange())
-    #     await interaction.followup.send(embed = embed, view = view)
+        embed = discord.Embed(title = "Are you sure?", description = "By opting in to the leaderboard, you will be able to contribute to the Titanium leaderboard in any server again.", color = Color.orange())
+        await interaction.followup.send(embed = embed, view = view)
     
     # Privacy command
     @lbGroup.command(name = "privacy", description = "View the leaderboard privacy disclaimer.")
