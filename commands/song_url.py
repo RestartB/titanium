@@ -36,10 +36,6 @@ class song_url(commands.Cog):
                 try:
                     processed = True
 
-                    embed = discord.Embed(title = "Communicating with song.link...", description = f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    await interaction.followup.send(embed = embed)
-
                     processed_source = quote(url, safe='()*!\'')
                     request_url = f"https://api.song.link/v1-alpha.1/links?url={processed_source}&userCountry=GB"
                     
@@ -108,10 +104,6 @@ class song_url(commands.Cog):
             # Expand spotify.link URL if present
             if "spotify.link" in url:
                 try:
-                    embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Expanding URL...", color = Color.orange())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    await interaction.followup.send(embed = embed)
-                    
                     url = url.replace('www.', '').replace('http://', '').replace('https://', '').rstrip('/')
                     url = f"https://{url}"
                     

@@ -139,12 +139,12 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
 
-            msg = await interaction.followup.send(view=spotifyButtonsMenu(self.bot))
+            msg = await interaction.followup.send(view=spotifyButtonsMenu(self.bot), ephemeral=True)
 
             spotifyButtonsMenu.message = msg
 
     # Send new embed
-    await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+    await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
 
     spotifyEmbedView.message = await interaction.original_response()
 
@@ -260,7 +260,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
             spotifyButtonsMenu.message = msg
 
     # Send new embed
-    await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+    await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
 
     spotifyEmbedView.message = await interaction.original_response()
 
@@ -436,7 +436,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
             spotifyButtonsMenu.message = msg
 
     # Send new embed
-    await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+    await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
 
     spotifyEmbedView.message = await interaction.original_response()
 

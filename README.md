@@ -30,7 +30,7 @@ Self-hosting Titanium is possible, however you must get the required modules and
 ### Python Modules
 Titanium relies on several Python packages. The recommended way to install these packages is with `pipenv`. A `Pipfile` and `Pipfile.lock` have been provided, see the instructions below to use it:\
 \
-**Installation**\
+**Installation**
 1. Run `pip install pipenv --user` to install pipenv
 2. Open a terminal inside Titanium's root directory
 3. Run `pipenv install` to install all required packages
