@@ -11,6 +11,7 @@ aiohttp = "*"
 spotipy = "*"
 colorthief = "*"
 wikipedia = "*"
+flask = "*"
 
 [dev-packages]
 

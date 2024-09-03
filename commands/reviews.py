@@ -315,6 +315,12 @@ class reviewCom(commands.Cog):
         try:    
             await interaction.response.defer()
             
+            if interaction.guild == None:
+                embed = discord.Embed(title = "Error", description = "This is not a guild!", color = Color.red())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                
+                await interaction.followup.send(embed = embed, view = None)
+            
             # Create URL
             request_url = f"https://manti.vendicated.dev/api/reviewdb/users/{interaction.guild.id}/reviews"
 
