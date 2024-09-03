@@ -9,6 +9,7 @@
 
 # Testing
 /test
+/testing
 /.vscode
 TEST_*.py
 main-pp.py
