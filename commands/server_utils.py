@@ -26,7 +26,7 @@ class server_utils(commands.Cog):
             await interaction.followup.send(embed = embed)
         except AttributeError:
             embed = discord.Embed(title = "Server has no icon!", color = Color.red())
-            await interaction.followup.send(embed = embed, view = None)
+            await interaction.followup.send(embed = embed, )
         
     # Server Info command
     @serverGroup.command(name = "info", description = "Get info about the server.")

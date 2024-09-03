@@ -302,11 +302,11 @@ class reviewCom(commands.Cog):
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, )
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, )
     
     # Review view command
     @reviewGroup.command(name = "server", description = "See the current server's reviews on ReviewDB. Optionally provide a server ID to view its reviews.")
@@ -319,7 +319,7 @@ class reviewCom(commands.Cog):
                 embed = discord.Embed(title = "Error", description = "This is not a guild!", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
-                await interaction.followup.send(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, )
             
             # Create URL
             request_url = f"https://manti.vendicated.dev/api/reviewdb/users/{interaction.guild.id}/reviews"
@@ -593,11 +593,11 @@ class reviewCom(commands.Cog):
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, )
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, )
     
     # # Review create command
     # @reviewGroup.command(name = "create", description = "Create a ReviewDB review for a user.")

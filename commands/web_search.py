@@ -191,12 +191,12 @@ class web_search(commands.Cog):
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
-                await interaction.followup.send(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, )
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
-                await interaction.followup.send(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, )
 
     # Wikipedia command
     @searchGroup.command(name = "wikipedia", description = "Search Wikipedia for information.")
@@ -232,11 +232,11 @@ class web_search(commands.Cog):
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, )
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, view = None)
+                await interaction.followup.send(embed = embed, )
 
 async def setup(bot):
     await bot.add_cog(web_search(bot))
