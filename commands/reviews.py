@@ -405,7 +405,7 @@ class reviewCom(commands.Cog):
                             else:
                                 reviewContent = item[0]["comment"]
                             
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['servername']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
 
                             i += 1
 
@@ -446,7 +446,7 @@ class reviewCom(commands.Cog):
                             else:
                                 reviewContent = item[0]["comment"]
                             
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['servername']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
 
                             i += 1
 
@@ -504,7 +504,7 @@ class reviewCom(commands.Cog):
                             else:
                                 reviewContent = item[0]["comment"]
                             
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['servername']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
 
                             i += 1
 
@@ -539,7 +539,7 @@ class reviewCom(commands.Cog):
                             else:
                                 reviewContent = item[0]["comment"]
                             
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['servername']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
 
                             i += 1
 
@@ -565,7 +565,7 @@ class reviewCom(commands.Cog):
                         else:
                             reviewContent = item[0]["comment"]
                         
-                        embed.add_field(name = f"{item[1]}. @{item[0]['sender']['servername']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                        embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
 
                         i += 1
                 
