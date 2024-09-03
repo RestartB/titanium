@@ -4,20 +4,29 @@ from discord.ext import commands
 from discord.ui import Select, View
 import aiohttp
 from urllib.parse import quote
-import json
-import asyncio
+import sqlite3
+
+from discord.utils import MISSING
 
 class reviewCom(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        # self.connection = sqlite3.connect(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}sql{self.bot.pathtype}tokens.db")
+        # self.cursor = self.connection.cursor()
 
-    # Reviews command
-    @app_commands.command(name = "reviews", description = "See a user's reviews on ReviewDB.")
+        # if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='reviewdb';").fetchone() == None:
+        #     self.cursor.execute("CREATE TABLE reviewdb (userID int, token str)")
+        #     self.connection.commit()
+
+    context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
+    installs = discord.app_commands.AppInstallationType(guild=True, user=True)
+    reviewGroup = app_commands.Group(name="reviews", description="Review a user on ReviewDB.", allowed_contexts=context, allowed_installs=installs)
+    
+    # Review view command
+    @reviewGroup.command(name = "view", description = "See a user's reviews on ReviewDB.")
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(user = "The user you want to see the reviews of.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def reviews(self, interaction: discord.Interaction, user: discord.User):
+    async def reviewView(self, interaction: discord.Interaction, user: discord.User):
         try:    
             await interaction.response.defer()
 
@@ -298,6 +307,337 @@ class reviewCom(commands.Cog):
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.followup.send(embed = embed, view = None)
+    
+    # Review view command
+    @reviewGroup.command(name = "server", description = "See the current server's reviews on ReviewDB. Optionally provide a server ID to view its reviews.")
+    @app_commands.checks.cooldown(1, 10)
+    async def reviewServerView(self, interaction: discord.Interaction):
+        try:    
+            await interaction.response.defer()
+            
+            # Create URL
+            request_url = f"https://manti.vendicated.dev/api/reviewdb/users/{interaction.guild.id}/reviews"
+
+            # Send request to ReviewDB
+            async with aiohttp.ClientSession() as session:
+                async with session.get(request_url) as request:
+                    reviews = await request.json()
+            
+            reviewCount = reviews["reviewCount"]
+            reviews = reviews["reviews"]
+            
+            i = 0
+            prettyReview = 0
+            pageList = []
+            pages = []
+
+            for review in reviews:
+                i += 1
+            
+                if pageList == []:
+                    pageList.append([review, prettyReview])
+                else:
+                    pageList.append([review, prettyReview])
+                
+                prettyReview += 1
+
+                # If there's 4 items in the current page, we split it into a new page
+                if i % 4 == 0:
+                    pages.append(pageList)
+                    pageList = []
+            
+            if pageList != []:
+                pages.append(pageList)
+            
+            class pageView(View):
+                def __init__(self, pages):
+                    super().__init__(timeout = 1800)
+                    self.page = 0
+                    self.pages = pages
+
+                    self.locked = False
+
+                    for item in self.children:
+                        if item.custom_id == "first" or item.custom_id == "prev":
+                            item.disabled = True
+            
+                async def on_timeout(self) -> None:
+                    for item in self.children:
+                        item.disabled = True
+
+                    await self.message.edit(view=self)
+                
+                async def interaction_check(self, interaction: discord.Interaction):
+                    if interaction.server.id != self.interaction.server.id:
+                        if self.locked:
+                            embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
+                            await interaction.response.send_message(embed = embed, delete_after=5)
+                        else:
+                            return True
+                    else:
+                        return True
+                
+                @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
+                async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    self.page = 0
+
+                    for item in self.children:
+                        item.disabled = False
+                        
+                        if item.custom_id == "first" or item.custom_id == "prev":
+                            item.disabled = True
+                    
+                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
+                    embed.set_author(name=interaction.guild.name, icon_url=(interaction.guild.icon.url if interaction.guild.icon is not None else ""))
+                    
+                    i = 1
+                    for item in self.pages[self.page]:
+                        if item[0]["id"] == 0:
+                            reviewContent = item[0]["comment"]
+                            
+                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                        else:
+                            reviewTimestamp = item[0]["timestamp"]
+                            
+                            # Handle strings being too long
+                            if len(item[0]["comment"]) > 1024:
+                                reviewContent = item[0]["comment"][:1021] + "..."
+                            else:
+                                reviewContent = item[0]["comment"]
+                            
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['servername']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+
+                            i += 1
+
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                    await interaction.response.edit_message(embed = embed, view = self)
+                
+                @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
+                async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    if self.page - 1 == 0:
+                        self.page -= 1
+
+                        for item in self.children:
+                            item.disabled = False
+
+                            if item.custom_id == "first" or item.custom_id == "prev":
+                                item.disabled = True
+                    else:
+                        self.page -= 1
+
+                        for item in self.children:
+                            item.disabled = False
+
+                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
+                    embed.set_author(name=interaction.guild.name, icon_url=(interaction.guild.icon.url if interaction.guild.icon is not None else ""))
+
+                    i = 1
+                    for item in self.pages[self.page]:
+                        if item[0]["id"] == 0:
+                            reviewContent = item[0]["comment"]
+                            
+                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                        else:
+                            reviewTimestamp = item[0]["timestamp"]
+                            
+                            # Handle strings being too long
+                            if len(item[0]["comment"]) > 1024:
+                                reviewContent = item[0]["comment"][:1021] + "..."
+                            else:
+                                reviewContent = item[0]["comment"]
+                            
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['servername']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+
+                            i += 1
+
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                    await interaction.response.edit_message(embed = embed, view = self)
+
+                @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
+                async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    if interaction.server.id == self.interaction.server.id:
+                        self.locked = not self.locked
+
+                        if self.locked == True:
+                            button.emoji = "🔒"
+                            button.style = ButtonStyle.red
+                        else:
+                            button.emoji = "🔓"
+                            button.style = ButtonStyle.green
+                        
+                        await interaction.response.edit_message(view = self)
+                    else:
+                        embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
+                        await interaction.response.send_message(embed = embed, delete_after=5)
+                
+                @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
+                async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    if (self.page + 1) == (len(self.pages) - 1):
+                        self.page += 1
+
+                        for item in self.children:
+                            item.disabled = False
+                            
+                            if item.custom_id == "next" or item.custom_id == "last":
+                                item.disabled = True
+                    else:
+                        self.page += 1
+
+                        for item in self.children:
+                            item.disabled = False
+                    
+                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
+                    embed.set_author(name=interaction.guild.name, icon_url=(interaction.guild.icon.url if interaction.guild.icon is not None else ""))
+
+                    i = 1
+                    for item in self.pages[self.page]:
+                        if item[0]["id"] == 0:
+                            reviewContent = item[0]["comment"]
+                    
+                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                        else:
+                            reviewTimestamp = item[0]["timestamp"]
+                            
+                            # Handle strings being too long
+                            if len(item[0]["comment"]) > 1024:
+                                reviewContent = item[0]["comment"][:1021] + "..."
+                            else:
+                                reviewContent = item[0]["comment"]
+                            
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['servername']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+
+                            i += 1
+
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                    await interaction.response.edit_message(embed = embed, view = self)
+                
+                @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
+                async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                    self.page = len(self.pages) - 1
+
+                    for item in self.children:
+                        item.disabled = False
+
+                        if item.custom_id == "next" or item.custom_id == "last":
+                            item.disabled = True
+                    
+                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
+                    embed.set_author(name=interaction.guild.name, icon_url=(interaction.guild.icon.url if interaction.guild.icon is not None else ""))
+
+                    i = 1
+                    for item in self.pages[self.page]:
+                        if item[0]["id"] == 0:
+                            reviewContent = item[0]["comment"]
+                    
+                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                        else:
+                            reviewTimestamp = item[0]["timestamp"]
+                            
+                            # Handle strings being too long
+                            if len(item[0]["comment"]) > 1024:
+                                reviewContent = item[0]["comment"][:1021] + "..."
+                            else:
+                                reviewContent = item[0]["comment"]
+                            
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['servername']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+
+                            i += 1
+
+                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                    await interaction.response.edit_message(embed = embed, view = self)
+
+            embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
+            embed.set_author(name=interaction.guild.name, icon_url=(interaction.guild.icon.url if interaction.guild.icon is not None else ""))
+            
+            if not(len(pages) == 0):
+                i = 1
+                for item in pages[0]:
+                    if int(item[0]["id"]) == 0:
+                        reviewContent = item[0]["comment"]
+                        
+                        embed.add_field(name = "System", value = reviewContent, inline = False)
+                    else:
+                        reviewTimestamp = item[0]["timestamp"]
+                            
+                        # Handle strings being too long
+                        if len(item[0]["comment"]) > 1024:
+                            reviewContent = item[0]["comment"][:1021] + "..."
+                        else:
+                            reviewContent = item[0]["comment"]
+                        
+                        embed.add_field(name = f"{item[1]}. @{item[0]['sender']['servername']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+
+                        i += 1
+                
+                embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
+                
+                if len(pages) == 1:
+                    await interaction.followup.send(embed = embed)
+                else:
+                    await interaction.followup.send(embed = embed, view = pageView(pages))
+
+                    pageView.interaction = interaction
+                    pageView.message = await interaction.original_response()
+            else:
+                embed = discord.Embed(title = "ReviewDB Server Reviews", description="This server has no reviews!", color = Color.red())
+                embed.set_author(name=interaction.guild.name, icon_url=(interaction.guild.icon.url if interaction.guild.icon is not None else ""))
+            
+                await interaction.followup.send(embed = embed)
+        except discord.errors.HTTPException as e:
+            if "automod" in str(e).lower():
+                embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                await interaction.followup.send(embed = embed, view = None)
+            else:
+                embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
+                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                await interaction.followup.send(embed = embed, view = None)
+    
+    # # Review create command
+    # @reviewGroup.command(name = "create", description = "Create a ReviewDB review for a user.")
+    # @app_commands.checks.cooldown(1, 10)
+    # @app_commands.describe(user = "The user you want to review.")
+    # async def reviewCreate(self, interaction: discord.Interaction, user: discord.User):        
+    #     class CreateModal(discord.ui.Modal):
+    #         def __init__(self, user, bot):
+    #             self.user = user
+    #             self.bot = bot
+
+    #             super().__init__(title = f"Create Review - {self.user.name}")
+            
+    #         feedback = discord.ui.TextInput(
+    #             label="What's on your mind?",
+    #             style=discord.TextStyle.long,
+    #             placeholder='Enter your review...',
+    #             required=True,
+    #             max_length=300
+    #         )
+        
+    #         async def on_submit(self, interaction: discord.Interaction):
+    #             data = {
+    #                 "comment": self.feedback.value,
+    #                 "token": self.bot.reviewdb_token,
+    #                 "reviewtype": 0,
+    #                 "sender": {
+    #                     "discordid": str(interaction.user.id),
+    #                     "username": str(interaction.user.name),
+    #                     "profile_photo": str(interaction.user.avatar),
+    #                 },
+    #             }
+
+    #             async with aiohttp.ClientSession() as session:
+    #                 async with session.request(method="PUT", json=data, url=f"https://manti.vendicated.dev/api/reviewdb/users/{str(self.user.id)}/reviews") as response:
+    #                     try:
+    #                         print(await response.json())
+    #                     except Exception:
+    #                         print(await response.text())
+                
+    #             embed = discord.Embed(title="Review submitted!", description=f"Thanks for leaving a review on {self.user.mention}!", color=Color.green())
+    #             embed.set_thumbnail(url=self.user.display_avatar.url)
+                
+    #             await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+    #     await interaction.response.send_modal(CreateModal(user, self.bot))
 
 async def setup(bot):
     await bot.add_cog(reviewCom(bot))
