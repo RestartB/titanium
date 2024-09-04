@@ -76,10 +76,8 @@ class misc(commands.Cog):
     
     # GitHub Roast command
     @funGroup.command(name = "github-roast", description = "Generate a random GitHub account roast. - https://github-roast.pages.dev")
-    async def ran_num(self, interaction: discord.Interaction, username: str):
+    async def gh_roast(self, interaction: discord.Interaction, username: str):
         await interaction.response.defer()
-
-        await interaction.followup.send(embed = embed)
 
         try:
             async with aiohttp.ClientSession() as session:
