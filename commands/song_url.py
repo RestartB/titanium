@@ -403,17 +403,8 @@ class song_url(commands.Cog):
 
                     PlaylistPagesController.message = await interaction.original_response()
                     PlaylistPagesController.interaction = interaction
-            else:
-                embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported Spotify URL?", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.edit_original_response(embed = embed)
-                return
         except KeyError:
             embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())
-            await interaction.edit_original_response(embed = embed)
-            return
-        except Exception:
-            embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
             await interaction.edit_original_response(embed = embed)
             return
 

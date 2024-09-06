@@ -14,7 +14,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     """
     Handle Spotify song embeds.
     """
-       
+    
     image_url = item['album']['images'][0]['url']
 
     artist_img = self.sp.artist(item["artists"][0]["external_urls"]["spotify"])["images"][0]["url"]
@@ -143,8 +143,14 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
 
             spotifyButtonsMenu.message = msg
 
-    # Send new embed
-    await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
+    try:
+        # Detect if embed already exists
+        (await interaction.original_response()).embeds[0]
+
+        await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+    except IndexError:
+        # Send new embed
+        await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
 
     spotifyEmbedView.message = await interaction.original_response()
 
@@ -259,8 +265,14 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
 
             spotifyButtonsMenu.message = msg
 
-    # Send new embed
-    await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
+    try:
+        # Detect if embed already exists
+        (await interaction.original_response()).embeds[0]
+        
+        await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+    except IndexError:
+        # Send new embed
+        await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
 
     spotifyEmbedView.message = await interaction.original_response()
 
@@ -435,8 +447,14 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
 
             spotifyButtonsMenu.message = msg
 
-    # Send new embed
-    await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
+    try:
+        # Detect if embed already exists
+        (await interaction.original_response()).embeds[0]
+        
+        await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+    except IndexError:
+        # Send new embed
+        await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
 
     spotifyEmbedView.message = await interaction.original_response()
 
