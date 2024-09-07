@@ -27,9 +27,9 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             artist_string += f", {artist['name']}"
     
     explicit = item['explicit']
-    
+
     # Set up new embed
-    embed = discord.Embed(title = f"{item['name']}{f' {self.bot.explicit_emoji}' if explicit else ''}", description=f"on **[{str(item['album']['name']).replace('*', '')}](<{item['album']['external_urls']['spotify']}>)**", color = Color.from_rgb(r = 255, g = 255, b = 255))
+    embed = discord.Embed(title = f"{item['name']}{f' {self.bot.explicit_emoji}' if explicit else ''}", description=f"on **[{str(item['album']['name']).replace('*', '')}](<{item['album']['external_urls']['spotify']}>) • {item["album"]["release_date"].split("-", 1)[0]}**", color = Color.from_rgb(r = 255, g = 255, b = 255))
     
     embed.set_thumbnail(url = item['album']['images'][0]['url'])
     embed.set_author(name = artist_string, url=item["artists"][0]["external_urls"]["spotify"], icon_url=artist_img)
@@ -307,8 +307,10 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
     """
     
     image_url = item["images"][0]["url"]
+    artist_img = self.sp.artist(item["artists"][0]["external_urls"]["spotify"])["images"][0]["url"]
                         
-    songlist_string = ""
+    songlist_string = f"*Released **{item["release_date"]}***\n"
+
     for i in range(len(item['tracks']['items'])):
         artist_string = ""
         for artist in item['tracks']['items'][i]['artists']:
@@ -319,15 +321,9 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
                 
         # Hide artist string from song listing if there is only one artist
         if len(item['tracks']['items'][i]['artists']) == 1:
-            if songlist_string == "":
-                songlist_string = f"{i + 1}. **{item['tracks']['items'][i]['name'].replace('*', '-')}**"
-            else:
-                songlist_string += f"\n{i + 1}. **{item['tracks']['items'][i]['name'].replace('*', '-')}**"
+            songlist_string += f"\n{i + 1}. **{item['tracks']['items'][i]['name'].replace('*', '-')}**"
         else:
-            if songlist_string == "":
-                songlist_string = f"{i + 1}. **{item['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
-            else:
-                songlist_string += f"\n{i + 1}. **{item['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
+            songlist_string += f"\n{i + 1}. **{item['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
 
     artist_string = ""
     for artist in item['artists']:
@@ -336,10 +332,11 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         else:
             artist_string = artist_string + ", " + artist['name'].replace('*', '-')
     
-    embed = discord.Embed(title = f"{item['name']} - {artist_string}", description = songlist_string, color = Color.from_rgb(r = 255, g = 255, b = 255))
+    embed = discord.Embed(title = f"{item['name']}", description = songlist_string, color = Color.from_rgb(r = 255, g = 255, b = 255))
     embed.set_footer(text = "Getting colour information...")
 
     embed.set_thumbnail(url = item["images"][0]["url"])
+    embed.set_author(name=artist_string, url=item["artists"][0]["external_urls"]["spotify"], icon_url=artist_img)
 
     class spotifyButtonsMenu(View):
         def __init__(self, bot):
