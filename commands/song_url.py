@@ -135,6 +135,8 @@ class song_url(commands.Cog):
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     
                     await interaction.followup.send(embed = embed)
+
+                    return
                 
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
@@ -153,6 +155,8 @@ class song_url(commands.Cog):
                     
                     await interaction.followup.send(embed = embed)
 
+                    return
+
                 # Fetch artist top songs
                 result_top_tracks = self.sp.artist_top_tracks(url)
                 
@@ -168,6 +172,8 @@ class song_url(commands.Cog):
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     
                     await interaction.followup.send(embed = embed)
+
+                    return
                 
                 await elements.album(self=self, item=result_info, interaction=interaction)
             # Playlist URL
@@ -181,7 +187,9 @@ class song_url(commands.Cog):
                     embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     
                     await interaction.followup.send(embed = embed)
-                    
+
+                    return
+
                 total_items = result_info['tracks']['total']
                 
                 amountSpotifyPages = total_items // 100
