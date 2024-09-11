@@ -127,7 +127,14 @@ class song_url(commands.Cog):
             # Track URL
             if "track" in url:
                 # Get info and links
-                result = self.sp.track(url)
+                try:
+                    result = self.sp.track(url)
+                except spotipy.exceptions.SpotifyException:
+                    embed = discord.Embed(title = "Error", description = "A Spotify error occurred. Check the link is valid.", color = Color.red())
+                    embed.add_field(name="Tip", value="Is there a reigon code in the Spotify URL - e.g. `/intl-de/`? Remove it and it should fix the URL.")
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                    
+                    await interaction.followup.send(embed = embed)
                 
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
@@ -137,7 +144,14 @@ class song_url(commands.Cog):
             # Artist URL
             elif "artist" in url:
                 # Fetch artist info
-                result_info = self.sp.artist(url)
+                try:
+                    result_info = self.sp.artist(url)
+                except spotipy.exceptions.SpotifyException:
+                    embed = discord.Embed(title = "Error", description = "A Spotify error occurred. Check the link is valid.", color = Color.red())
+                    embed.add_field(name="Tip", value="Is there a reigon code in the Spotify URL - e.g. `/intl-de/`? Remove it and it should fix the URL.")
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                    
+                    await interaction.followup.send(embed = embed)
 
                 # Fetch artist top songs
                 result_top_tracks = self.sp.artist_top_tracks(url)
@@ -146,13 +160,28 @@ class song_url(commands.Cog):
             # Album URL
             elif "album" in url:
                 # Fetch artist info
-                result_info = self.sp.album(url)
+                try:
+                    result_info = self.sp.album(url)
+                except spotipy.exceptions.SpotifyException:
+                    embed = discord.Embed(title = "Error", description = "A Spotify error occurred. Check the link is valid.", color = Color.red())
+                    embed.add_field(name="Tip", value="Is there a reigon code in the Spotify URL - e.g. `/intl-de/`? Remove it and it should fix the URL.")
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                    
+                    await interaction.followup.send(embed = embed)
                 
                 await elements.album(self=self, item=result_info, interaction=interaction)
             # Playlist URL
             elif "playlist" in url:
                 # Search playlist on Spotify
-                result_info = self.sp.playlist(url, market="GB")
+                try:
+                    result_info = self.sp.playlist(url, market="GB")
+                except spotipy.exceptions.SpotifyException:
+                    embed = discord.Embed(title = "Error", description = "A Spotify error occurred. Check the link is valid.", color = Color.red())
+                    embed.add_field(name="Tip", value="Is there a reigon code in the Spotify URL - e.g. `/intl-de/`? Remove it and it should fix the URL.")
+                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                    
+                    await interaction.followup.send(embed = embed)
+                    
                 total_items = result_info['tracks']['total']
                 
                 amountSpotifyPages = total_items // 100
