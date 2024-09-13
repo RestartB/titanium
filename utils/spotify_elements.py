@@ -113,11 +113,11 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
             
-            await self.message.delete()
+            await interaction.delete_original_response()
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
-            super().__init__(timeout=10800)
+            super().__init__(timeout=900)
 
             self.bot = bot.bot
 
@@ -137,22 +137,24 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            menuInstance = spotifyButtonsMenu(self.bot)
+            
+            msg = await interaction.followup.send(view=menuInstance, ephemeral=True)
 
-            msg = await interaction.followup.send(view=spotifyButtonsMenu(self.bot), ephemeral=True)
+            menuInstance.message = msg
 
-            spotifyButtonsMenu.message = msg
-
+    viewInstance = spotifyEmbedView(self)
+    
     try:
         # Detect if embed already exists
         (await interaction.original_response()).embeds[0]
 
-        await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+        await interaction.edit_original_response(embed = embed, view = viewInstance)
     except IndexError:
         # Send new embed
-        await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
+        await interaction.followup.send(embed = embed, view = viewInstance)
 
-    spotifyEmbedView.message = await interaction.original_response()
+    viewInstance.message = await interaction.original_response()
 
     # Generate random filename
     letters = string.ascii_lowercase
@@ -242,7 +244,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
-            super().__init__(timeout=10800)
+            super().__init__(timeout=900)
 
             self.bot = bot.bot
 
@@ -259,22 +261,24 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            menuInstance = spotifyButtonsMenu(self.bot)
+            
+            msg = await interaction.followup.send(view=menuInstance, ephemeral=True)
 
-            msg = await interaction.followup.send(view=spotifyButtonsMenu(self.bot))
+            menuInstance.message = msg
 
-            spotifyButtonsMenu.message = msg
-
+    viewInstance = spotifyEmbedView(self)
+    
     try:
         # Detect if embed already exists
         (await interaction.original_response()).embeds[0]
-        
-        await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+
+        await interaction.edit_original_response(embed = embed, view = viewInstance)
     except IndexError:
         # Send new embed
-        await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
+        await interaction.followup.send(embed = embed, view = viewInstance)
 
-    spotifyEmbedView.message = await interaction.original_response()
+    viewInstance.message = await interaction.original_response()
 
     # Generate random filename
     letters = string.ascii_lowercase
@@ -421,7 +425,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
-            super().__init__(timeout=10800)
+            super().__init__(timeout=900)
 
             self.bot = bot.bot
 
@@ -438,22 +442,24 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            menuInstance = spotifyButtonsMenu(self.bot)
+            
+            msg = await interaction.followup.send(view=menuInstance, ephemeral=True)
 
-            msg = await interaction.followup.send(view=spotifyButtonsMenu(self.bot))
+            menuInstance.message = msg
 
-            spotifyButtonsMenu.message = msg
-
+    viewInstance = spotifyEmbedView(self)
+    
     try:
         # Detect if embed already exists
         (await interaction.original_response()).embeds[0]
-        
-        await interaction.edit_original_response(embed = embed, view = spotifyEmbedView(self))
+
+        await interaction.edit_original_response(embed = embed, view = viewInstance)
     except IndexError:
         # Send new embed
-        await interaction.followup.send(embed = embed, view = spotifyEmbedView(self))
+        await interaction.followup.send(embed = embed, view = viewInstance)
 
-    spotifyEmbedView.message = await interaction.original_response()
+    viewInstance.message = await interaction.original_response()
 
     # Generate random filename
     letters = string.ascii_lowercase
