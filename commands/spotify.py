@@ -88,9 +88,6 @@ class spotify(commands.Cog):
                     
                     # Find unique ID of selection in the list
                     item = result['tracks']['items'][int(select.values[0])]
-                    
-                    embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting song...", color = Color.orange())
-                    await interaction.edit_original_response(embed = embed, view = None)
 
                     await elements.song(self=self, item=item, interaction=interaction)
             # Set up list with provided values
@@ -124,9 +121,6 @@ class spotify(commands.Cog):
                 # Response to user selection
                 async def response(interaction: discord.Interaction):
                     await interaction.response.defer()
-                    
-                    embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting artist info...", color = Color.orange())
-                    await interaction.edit_original_response(embed = embed, view = None)
                     
                     item = result['artists']['items'][int(select.values[0])]
 
@@ -173,10 +167,6 @@ class spotify(commands.Cog):
                 # Response to user selection
                 async def response(interaction: discord.Interaction):
                     await interaction.response.defer()
-                    
-                    embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting album info...", color = Color.orange())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    await interaction.edit_original_response(embed = embed, view = None)
                     
                     item = result['albums']['items'][int(select.values[0])]
 
