@@ -117,7 +117,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
-            super().__init__(timeout=900)
+            super().__init__(timeout=10800)
 
             self.bot = bot.bot
 
@@ -133,7 +133,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
                 if item.style != discord.ButtonStyle.url:
                     item.disabled = True
 
-            await self.message.edit(view=self)
+            await self.interaction.edit_original_response(view=self)
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -154,6 +154,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         # Send new embed
         await interaction.followup.send(embed = embed, view = viewInstance)
 
+    viewInstance.interaction = interaction
     viewInstance.message = await interaction.original_response()
 
     # Generate random filename
@@ -244,7 +245,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
-            super().__init__(timeout=900)
+            super().__init__(timeout=10800)
 
             self.bot = bot.bot
 
@@ -257,7 +258,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
                 if item.style != discord.ButtonStyle.url:
                     item.disabled = True
 
-            await self.message.edit(view=self)
+            await self.interaction.edit_original_response(view=self)
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -278,6 +279,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
         # Send new embed
         await interaction.followup.send(embed = embed, view = viewInstance)
 
+    viewInstance.interaction = interaction
     viewInstance.message = await interaction.original_response()
 
     # Generate random filename
@@ -425,7 +427,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
-            super().__init__(timeout=900)
+            super().__init__(timeout=10800)
 
             self.bot = bot.bot
 
@@ -438,7 +440,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
                 if item.style != discord.ButtonStyle.url:
                     item.disabled = True
 
-            await self.message.edit(view=self)
+            await self.interaction.edit_original_response(view=self)
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -459,6 +461,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         # Send new embed
         await interaction.followup.send(embed = embed, view = viewInstance)
 
+    viewInstance.interaction = interaction
     viewInstance.message = await interaction.original_response()
 
     # Generate random filename
