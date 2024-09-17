@@ -12,8 +12,9 @@ class nix_check(commands.Cog):
     
     # Nix command
     @app_commands.command(name = "nix-checker", description = "Check for nix in your messages.")
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.describe(check = "The string to check.")
     async def nix(self, interaction: discord.Interaction, check: str):
         await interaction.response.defer(ephemeral=True)
 
