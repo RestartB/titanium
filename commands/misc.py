@@ -5,7 +5,6 @@ from discord.ui import View
 import asyncio
 import random
 import aiohttp
-import string
 
 class misc(commands.Cog):
     def __init__(self, bot):

@@ -3,7 +3,6 @@ from discord import app_commands, Color
 import discord.ext
 from discord.ext import commands
 from discord.ui import View
-from datetime import datetime
 
 class user_utils(commands.Cog):
     def __init__(self, bot):

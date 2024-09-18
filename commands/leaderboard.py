@@ -4,13 +4,18 @@ import discord.ext
 from discord.ui import View
 from discord.ext import commands
 import sqlite3
-
-import discord.ext.tasks
+import os
+import pathlib
 
 class leaderboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.connection = sqlite3.connect(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}sql{self.bot.pathtype}lb.db")
+        
+        # Check DB exists
+        open(os.path.join(pathlib.Path().resolve(), "content", "sql", "lb.db"), "a").close()
+        
+        self.connection = sqlite3.connect(os.path.join(pathlib.Path().resolve(), "content", "sql", "lb.db"))
+        # self.connection = sqlite3.connect(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}sql{self.bot.pathtype}lb.db")
         self.cursor = self.connection.cursor()
 
         if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='optOut';").fetchone() == None:

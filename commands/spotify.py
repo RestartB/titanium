@@ -4,7 +4,6 @@ from discord.ext import commands
 from discord.ui import View, Select
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-from urllib.parse import quote
 import random
 import aiohttp
 import string

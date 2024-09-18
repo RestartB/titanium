@@ -30,6 +30,17 @@ else:
     pathtype = "/"
     print(f"[INIT] OS name is {os.name}, path type {pathtype}\n")
 
+# SQL path check
+print("[INIT] Checking SQL paths...")
+basedir = os.path.dirname("content/sql/")
+print(basedir)
+
+if not os.path.exists(basedir):
+    print("[INIT] Paths not present. Creating paths...")
+    os.makedirs(basedir)
+
+print("[INIT] Path check complete.\n")
+
 # ------ Config File Reader ------
 def readconfigfile(path):
     #Make dicts global

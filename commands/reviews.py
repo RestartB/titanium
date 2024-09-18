@@ -1,22 +1,12 @@
 import discord
 from discord import app_commands, Color, ButtonStyle
 from discord.ext import commands
-from discord.ui import Select, View
+from discord.ui import View
 import aiohttp
-from urllib.parse import quote
-import sqlite3
-
-from discord.utils import MISSING
 
 class reviewCom(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # self.connection = sqlite3.connect(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}sql{self.bot.pathtype}tokens.db")
-        # self.cursor = self.connection.cursor()
-
-        # if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='reviewdb';").fetchone() == None:
-        #     self.cursor.execute("CREATE TABLE reviewdb (userID int, token str)")
-        #     self.connection.commit()
 
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
     installs = discord.app_commands.AppInstallationType(guild=True, user=True)

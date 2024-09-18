@@ -1,10 +1,6 @@
 import discord
 from discord import app_commands, Color
 from discord.ext import commands
-import random
-import aiohttp
-import os
-from pathlib import Path
 
 class nix_check(commands.Cog):
     def __init__(self, bot):

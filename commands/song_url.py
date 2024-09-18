@@ -26,6 +26,9 @@ class song_url(commands.Cog):
         self.cleaner = UrlCleaner()
         self.cleaner.ruler.update_rules()
 
+        # Check DB exists
+        open(os.path.join(pathlib.Path().resolve(), "content", "sql", "cache.db"), "a").close()
+
         self.connection = sqlite3.connect(os.path.join(pathlib.Path().resolve(), "content", "sql", "cache.db"))
         self.cursor = self.connection.cursor()
 

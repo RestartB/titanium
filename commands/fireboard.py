@@ -1,17 +1,23 @@
 import discord
 from discord import app_commands, Color
+import discord.ext
 import discord.ext.commands
 from discord.ui import View
 from discord.ext import commands
 import asyncio
 import sqlite3
-
-import discord.ext
+import os
+import pathlib
 
 class fireboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.connection = sqlite3.connect(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}sql{self.bot.pathtype}fireboard.db")
+        
+        # Check DB exists
+        open(os.path.join(pathlib.Path().resolve(), "content", "sql", "fireboard.db"), "a").close()
+        
+        self.connection = sqlite3.connect(os.path.join(pathlib.Path().resolve(), "content", "sql", "fireboard.db"))
+        # self.connection = sqlite3.connect(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}sql{self.bot.pathtype}fireboard.db")
         self.cursor = self.connection.cursor()
         
         if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireMessages';").fetchone() == None:
