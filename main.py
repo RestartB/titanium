@@ -22,14 +22,6 @@ path = os.getcwd()
 # Logging handler
 handler = logging.FileHandler(filename='titanium.log', encoding='utf-8', mode='w')
 
-# Set path type
-if f"{os.name}" == "nt":
-    pathtype = "\\"
-    print(f"[INIT] OS name is {os.name}, path type {pathtype}\n")
-else:
-    pathtype = "/"
-    print(f"[INIT] OS name is {os.name}, path type {pathtype}\n")
-
 # SQL path check
 print("[INIT] Checking SQL paths...")
 basedir = os.path.dirname("content/sql/")
@@ -80,7 +72,6 @@ readconfigfile('config.cfg')
 # Config File Vars
 try:
     bot.path = path
-    bot.pathtype = pathtype
 
     bot.token = tokens_dict['discord-bot-token']
     bot.spotify_id = tokens_dict['spotify-api-id']
@@ -93,7 +84,7 @@ try:
     bot.error_webhook = str(options_dict['error-webhook'])
 
     if options_dict['cog-dir'] == '':
-        bot.cog_dir = f"{path}{pathtype}commands{pathtype}"
+        bot.cog_dir = "commands"
     else:
         bot.cog_dir = options_dict['cog-dir']
     
@@ -130,10 +121,10 @@ async def cog_load():
     print("[INIT] Loaded normal cogs.\n")
     
     # Read cogs from private commands folder if it exists
-    if os.path.exists(f"{path}{pathtype}commands_private{pathtype}"):
+    if os.path.exists(f"commands_private"):
         print("[INIT] Loading private cogs...")
         # Find all cogs in private command dir
-        for filename in os.listdir(f"{path}{pathtype}commands_private{pathtype}"):
+        for filename in os.listdir(f"commands_private"):
             # Determine if file is a python file
             if filename.endswith("py"):
                 # We load it into the bot

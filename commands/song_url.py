@@ -27,9 +27,9 @@ class song_url(commands.Cog):
         self.cleaner.ruler.update_rules()
 
         # Check DB exists
-        open(os.path.join(pathlib.Path().resolve(), "content", "sql", "cache.db"), "a").close()
+        open(os.path.join("content", "sql", "cache.db"), "a").close()
 
-        self.connection = sqlite3.connect(os.path.join(pathlib.Path().resolve(), "content", "sql", "cache.db"))
+        self.connection = sqlite3.connect(os.path.join("content", "sql", "cache.db"))
         self.cursor = self.connection.cursor()
 
         if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='songlinkCache';").fetchone() == None:

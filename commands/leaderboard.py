@@ -12,10 +12,9 @@ class leaderboard(commands.Cog):
         self.bot = bot
         
         # Check DB exists
-        open(os.path.join(pathlib.Path().resolve(), "content", "sql", "lb.db"), "a").close()
+        open(os.path.join("content", "sql", "lb.db"), "a").close()
         
-        self.connection = sqlite3.connect(os.path.join(pathlib.Path().resolve(), "content", "sql", "lb.db"))
-        # self.connection = sqlite3.connect(f"{self.bot.path}{self.bot.pathtype}content{self.bot.pathtype}sql{self.bot.pathtype}lb.db")
+        self.connection = sqlite3.connect(os.path.join("content", "sql", "lb.db"))
         self.cursor = self.connection.cursor()
 
         if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='optOut';").fetchone() == None:
