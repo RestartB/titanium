@@ -177,6 +177,8 @@ class song_url(commands.Cog):
                 platform = "spotify"
                 platform_api = "spotify"
 
+                cached = False
+
             # Expand spotify.link URL if present
             if "spotify.link" in url:
                 try:
