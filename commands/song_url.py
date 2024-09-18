@@ -71,7 +71,7 @@ class song_url(commands.Cog):
                     embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, Amazon Music, etc.):** Song, Album")
                     embed.set_footer(text = f"@{interaction.user.name} - Assisted by song.link", icon_url = interaction.user.display_avatar.url)
                     await interaction.followup.send(embed = embed)
-                    return
+                    raise songlink_exceptions.InvalidLinkException()
                 # Unknown Error
                 if not(request_status <= 200 or request_status >= 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
                     embed = discord.Embed(title = "An error has occurred.", description = "An error has occurred while searching the URL.\n\n**Solutions:**\n1. Check the URL is a valid song URL.\n2. Try again later.", color = Color.red())
@@ -79,14 +79,14 @@ class song_url(commands.Cog):
                     embed.add_field(name = "Error Code from song.link", value = request_status)
                     embed.set_footer(text = f"@{interaction.user.name} - Assisted by song.link", icon_url = interaction.user.display_avatar.url)
                     await interaction.followup.send(embed = embed)
-                    return
+                    raise songlink_exceptions.SongLinkErrorException()
                 # Data returned is not song
                 elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'song' and request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'album':
                     embed = discord.Embed(title = "Unsupported Link Type", description = f"{request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'].title()} link types from this service are unsupported.", color = Color.red())
                     embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, Amazon Music, etc.):** Song, Album")
                     embed.set_footer(text = f"@{interaction.user.name} - Assisted by song.link", icon_url = interaction.user.display_avatar.url)
                     await interaction.followup.send(embed = embed)
-                    return
+                    raise songlink_exceptions.UnsupportedDataTypeException()
                 # Data valid
                 else:
                     url = request_data['linksByPlatform']['spotify']['url']
@@ -145,8 +145,8 @@ class song_url(commands.Cog):
                         url, platform, platform_api = await songlinkRequest(url)
 
                         cached = False
-                    except (songlink_exceptions.InvalidLinkException, songlink_exceptions.SongLinkErrorException, songlink_exceptions.UnsupportedDataTypeException):
-                        raise Exception
+                    except Exception:
+                        return
                 else: # Cached
                     for entry in self.cache:
                         if entry[4] >= int(datetime.datetime.now().timestamp()) and entry[0] == url: # Check TTL is still valid
