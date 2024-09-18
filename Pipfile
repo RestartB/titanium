@@ -12,6 +12,7 @@ spotipy = "*"
 colorthief = "*"
 wikipedia = "*"
 flask = "*"
+url-cleaner = "*"
 
 [dev-packages]
 

@@ -10,7 +10,7 @@ import os
 import spotipy
 
 # Song parse function
-async def song(self, item: spotipy.Spotify.track, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None):
+async def song(self, item: spotipy.Spotify.track, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False):
     """
     Handle Spotify song embeds.
     """
@@ -33,7 +33,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     
     embed.set_thumbnail(url = item['album']['images'][0]['url'])
     embed.set_author(name = artist_string, url=item["artists"][0]["external_urls"]["spotify"], icon_url=artist_img)
-    embed.set_footer(text = "Getting colour information...")
+    embed.set_footer(text = f"Getting colour information...{' • Cached Result' if cached else ''}")
 
     class spotifyButtonsMenu(View):
         def __init__(self, bot):
@@ -176,7 +176,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     # Remove file when done
     os.remove(f'{filename}.jpg')
 
-    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+    embed.set_footer(text = f"Requested by {interaction.user.name}{' • Cached Result' if cached else ''}", icon_url = interaction.user.display_avatar.url)
     embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
 
     await interaction.edit_original_response(embed = embed)
@@ -307,7 +307,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
     await interaction.edit_original_response(embed = embed)
 
 # Album parse function
-async def album(self, item: spotipy.Spotify.album, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None):
+async def album(self, item: spotipy.Spotify.album, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False):
     """
     Handle Spotify album embeds.
     """
@@ -339,7 +339,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
             artist_string = artist_string + ", " + artist['name'].replace('*', '-')
     
     embed = discord.Embed(title = f"{item['name']}", description = songlist_string, color = Color.from_rgb(r = 255, g = 255, b = 255))
-    embed.set_footer(text = "Getting colour information...")
+    embed.set_footer(text = f"Getting colour information...{' • Cached Result' if cached else ''}")
 
     embed.set_thumbnail(url = item["images"][0]["url"])
     embed.set_author(name=artist_string, url=item["artists"][0]["external_urls"]["spotify"], icon_url=artist_img)
@@ -483,7 +483,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
     # Remove file when done
     os.remove(f'{filename}.jpg')
 
-    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+    embed.set_footer(text = f"Requested by {interaction.user.name}{' • Cached Result' if cached else ''}", icon_url = interaction.user.display_avatar.url)
     embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
 
     await interaction.edit_original_response(embed = embed)

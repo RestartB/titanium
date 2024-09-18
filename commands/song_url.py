@@ -11,92 +11,158 @@ import string
 from colorthief import ColorThief
 import os
 import utils.spotify_elements as elements
+import utils.songlink_exceptions as songlink_exceptions
+import pathlib
+import sqlite3
+import datetime
+from url_cleaner import UrlCleaner
 
 class song_url(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.auth_manager = SpotifyClientCredentials(client_id = self.bot.spotify_id, client_secret = self.bot.spotify_secret)
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
+
+        self.cleaner = UrlCleaner()
+        self.cleaner.ruler.update_rules()
+
+        self.connection = sqlite3.connect(os.path.join(pathlib.Path().resolve(), "content", "sql", "cache.db"))
+        self.cursor = self.connection.cursor()
+
+        if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='songlinkCache';").fetchone() == None:
+            # song.link Cache - store previous results
+            self.cursor.execute("CREATE TABLE songlinkCache (userURL text, spotifyURL text, platformRich text, platformRaw text, ttl int)")
+            
+            self.connection.commit()
+        
+        self.cache = self.cursor.execute("SELECT * FROM songlinkCache").fetchall()
+    
+    # List refresh function
+    async def refreshCache(self):
+        self.cache = self.cursor.execute("SELECT * FROM songlinkCache").fetchall()
     
     # Song URL command
     @app_commands.command(name = "song-url", description = "Get info about a song link.")
     @app_commands.describe(url = "The target URL. Run /song-link-help for supported link types.")
+    @app_commands.describe(bypass_cache = "Bypass the cache to get a new result for non-Spotify links. Can help if provided match is wrong.")
     @app_commands.checks.cooldown(1, 15)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def song_url(self, interaction: discord.Interaction, url: str):
+    async def song_url(self, interaction: discord.Interaction, url: str, bypass_cache: bool = False):
         await interaction.response.defer()
-        
-        artist_string = ""
-        processed = False
 
+        async def songlinkRequest(userURL):
+            print("Fetching data from song.link")
+            try:
+                processed_source = quote(userURL, safe='()*!\'')
+                request_url = f"https://api.song.link/v1-alpha.1/links?url={processed_source}&userCountry=GB"
+                
+                # Send request to song.link
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(request_url) as request:
+                        request_data = await request.json()
+                        request_status = request.status
+                
+                # Invalid Link
+                if request_status == 400:
+                    embed = discord.Embed(title = "Invalid Link", description = "The link entered is not valid. Please ensure you are sending a valid link.", color = Color.red())
+                    embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, Amazon Music, etc.):** Song, Album")
+                    embed.set_footer(text = f"Requested by {interaction.user.name} - Assisted by song.link", icon_url = interaction.user.display_avatar.url)
+                    await interaction.followup.send(embed = embed)
+                    return
+                # Unknown Error
+                if not(request_status <= 200 or request_status >= 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
+                    embed = discord.Embed(title = "An error has occurred.", description = "An error has occurred while searching the URL.\n\n**Solutions:**\n1. Check the URL is a valid song URL.\n2. Try again later.", color = Color.red())
+                    embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, Amazon Music, etc.):** Song, Album")
+                    embed.add_field(name = "Error Code from song.link", value = request_status)
+                    embed.set_footer(text = f"Requested by {interaction.user.name} - Assisted by song.link", icon_url = interaction.user.display_avatar.url)
+                    await interaction.followup.send(embed = embed)
+                    return
+                # Data returned is not song
+                elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'song' and request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'album':
+                    embed = discord.Embed(title = "Unsupported Link Type", description = f"{request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'].title()} link types from this service are unsupported.", color = Color.red())
+                    embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, Amazon Music, etc.):** Song, Album")
+                    embed.set_footer(text = f"Requested by {interaction.user.name} - Assisted by song.link", icon_url = interaction.user.display_avatar.url)
+                    await interaction.followup.send(embed = embed)
+                    return
+                # Data valid
+                else:
+                    url = request_data['linksByPlatform']['spotify']['url']
+            # Required platforms not returned from song.link
+            except KeyError:
+                embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())
+                await interaction.followup.send(embed = embed)
+                return
+            # Generic Exception
+            except Exception:
+                embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
+                await interaction.followup.send(embed = embed)
+                return
+        
+            # Set Platform Strings
+            if request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "amazon":
+                platform = "Play on Amazon Music"
+                platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+            elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "itunes":
+                platform = "Play on Apple Music"
+                platform_api = "appleMusic"
+            elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "soundcloud":
+                platform = "Play on SoundCloud"
+                platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+            elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "youtube":
+                platform = "Play on YouTube"
+                platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+            else:
+                platform = f"Play on {request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'].title()}"
+            
+            # 30 day TTL
+            ttl = int(datetime.datetime.now().timestamp()) + 2592000
+            
+            # Add to cache
+            self.cursor.execute(f"INSERT INTO songlinkCache (userURL, spotifyURL, platformRich, platformRaw, ttl) VALUES (?, ?, ?, ?, ?)", (userURL, url, platform, platform_api, ttl,))
+            self.connection.commit()
+            
+            return url, platform, platform_api
+        
         try:
             # Query song.link if required
             if not("spotify" in url):
-                try:
-                    processed = True
+                # Check if URL is in cache
+                if (url not in [entry[0] for entry in self.cache]) or bypass_cache: # Not cached
+                    print("Cache miss!")
+                    print((url not in [entry[0] for entry in self.cache]))
+                    print(bypass_cache)
+                    try:
+                        # Remove from DB
+                        self.cursor.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
+                        self.connection.commit()
+                        
+                        url = self.cleaner.clean(url)
+                        url, platform, platform_api = await songlinkRequest(url)
+                    except (songlink_exceptions.InvalidLinkException, songlink_exceptions.SongLinkErrorException, songlink_exceptions.UnsupportedDataTypeException):
+                        return
+                else: # Cached
+                    print("Cache hit!")
+                    for entry in self.cache:
+                        if entry[4] >= int(datetime.datetime.now().timestamp()): # Check TTL is still valid
+                            print("TTL active!")
+                            url = entry[1]
+                            platform = entry[2]
+                            platform_api = entry[3]
 
-                    processed_source = quote(url, safe='()*!\'')
-                    request_url = f"https://api.song.link/v1-alpha.1/links?url={processed_source}&userCountry=GB"
-                    
-                    # Send request to song.link
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(request_url) as request:
-                            request_data = await request.json()
-                            request_status = request.status
-                    
-                    # Invalid Link
-                    if request_status == 400:
-                        embed = discord.Embed(title = "Invalid Link", description = "The link entered is not valid. Please ensure you are sending a valid link.", color = Color.red())
-                        embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song Only")
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Assisted by song.link", icon_url = interaction.user.display_avatar.url)
-                        await interaction.followup.send(embed = embed)
-                        return
-                    # Unknown Error
-                    if not(request_status <= 200 or request_status >= 299) or (request_data['linksByPlatform']['spotify']['url'] == None):
-                        embed = discord.Embed(title = "An error has occurred.", description = "An error has occurred while searching the URL.\n\n**Solutions:**\n1. Check the URL is a valid song URL.\n2. Try again later.", color = Color.red())
-                        embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song")
-                        embed.add_field(name = "Error Code from song.link", value = request_status)
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Assisted by song.link", icon_url = interaction.user.display_avatar.url)
-                        await interaction.followup.send(embed = embed)
-                        return
-                    # Data returned is not song
-                    elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'song' and request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'] != 'album':
-                        embed = discord.Embed(title = "Unsupported Link Type", description = f"{request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['type'].title()} link types from this service are unsupported.", color = Color.red())
-                        embed.add_field(name = "Supported URLs", value = "**Spotify:** Song, Artist, Album, Playlist, `spotify.link`\n**Others (Apple Music, YouTube, etc.):** Song, Album *(unstable)*")
-                        embed.set_footer(text = f"Requested by {interaction.user.name} - Assisted by song.link", icon_url = interaction.user.display_avatar.url)
-                        await interaction.followup.send(embed = embed)
-                        return
-                    # Data valid
-                    else:
-                        url = request_data['linksByPlatform']['spotify']['url']
-                # Required platforms not returned from song.link
-                except KeyError:
-                    embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())
-                    await interaction.followup.send(embed = embed)
-                    return
-                # Generic Exception
-                except Exception:
-                    embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
-                    await interaction.followup.send(embed = embed)
-                    return
-            
-                # Set Platform Strings
-                if request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "amazon":
-                    platform = "Play on Amazon Music"
-                    platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
-                elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "itunes":
-                    platform = "Play on Apple Music"
-                    platform_api = "appleMusic"
-                elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "soundcloud":
-                    platform = "Play on SoundCloud"
-                    platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
-                elif request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "youtube":
-                    platform = "Play on YouTube"
-                    platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
-                else:
-                    platform = f"Play on {request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'].title()}"
-                    platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
+                            break
+                        else:
+                            print("TTL expired!")
+                            
+                            # Remove from DB
+                            self.cursor.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
+                            self.connection.commit()
+
+                            try:
+                                url = self.cleaner.clean(url)
+                                url, platform, platform_api = await songlinkRequest(url)
+                            except (songlink_exceptions.InvalidLinkException, songlink_exceptions.SongLinkErrorException, songlink_exceptions.UnsupportedDataTypeException):
+                                return
             else:
                 platform = "spotify"
                 platform_api = "spotify"
@@ -140,7 +206,7 @@ class song_url(commands.Cog):
                 
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
-                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=request_data['linksByPlatform'][platform_api]['url'], add_button_text=platform)
+                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=url, add_button_text=platform)
                 else:
                     await elements.song(self=self, item=result, interaction=interaction)
             # Artist URL
@@ -175,7 +241,11 @@ class song_url(commands.Cog):
 
                     return
                 
-                await elements.album(self=self, item=result_info, interaction=interaction)
+                # Add OG platform button when OG platform isnt Spotify
+                if platform_api != "spotify":
+                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=url, add_button_text=platform)
+                else:
+                    await elements.song(self=self, item=result, interaction=interaction)
             # Playlist URL
             elif "playlist" in url:
                 # Search playlist on Spotify
