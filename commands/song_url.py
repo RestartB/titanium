@@ -55,7 +55,6 @@ class song_url(commands.Cog):
         await interaction.response.defer()
 
         async def songlinkRequest(userURL):
-            print("Fetching data from song.link")
             try:
                 processed_source = quote(userURL, safe='()*!\'')
                 request_url = f"https://api.song.link/v1-alpha.1/links?url={processed_source}&userCountry=GB"
@@ -124,6 +123,8 @@ class song_url(commands.Cog):
             # Add to cache
             self.cursor.execute(f"INSERT INTO songlinkCache (userURL, spotifyURL, platformRich, platformRaw, ttl) VALUES (?, ?, ?, ?, ?)", (userURL, url, platform, platform_api, ttl,))
             self.connection.commit()
+
+            await self.refreshCache()
             
             return url, platform, platform_api
         
@@ -132,34 +133,31 @@ class song_url(commands.Cog):
             if not("spotify" in url):
                 # Check if URL is in cache
                 if (url not in [entry[0] for entry in self.cache]) or bypass_cache: # Not cached
-                    print("Cache miss!")
-                    print((url not in [entry[0] for entry in self.cache]))
-                    print(bypass_cache)
                     try:
                         # Remove from DB
                         self.cursor.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
                         self.connection.commit()
+
+                        await self.refreshCache()
                         
                         url = self.cleaner.clean(url)
                         url, platform, platform_api = await songlinkRequest(url)
                     except (songlink_exceptions.InvalidLinkException, songlink_exceptions.SongLinkErrorException, songlink_exceptions.UnsupportedDataTypeException):
                         return
                 else: # Cached
-                    print("Cache hit!")
                     for entry in self.cache:
                         if entry[4] >= int(datetime.datetime.now().timestamp()): # Check TTL is still valid
-                            print("TTL active!")
                             url = entry[1]
                             platform = entry[2]
                             platform_api = entry[3]
 
                             break
                         else:
-                            print("TTL expired!")
-                            
                             # Remove from DB
                             self.cursor.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
                             self.connection.commit()
+
+                            await self.refreshCache()
 
                             try:
                                 url = self.cleaner.clean(url)
