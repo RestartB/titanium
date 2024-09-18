@@ -169,7 +169,7 @@ class song_url(commands.Cog):
                                 url, platform, platform_api = await songlinkRequest(url)
 
                                 cached = False
-                            except (songlink_exceptions.InvalidLinkException, songlink_exceptions.SongLinkErrorException, songlink_exceptions.UnsupportedDataTypeException):
+                            except Exception:
                                 return
                         else:
                             continue
