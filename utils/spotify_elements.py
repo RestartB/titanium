@@ -65,7 +65,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             embed = discord.Embed(title = "Getting images...", color = Color.orange())
             embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-            await interaction.edit_original_response(embed = embed, view = None)
+            await interaction.followup.send(embed = embed, view = None)
             
             if item["album"]["images"] != None:
                 image_url = item["album"]["images"][0]["url"]
@@ -136,9 +136,10 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             await self.interaction.edit_original_response(view=self)
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
-        async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-            menuInstance = spotifyButtonsMenu(self.bot)
+        async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.defer(ephemeral=True)
             
+            menuInstance = spotifyButtonsMenu(self.bot)
             msg = await interaction.followup.send(view=menuInstance, ephemeral=True)
 
             menuInstance.message = msg
@@ -262,8 +263,9 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.defer(ephemeral=True)
+
             menuInstance = spotifyButtonsMenu(self.bot)
-            
             msg = await interaction.followup.send(view=menuInstance, ephemeral=True)
 
             menuInstance.message = msg
@@ -375,7 +377,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
             
             embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-            await interaction.edit_original_response(embed = embed, view = None)
+            await interaction.followup.send(embed = embed, view = None)
             
             if item["images"] != None:
                 image_url = item["images"][0]["url"]
@@ -444,8 +446,9 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-            menuInstance = spotifyButtonsMenu(self.bot)
+            await interaction.response.defer(ephemeral=True)
             
+            menuInstance = spotifyButtonsMenu(self.bot)
             msg = await interaction.followup.send(view=menuInstance, ephemeral=True)
 
             menuInstance.message = msg
@@ -488,5 +491,5 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
 
     await interaction.edit_original_response(embed = embed)
 
-def playlist():
+async def playlist():
     pass

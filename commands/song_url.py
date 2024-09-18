@@ -48,7 +48,7 @@ class song_url(commands.Cog):
     @app_commands.command(name = "song-url", description = "Get info about a song link.")
     @app_commands.describe(url = "The target URL. Run /song-link-help for supported link types.")
     @app_commands.describe(bypass_cache = "Bypass the cache to get a new result for non-Spotify links. Can help if provided match is wrong.")
-    @app_commands.checks.cooldown(1, 15)
+    @app_commands.checks.cooldown(1, 5)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def song_url(self, interaction: discord.Interaction, url: str, bypass_cache: bool = False):
@@ -116,6 +116,7 @@ class song_url(commands.Cog):
                 platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
             else:
                 platform = f"Play on {request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'].title()}"
+                platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
             
             # 30 day TTL
             ttl = int(datetime.datetime.now().timestamp()) + 2592000
@@ -133,26 +134,30 @@ class song_url(commands.Cog):
             if not("spotify" in url):
                 # Check if URL is in cache
                 if (url not in [entry[0] for entry in self.cache]) or bypass_cache: # Not cached
-                    try:
-                        # Remove from DB
-                        self.cursor.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
-                        self.connection.commit()
+                    # Remove from DB
+                    self.cursor.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
+                    self.connection.commit()
 
-                        await self.refreshCache()
-                        
+                    await self.refreshCache()
+                    
+                    try:
                         url = self.cleaner.clean(url)
                         url, platform, platform_api = await songlinkRequest(url)
+
+                        cached = False
                     except (songlink_exceptions.InvalidLinkException, songlink_exceptions.SongLinkErrorException, songlink_exceptions.UnsupportedDataTypeException):
-                        return
+                        raise Exception
                 else: # Cached
                     for entry in self.cache:
-                        if entry[4] >= int(datetime.datetime.now().timestamp()): # Check TTL is still valid
+                        if entry[4] >= int(datetime.datetime.now().timestamp()) and entry[0] == url: # Check TTL is still valid
                             url = entry[1]
                             platform = entry[2]
                             platform_api = entry[3]
 
+                            cached = True
+
                             break
-                        else:
+                        elif entry[0] == url:
                             # Remove from DB
                             self.cursor.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
                             self.connection.commit()
@@ -162,8 +167,12 @@ class song_url(commands.Cog):
                             try:
                                 url = self.cleaner.clean(url)
                                 url, platform, platform_api = await songlinkRequest(url)
+
+                                cached = False
                             except (songlink_exceptions.InvalidLinkException, songlink_exceptions.SongLinkErrorException, songlink_exceptions.UnsupportedDataTypeException):
                                 return
+                        else:
+                            continue
             else:
                 platform = "spotify"
                 platform_api = "spotify"
@@ -207,9 +216,9 @@ class song_url(commands.Cog):
                 
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
-                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=url, add_button_text=platform)
+                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=url, add_button_text=platform, cached=cached)
                 else:
-                    await elements.song(self=self, item=result, interaction=interaction)
+                    await elements.song(self=self, item=result, interaction=interaction, cached=cached)
             # Artist URL
             elif "artist" in url:
                 # Fetch artist info
@@ -244,9 +253,9 @@ class song_url(commands.Cog):
                 
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
-                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=url, add_button_text=platform)
+                    await elements.album(self=self, item=result_info, interaction=interaction, add_button_url=url, add_button_text=platform, cached=cached)
                 else:
-                    await elements.song(self=self, item=result, interaction=interaction)
+                    await elements.album(self=self, item=result_info, interaction=interaction, cached=cached)
             # Playlist URL
             elif "playlist" in url:
                 # Search playlist on Spotify
