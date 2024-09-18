@@ -118,8 +118,8 @@ class song_url(commands.Cog):
                 platform = f"Play on {request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'].title()}"
                 platform_api = request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider']
             
-            # 30 day TTL
-            ttl = int(datetime.datetime.now().timestamp()) + 2592000
+            # 90 day TTL
+            ttl = int(datetime.datetime.now().timestamp()) + 7776000
             
             # Add to cache
             self.cursor.execute(f"INSERT INTO songlinkCache (userURL, spotifyURL, platformRich, platformRaw, ttl) VALUES (?, ?, ?, ?, ?)", (userURL, url, platform, platform_api, ttl,))
