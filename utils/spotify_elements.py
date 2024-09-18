@@ -64,7 +64,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             
             embed = discord.Embed(title = "Getting images...", color = Color.orange())
             embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+            embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             await interaction.edit_original_response(embed = embed, view = None)
             
             if item["album"]["images"] != None:
@@ -97,16 +97,16 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
 
                 if item["album"]["images"][0]['height'] == None or item["album"]["images"][0]['width'] == None:
                     embed = discord.Embed(title = f"{item['name']} ({artist_string}) - Album Art", description = "Viewing highest quality (Resolution unknown)", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 else:
                     embed = discord.Embed(title = f"{item['name']} ({artist_string}) - Album Art", description = f"Viewing highest quality ({item['album']['images'][0]['width']}x{item['album']['images'][0]['height']})", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
                 embed.set_image(url = item["album"]["images"][0]["url"])
                 await interaction.edit_original_response(embed = embed)
             else:
                 embed = discord.Embed(title = "No album art available.", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed)
         
         @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
@@ -176,7 +176,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     # Remove file when done
     os.remove(f'{filename}.jpg')
 
-    embed.set_footer(text = f"Requested by {interaction.user.name}{' • Cached Result' if cached else ''}", icon_url = interaction.user.display_avatar.url)
+    embed.set_footer(text = f"@{interaction.user.name}{' • Cached Result' if cached else ''}", icon_url = interaction.user.display_avatar.url)
     embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
 
     await interaction.edit_original_response(embed = embed)
@@ -301,7 +301,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
     # Remove file when done
     os.remove(f'{filename}.jpg')
 
-    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+    embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
     embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
 
     await interaction.edit_original_response(embed = embed)
@@ -374,7 +374,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
             await interaction.response.defer()
             
             embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+            embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             await interaction.edit_original_response(embed = embed, view = None)
             
             if item["images"] != None:
@@ -407,16 +407,16 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
 
                 if item["images"][0]['height'] == None or item["images"][0]['width'] == None:
                     embed = discord.Embed(title = f"{item['name']} ({artist_string}) - Album Art", description = "Viewing highest quality (Resolution unknown)", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 else:
                     embed = discord.Embed(title = f"{item['name']} ({artist_string}) - Album Art", description = f"Viewing highest quality ({item['images'][0]['width']}x{item['images'][0]['height']})", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
                 embed.set_image(url = item["images"][0]["url"])
                 await interaction.edit_original_response(embed = embed)
             else:
                 embed = discord.Embed(title = "No album art available.", color = Color.red())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed)
         
         @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
@@ -483,7 +483,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
     # Remove file when done
     os.remove(f'{filename}.jpg')
 
-    embed.set_footer(text = f"Requested by {interaction.user.name}{' • Cached Result' if cached else ''}", icon_url = interaction.user.display_avatar.url)
+    embed.set_footer(text = f"@{interaction.user.name}{' • Cached Result' if cached else ''}", icon_url = interaction.user.display_avatar.url)
     embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
 
     await interaction.edit_original_response(embed = embed)

@@ -50,7 +50,7 @@ class user_utils(commands.Cog):
             embed.add_field(name = "Roles", value = ", ".join(roles))
         
         embed.set_thumbnail(url = member.display_avatar.url)
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         view = View()
         view.add_item(discord.ui.Button(label="User URL", style=discord.ButtonStyle.url, url=f"https://discord.com/users/{user.id}", row = 0))
@@ -68,7 +68,7 @@ class user_utils(commands.Cog):
         
         embed = discord.Embed(title = f"PFP - {user.name}", color = (user.accent_color if user.accent_color != None else Color.random()))
         embed.set_image(url = user.display_avatar.url)
-        embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name} - right click or long press to save image", icon_url = interaction.user.display_avatar.url)
         
         # Send Embed
         await interaction.followup.send(embed = embed)

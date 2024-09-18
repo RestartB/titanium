@@ -58,7 +58,7 @@ class music(commands.Cog):
             # Generate dropdown values
             if len(song_list) > 5:
                 embed = discord.Embed(title = "Select Song", description = f'Found {len(song_list)} results, showing 5 results for "{search}".\n\nCan\u0027t find what you\u0027re looking for? Try to be more specific with your query, for example, specifying the author.', color = Color.orange())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
                 for i in range(0,5):
                     # Handle strings being too long
@@ -75,7 +75,7 @@ class music(commands.Cog):
                     options.append(discord.SelectOption(label = song_name, description = list_description, value = id_list[i]))
             else:
                 embed = discord.Embed(title = "Select Song", description = f'Found {len(song_list)} results, {len(song_list)} showing results for "{search}".\n\nCan\u0027t find what you\u0027re looking for? Try to be more specific with your query, for example, specifying the author.', color = Color.orange())
-                embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
                 for i in range(0, len(song_list)):
                     # Handle strings being too long
@@ -270,7 +270,7 @@ class music(commands.Cog):
                     view.add_item(google_button)
                     
                     embed = discord.Embed(title = f"{song_list[list_place]} - {artist_list[list_place]}", description = "The song has no lyrics.", color = Color.red())
-                    embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     
                     await interaction.edit_original_response(embed = embed, view = view)
             

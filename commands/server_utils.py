@@ -20,7 +20,7 @@ class server_utils(commands.Cog):
         try:
             embed = discord.Embed(title = f"Server Icon - {interaction.guild.name}", color = Color.random())
             embed.set_image(url = interaction.guild.icon.url)
-            embed.set_footer(text = f"Requested by {interaction.user.name} - right click or long press to save image", icon_url = interaction.user.display_avatar.url)
+            embed.set_footer(text = f"@{interaction.user.name} - right click or long press to save image", icon_url = interaction.user.display_avatar.url)
 
             # Send Embed
             await interaction.followup.send(embed = embed)
@@ -85,7 +85,7 @@ class server_utils(commands.Cog):
         except AttributeError:
             pass
         
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         # Send Embed
         await interaction.followup.send(embed = embed, view = view)
@@ -102,7 +102,7 @@ class server_utils(commands.Cog):
         embed.add_field(name = "Level", value = f"Level {interaction.guild.premium_tier}", inline = True)
         #embed.add_field(name = "Boosts Needed for Next Level", value = memberCount, inline = True)
 
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         # Send Embed
         await interaction.followup.send(embed = embed)

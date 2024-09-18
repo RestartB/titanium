@@ -370,7 +370,7 @@ class spotify_autoembed(commands.Cog):
                                             self.page = len(self.pages) - 1
                                         embed = discord.Embed(title = f"{result_info['name']} (Playlist)", description = f"by {result_info['owner']['display_name']} - {result_info['tracks']['total']} items\n\n{self.pages[self.page]}", color = Color.random())
                                         embed.set_thumbnail(url = result_info['images'][0]['url'])
-                                        embed.set_footer(text = f"Requested by {interaction.user.name} - Page {self.page + 1}/{len(pages)}", icon_url = message.author.avatar.url)
+                                        embed.set_footer(text = f"@{interaction.user.name} - Page {self.page + 1}/{len(pages)}", icon_url = message.author.avatar.url)
                                         await msg.edit(embed = embed)
 
                                     # Next page button

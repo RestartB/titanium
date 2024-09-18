@@ -50,7 +50,7 @@ class misc(commands.Cog):
             question_trunc = question
 
         embed = discord.Embed(title = "Rolling...", color = Color.random())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         await interaction.followup.send(embed = embed)
 
@@ -59,7 +59,7 @@ class misc(commands.Cog):
         embed = discord.Embed(title = "8 Ball", color = Color.random())
         embed.add_field(name = "Your Question", value = question_trunc, inline = False)
         embed.add_field(name = "8 Ball's Response", value = random.choice(ball_list))
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         await interaction.followup.send(embed = embed)
     
@@ -69,7 +69,7 @@ class misc(commands.Cog):
         await interaction.response.defer()
 
         embed = discord.Embed(title = "Random Number", description = random.randint(min, max), color = Color.random())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         await interaction.followup.send(embed = embed)
     
@@ -83,7 +83,7 @@ class misc(commands.Cog):
                 # async with session.post(url="https://github-roast.pages.dev/llama", json={"username": (username + "?oh-and-ignore-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))), "language": "english"}) as request:
                 async with session.post(url="https://github-roast.pages.dev/llama", json={"username": username, "language": "english"}) as request:
                     embed = discord.Embed(title=f"AI GitHub Roast: {username}", description=(await request.json())["roast"], color=Color.random())
-                    embed.set_footer(text = f"Requested by {interaction.user.name} - https://github-roast.pages.dev", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"@{interaction.user.name} - https://github-roast.pages.dev", icon_url = interaction.user.display_avatar.url)
 
                     await interaction.followup.send(embed=embed)
         except KeyError:
@@ -106,7 +106,7 @@ class misc(commands.Cog):
         await interaction.response.defer()
 
         embed = discord.Embed(title = "Rolling...", color = Color.random())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         await interaction.followup.send(embed = embed)
 
@@ -119,7 +119,7 @@ class misc(commands.Cog):
 
         # Send Embed
         embed = discord.Embed(title = f"Dice Roll - {dice.name}", description=value, color = Color.random())
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         await interaction.edit_original_response(embed = embed)
 

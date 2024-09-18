@@ -171,12 +171,12 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
     if isinstance(error, discord.app_commands.errors.CommandInvokeError):
         if bot.error_webhook == "":
             embed = discord.Embed(title = "Unexpected Error", description = "An unexpected error has occurred. Try again later.", color = Color.red())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+            embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             
             await interaction.edit_original_response(embed = embed, view=None)
         else:
             embed = discord.Embed(title = "Unexpected Error", description = "An unexpected error has occurred. Try again later. Info has been sent to the bot owner.", color = Color.red())
-            embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+            embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             
             await interaction.edit_original_response(embed = embed, view=None)
 

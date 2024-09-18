@@ -36,7 +36,7 @@ class animals(commands.Cog):
 
         embed = discord.Embed(title = embed_title, color = Color.random())
         embed.set_image(url = request_data[0]["url"])
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         await interaction.followup.send(embed = embed)
 
@@ -61,7 +61,7 @@ class animals(commands.Cog):
         
         embed = discord.Embed(title = embed_title, color = Color.random())
         embed.set_image(url = request_data["message"])
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         await interaction.followup.send(embed = embed)
     
@@ -86,7 +86,7 @@ class animals(commands.Cog):
 
         embed = discord.Embed(title = embed_title, description="Source: https://ees4.dev/", color = Color.random())
         embed.set_image(url = request_data["url"])
-        embed.set_footer(text = f"Requested by {interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         await interaction.followup.send(embed = embed)
 
