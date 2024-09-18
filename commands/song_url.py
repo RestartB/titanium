@@ -95,11 +95,6 @@ class song_url(commands.Cog):
                 embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())
                 await interaction.followup.send(embed = embed)
                 return
-            # Generic Exception
-            except Exception:
-                embed = discord.Embed(title = "Error", description = "Error while searching URL. Is it a valid and supported music URL?", color = Color.red())
-                await interaction.followup.send(embed = embed)
-                return
         
             # Set Platform Strings
             if request_data['entitiesByUniqueId'][request_data['entityUniqueId']]['apiProvider'] == "amazon":
