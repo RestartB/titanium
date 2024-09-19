@@ -417,23 +417,6 @@ class song_url(commands.Cog):
                         embed.set_footer(text = f"@{interaction.user.name} - Page {self.page + 1}/{len(pages)}", icon_url = interaction.user.display_avatar.url)
 
                         await interaction.response.edit_message(embed = embed, view = self)
-                
-                    @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
-                    async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if interaction.user.id == self.interaction.user.id:
-                            self.locked = not self.locked
-
-                            if self.locked == True:
-                                button.emoji = "🔒"
-                                button.style = ButtonStyle.red
-                            else:
-                                button.emoji = "🔓"
-                                button.style = ButtonStyle.green
-                            
-                            await interaction.response.edit_message(view = self)
-                        else:
-                            embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
-                            await interaction.response.send_message(embed = embed, delete_after=5)
                     
                     @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
                     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -458,6 +441,23 @@ class song_url(commands.Cog):
                         
                         await interaction.response.edit_message(embed = embed, view = self)
 
+                    @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
+                    async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                        if interaction.user.id == self.interaction.user.id:
+                            self.locked = not self.locked
+
+                            if self.locked == True:
+                                button.emoji = "🔒"
+                                button.style = ButtonStyle.red
+                            else:
+                                button.emoji = "🔓"
+                                button.style = ButtonStyle.green
+                            
+                            await interaction.response.edit_message(view = self)
+                        else:
+                            embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
+                            await interaction.response.send_message(embed = embed, delete_after=5)
+                    
                     @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
                     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                         if (self.page + 1) == (len(self.pages) - 1):
