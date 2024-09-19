@@ -76,7 +76,6 @@ class fireboard(commands.Cog):
             
             # Check if channel is blacklisted
             if payload.channel_id not in blacklistedChannels:
-                print("Channel blacklist check complete!")
                 # Only trigger if server has fireboard enabled
                 if payload.guild_id in [guild[0] for guild in self.fireSettings]:
                     # Find server config
@@ -92,14 +91,10 @@ class fireboard(commands.Cog):
                         if not(ignoreBots and payload.member.bot):
                             # Get message channel
                             channel: discord.abc.GuildChannel = await guild.fetch_channel(payload.channel_id)
-
-                            print("channel fetched")
                             
                             # Stop if channel is NSFW
                             if channel.nsfw == True:
                                 return
-
-                            print("not nsfw")
 
                             # Get our message
                             message: discord.Message = await channel.fetch_message(payload.message_id)
@@ -1030,8 +1025,6 @@ class fireboard(commands.Cog):
                 async def role(self, interaction: discord.Interaction, button: discord.ui.Button):
                     await interaction.response.defer(ephemeral=True)
                     
-                    print("Role Blacklist")
-                    
                     for item in self.children:
                         if item.custom_id == "channel":
                             item.disabled = False
@@ -1054,8 +1047,6 @@ class fireboard(commands.Cog):
                 @discord.ui.button(label=f'Channel Blacklist', style=discord.ButtonStyle.gray, row = 0, custom_id="channel")
                 async def channel(self, interaction: discord.Interaction, button: discord.ui.Button):
                     await interaction.response.defer(ephemeral=True)
-                    
-                    print("Channel Blacklist")
                     
                     for item in self.children:
                         if item.custom_id == "role":
