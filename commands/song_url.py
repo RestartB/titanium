@@ -12,7 +12,6 @@ from colorthief import ColorThief
 import os
 import utils.spotify_elements as elements
 import utils.songlink_exceptions as songlink_exceptions
-import pathlib
 import sqlite3
 import datetime
 from url_cleaner import UrlCleaner

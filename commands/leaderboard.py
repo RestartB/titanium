@@ -5,7 +5,6 @@ from discord.ui import View
 from discord.ext import commands
 import sqlite3
 import os
-import pathlib
 
 class leaderboard(commands.Cog):
     def __init__(self, bot):
