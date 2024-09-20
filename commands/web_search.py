@@ -1,9 +1,10 @@
+import aiohttp
 import discord
-from discord import app_commands, Color, ButtonStyle
+import wikipedia
+from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import View
-import aiohttp
-import wikipedia
+
 
 class web_search(commands.Cog):
     def __init__(self, bot):

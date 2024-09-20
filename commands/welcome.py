@@ -2,6 +2,7 @@ import discord
 from discord import Color
 from discord.ext import commands
 
+
 class welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

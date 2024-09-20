@@ -1,20 +1,23 @@
+import datetime
+import os
+import random
+import sqlite3
+import string
+from urllib.parse import quote
+
+import aiohttp
 import discord
-from discord import app_commands, Color, ButtonStyle
+import spotipy
+from colorthief import ColorThief
+from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import View
-import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-from urllib.parse import quote
-import random
-import aiohttp
-import string
-from colorthief import ColorThief
-import os
-import utils.spotify_elements as elements
-import utils.songlink_exceptions as songlink_exceptions
-import sqlite3
-import datetime
 from url_cleaner import UrlCleaner
+
+import utils.songlink_exceptions as songlink_exceptions
+import utils.spotify_elements as elements
+
 
 class song_url(commands.Cog):
     def __init__(self, bot):

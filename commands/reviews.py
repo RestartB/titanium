@@ -1,8 +1,9 @@
+import aiohttp
 import discord
-from discord import app_commands, Color, ButtonStyle
+from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import View
-import aiohttp
+
 
 class reviewCom(commands.Cog):
     def __init__(self, bot):

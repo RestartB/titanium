@@ -1,12 +1,14 @@
+import asyncio
+import os
+import sqlite3
+
 import discord
-from discord import app_commands, Color
 import discord.ext
 import discord.ext.commands
-from discord.ui import View
+from discord import Color, app_commands
 from discord.ext import commands
-import asyncio
-import sqlite3
-import os
+from discord.ui import View
+
 
 class fireboard(commands.Cog):
     def __init__(self, bot):

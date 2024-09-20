@@ -1,8 +1,9 @@
 import discord
-from discord import app_commands, Color
 import discord.ext
+from discord import Color, app_commands
 from discord.ext import commands
 from discord.ui import View
+
 
 class user_utils(commands.Cog):
     def __init__(self, bot):

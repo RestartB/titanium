@@ -1,6 +1,7 @@
 import discord
-from discord import app_commands, Color
+from discord import Color, app_commands
 from discord.ext import commands
+
 
 class nix_check(commands.Cog):
     def __init__(self, bot):

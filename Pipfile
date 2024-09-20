@@ -13,6 +13,7 @@ colorthief = "*"
 wikipedia = "*"
 flask = "*"
 url-cleaner = "*"
+isort = "*"
 
 [dev-packages]
 

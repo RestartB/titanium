@@ -1,9 +1,11 @@
+from urllib.parse import quote
+
+import aiohttp
 import discord
-from discord import app_commands, Color, ButtonStyle
+from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import Select, View
-import aiohttp
-from urllib.parse import quote
+
 
 class music(commands.Cog):
     def __init__(self, bot):

@@ -1,15 +1,18 @@
-import discord
-from discord import app_commands, Color
-from discord.ext import commands
-from discord.ui import View, Select
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-import random
-import aiohttp
-import string
-from colorthief import ColorThief
 import os
+import random
+import string
+
+import aiohttp
+import discord
+import spotipy
+from colorthief import ColorThief
+from discord import Color, app_commands
+from discord.ext import commands
+from discord.ui import Select, View
+from spotipy.oauth2 import SpotifyClientCredentials
+
 import utils.spotify_elements as elements
+
 
 class spotify(commands.Cog):
     def __init__(self, bot):

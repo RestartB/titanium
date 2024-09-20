@@ -1,10 +1,12 @@
-import discord
-from discord import app_commands, Color, ButtonStyle
-import discord.ext
-from discord.ui import View
-from discord.ext import commands
-import sqlite3
 import os
+import sqlite3
+
+import discord
+import discord.ext
+from discord import ButtonStyle, Color, app_commands
+from discord.ext import commands
+from discord.ui import View
+
 
 class leaderboard(commands.Cog):
     def __init__(self, bot):

@@ -1,13 +1,15 @@
+import os
+import random
+import string
+from urllib.parse import quote
+
+import aiohttp
 import discord
+import spotipy
+from colorthief import ColorThief
 from discord import Color
 from discord.ui import View
-from urllib.parse import quote
-import random
-import aiohttp
-import string
-from colorthief import ColorThief
-import os
-import spotipy
+
 
 # Song parse function
 async def song(self, item: spotipy.Spotify.track, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False):

@@ -1,12 +1,14 @@
-import discord
-from discord import app_commands, Color
-from discord.ext import commands
 import datetime
-from datetime import timedelta
-import cpuinfo
-import psutil
 import os
 import time
+from datetime import timedelta
+
+import cpuinfo
+import discord
+import psutil
+from discord import Color, app_commands
+from discord.ext import commands
+
 
 class bot_utils(commands.Cog):
     def __init__(self, bot):
