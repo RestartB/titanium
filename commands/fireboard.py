@@ -746,12 +746,6 @@ class fireboard(commands.Cog):
             emoji = "🔥"
             channelID = interaction.channel_id
             ignoreBots = True
-            
-            # Insert to DB, refresh lists
-            self.cursor.execute(f"INSERT INTO fireSettings (serverID, reactAmount, emoji, channelID, ignoreBots) VALUES (?, ?, ?, ?, ?)", (interaction.guild_id, reactAmount, emoji, channelID, ignoreBots,))
-            self.connection.commit()
-
-            await self.refreshFireLists()
 
             embed = discord.Embed(title = "Fireboard", description="This channel has been configured as the server fireboard.", color=Color.random())
             embed.set_footer(text = "Feel free to delete this message!")
@@ -762,6 +756,14 @@ class fireboard(commands.Cog):
             except discord.errors.Forbidden or discord.errors.NotFound:
                 embed = discord.Embed(title = "Error", description="Looks like I can't send messages in this channel. Check permissions and try again.", color=Color.random())
                 await interaction.followup.send(embed=embed, ephemeral=True)
+
+                return
+            
+            # Insert to DB, refresh lists
+            self.cursor.execute(f"INSERT INTO fireSettings (serverID, reactAmount, emoji, channelID, ignoreBots) VALUES (?, ?, ?, ?, ?)", (interaction.guild_id, reactAmount, emoji, channelID, ignoreBots,))
+            self.connection.commit()
+
+            await self.refreshFireLists()
             
             embed = discord.Embed(title = "Enabled", description="Fireboard has been enabled in the current channel.", color=Color.green())
             embed.add_field(name="Info", value=f"**Reaction Requirement:** `{reactAmount} reactions`\n**Fireboard Channel:** <#{channelID}>\n**Emoji:** {emoji}\n**Ignore Bots:** `{ignoreBots}`")
@@ -895,6 +897,17 @@ class fireboard(commands.Cog):
         if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
             embed = discord.Embed(title="Channel Set", description=f"Fireboard channel has been set to **{channel.mention}.**", color=Color.green())
 
+            embed = discord.Embed(title = "Fireboard", description="This channel has been configured as the server fireboard.", color=Color.random())
+            embed.set_footer(text = "Feel free to delete this message!")
+
+            try:
+                await channel.send(embed = embed)
+            except discord.errors.Forbidden or discord.errors.NotFound:
+                embed = discord.Embed(title = "Error", description="Looks like I can't send messages in this channel. Check permissions and try again.", color=Color.random())
+                await interaction.followup.send(embed=embed, ephemeral=True)
+
+                return
+            
             # Update channel in DB, refresh lists
             self.cursor.execute(f"UPDATE fireSettings SET channelID = ? WHERE serverID = ?", (channel.id, interaction.guild_id,))
             self.connection.commit()
