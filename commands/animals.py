@@ -80,6 +80,10 @@ class animals(commands.Cog):
                     embed = discord.Embed(title = "The service has been rate limited. Try again later.", color = Color.red())
                     await interaction.followup.send(embed = embed)
                     return
+                elif request.status == 522:
+                    embed = discord.Embed(title = "The service timed out. Try again later.", color = Color.red())
+                    await interaction.followup.send(embed = embed)
+                    return
                 else:
                     request_data = await request.json()
         
