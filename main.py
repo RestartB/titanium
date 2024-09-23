@@ -143,17 +143,17 @@ asyncio.run(cog_load())
 async def on_ready():
     # Sync tree if sync on start is enabled
     if bot.sync_on_start == True:
-        # Global Sync
-        print("[INIT] Syncing global command tree...")
-        sync = await bot.tree.sync()
-        print(f"[INIT] Global command tree synced.")
-        
         # Control Server Sync
         print("[INIT] Syncing control server command tree...")
         guild = bot.get_guild(1213954608632700989)
-        bot.tree.copy_global_to(guild=guild)
         sync = await bot.tree.sync(guild=guild)
-        print(f"[INIT] Control server command tree synced. {len(sync)} commands total.")
+        print(f"[INIT] Control server command tree synced. {len(sync)} command total.")
+        
+        # Global Sync
+        print("[INIT] Syncing global command tree...")
+        sync = await bot.tree.sync(guild=None)
+        print(f"[INIT] Global command tree synced. {len(sync)} commands total.")
+        
     else:
         print("[INIT] Skipping command tree sync. Please manually sync commands later.")
     
