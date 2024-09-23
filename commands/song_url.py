@@ -302,7 +302,7 @@ class song_url(commands.Cog):
                         
                 # Get dominant colour for embed
                 color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
+                dominant_color = color_thief.get_color()
 
                 # Remove file when done
                 os.remove(f'{filename}.jpg')

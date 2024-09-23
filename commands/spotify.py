@@ -111,7 +111,12 @@ class spotify(commands.Cog):
                 # Sort through request data
                 i = 0
                 for item in result['artists']['items']:
-                    options_list.append(discord.SelectOption(label = item['name'], value = i))
+                    if len(item['name']) > 100:
+                        title = item['name'][:97] + "..."
+                    else:
+                        title = item['name']
+                    
+                    options_list.append(discord.SelectOption(label = title, value = i))
                     i += 1
                 
                 # Define options
@@ -141,7 +146,7 @@ class spotify(commands.Cog):
         elif search_type.value == "album":
             # Search Spotify
             result = self.sp.search(search, type = 'album', limit = 5)
-
+            
             # Check if result is blank
             if len(result['albums']['items']) == 0:
                 embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
@@ -157,7 +162,17 @@ class spotify(commands.Cog):
                         else:
                             artist_string += f", {artist['name']}".replace('*', '-')
                     
-                    options_list.append(discord.SelectOption(label = item['name'], description = artist_string, value = i))
+                    if len(item['name']) > 100:
+                        title = item['name'][:97] + "..."
+                    else:
+                        title = item['name']
+                    
+                    if len(artist_string) > 100:
+                        description = artist_string[:97] + "..."
+                    else:
+                        description = artist_string
+                    
+                    options_list.append(discord.SelectOption(label = title, description = description, value = i))
                     i += 1
                 
                 # Define options
@@ -175,11 +190,12 @@ class spotify(commands.Cog):
                     result_info = self.sp.album(item['id'])
                     
                     await elements.album(self=self, item=result_info, interaction=interaction)
+                
                 # Set up list with provided values
                 select.callback = response
                 view = View()
                 view.add_item(select)
-
+                
                 # Edit initial message to show dropdown
                 await interaction.edit_original_response(embed = embed, view = view)
 
@@ -246,7 +262,7 @@ class spotify(commands.Cog):
                             file.close()
                             
                     color_thief = ColorThief(f'{filename}.jpg')
-                    dominant_color = color_thief.get_color(quality=1)
+                    dominant_color = color_thief.get_color()
 
                     os.remove(f'{filename}.jpg')
                     
@@ -281,7 +297,7 @@ class spotify(commands.Cog):
                         
                 # Get dominant colour for embed
                 color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
+                dominant_color = color_thief.get_color()
 
                 # Remove file when done
                 os.remove(f'{filename}.jpg')
@@ -325,7 +341,7 @@ class spotify(commands.Cog):
                         
                 # Get dominant colour for embed
                 color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
+                dominant_color = color_thief.get_color()
 
                 # Remove file when done
                 os.remove(f'{filename}.jpg')

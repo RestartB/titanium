@@ -39,9 +39,11 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
 
     class spotifyButtonsMenu(View):
         def __init__(self, bot):
-            super().__init__(timeout=60)
+            super().__init__(timeout=30)
 
             self.bot = bot
+            self.interaction: discord.Interaction
+            self.ogMsg: discord.WebhookMessage
             
             if not(add_button_url == None or add_button_text == None):
                 # Add additional button                
@@ -56,18 +58,20 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
 
         async def on_timeout(self) -> None:
             try:
-                await self.message.delete()
-            except discord.errors.NotFound:
+                await self.ogMsg.delete()
+            except (discord.errors.NotFound, discord.HTTPException, discord.Forbidden):
                 pass
+        
+        async def interaction_check(self, interaction: discord.Interaction):
+            if interaction.user.id != self.interaction.user.id:
+                embed = discord.Embed(title = "Error", description = "You can only control a menu that you have requested.", color=Color.red())
+                await interaction.response.send_message(embed = embed, delete_after=5, ephemeral=True)
+            else:
+                return True
         
         @discord.ui.button(label='Album Art', style=discord.ButtonStyle.gray, row = 1)
         async def art(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
-            
-            embed = discord.Embed(title = "Getting images...", color = Color.orange())
-            embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
-            embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-            await interaction.followup.send(embed = embed, view = None)
             
             if item["album"]["images"] != None:
                 image_url = item["album"]["images"][0]["url"]
@@ -80,7 +84,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
                     embed.set_footer(text = "Getting colour information...")
                 
                 embed.set_image(url = item["album"]["images"][0]["url"])
-                await interaction.edit_original_response(embed = embed)
+                await interaction.edit_original_response(embed = embed, view = None)
 
                 letters = string.ascii_lowercase
                 filename = ''.join(random.choice(letters) for i in range(8))
@@ -93,7 +97,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
                         file.close()
                         
                 color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
+                dominant_color = color_thief.get_color()
 
                 os.remove(f'{filename}.jpg')
 
@@ -110,6 +114,8 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
                 embed = discord.Embed(title = "No album art available.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed)
+            
+            self.stop()
         
         @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -122,6 +128,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             super().__init__(timeout=10800)
 
             self.bot = bot.bot
+            self.interaction: discord.Interaction
 
             seconds, item['duration_ms'] = divmod(item['duration_ms'], 1000)
             minutes, seconds = divmod(seconds, 60)
@@ -139,12 +146,13 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer(ephemeral=True)
+            await interaction.response.defer()
             
             menuInstance = spotifyButtonsMenu(self.bot)
-            msg = await interaction.followup.send(view=menuInstance, ephemeral=True)
+            ogMsg = await interaction.followup.send(view=menuInstance, wait=True)
 
-            menuInstance.message = msg
+            menuInstance.interaction = interaction
+            menuInstance.ogMsg = ogMsg
 
     viewInstance = spotifyEmbedView(self)
     
@@ -158,7 +166,6 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         await interaction.followup.send(embed = embed, view = viewInstance)
 
     viewInstance.interaction = interaction
-    viewInstance.message = await interaction.original_response()
 
     # Generate random filename
     letters = string.ascii_lowercase
@@ -174,7 +181,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             
     # Get dominant colour for embed
     color_thief = ColorThief(f'{filename}.jpg')
-    dominant_color = color_thief.get_color(quality=1)
+    dominant_color = color_thief.get_color()
 
     # Remove file when done
     os.remove(f'{filename}.jpg')
@@ -222,9 +229,11 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
 
     class spotifyButtonsMenu(View):
         def __init__(self, bot):
-            super().__init__(timeout=60)
+            super().__init__(timeout=30)
 
             self.bot = bot
+            self.interaction: discord.Interaction
+            self.ogMsg: discord.WebhookMessage
             
             if not(add_button_url == None or add_button_text == None):
                 # Add additional button                
@@ -236,21 +245,29 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
 
         async def on_timeout(self) -> None:
             try:
-                await self.message.delete()
-            except discord.errors.NotFound:
+                await self.ogMsg.delete()
+            except (discord.errors.NotFound, discord.HTTPException, discord.Forbidden):
                 pass
+        
+        async def interaction_check(self, interaction: discord.Interaction):
+            if interaction.user.id != self.interaction.user.id:
+                embed = discord.Embed(title = "Error", description = "You can only control a menu that you have requested.", color=Color.red())
+                await interaction.response.send_message(embed = embed, delete_after=5, ephemeral=True)
+            else:
+                return True
         
         @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
             
-            await self.message.delete()
+            await interaction.delete_original_response()
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
             super().__init__(timeout=10800)
 
             self.bot = bot.bot
+            self.interaction: discord.Interaction
 
             # Add Open in Spotify button
             spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
@@ -264,13 +281,14 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
             await self.interaction.edit_original_response(view=self)
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
-        async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer(ephemeral=True)
-
+        async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.defer()
+            
             menuInstance = spotifyButtonsMenu(self.bot)
-            msg = await interaction.followup.send(view=menuInstance, ephemeral=True)
+            ogMsg = await interaction.followup.send(view=menuInstance, wait=True)
 
-            menuInstance.message = msg
+            menuInstance.interaction = interaction
+            menuInstance.ogMsg = ogMsg
 
     viewInstance = spotifyEmbedView(self)
     
@@ -284,7 +302,6 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
         await interaction.followup.send(embed = embed, view = viewInstance)
 
     viewInstance.interaction = interaction
-    viewInstance.message = await interaction.original_response()
 
     # Generate random filename
     letters = string.ascii_lowercase
@@ -300,7 +317,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
             
     # Get dominant colour for embed
     color_thief = ColorThief(f'{filename}.jpg')
-    dominant_color = color_thief.get_color(quality=1)
+    dominant_color = color_thief.get_color()
 
     # Remove file when done
     os.remove(f'{filename}.jpg')
@@ -350,9 +367,11 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
 
     class spotifyButtonsMenu(View):
         def __init__(self, bot):
-            super().__init__(timeout=60)
+            super().__init__(timeout=30)
 
             self.bot = bot
+            self.interaction: discord.Interaction
+            self.ogMsg: discord.WebhookMessage
             
             if not(add_button_url == None or add_button_text == None):
                 # Add additional button                
@@ -369,17 +388,20 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
 
         async def on_timeout(self) -> None:
             try:
-                await self.message.delete()
-            except discord.errors.NotFound:
+                await self.ogMsg.delete()
+            except (discord.errors.NotFound, discord.HTTPException, discord.Forbidden):
                 pass
+        
+        async def interaction_check(self, interaction: discord.Interaction):
+            if interaction.user.id != self.interaction.user.id:
+                embed = discord.Embed(title = "Error", description = "You can only control a menu that you have requested.", color=Color.red())
+                await interaction.response.send_message(embed = embed, delete_after=5, ephemeral=True)
+            else:
+                return True
         
         @discord.ui.button(label='Album Art', style=discord.ButtonStyle.gray, row = 1)
         async def art(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
-            
-            embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
-            embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-            await interaction.followup.send(embed = embed, view = None)
             
             if item["images"] != None:
                 image_url = item["images"][0]["url"]
@@ -392,7 +414,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
                     embed.set_footer(text = "Getting colour information...")
                 
                 embed.set_image(url = item["images"][0]["url"])
-                await interaction.edit_original_response(embed = embed)
+                await interaction.edit_original_response(embed = embed, view = None)
 
                 letters = string.ascii_lowercase
                 filename = ''.join(random.choice(letters) for i in range(8))
@@ -405,7 +427,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
                         file.close()
                         
                 color_thief = ColorThief(f'{filename}.jpg')
-                dominant_color = color_thief.get_color(quality=1)
+                dominant_color = color_thief.get_color()
 
                 os.remove(f'{filename}.jpg')
 
@@ -422,18 +444,21 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
                 embed = discord.Embed(title = "No album art available.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed)
+            
+            self.stop()
         
         @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
             
-            await self.message.delete()
+            await interaction.delete_original_response()
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
             super().__init__(timeout=10800)
 
             self.bot = bot.bot
+            self.interaction: discord.Interaction
 
             # Add Open in Spotify button
             spotify_button = discord.ui.Button(label=f'Play on Spotify', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
@@ -447,13 +472,14 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
             await self.interaction.edit_original_response(view=self)
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
-        async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer(ephemeral=True)
+        async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.defer()
             
             menuInstance = spotifyButtonsMenu(self.bot)
-            msg = await interaction.followup.send(view=menuInstance, ephemeral=True)
+            ogMsg = await interaction.followup.send(view=menuInstance, wait=True)
 
-            menuInstance.message = msg
+            menuInstance.interaction = interaction
+            menuInstance.ogMsg = ogMsg
 
     viewInstance = spotifyEmbedView(self)
     
@@ -467,7 +493,6 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         await interaction.followup.send(embed = embed, view = viewInstance)
 
     viewInstance.interaction = interaction
-    viewInstance.message = await interaction.original_response()
 
     # Generate random filename
     letters = string.ascii_lowercase
@@ -483,7 +508,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
             
     # Get dominant colour for embed
     color_thief = ColorThief(f'{filename}.jpg')
-    dominant_color = color_thief.get_color(quality=1)
+    dominant_color = color_thief.get_color()
 
     # Remove file when done
     os.remove(f'{filename}.jpg')
