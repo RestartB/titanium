@@ -56,6 +56,8 @@ class song_url(commands.Cog):
     async def song_url(self, interaction: discord.Interaction, url: str, bypass_cache: bool = False):
         await interaction.response.defer()
 
+        url = self.cleaner.clean(url)
+
         async def songlinkRequest(userURL):
             try:
                 processed_source = quote(userURL, safe='()*!\'')
@@ -138,7 +140,6 @@ class song_url(commands.Cog):
                     await self.refreshCache()
                     
                     try:
-                        url = self.cleaner.clean(url)
                         url, platform, platform_api = await songlinkRequest(url)
 
                         cached = False

@@ -30,8 +30,9 @@ class bot_utils(commands.Cog):
     @botGroup.command(name = "info", description = "Info about the bot.")
     async def info(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        embed = discord.Embed(title = "Info")
-        embed.add_field(name = "Credit", value = "Bot created by Restart (<@563372552643149825>)\n\nBot Framework\n[discord.py](https://github.com/Rapptz/discord.py)\n\nAPIs and Modules:\n[Cat API](https://thecatapi.com/)\n[Dog API](https://dog.ceo/dog-api/)\n[Lyrics API](https://lrclib.net/)\n[Spotipy Module](https://github.com/spotipy-dev/spotipy)\n[Wikipedia Module](https://github.com/goldsmith/Wikipedia)")
+        embed = discord.Embed(title = "Titanium", description = "Hi, I'm Titanium! I'm a multi-purpose, open source Discord bot created by Restart (<@563372552643149825>). I use slash commands - use `/` to see all of my commands!", color = Color.green())
+        embed.add_field(name = "GitHub", value = "You can also find me on GitHub - this is the place to go if you have found a bug or have a feature suggestion! Just submit an issue and I'll take a look. You can also add a star to show some love to the project. It's free and helps me a lot! https://github.com/restartb/titanium")
+        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         await interaction.followup.send(embed = embed)
 
     # Host Info command
