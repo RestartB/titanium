@@ -273,7 +273,11 @@ class spotify(commands.Cog):
                     
                     embed.set_image(url = result["album"]["images"][0]["url"])
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    await interaction.edit_original_response(embed = embed)
+                    
+                    view = View()
+                    view.add_item(discord.ui.Button(label="Download", style=discord.ButtonStyle.url, url=result["images"][0]["url"]))
+                    
+                    await interaction.edit_original_response(embed = embed, view = view)
                 else:
                     embed = discord.Embed(title = "No album art available.", color = Color.red())
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
@@ -315,7 +319,11 @@ class spotify(commands.Cog):
                         embed = discord.Embed(title = f"{result['name']} ({artist_string}) - Album Art", description = f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
                     embed.set_image(url = result["images"][0]["url"])
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    await interaction.edit_original_response(embed = embed)
+                    
+                    view = View()
+                    view.add_item(discord.ui.Button(label="Download", style=discord.ButtonStyle.url, url=result["images"][0]["url"]))
+                    
+                    await interaction.edit_original_response(embed = embed, view = view)
                 else:
                     embed = discord.Embed(title = "No album art available.", color = Color.red)
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
@@ -353,7 +361,11 @@ class spotify(commands.Cog):
                         embed = discord.Embed(title = f"{result['name']} - {result['owner']['display_name']} (Playlist) - Cover Art", description = f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
                     embed.set_image(url = result["images"][0]["url"])
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    await interaction.edit_original_response(embed = embed)
+                    
+                    view = View()
+                    view.add_item(discord.ui.Button(label="Download", style=discord.ButtonStyle.url, url=result["images"][0]["url"]))
+                    
+                    await interaction.edit_original_response(embed = embed, view = view)
                 else:
                     embed = discord.Embed(title = "No cover art available.", color = Color.red)
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)

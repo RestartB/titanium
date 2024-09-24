@@ -84,7 +84,11 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
                     embed.set_footer(text = "Getting colour information...")
                 
                 embed.set_image(url = item["album"]["images"][0]["url"])
-                await interaction.edit_original_response(embed = embed, view = None)
+                
+                view = View()
+                view.add_item(discord.ui.Button(label="Download", style=discord.ButtonStyle.url, url=item["album"]["images"][0]["url"]))
+                    
+                await interaction.edit_original_response(embed = embed, view = view)
 
                 letters = string.ascii_lowercase
                 filename = ''.join(random.choice(letters) for i in range(8))
@@ -414,7 +418,11 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
                     embed.set_footer(text = "Getting colour information...")
                 
                 embed.set_image(url = item["images"][0]["url"])
-                await interaction.edit_original_response(embed = embed, view = None)
+                
+                view = View()
+                view.add_item(discord.ui.Button(label="Download", style=discord.ButtonStyle.url, url=item["images"][0]["url"]))
+                    
+                await interaction.edit_original_response(embed = embed, view = view)
 
                 letters = string.ascii_lowercase
                 filename = ''.join(random.choice(letters) for i in range(8))
