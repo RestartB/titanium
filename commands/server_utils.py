@@ -14,8 +14,9 @@ class server_utils(commands.Cog):
 
     # Server Icon command
     @serverGroup.command(name = "icon", description = "Show the server's icon.")
-    async def server_icon(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def server_icon(self, interaction: discord.Interaction, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         # Handle no icon
         try:
@@ -24,15 +25,16 @@ class server_utils(commands.Cog):
             embed.set_footer(text = f"@{interaction.user.name} - right click or long press to save image", icon_url = interaction.user.display_avatar.url)
 
             # Send Embed
-            await interaction.followup.send(embed = embed)
+            await interaction.followup.send(embed = embed, ephemeral=ephemeral)
         except AttributeError:
             embed = discord.Embed(title = "Server has no icon!", color = Color.red())
-            await interaction.followup.send(embed = embed, )
+            await interaction.followup.send(embed = embed, ephemeral=ephemeral)
         
     # Server Info command
     @serverGroup.command(name = "info", description = "Get info about the server.")
-    async def server_info(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def server_info(self, interaction: discord.Interaction, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         memberCount = 0
         botCount = 0
@@ -89,12 +91,13 @@ class server_utils(commands.Cog):
         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         # Send Embed
-        await interaction.followup.send(embed = embed, view = view)
+        await interaction.followup.send(embed = embed, view = view, ephemeral=ephemeral)
 
     # Server Info command
     @serverGroup.command(name = "boosts", description = "Beta: get info about this server's boost stats.")
-    async def server_boost(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def server_boost(self, interaction: discord.Interaction, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
         
         embed = discord.Embed(title = f"{interaction.guild.name} - Info", color = Color.random())
         
@@ -106,7 +109,7 @@ class server_utils(commands.Cog):
         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
         # Send Embed
-        await interaction.followup.send(embed = embed)
+        await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
 async def setup(bot):
     await bot.add_cog(server_utils(bot))

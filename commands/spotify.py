@@ -34,8 +34,9 @@ class spotify(commands.Cog):
             ])
     @app_commands.describe(search_type = "The type of media you are searching for. Supported types are song, artist and album.")
     @app_commands.describe(search = "What you are searching for.")
-    async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str):
-        await interaction.response.defer()
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
         
         options_list = []
         
@@ -86,12 +87,12 @@ class spotify(commands.Cog):
 
                 # Response to user selection
                 async def response(interaction: discord.Interaction):
-                    await interaction.response.defer()
+                    await interaction.response.defer(ephemeral=ephemeral)
                     
                     # Find unique ID of selection in the list
                     item = result['tracks']['items'][int(select.values[0])]
 
-                    await elements.song(self=self, item=item, interaction=interaction)
+                    await elements.song(self=self, item=item, interaction=interaction, ephemeral=ephemeral)
             # Set up list with provided values
             select.callback = response
             view = View()
@@ -127,7 +128,7 @@ class spotify(commands.Cog):
 
                 # Response to user selection
                 async def response(interaction: discord.Interaction):
-                    await interaction.response.defer()
+                    await interaction.response.defer(ephemeral=ephemeral)
                     
                     item = result['artists']['items'][int(select.values[0])]
 
@@ -135,7 +136,7 @@ class spotify(commands.Cog):
 
                     result_top_tracks = self.sp.artist_top_tracks(item['id'])
                     
-                    await elements.artist(self=self, item=result_info, top_tracks=result_top_tracks, interaction=interaction)
+                    await elements.artist(self=self, item=result_info, top_tracks=result_top_tracks, interaction=interaction, ephemeral=ephemeral)
                 # Set up list with provided values
                 select.callback = response
                 view = View()
@@ -183,13 +184,13 @@ class spotify(commands.Cog):
 
                 # Response to user selection
                 async def response(interaction: discord.Interaction):
-                    await interaction.response.defer()
+                    await interaction.response.defer(ephemeral=ephemeral)
                     
                     item = result['albums']['items'][int(select.values[0])]
 
                     result_info = self.sp.album(item['id'])
                     
-                    await elements.album(self=self, item=result_info, interaction=interaction)
+                    await elements.album(self=self, item=result_info, interaction=interaction, ephemeral=ephemeral)
                 
                 # Set up list with provided values
                 select.callback = response
@@ -202,9 +203,10 @@ class spotify(commands.Cog):
     # Spotify Image command
     @spotifyGroup.command(name = "image", description = "Get high quality album art from a Spotify URL.")
     @app_commands.describe(url = "The target Spotify URL. Song, album, playlist and spotify.link URLs are supported.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
-    async def spotify_image(self, interaction: discord.Interaction, url: str):
-        await interaction.response.defer()
+    async def spotify_image(self, interaction: discord.Interaction, url: str, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
         
         if "spotify.link" in url:
             try:  
@@ -222,19 +224,19 @@ class spotify(commands.Cog):
                 if interaction.user.id in self.bot.dev_ids:
                     embed = discord.Embed(title = "Error occurred while expanding URL.", description = error, color = Color.red())
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    await interaction.followup.send(embed = embed)
+                    await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                     return
                 else:
                     embed = discord.Embed(title = "Error occurred while expanding URL.", description = "A **spotify.link** was detected, but we could not expand it. Is it valid?\n\nIf you are sure the URL is valid and supported, please try again later or message <@563372552643149825> for assistance.", color = Color.red())
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    await interaction.followup.send(embed = embed)
+                    await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                     return
         else:
             url_expanded = False
         
         embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        await interaction.followup.send(embed = embed)
+        await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
         artist_string = ""
 

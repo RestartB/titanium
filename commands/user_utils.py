@@ -15,8 +15,9 @@ class user_utils(commands.Cog):
 
     # Server Info command
     @userGroup.command(name = "info", description = "Get info about a user.")
-    async def server_info(self, interaction: discord.Interaction, user: discord.User):
-        await interaction.response.defer()
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def server_info(self, interaction: discord.Interaction, user: discord.User, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
         
         try:
             member = interaction.guild.get_member(user.id)
@@ -58,21 +59,26 @@ class user_utils(commands.Cog):
         view.add_item(discord.ui.Button(label="Download PFP", style=discord.ButtonStyle.url, url=user.display_avatar.url, row = 0))
         
         # Send Embed
-        await interaction.edit_original_response(embed = embed, view = view)
+        await interaction.edit_original_response(embed=embed, view=view, ephemeral=ephemeral)
 
     # PFP command
     @userGroup.command(name = "pfp", description = "Show a user's PFP.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def pfp(self, interaction: discord.Interaction, user: discord.User):
-        await interaction.response.defer()
+    @app_commands.describe(user = "The target user.")  
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def pfp(self, interaction: discord.Interaction, user: discord.User, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
         
         embed = discord.Embed(title = f"PFP - {user.name}", color = (user.accent_color if user.accent_color != None else Color.random()))
         embed.set_image(url = user.display_avatar.url)
-        embed.set_footer(text = f"@{interaction.user.name} - right click or long press to save image", icon_url = interaction.user.display_avatar.url)
+        embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+
+        view = View()
+        view.add_item(discord.ui.Button(label="Download PFP", style=discord.ButtonStyle.url, url=user.display_avatar.url, row = 0))
         
         # Send Embed
-        await interaction.followup.send(embed = embed)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
 async def setup(bot):
     await bot.add_cog(user_utils(bot))

@@ -13,13 +13,14 @@ class music(commands.Cog):
 
     # Lyrics command
     @app_commands.command(name = "lyrics", description = "Find Lyrics to a song.")
-    @app_commands.checks.cooldown(1, 10)
-    @app_commands.describe(search = "The song you're seaching for.")
-    @app_commands.describe(longer_pages = "Optional: allows a max of 4096 characters per page instead of 1500. Defaults to false.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def lyrics(self, interaction: discord.Interaction, search: str, longer_pages: bool = False):
-        await interaction.response.defer()
+    @app_commands.describe(search = "The song you're seaching for.")
+    @app_commands.describe(longer_pages = "Optional: allows a max of 4096 characters per page instead of 1000. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.checks.cooldown(1, 10)
+    async def lyrics(self, interaction: discord.Interaction, search: str, longer_pages: bool = False, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         # Define lists
         options = []
@@ -47,7 +48,7 @@ class music(commands.Cog):
         # Check if result is blank
         if request_data == []:
             embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
-            await interaction.followup.send(embed = embed)
+            await interaction.followup.send(embed = embed, ephemeral=ephemeral)
         else:
             # Sort through request data, add required info to lists
             for song in request_data:
@@ -98,7 +99,7 @@ class music(commands.Cog):
 
             # Response to user selection
             async def response(interaction: discord.Interaction):
-                await interaction.response.defer()
+                await interaction.response.defer(ephemeral=ephemeral)
                 # Find unique ID of selection in the list
                 list_place = id_list.index(int(select.values[0]))
                 
@@ -117,7 +118,7 @@ class music(commands.Cog):
                                 current_page = ""
                                 current_page = current_page + paragraph
                         else:
-                            if len(paragraph) + len(current_page) < 1600:
+                            if len(paragraph) + len(current_page) < 1000:
                                 current_page = current_page + "\n\n" + paragraph
                             else:
                                 paged_lyrics.append(current_page)
@@ -282,7 +283,7 @@ class music(commands.Cog):
             view.add_item(select)
 
             # Edit initial message to show dropdown
-            await interaction.followup.send(embed = embed, view = view)
+            await interaction.followup.send(embed = embed, view = view, ephemeral=ephemeral)
 
 async def setup(bot):
     await bot.add_cog(music(bot))

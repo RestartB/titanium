@@ -12,7 +12,7 @@ from discord.ui import View
 
 
 # Song parse function
-async def song(self, item: spotipy.Spotify.track, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False):
+async def song(self, item: spotipy.Spotify.track, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False, ephemeral: bool = False):
     """
     Handle Spotify song embeds.
     """
@@ -71,7 +71,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         
         @discord.ui.button(label='Album Art', style=discord.ButtonStyle.gray, row = 1)
         async def art(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=ephemeral)
             
             if item["album"]["images"] != None:
                 image_url = item["album"]["images"][0]["url"]
@@ -123,7 +123,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         
         @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=ephemeral)
             
             await interaction.delete_original_response()
     
@@ -150,10 +150,10 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=ephemeral)
             
             menuInstance = spotifyButtonsMenu(self.bot)
-            ogMsg = await interaction.followup.send(view=menuInstance, wait=True)
+            ogMsg = await interaction.followup.send(view=menuInstance, wait=True, ephemeral=ephemeral)
 
             menuInstance.interaction = interaction
             menuInstance.ogMsg = ogMsg
@@ -167,7 +167,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         await interaction.edit_original_response(embed = embed, view = viewInstance)
     except IndexError:
         # Send new embed
-        await interaction.followup.send(embed = embed, view = viewInstance)
+        await interaction.followup.send(embed = embed, view = viewInstance, ephemeral=ephemeral)
 
     viewInstance.interaction = interaction
 
@@ -196,7 +196,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     await interaction.edit_original_response(embed = embed)
 
 # Artist parse function
-async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify.artist_top_tracks, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None):
+async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify.artist_top_tracks, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, ephemeral: bool = False):
     """
     Handle Spotify artist embeds.
     """
@@ -262,7 +262,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
         
         @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=ephemeral)
             
             await interaction.delete_original_response()
     
@@ -286,10 +286,10 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=ephemeral)
             
             menuInstance = spotifyButtonsMenu(self.bot)
-            ogMsg = await interaction.followup.send(view=menuInstance, wait=True)
+            ogMsg = await interaction.followup.send(view=menuInstance, wait=True, ephemeral=ephemeral)
 
             menuInstance.interaction = interaction
             menuInstance.ogMsg = ogMsg
@@ -303,7 +303,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
         await interaction.edit_original_response(embed = embed, view = viewInstance)
     except IndexError:
         # Send new embed
-        await interaction.followup.send(embed = embed, view = viewInstance)
+        await interaction.followup.send(embed = embed, view = viewInstance, ephemeral=ephemeral)
 
     viewInstance.interaction = interaction
 
@@ -332,7 +332,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
     await interaction.edit_original_response(embed = embed)
 
 # Album parse function
-async def album(self, item: spotipy.Spotify.album, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False):
+async def album(self, item: spotipy.Spotify.album, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False, ephemeral: bool = False):
     """
     Handle Spotify album embeds.
     """
@@ -405,7 +405,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         
         @discord.ui.button(label='Album Art', style=discord.ButtonStyle.gray, row = 1)
         async def art(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=ephemeral)
             
             if item["images"] != None:
                 image_url = item["images"][0]["url"]
@@ -457,7 +457,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         
         @discord.ui.button(label='Close', style = discord.ButtonStyle.red, row = 1)
         async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=ephemeral)
             
             await interaction.delete_original_response()
     
@@ -481,10 +481,10 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         
         @discord.ui.button(label=f'Menu', style=discord.ButtonStyle.gray, row = 0)
         async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=ephemeral)
             
             menuInstance = spotifyButtonsMenu(self.bot)
-            ogMsg = await interaction.followup.send(view=menuInstance, wait=True)
+            ogMsg = await interaction.followup.send(view=menuInstance, wait=True, ephemeral=ephemeral)
 
             menuInstance.interaction = interaction
             menuInstance.ogMsg = ogMsg
@@ -498,7 +498,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         await interaction.edit_original_response(embed = embed, view = viewInstance)
     except IndexError:
         # Send new embed
-        await interaction.followup.send(embed = embed, view = viewInstance)
+        await interaction.followup.send(embed = embed, view = viewInstance, ephemeral=ephemeral)
 
     viewInstance.interaction = interaction
 

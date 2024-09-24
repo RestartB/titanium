@@ -19,9 +19,10 @@ class animals(commands.Cog):
     
     # Cat command
     @animalGroup.command(name = "cat", description = "Get a random cat picture.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)
-    async def cat(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    async def cat(self, interaction: discord.Interaction, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         # Fetch image
         async with aiohttp.ClientSession() as session:
@@ -44,9 +45,10 @@ class animals(commands.Cog):
 
     # Dog command
     @animalGroup.command(name = "dog", description = "Get a random dog picture.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)
-    async def dog(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    async def dog(self, interaction: discord.Interaction, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         # Fetch image
         async with aiohttp.ClientSession() as session:
@@ -65,13 +67,14 @@ class animals(commands.Cog):
         embed.set_image(url = request_data["message"])
         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
         
-        await interaction.followup.send(embed = embed)
+        await interaction.followup.send(embed = embed, ephemeral=ephemeral)
     
     # Sand Cat command
     @animalGroup.command(name = "sand-cat", description = "Get a random sand cat picture.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)
-    async def sand_cat(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    async def sand_cat(self, interaction: discord.Interaction, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
         
         # Fetch image
         async with aiohttp.ClientSession() as session:
@@ -94,7 +97,7 @@ class animals(commands.Cog):
         embed.set_image(url = request_data["url"])
         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
-        await interaction.followup.send(embed = embed)
+        await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
 async def setup(bot):
     await bot.add_cog(animals(bot))

@@ -6,6 +6,7 @@ import discord
 import discord.ext
 from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
+import discord.ext.commands
 from discord.ui import View
 
 import utils.return_ctrlguild as ctrl
@@ -14,6 +15,7 @@ import utils.return_ctrlguild as ctrl
 class cog_utils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.bot: discord.ext.commands.Bot
     
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=False)
     perms = discord.Permissions()
@@ -25,7 +27,7 @@ class cog_utils(commands.Cog):
     @adminGroup.command(name = "load", description = "Admin Only: load a cog.")
     async def load(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
-
+        
         if interaction.user.id in self.bot.dev_ids:
             try:
                 await self.bot.load_extension(f"commands.{cog}")
@@ -43,7 +45,7 @@ class cog_utils(commands.Cog):
     @adminGroup.command(name = "unload", description = "Admin Only: unload a cog.")
     async def unload(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
-
+        
         if interaction.user.id in self.bot.dev_ids:
             try:
                 if cog != "reminders":
@@ -65,7 +67,7 @@ class cog_utils(commands.Cog):
     @adminGroup.command(name = "reload", description = "Admin Only: reload a cog.")
     async def reload(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
-
+        
         if interaction.user.id in self.bot.dev_ids:
             try:
                 if cog != "reminders":
@@ -93,16 +95,16 @@ class cog_utils(commands.Cog):
             embed = discord.Embed(title = "Syncing tree...", description=f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
             await interaction.followup.send(embed = embed)
 
-            # Global Sync
-            print("[INIT] Syncing global command tree...")
-            sync = await self.bot.tree.sync()
-            print(f"[INIT] Global command tree synced.")
-            
             # Control Server Sync
             print("[INIT] Syncing control server command tree...")
             guild = self.bot.get_guild(1213954608632700989)
-            self.bot.tree.copy_global_to(guild=guild)
             sync = await self.bot.tree.sync(guild=guild)
+            print(f"[INIT] Control server command tree synced. {len(sync)} command total.")
+            
+            # Global Sync
+            print("[INIT] Syncing global command tree...")
+            sync = await self.bot.tree.sync(guild=None)
+            print(f"[INIT] Global command tree synced. {len(sync)} commands total.")
 
             embed = discord.Embed(title =  "Success!", description = f"Tree synced. {len(sync)} commands loaded.", color = Color.green())
             await interaction.edit_original_response(embed = embed)
@@ -145,7 +147,7 @@ class cog_utils(commands.Cog):
     @adminGroup.command(name = "server-list", description = "Admin Only: get a list of all server guilds.")
     async def server_list(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
-
+        
         if interaction.user.id in self.bot.dev_ids:
             page = []
             pages = []

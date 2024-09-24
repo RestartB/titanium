@@ -18,30 +18,11 @@ class misc(commands.Cog):
     
     # --- Fun Commands --- #
     
-    # Fake Mod command
-    @funGroup.command(name = "mod", description="Pretend to run moderation commands, the target user won't be moderated.")
-    @app_commands.choices(mod_type=[
-            app_commands.Choice(name="Timeout", value="timed out"),
-            app_commands.Choice(name="Kick", value="kicked"),
-            app_commands.Choice(name="Ban", value="banned"),
-    ])
-    @app_commands.describe(mod_type = "Select the moderation action.")
-    @app_commands.describe(user = "Select the user for the moderation action.")
-    @app_commands.describe(duration = "Optional: enter a duration for the moderation action.")
-    @app_commands.describe(reason = "Optional: enter a reason for the moderation action.")
-    async def fakemod(self, interaction: discord.Interaction, mod_type: app_commands.Choice[str], user: discord.User, duration: str = None, reason: str = None):
-        await interaction.response.defer(ephemeral=True)
-
-        embed = discord.Embed(title = "Alert", description=f"{user.mention} has been {mod_type.value}!", color=Color.red())
-        embed.add_field(name = "Reason", value = (reason if reason != None else "No Reason Provided"), inline = False)
-        embed.add_field(name = "Duration", value=duration, inline = False)
-
-        await interaction.followup.send(embed = embed, ephemeral=False)
-        
     # 8 Ball command
     @funGroup.command(name = "8ball", description = "Get an answer from the mystical 8 ball.")
-    async def ball(self, interaction: discord.Interaction, question: str):
-        await interaction.response.defer()
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def ball(self, interaction: discord.Interaction, question: str, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         ball_list = ["It is certain.", "It is decidedly so.", "Without a doubt.", "Yes, definitely.", "You may rely on it.", "As I see it, yes.", "Most likely.", "Outlook good.", "Yes.", "Signs point to yes.", "Reply hazy, try again.", "Ask again later.", "Better not tell you now.", "Cannot predict now.", "Concentrate and ask again.", "Don't count on it.", "My reply is no.", "My sources say no.", "Outlook not so good.", "Very doubtful."]
         
@@ -54,7 +35,7 @@ class misc(commands.Cog):
         embed = discord.Embed(title = "Rolling...", color = Color.random())
         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
-        await interaction.followup.send(embed = embed)
+        await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
         await asyncio.sleep(random.randint(2,4))
 
@@ -63,22 +44,24 @@ class misc(commands.Cog):
         embed.add_field(name = "8 Ball's Response", value = random.choice(ball_list))
         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
-        await interaction.followup.send(embed = embed)
+        await interaction.edit_original_response(embed = embed)
     
     # Random Number command
     @funGroup.command(name = "random-num", description = "Get a random number.")
-    async def ran_num(self, interaction: discord.Interaction, min: int, max: int):
-        await interaction.response.defer()
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def ran_num(self, interaction: discord.Interaction, min: int, max: int, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         embed = discord.Embed(title = "Random Number", description = random.randint(min, max), color = Color.random())
         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
-        await interaction.followup.send(embed = embed)
+        await interaction.followup.send(embed = embed, ephemeral=ephemeral)
     
     # GitHub Roast command
     @funGroup.command(name = "github-roast", description = "Generate a random GitHub account roast. - https://github-roast.pages.dev")
-    async def gh_roast(self, interaction: discord.Interaction, username: str):
-        await interaction.response.defer()
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def gh_roast(self, interaction: discord.Interaction, username: str, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         try:
             async with aiohttp.ClientSession() as session:
@@ -87,10 +70,10 @@ class misc(commands.Cog):
                     embed = discord.Embed(title=f"AI GitHub Roast: {username}", description=(await request.json())["roast"], color=Color.random())
                     embed.set_footer(text = f"@{interaction.user.name} - https://github-roast.pages.dev", icon_url = interaction.user.display_avatar.url)
 
-                    await interaction.followup.send(embed=embed)
+                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         except KeyError:
             embed = discord.Embed(title = "Error", description = "No roast was generated. Does the user exist?", color = Color.red())
-            await interaction.followup.send(embed = embed)
+            await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
     # Dice command
     @funGroup.command(name = "dice", description = "Roll the dice.")
@@ -103,14 +86,15 @@ class misc(commands.Cog):
         app_commands.Choice(name="20 sides", value="20"),
         ])
     @app_commands.describe(dice = "Select from a range of dices.")
-    @app_commands.describe(dice = "Optional: whether to wait before getting a response. Defaults to true.")
-    async def dice_roll(self, interaction: discord.Interaction, dice: app_commands.Choice[str], wait: bool = True):
-        await interaction.response.defer()
+    @app_commands.describe(wait = "Optional: whether to wait before getting a response. Defaults to true.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def dice_roll(self, interaction: discord.Interaction, dice: app_commands.Choice[str], wait: bool = True, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         embed = discord.Embed(title = "Rolling...", color = Color.random())
         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
-        await interaction.followup.send(embed = embed)
+        await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
         userValue = int(dice.value)
         
@@ -130,8 +114,10 @@ class misc(commands.Cog):
     # First Message command
     @app_commands.command(name = "first-message", description = "Get the first message in a channel, uses current channel by default.")
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
-    async def first_message(self, interaction: discord.Interaction, channel: discord.TextChannel = None):
-        await interaction.response.defer(ephemeral=True)
+    @app_commands.describe(channel = "Optional: the target channel. Defaults to the current channel.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to true.")
+    async def first_message(self, interaction: discord.Interaction, channel: discord.TextChannel = None, ephemeral: bool = True):
+        await interaction.response.defer(ephemeral=ephemeral)
         
         try:
             if channel is None:
@@ -142,13 +128,13 @@ class misc(commands.Cog):
                 embed.set_footer(text = f"{msg.author.name} - {(msg.created_at).hour}:{(msg.created_at).minute} {(msg.created_at).day}/{(msg.created_at).month}/{(msg.created_at).year} UTC", icon_url = msg.author.avatar.url)
                 view = View()
                 view.add_item(discord.ui.Button(style = discord.ButtonStyle.url, url = msg.jump_url, label = "Jump to Message"))
-                await interaction.followup.send(embed=embed, view=view)
+                await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
         except discord.errors.Forbidden:
             embed = discord.Embed(title = "Forbidden", description = "The bot may not have permissions to view messages in the selected channel.", color = Color.red())
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         except Exception:
             embed = discord.Embed(title = "Error", description = "**An error has occurred.\n\nSolutions**\n- Is the channel a text channel?\n- Has a message been sent here yet?\n- Try again later.", color = Color.red())
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         
 async def setup(bot):
     await bot.add_cog(misc(bot))

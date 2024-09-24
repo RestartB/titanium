@@ -16,9 +16,10 @@ class web_search(commands.Cog):
 
     # Urban Dictionary command
     @searchGroup.command(name = "urban-dictionary", description = "Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1,10)
-    async def urban_dict(self, interaction: discord.Interaction, query: str):
-        await interaction.response.defer()
+    async def urban_dict(self, interaction: discord.Interaction, query: str, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         embed_list = []
 
@@ -176,9 +177,9 @@ class web_search(commands.Cog):
                 embed_list.append(embed)
                 
                 if len(item_list) == 1:
-                    await interaction.followup.send(embeds = embed_list)
+                    await interaction.followup.send(embeds = embed_list, ephemeral=ephemeral)
                 else:
-                    await interaction.followup.send(embeds = embed_list, view = UrbanDictPageView(item_list))
+                    await interaction.followup.send(embeds = embed_list, view = UrbanDictPageView(item_list), ephemeral=ephemeral)
 
                     UrbanDictPageView.interaction = interaction
                     UrbanDictPageView.message = await interaction.original_response()
@@ -186,24 +187,25 @@ class web_search(commands.Cog):
                 embed = discord.Embed(title = "No results found.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
-                await interaction.followup.send(embed = embed)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
-                await interaction.followup.send(embed = embed, )
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             else:
-                embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
+                embed = discord.Embed(title = "Error", description = "Couldn't send the message.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
-                await interaction.followup.send(embed = embed, )
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Wikipedia command
     @searchGroup.command(name = "wikipedia", description = "Search Wikipedia for information.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)
-    async def wiki(self, interaction: discord.Interaction, search: str):
-        await interaction.response.defer()
+    async def wiki(self, interaction: discord.Interaction, search: str, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
         
         try:
             page = wikipedia.page(search)
@@ -216,28 +218,28 @@ class web_search(commands.Cog):
             view = View()
             view.add_item(discord.ui.Button(label = "Read More", style = discord.ButtonStyle.url, url = page.url))
             
-            await interaction.followup.send(embed = embed, view = view)
+            await interaction.followup.send(embed = embed, view = view, ephemeral=ephemeral)
         except wikipedia.exceptions.PageError:
             embed = discord.Embed(title = "Error", description = f"No page was found on Wikipedia matching {search}. Try another search.", color = Color.red())
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             
-            await interaction.followup.send(embed = embed)
+            await interaction.followup.send(embed = embed, ephemeral=ephemeral)
         except wikipedia.exceptions.DisambiguationError as error:
             embed = discord.Embed(title = "Please be more specific with your query.", description=error, color = Color.red())
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             
-            await interaction.followup.send(embed = embed)
+            await interaction.followup.send(embed = embed, ephemeral=ephemeral)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, )
+                await interaction.followup.send(embed = embed, ephemeral=ephemeral)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, )
+                await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
 async def setup(bot):
     await bot.add_cog(web_search(bot))

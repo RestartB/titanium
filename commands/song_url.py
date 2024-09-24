@@ -50,11 +50,12 @@ class song_url(commands.Cog):
     @app_commands.command(name = "song-url", description = "Get info about a song link.")
     @app_commands.describe(url = "The target URL. Run /song-link-help for supported link types.")
     @app_commands.describe(bypass_cache = "Bypass the cache to get a new result for non-Spotify links. Can help if provided match is wrong.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def song_url(self, interaction: discord.Interaction, url: str, bypass_cache: bool = False):
-        await interaction.response.defer()
+    async def song_url(self, interaction: discord.Interaction, url: str, bypass_cache: bool = False, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         url = self.cleaner.clean(url)
 
@@ -216,9 +217,9 @@ class song_url(commands.Cog):
                 
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
-                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=url, add_button_text=platform, cached=cached)
+                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=url, add_button_text=platform, cached=cached, ephemeral=ephemeral)
                 else:
-                    await elements.song(self=self, item=result, interaction=interaction, cached=cached)
+                    await elements.song(self=self, item=result, interaction=interaction, cached=cached, ephemeral=ephemeral)
             # Artist URL
             elif "artist" in url:
                 # Fetch artist info
@@ -236,7 +237,7 @@ class song_url(commands.Cog):
                 # Fetch artist top songs
                 result_top_tracks = self.sp.artist_top_tracks(url)
                 
-                await elements.artist(self=self, item=result_info, top_tracks=result_top_tracks, interaction=interaction)
+                await elements.artist(self=self, item=result_info, top_tracks=result_top_tracks, interaction=interaction, ephemeral=ephemeral)
             # Album URL
             elif "album" in url:
                 # Fetch artist info
@@ -253,9 +254,9 @@ class song_url(commands.Cog):
                 
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
-                    await elements.album(self=self, item=result_info, interaction=interaction, add_button_url=url, add_button_text=platform, cached=cached)
+                    await elements.album(self=self, item=result_info, interaction=interaction, add_button_url=url, add_button_text=platform, cached=cached, ephemeral=ephemeral)
                 else:
-                    await elements.album(self=self, item=result_info, interaction=interaction, cached=cached)
+                    await elements.album(self=self, item=result_info, interaction=interaction, cached=cached, ephemeral=ephemeral)
             # Playlist URL
             elif "playlist" in url:
                 # Search playlist on Spotify

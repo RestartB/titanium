@@ -14,12 +14,13 @@ class reviewCom(commands.Cog):
     reviewGroup = app_commands.Group(name="reviews", description="Review a user on ReviewDB.", allowed_contexts=context, allowed_installs=installs)
     
     # Review view command
-    @reviewGroup.command(name = "view", description = "See a user's reviews on ReviewDB.")
+    @reviewGroup.command(name = "user", description = "See a user's reviews on ReviewDB.")
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(user = "The user you want to see the reviews of.")
-    async def reviewView(self, interaction: discord.Interaction, user: discord.User):
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def reviewView(self, interaction: discord.Interaction, user: discord.User, ephemeral: bool = False):
         try:    
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=ephemeral)
 
             # Create URL
             request_url = f"https://manti.vendicated.dev/api/reviewdb/users/{user.id}/reviews"
@@ -278,9 +279,9 @@ class reviewCom(commands.Cog):
                 embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
                 
                 if len(pages) == 1:
-                    await interaction.followup.send(embed = embed)
+                    await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                 else:
-                    await interaction.followup.send(embed = embed, view = pageView(pages))
+                    await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral)
 
                     pageView.interaction = interaction
                     pageView.message = await interaction.original_response()
@@ -288,29 +289,30 @@ class reviewCom(commands.Cog):
                 embed = discord.Embed(title = "ReviewDB User Reviews", description="This user has no reviews!", color = Color.red())
                 embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
             
-                await interaction.followup.send(embed = embed)
+                await interaction.followup.send(embed = embed, ephemeral=ephemeral)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, )
+                await interaction.followup.send(embed = embed, ephemeral=ephemeral)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, )
+                await interaction.followup.send(embed = embed, ephemeral=ephemeral)
     
     # Review view command
     @reviewGroup.command(name = "server", description = "See the current server's reviews on ReviewDB. Optionally provide a server ID to view its reviews.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
-    async def reviewServerView(self, interaction: discord.Interaction):
+    async def reviewServerView(self, interaction: discord.Interaction, ephemeral: bool = False):
         try:    
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=ephemeral)
             
             if interaction.guild == None:
                 embed = discord.Embed(title = "Error", description = "This is not a guild!", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
-                await interaction.followup.send(embed = embed, )
+                await interaction.followup.send(embed = embed, ephemeral=ephemeral)
             
             # Create URL
             request_url = f"https://manti.vendicated.dev/api/reviewdb/users/{interaction.guild.id}/reviews"
@@ -569,9 +571,9 @@ class reviewCom(commands.Cog):
                 embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
                 
                 if len(pages) == 1:
-                    await interaction.followup.send(embed = embed)
+                    await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                 else:
-                    await interaction.followup.send(embed = embed, view = pageView(pages))
+                    await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral)
 
                     pageView.interaction = interaction
                     pageView.message = await interaction.original_response()
@@ -579,16 +581,16 @@ class reviewCom(commands.Cog):
                 embed = discord.Embed(title = "ReviewDB Server Reviews", description="This server has no reviews!", color = Color.red())
                 embed.set_author(name=interaction.guild.name, icon_url=(interaction.guild.icon.url if interaction.guild.icon is not None else ""))
             
-                await interaction.followup.send(embed = embed)
+                await interaction.followup.send(embed = embed, ephemeral=ephemeral)
         except discord.errors.HTTPException as e:
             if "automod" in str(e).lower():
                 embed = discord.Embed(title = "Error", description = "Message has been blocked by server AutoMod policies. Server admins may have been notified.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, )
+                await interaction.followup.send(embed = embed, ephemeral=ephemeral)
             else:
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.followup.send(embed = embed, )
+                await interaction.followup.send(embed = embed, ephemeral=ephemeral)
     
     # # Review create command
     # @reviewGroup.command(name = "create", description = "Create a ReviewDB review for a user.")

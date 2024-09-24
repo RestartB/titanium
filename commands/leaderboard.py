@@ -82,9 +82,11 @@ class leaderboard(commands.Cog):
         app_commands.Choice(name="Words Sent", value="wordCount"),
         app_commands.Choice(name="Attachments Sent", value="attachmentCount"),
         ])
+    @app_commands.describe(sort_type = "What to sort the leaderboard by.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
-    async def leaderboard(self, interaction: discord.Interaction, sort_type: app_commands.Choice[str]):
-        await interaction.response.defer()
+    async def leaderboard(self, interaction: discord.Interaction, sort_type: app_commands.Choice[str], ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
         
         pages = []
         
@@ -233,15 +235,15 @@ class leaderboard(commands.Cog):
             embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
             
             if len(pages) == 1:
-                await interaction.followup.send(embed = embed)
+                await interaction.followup.send(embed = embed, ephemeral=ephemeral)
             else:
-                await interaction.followup.send(embed = embed, view = Leaderboard(pages))
+                await interaction.followup.send(embed = embed, view = Leaderboard(pages), ephemeral=ephemeral)
 
                 Leaderboard.interaction = interaction
                 Leaderboard.message = await interaction.original_response()
         else:
-            embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server.", color = Color.red())
-            await interaction.followup.send(embed = embed)
+            embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server. Ask an admin to enable it first.", color = Color.red())
+            await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
     # Opt out command
     @lbGroup.command(name = "opt-out", description = "Opt out of the leaderboard globally as a user.")
