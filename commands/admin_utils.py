@@ -169,6 +169,8 @@ class cog_utils(commands.Cog):
                     self.page = 0
                     self.pages = pages
 
+                    self.message: discord.Message
+
                     for item in self.children:
                         if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True

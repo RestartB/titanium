@@ -1,3 +1,5 @@
+# pylint: disable=possibly-used-before-assignment
+
 import asyncio
 import os
 import sqlite3
@@ -777,7 +779,7 @@ class fireboard(commands.Cog):
         
         # Check fireboard status
         if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
-            class spotifyEmbedView(View):
+            class disableView(View):
                 def __init__(self, bot):
                     super().__init__(timeout=60)
 
@@ -813,7 +815,7 @@ class fireboard(commands.Cog):
                     
                     await self.interaction.edit_original_response(embed=embed, view=None)
 
-            viewInstance = spotifyEmbedView(self)
+            viewInstance = disableView(self)
             viewInstance.interaction = interaction
             viewInstance.connection = self.connection
             viewInstance.cursor = self.cursor

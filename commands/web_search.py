@@ -222,13 +222,13 @@ class web_search(commands.Cog):
         except wikipedia.exceptions.PageError:
             embed = discord.Embed(title = "Error", description = f"No page was found on Wikipedia matching {search}. Try another search.", color = Color.red())
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-            embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
+            embed.set_author(name = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             
             await interaction.followup.send(embed = embed, ephemeral=ephemeral)
         except wikipedia.exceptions.DisambiguationError as error:
             embed = discord.Embed(title = "Please be more specific with your query.", description=error, color = Color.red())
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-            embed.set_author(text = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
+            embed.set_author(name = "Wikipedia", icon_url = "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png")
             
             await interaction.followup.send(embed = embed, ephemeral=ephemeral)
         except discord.errors.HTTPException as e:
