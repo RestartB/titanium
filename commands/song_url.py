@@ -48,7 +48,7 @@ class song_url(commands.Cog):
     
     # Song URL command
     @app_commands.command(name = "song-url", description = "Get info about a song link.")
-    @app_commands.describe(url = "The target URL. Run /song-link-help for supported link types.")
+    @app_commands.describe(urlClean = "The target URL. Run /song-link-help for supported link types.")
     @app_commands.describe(bypass_cache = "Bypass the cache to get a new result for non-Spotify links. Can help if provided match is wrong.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)
@@ -57,6 +57,7 @@ class song_url(commands.Cog):
     async def song_url(self, interaction: discord.Interaction, url: str, bypass_cache: bool = False, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
+        ogURL = url
         url = self.cleaner.clean(url)
 
         async def songlinkRequest(userURL):
@@ -217,7 +218,7 @@ class song_url(commands.Cog):
                 
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
-                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=url, add_button_text=platform, cached=cached, ephemeral=ephemeral)
+                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=ogURL, add_button_text=platform, cached=cached, ephemeral=ephemeral)
                 else:
                     await elements.song(self=self, item=result, interaction=interaction, cached=cached, ephemeral=ephemeral)
             # Artist URL
@@ -254,7 +255,7 @@ class song_url(commands.Cog):
                 
                 # Add OG platform button when OG platform isnt Spotify
                 if platform_api != "spotify":
-                    await elements.album(self=self, item=result_info, interaction=interaction, add_button_url=url, add_button_text=platform, cached=cached, ephemeral=ephemeral)
+                    await elements.album(self=self, item=result_info, interaction=interaction, add_button_url=ogURL, add_button_text=platform, cached=cached, ephemeral=ephemeral)
                 else:
                     await elements.album(self=self, item=result_info, interaction=interaction, cached=cached, ephemeral=ephemeral)
             # Playlist URL
