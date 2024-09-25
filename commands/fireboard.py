@@ -809,7 +809,7 @@ class fireboard(commands.Cog):
                     self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (interaction.guild.id,))
                     self.connection.commit()
 
-                    await self.botSelf.refreshFireLists()
+                    await self.botSelf.refreshFireLists() # pylint disable=no-member
 
                     embed = discord.Embed(title = "Done!", description="Fireboard was disabled.", color=Color.green())
                     
