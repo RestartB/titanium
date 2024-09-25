@@ -4,8 +4,7 @@ import aiohttp
 import discord
 from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
-from discord.ui import Select, View
-
+from discord.ui import View
 
 class music(commands.Cog):
     def __init__(self, bot):
@@ -59,6 +58,7 @@ class music(commands.Cog):
                 lyrics_list.append(song['plainLyrics'])
 
             # Generate dropdown values
+            # Limit to 5 options
             if len(song_list) > 5:
                 embed = discord.Embed(title = "Select Song", description = f'Found {len(song_list)} results, showing 5 results for "{search}".\n\nCan\u0027t find what you\u0027re looking for? Try to be more specific with your query, for example, specifying the author.', color = Color.orange())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
@@ -80,6 +80,7 @@ class music(commands.Cog):
                 embed = discord.Embed(title = "Select Song", description = f'Found {len(song_list)} results, {len(song_list)} showing results for "{search}".\n\nCan\u0027t find what you\u0027re looking for? Try to be more specific with your query, for example, specifying the author.', color = Color.orange())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 
+                # Add each song's option
                 for i in range(0, len(song_list)):
                     # Handle strings being too long
                     if len(song_list[i]) > 100:
@@ -94,196 +95,242 @@ class music(commands.Cog):
                     
                     options.append(discord.SelectOption(label = song_name, description = list_description, value = id_list[i]))
 
-            # Define options
-            select = Select(options=options)
+            # Song select view
+            class songSelectView(View):
+                def __init__(self, options: list):
+                    super().__init__(timeout = 120) # 2 minute timeout
 
-            # Response to user selection
-            async def response(interaction: discord.Interaction):
-                await interaction.response.defer(ephemeral=ephemeral)
-                # Find unique ID of selection in the list
-                list_place = id_list.index(int(select.values[0]))
-                
-                try:
-                    lyrics_split = lyrics_list[list_place].split("\n\n")
-
-                    paged_lyrics = []
-                    current_page = ""
-
-                    for paragraph in lyrics_split:
-                        if longer_pages == True:
-                            if len(paragraph) + len(current_page) < 4096:
-                                current_page = current_page + "\n\n" + paragraph
-                            else:
-                                paged_lyrics.append(current_page)
-                                current_page = ""
-                                current_page = current_page + paragraph
-                        else:
-                            if len(paragraph) + len(current_page) < 1000:
-                                current_page = current_page + "\n\n" + paragraph
-                            else:
-                                paged_lyrics.append(current_page)
-                                current_page = ""
-                                current_page = current_page + paragraph
-
-                    paged_lyrics.append(current_page)
-
-                    # Create lyric embed
-                    embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = paged_lyrics[0], color = Color.random())
+                    self.msg = discord.WebhookMessage
                     
-                    class lyricPages(View):
-                        def __init__(self, pages):
-                            super().__init__(timeout = 3600)
-                            self.page = 0
-                            self.pages = pages
+                    # Song select dropdown
+                    class dropdown(discord.ui.Select):
+                        def __init__(self, options: list):
+                            super().__init__(placeholder="Select Song", min_values=1, max_values=1, options=options)
 
-                            self.locked = False
+                            self.viewSelf: View
+                        
+                        # Callback
+                        async def callback(self, interaction: discord.Interaction):
+                            await interaction.response.defer(ephemeral=ephemeral)
                             
-                            google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={song_list[list_place].replace(" ", "+")}+{artist_list[list_place].replace(" ", "+")}')
-                            self.add_item(google_button)
+                            # Stop dropdown view
+                            self.viewSelf.stop()
+                            
+                            # Find unique ID of selection in the list
+                            list_place = id_list.index(int(self.values[0]))
+                            
+                            try:
+                                lyrics_split = lyrics_list[list_place].split("\n\n")
 
-                            for item in self.children:
-                                if item.custom_id == "first" or item.custom_id == "prev":
-                                    item.disabled = True
-                        
-                        async def on_timeout(self) -> None:
-                            for item in self.children:
-                                if item.style != ButtonStyle.url:
-                                    item.disabled = True
+                                paged_lyrics = []
+                                current_page = ""
 
-                            await self.message.edit(view=self)
-                    
-                        async def interaction_check(self, interaction: discord.Interaction):
-                            if interaction.user.id != self.interaction.user.id:
-                                if self.locked:
-                                    embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                                    await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
-                                else:
-                                    return True
-                            else:
-                                return True
-                        
-                        @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
-                        async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                            self.page = 0
+                                # Page split
+                                for paragraph in lyrics_split:
+                                    if longer_pages == True:
+                                        if len(paragraph) + len(current_page) < 4096:
+                                            current_page = current_page + "\n\n" + paragraph
+                                        else:
+                                            paged_lyrics.append(current_page)
+                                            current_page = ""
+                                            current_page = current_page + paragraph
+                                    else:
+                                        if len(paragraph) + len(current_page) < 1000:
+                                            current_page = current_page + "\n\n" + paragraph
+                                        else:
+                                            paged_lyrics.append(current_page)
+                                            current_page = ""
+                                            current_page = current_page + paragraph
 
-                            for item in self.children:
-                                item.disabled = False
+                                # Add any remaining contents
+                                if current_page != "":
+                                    paged_lyrics.append(current_page)
+
+                                # Create lyric embed
+                                embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = paged_lyrics[0], color = Color.random())
                                 
-                                if item.custom_id == "first" or item.custom_id == "prev":
-                                    item.disabled = True
-                            
-                            embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
-                            embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
-                            
-                            await interaction.response.edit_message(embed = embed, view = self)
-                        
-                        @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
-                        async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                            if self.page - 1 == 0:
-                                self.page -= 1
+                                # Lyrics Page view
+                                class lyricPages(View):
+                                    def __init__(self, pages):
+                                        super().__init__(timeout = 1800) # 30 minute timeout
+                                        
+                                        self.page = 0
+                                        self.pages = pages
 
-                                for item in self.children:
-                                    item.disabled = False
+                                        self.interaction: discord.Interaction
+                                        self.msg: discord.Message
 
-                                    if item.custom_id == "first" or item.custom_id == "prev":
-                                        item.disabled = True
-                            else:
-                                self.page -= 1
+                                        self.locked = False
+                                        
+                                        google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={song_list[list_place].replace(" ", "+")}+{artist_list[list_place].replace(" ", "+")}')
+                                        self.add_item(google_button)
 
-                                for item in self.children:
-                                    item.disabled = False
-                            
-                            embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
-                            embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
-                            
-                            await interaction.response.edit_message(embed = embed, view = self)
-                        
-                        @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
-                        async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                            if interaction.user.id == self.interaction.user.id:
-                                self.locked = not self.locked
-
-                                if self.locked == True:
-                                    button.emoji = "🔒"
-                                    button.style = ButtonStyle.red
-                                else:
-                                    button.emoji = "🔓"
-                                    button.style = ButtonStyle.green
-                                
-                                await interaction.response.edit_message(view = self)
-                            else:
-                                embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
-                                await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
-
-                        @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
-                        async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                            if (self.page + 1) == (len(self.pages) - 1):
-                                self.page += 1
-
-                                for item in self.children:
-                                    item.disabled = False
+                                        # First and previous buttons will always start disabled
+                                        for item in self.children:
+                                            if item.custom_id == "first" or item.custom_id == "prev":
+                                                item.disabled = True
                                     
-                                    if item.custom_id == "next" or item.custom_id == "last":
-                                        item.disabled = True
-                            else:
-                                self.page += 1
+                                    # Disable all buttons on timeout
+                                    async def on_timeout(self) -> None:
+                                        for item in self.children:
+                                            if item.style != ButtonStyle.url:
+                                                item.disabled = True
 
-                                for item in self.children:
-                                    item.disabled = False
-                            
-                            embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
-                            embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
-                            
-                            await interaction.response.edit_message(embed = embed, view = self)
-                        
-                        @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
-                        async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                            self.page = len(self.pages) - 1
+                                        # Edit message with disabled view
+                                        await self.msg.edit(view=self)
+                                
+                                    # Block others from controlling when lock is active
+                                    async def interaction_check(self, interaction: discord.Interaction):
+                                        if interaction.user.id != self.interaction.user.id:
+                                            if self.locked:
+                                                embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
+                                                await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                                            else:
+                                                return True
+                                        else:
+                                            return True
+                                    
+                                    # First page
+                                    @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
+                                    async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                                        self.page = 0
 
-                            for item in self.children:
-                                item.disabled = False
+                                        for item in self.children:
+                                            item.disabled = False
+                                            
+                                            if item.custom_id == "first" or item.custom_id == "prev":
+                                                item.disabled = True
+                                        
+                                        embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
+                                        embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
+                                        
+                                        await interaction.response.edit_message(embed = embed, view = self)
+                                    
+                                    # Previous page
+                                    @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
+                                    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                                        if self.page - 1 == 0:
+                                            self.page -= 1
 
-                                if item.custom_id == "next" or item.custom_id == "last":
-                                    item.disabled = True
-                            
-                            embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
-                            embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
-                            
-                            await interaction.response.edit_message(embed = embed, view = self)
+                                            for item in self.children:
+                                                item.disabled = False
 
-                    if len(paged_lyrics) == 1:
-                        google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
-                        
-                        view = View()
-                        view.add_item(google_button)
-                        
-                        embed.set_footer(text = f"lrclib.net - Page 1/1")
-                        
-                        await interaction.edit_original_response(embed = embed, view = view)
-                    else:
-                        embed.set_footer(text = f"lrclib.net - Page 1/{len(paged_lyrics)}")
-                        await interaction.edit_original_response(embed = embed, view = lyricPages(paged_lyrics))
+                                                if item.custom_id == "first" or item.custom_id == "prev":
+                                                    item.disabled = True
+                                        else:
+                                            self.page -= 1
 
-                        lyricPages.interaction = interaction
-                        lyricPages.message = await interaction.original_response()
-                except AttributeError:
-                    google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
+                                            for item in self.children:
+                                                item.disabled = False
+                                        
+                                        embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
+                                        embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
+                                        
+                                        await interaction.response.edit_message(embed = embed, view = self)
+                                    
+                                    # Lock / unlock button
+                                    @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
+                                    async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                                        if interaction.user.id == self.interaction.user.id:
+                                            self.locked = not self.locked
+
+                                            if self.locked == True:
+                                                button.emoji = "🔒"
+                                                button.style = ButtonStyle.red
+                                            else:
+                                                button.emoji = "🔓"
+                                                button.style = ButtonStyle.green
+                                            
+                                            await interaction.response.edit_message(view = self)
+                                        else:
+                                            embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
+                                            await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+
+                                    # Next page
+                                    @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
+                                    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                                        if (self.page + 1) == (len(self.pages) - 1):
+                                            self.page += 1
+
+                                            for item in self.children:
+                                                item.disabled = False
+                                                
+                                                if item.custom_id == "next" or item.custom_id == "last":
+                                                    item.disabled = True
+                                        else:
+                                            self.page += 1
+
+                                            for item in self.children:
+                                                item.disabled = False
+                                        
+                                        embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
+                                        embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
+                                        
+                                        await interaction.response.edit_message(embed = embed, view = self)
+                                    
+                                    # Last page
+                                    @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
+                                    async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                                        self.page = len(self.pages) - 1
+
+                                        for item in self.children:
+                                            item.disabled = False
+
+                                            if item.custom_id == "next" or item.custom_id == "last":
+                                                item.disabled = True
+                                        
+                                        embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = self.pages[self.page], color = Color.random())
+                                        embed.set_footer(text = f"lrclib.net - Page {self.page + 1}/{len(paged_lyrics)}")
+                                        
+                                        await interaction.response.edit_message(embed = embed, view = self)
+
+                                if len(paged_lyrics) == 1: # One page - send embed without page controller
+                                    google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
+                                    
+                                    view = View()
+                                    view.add_item(google_button)
+                                    
+                                    embed.set_footer(text = f"lrclib.net - Page 1/1")
+                                    
+                                    await interaction.edit_original_response(embed = embed, view = view)
+                                else: # Multiple pages - send embed with page controller
+                                    embed.set_footer(text = f"lrclib.net - Page 1/{len(paged_lyrics)}")
+                                    pagesInstance = lyricPages(paged_lyrics)
+                                    await interaction.edit_original_response(embed = embed, view = pagesInstance)
+
+                                    # Pass through interaction to get original sender ID - used for lock button
+                                    pagesInstance.interaction = interaction
+                                    
+                                    # Pass through message - used for timeout edit, currently broken
+                                    pagesInstance.msg = msg
+                            except AttributeError: # No lyrics
+                                google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
+                                
+                                view = View()
+                                view.add_item(google_button)
+                                
+                                embed = discord.Embed(title = f"{song_list[list_place]} - {artist_list[list_place]}", description = "The song has no lyrics.", color = Color.red())
+                                embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
+                                
+                                await interaction.edit_original_response(embed = embed, view = view)
                     
-                    view = View()
-                    view.add_item(google_button)
+                    dropdownInstance = dropdown(options)
+                    self.add_item(dropdownInstance)
                     
-                    embed = discord.Embed(title = f"{song_list[list_place]} - {artist_list[list_place]}", description = "The song has no lyrics.", color = Color.red())
-                    embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                    
-                    await interaction.edit_original_response(embed = embed, view = view)
+                    # Pass in view's self to allow it to be stopped
+                    dropdownInstance.viewSelf = self
+                            
+                async def on_timeout(self) -> None:
+                    for item in self.children:
+                        item.disabled = True
+
+                    await self.msg.edit(view=self)
+
+            songSelectViewInstance = songSelectView(options)
             
-            # Set up list with provided values
-            select.callback = response
-            view = View()
-            view.add_item(select)
-
             # Edit initial message to show dropdown
-            await interaction.followup.send(embed = embed, view = view, ephemeral=ephemeral)
+            msg = await interaction.followup.send(embed = embed, view = songSelectViewInstance, ephemeral=ephemeral, wait=True)
+            songSelectViewInstance.msg = msg
 
 async def setup(bot):
     await bot.add_cog(music(bot))
