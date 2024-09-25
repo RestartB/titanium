@@ -48,7 +48,7 @@ class song_url(commands.Cog):
     
     # Song URL command
     @app_commands.command(name = "song-url", description = "Get info about a song link.")
-    @app_commands.describe(urlClean = "The target URL. Run /song-link-help for supported link types.")
+    @app_commands.describe(url = "The target URL. Run /song-link-help for supported link types.")
     @app_commands.describe(bypass_cache = "Bypass the cache to get a new result for non-Spotify links. Can help if provided match is wrong.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)
