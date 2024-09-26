@@ -107,6 +107,7 @@ class music(commands.Cog):
                     
                     # Pass in view's self to allow it to be stopped
                     dropdownInstance.viewSelf = self
+                    dropdownInstance.msg = self.msg
                             
                 async def on_timeout(self) -> None:
                     for item in self.children:
@@ -120,6 +121,7 @@ class music(commands.Cog):
                     super().__init__(placeholder="Select Song", min_values=1, max_values=1, options=options)
 
                     self.viewSelf: View
+                    self.msg: discord.WebhookMessage
                 
                 # Callback
                 async def callback(self, interaction: discord.Interaction):
@@ -179,7 +181,7 @@ class music(commands.Cog):
                             pagesInstance.interaction = interaction
                             
                             # Pass through message - used for timeout edit, currently broken
-                            pagesInstance.msg = msg
+                            pagesInstance.msg = self.msg
                     except AttributeError: # No lyrics
                         google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
                         
@@ -194,7 +196,7 @@ class music(commands.Cog):
             # Lyrics Page view
             class lyricPages(View):
                 def __init__(self, pages: list, list_place: int):
-                    super().__init__(timeout = 1800) # 30 minute timeout
+                    super().__init__(timeout = 1200) # 30 minute timeout
                     
                     self.page = 0
                     self.pages: list = pages
