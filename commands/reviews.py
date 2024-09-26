@@ -38,6 +38,7 @@ class reviewCom(commands.Cog):
             pageList = []
             pages = []
 
+            # Create pages
             for review in reviews:
                 i += 1
             
@@ -53,6 +54,7 @@ class reviewCom(commands.Cog):
                     pages.append(pageList)
                     pageList = []
             
+            # Add a page if remaining contents isn't empty
             if pageList != []:
                 pages.append(pageList)
             
@@ -64,16 +66,21 @@ class reviewCom(commands.Cog):
 
                     self.locked = False
 
+                    self.interaction: discord.Interaction
+                    self.message: discord.WebhookMessage
+
                     for item in self.children:
                         if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True
             
+                # View timeout
                 async def on_timeout(self) -> None:
                     for item in self.children:
                         item.disabled = True
 
                     await self.message.edit(view=self)
                 
+                # Page lock
                 async def interaction_check(self, interaction: discord.Interaction):
                     if interaction.user.id != self.interaction.user.id:
                         if self.locked:
@@ -84,6 +91,7 @@ class reviewCom(commands.Cog):
                     else:
                         return True
                 
+                # First page
                 @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
                 async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                     self.page = 0
@@ -119,6 +127,7 @@ class reviewCom(commands.Cog):
                     embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
                 
+                # Previous page
                 @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
                 async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                     if self.page - 1 == 0:
@@ -160,6 +169,7 @@ class reviewCom(commands.Cog):
                     embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
 
+                # Lock / unlock toggle
                 @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                 async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                     if interaction.user.id == self.interaction.user.id:
@@ -177,6 +187,7 @@ class reviewCom(commands.Cog):
                         embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
                         await interaction.response.send_message(embed = embed, delete_after=5)
                 
+                # Next page
                 @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
                 async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                     if (self.page + 1) == (len(self.pages) - 1):
@@ -218,6 +229,7 @@ class reviewCom(commands.Cog):
                     embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
                 
+                # Last page button
                 @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
                 async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
                     self.page = len(self.pages) - 1
@@ -257,6 +269,7 @@ class reviewCom(commands.Cog):
             embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
             
             if not(len(pages) == 0):
+                # Reviews exist
                 i = 1
                 for item in pages[0]:
                     if int(item[0]["id"]) == 0:
@@ -281,10 +294,10 @@ class reviewCom(commands.Cog):
                 if len(pages) == 1:
                     await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                 else:
-                    await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral)
+                    msg = await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral, wait=True)
 
                     pageView.interaction = interaction
-                    pageView.message = await interaction.original_response()
+                    pageView.message = msg
             else:
                 embed = discord.Embed(title = "ReviewDB User Reviews", description="This user has no reviews!", color = Color.red())
                 embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
@@ -354,6 +367,9 @@ class reviewCom(commands.Cog):
                     self.page = 0
                     self.pages = pages
 
+                    self.interaction: discord.Interaction
+                    self.message: discord.WebhookMessage
+                    
                     self.locked = False
 
                     for item in self.children:
@@ -591,52 +607,6 @@ class reviewCom(commands.Cog):
                 embed = discord.Embed(title = "Error", description = "Couldn't send the message. AutoMod may have been triggered.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.followup.send(embed = embed, ephemeral=ephemeral)
-    
-    # # Review create command
-    # @reviewGroup.command(name = "create", description = "Create a ReviewDB review for a user.")
-    # @app_commands.checks.cooldown(1, 10)
-    # @app_commands.describe(user = "The user you want to review.")
-    # async def reviewCreate(self, interaction: discord.Interaction, user: discord.User):        
-    #     class CreateModal(discord.ui.Modal):
-    #         def __init__(self, user, bot):
-    #             self.user = user
-    #             self.bot = bot
-
-    #             super().__init__(title = f"Create Review - {self.user.name}")
-            
-    #         feedback = discord.ui.TextInput(
-    #             label="What's on your mind?",
-    #             style=discord.TextStyle.long,
-    #             placeholder='Enter your review...',
-    #             required=True,
-    #             max_length=300
-    #         )
-        
-    #         async def on_submit(self, interaction: discord.Interaction):
-    #             data = {
-    #                 "comment": self.feedback.value,
-    #                 "token": self.bot.reviewdb_token,
-    #                 "reviewtype": 0,
-    #                 "sender": {
-    #                     "discordid": str(interaction.user.id),
-    #                     "username": str(interaction.user.name),
-    #                     "profile_photo": str(interaction.user.avatar),
-    #                 },
-    #             }
-
-    #             async with aiohttp.ClientSession() as session:
-    #                 async with session.request(method="PUT", json=data, url=f"https://manti.vendicated.dev/api/reviewdb/users/{str(self.user.id)}/reviews") as response:
-    #                     try:
-    #                         print(await response.json())
-    #                     except Exception:
-    #                         print(await response.text())
-                
-    #             embed = discord.Embed(title="Review submitted!", description=f"Thanks for leaving a review on {self.user.mention}!", color=Color.green())
-    #             embed.set_thumbnail(url=self.user.display_avatar.url)
-                
-    #             await interaction.response.send_message(embed=embed, ephemeral=True)
-        
-    #     await interaction.response.send_modal(CreateModal(user, self.bot))
 
 async def setup(bot):
     await bot.add_cog(reviewCom(bot))
