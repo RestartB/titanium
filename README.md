@@ -1,5 +1,5 @@
 # Titanium
-Welcome to Titanium, the open source core of the Titanium Discord Bot.
+Welcome to Titanium, the multipurpose, open source Discord bot.
 
 ## Contributions Welcome!
 Have an improvement you want to make? Developed a new cog that you want to be in the main bot? Contributions are welcome! Make a pull request and I'll take a look. :)
@@ -15,7 +15,9 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 - Fun commands like the 8 ball and fish command
 - Search Spotify and get full quailty Album Art (Spotify API Keys needed)
 - Get lyrics for songs
-- Get URLs for a song link from any popular streaming service
+- Convert any streaming service URL to Spotify and get info
+- Fireboard system
+- Message leaderboard
 - Expandable cog system to allow you to make your own commands
 
 ## Self Hosting Titanium
@@ -26,16 +28,6 @@ Self-hosting Titanium is possible, however you must get the required modules and
 
 > [!CAUTION]
 > When generating Bot Tokens and API Secrets, do not share them with anybody!
-
-### Python Modules
-Titanium relies on several Python packages. The recommended way to install these packages is with `pipenv`. A `Pipfile` and `Pipfile.lock` have been provided, see the instructions below to use it:\
-\
-**Installation**
-1. Run `pip install pipenv --user` to install pipenv
-2. Open a terminal inside Titanium's root directory
-3. Run `pipenv install` to install all required packages
-4. Run `pipenv shell` to start a shell in Titanium's venv
-5. Run `python main.py` to start the bot.
 
 ### Discord Bot Token
 Titanium requires a Discord Bot Token to function. The steps to get one are as follows:
@@ -52,10 +44,14 @@ To use the Spotify commands in Titanium, a Spotify Client ID and Secret are requ
 3. Set the Redirect URI to any valid URL. `http://example.com` is known to work. Then, create the app.
 4. Copy the Client ID and Secret for your app, and paste them into their respective fields in the config file.
 
-### Starting the Bot
-Once you have have installed the required Python modules and generated your tokens, you can run the bot as follows:
-1. Navigate to the Titanium directory through the terminal.
-2. Once you are at the Titanium directory, run `python main.py`, and monitor for any errors in the terminal.
+### Python Modules
+Titanium relies on several Python packages. The recommended way to install these packages is with `pipenv`. A `Pipfile` and `Pipfile.lock` have been provided, see the instructions below to use it:\
+\
+**Installation**
+1. Run `pip install pipenv --user` to install pipenv
+2. Open a terminal inside Titanium's root directory
+3. Run `pipenv install` to install all required packages
+4. Run `pipenv run python main.py` to start the bot
 
 If an error occurs, please create a GitHub issue and I will take a look.
 
