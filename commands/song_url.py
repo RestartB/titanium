@@ -400,7 +400,7 @@ class song_url(commands.Cog):
                         if interaction.user.id != self.interaction.user.id:
                             if self.locked:
                                 embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                                await interaction.response.send_message(embed = embed, delete_after=5)
+                                await interaction.response.send_message(embed = embed, ephemeral=True, delete_after=5)
                             else:
                                 return True
                         else:

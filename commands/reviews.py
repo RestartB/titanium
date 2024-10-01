@@ -85,7 +85,7 @@ class reviewCom(commands.Cog):
                     if interaction.user.id != self.interaction.user.id:
                         if self.locked:
                             embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                            await interaction.response.send_message(embed = embed, delete_after=5)
+                            await interaction.response.send_message(embed = embed, ephemeral=True, delete_after=5)
                         else:
                             return True
                     else:
@@ -314,7 +314,7 @@ class reviewCom(commands.Cog):
                 await interaction.followup.send(embed = embed, ephemeral=ephemeral)
     
     # Review view command
-    @reviewGroup.command(name = "server", description = "See the current server's reviews on ReviewDB. Optionally provide a server ID to view its reviews.")
+    @reviewGroup.command(name = "server", description = "See the current server's reviews on ReviewDB.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
     async def reviewServerView(self, interaction: discord.Interaction, ephemeral: bool = False):
@@ -386,7 +386,7 @@ class reviewCom(commands.Cog):
                     if interaction.server.id != self.interaction.server.id:
                         if self.locked:
                             embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                            await interaction.response.send_message(embed = embed, delete_after=5)
+                            await interaction.response.send_message(embed = embed, ephemeral=True, delete_after=5)
                         else:
                             return True
                     else:
