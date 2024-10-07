@@ -27,7 +27,7 @@ class user_utils(commands.Cog):
                 inGuild = False
             else:
                 inGuild = True
-        except AttributeError:
+        except Exception:
             member = user
             inGuild = False
         
