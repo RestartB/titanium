@@ -59,7 +59,7 @@ class user_utils(commands.Cog):
         view.add_item(discord.ui.Button(label="Download PFP", style=discord.ButtonStyle.url, url=user.display_avatar.url, row = 0))
         
         # Send Embed
-        await interaction.edit_original_response(embed=embed, view=view, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
     # PFP command
     @userGroup.command(name = "pfp", description = "Show a user's PFP.")
