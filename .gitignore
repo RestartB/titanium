@@ -1,6 +1,7 @@
 # Contents / Assets
 /content
 /assets
+/tmp
 
 # Commands
 /commands/__pycache__

@@ -11,6 +11,17 @@ from PIL import Image
 class image(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.bot: commands.Bot
+
+        # Convert to GIF option
+        self.toGif = app_commands.ContextMenu(
+            name="Convert to GIF",
+            callback=self.imgGif_callback,
+            allowed_contexts=discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
+            allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True)
+        )
+
+        self.bot.tree.add_command(self.toGif)
 
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
     installs = discord.app_commands.AppInstallationType(guild=True, user=True)
@@ -131,19 +142,19 @@ class image(commands.Cog):
                 # Open image
                 with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as im:
                     # Convert image to GIF
-                    im.save(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
+                    im.save(os.path.join("tmp", f"{filename}_processed.gif"))
 
                     # Send resized image
                     embed = discord.Embed(title="Image Converted", description=f"Image converted to GIF.", color=Color.green())
                     embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
-                    file = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename="image.gif")
+                    file = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename="image.gif")
                     embed.set_image(url="attachment://image.gif")
                     
                     await interaction.followup.send(embed=embed, file=file, ephemeral=ephemeral)
 
                 # Delete temporary files
-                os.remove(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
+                os.remove(os.path.join("tmp", f"{filename}_processed.gif"))
                 os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
             else: # If file is too large
                 embed = discord.Embed(title="Error", description=f"Your file is too large. Please ensure it is smaller than 20MB.", color=Color.red())
@@ -155,6 +166,68 @@ class image(commands.Cog):
             embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
             
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+    
+    # Image to GIF callback
+    async def imgGif_callback(self, interaction: discord.Interaction, message: discord.Message) -> None:
+        if message.attachments == []:
+            await interaction.response.defer(ephemeral=True)
+
+            embed = discord.Embed(title="Error", description="This message has no attachments.", color=Color.red())
+
+            await interaction.followup.send(embed=embed,ephemeral=True)
+        else:
+            await interaction.response.defer()
+            
+            converted = []
+            fails = []
+            
+            for file in message.attachments:
+                try:
+                    if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
+                        if file.size < 20000000: # 20MB file limit
+                            while True:
+                                # Generate random filename
+                                letters = string.ascii_lowercase
+                                filename = ''.join(random.choice(letters) for i in range(8))
+
+                                if not os.path.exists(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")):
+                                    break
+                            
+                            # Save file to /tmp
+                            await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+                            
+                            # Open image
+                            with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as im:
+                                # Convert image to GIF
+                                im.save(os.path.join("tmp", f"{filename}_processed.gif"))
+
+                                # Add converted file to list
+                                convertedFile = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
+                                converted.append(convertedFile)
+
+                            os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+                        else: # If file is too large
+                            fails.append(f"**{file.filename}** - too large (limit: 20MB, actual: {file.size * 1000000}MB)")
+                    else: # If file is not a static image
+                        fails.append(f"**{file.filename}** - not an image")
+                except Exception:
+                    fails.append(f"**{file.filename}** - error during conversion")
+                
+            # Show fail messages if present
+            if fails != []:
+                embed = discord.Embed(title="Fails", description="\n".join(fails), color=Color.red())
+                embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
+
+                if converted != []:
+                    await interaction.followup.send(embed=embed, files=converted)
+                else:
+                    await interaction.followup.send(embed=embed)
+            else:
+                await interaction.followup.send(files=converted)
+            
+            # Remove temporary files
+            for file in converted:
+                os.remove(os.path.join("tmp", file.filename))
     
     # # Image Caption command
     # @imageGroup.command(name = "caption", description = "Add a caption to an image.")
