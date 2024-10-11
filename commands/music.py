@@ -15,12 +15,12 @@ class music(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(search = "The song you're seaching for.")
-    @app_commands.describe(longer_pages = "Optional: allows a max of 4096 characters per page instead of 1000. Defaults to false.")
+    @app_commands.describe(longer_pages = "Optional: allows a max of 4096 characters / unlimited paragraphs per page instead of 1000 characters / 4 paragraphs. Defaults to false.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
     async def lyrics(self, interaction: discord.Interaction, search: str, longer_pages: bool = False, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
-
+        
         # Define lists
         options = []
         song_list = []
@@ -107,7 +107,6 @@ class music(commands.Cog):
                     
                     # Pass in view's self to allow it to be stopped
                     dropdownInstance.viewSelf = self
-                    dropdownInstance.msg = self.msg
                             
                 async def on_timeout(self) -> None:
                     for item in self.children:
@@ -121,7 +120,6 @@ class music(commands.Cog):
                     super().__init__(placeholder="Select Song", min_values=1, max_values=1, options=options)
 
                     self.viewSelf: View
-                    self.msg: discord.WebhookMessage
                 
                 # Callback
                 async def callback(self, interaction: discord.Interaction):
@@ -138,9 +136,12 @@ class music(commands.Cog):
 
                         pages = []
                         current_page = ""
+                        paragraphTotal = 0
 
                         # Page split
                         for paragraph in lyrics_split:
+                            paragraphTotal += 1
+                            
                             if longer_pages == True:
                                 if len(paragraph) + len(current_page) < 4096:
                                     current_page = current_page + "\n\n" + paragraph
@@ -151,9 +152,14 @@ class music(commands.Cog):
                             else:
                                 if len(paragraph) + len(current_page) < 1000:
                                     current_page = current_page + "\n\n" + paragraph
+
+                                    if paragraphTotal == 4:
+                                        pages.append(current_page)
+                                        current_page = ""
                                 else:
                                     pages.append(current_page)
                                     current_page = ""
+                                    paragraphTotal = 1
                                     current_page = current_page + paragraph
 
                         # Add any remaining contents
@@ -174,14 +180,13 @@ class music(commands.Cog):
                             await interaction.edit_original_response(embed = embed, view = view)
                         else: # Multiple pages - send embed with page controller
                             embed.set_footer(text = f"lrclib.net - Page 1/{len(pages)}")
+                            
                             pagesInstance = lyricPages(pages, list_place)
                             await interaction.edit_original_response(embed = embed, view = pagesInstance)
 
                             # Pass through interaction to get original sender ID - used for lock button
-                            pagesInstance.interaction = interaction
-                            
-                            # Pass through message - used for timeout edit, currently broken
-                            pagesInstance.msg = self.msg
+                            pagesInstance.response = await interaction.original_response()
+                            pagesInstance.ogID = interaction.user.id
                     except AttributeError: # No lyrics
                         google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
                         
@@ -196,14 +201,14 @@ class music(commands.Cog):
             # Lyrics Page view
             class lyricPages(View):
                 def __init__(self, pages: list, list_place: int):
-                    super().__init__(timeout = 1200) # 30 minute timeout
+                    super().__init__(timeout = 1200) # 20 minute timeout
                     
                     self.page = 0
                     self.pages: list = pages
                     self.list_place: int = list_place
 
-                    self.interaction: discord.Interaction
-                    self.msg: discord.Message
+                    self.response: discord.InteractionMessage
+                    self.ogID: int
 
                     self.locked = False
                     
@@ -222,11 +227,11 @@ class music(commands.Cog):
                             item.disabled = True
 
                     # Edit message with disabled view
-                    await self.msg.edit(view=self)
+                    await self.response.edit(view=self)
             
                 # Block others from controlling when lock is active
                 async def interaction_check(self, interaction: discord.Interaction):
-                    if interaction.user.id != self.interaction.user.id:
+                    if interaction.user.id != self.ogID:
                         if self.locked:
                             embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
                             await interaction.response.send_message(embed = embed, ephemeral=True, delete_after=5)
@@ -332,8 +337,7 @@ class music(commands.Cog):
             songSelectViewInstance = songSelectView(options)
             
             # Edit initial message to show dropdown
-            msg = await interaction.followup.send(embed = embed, view = songSelectViewInstance, ephemeral=ephemeral, wait=True)
-            songSelectViewInstance.msg = msg
+            await interaction.followup.send(embed=embed, view=songSelectViewInstance)
 
 async def setup(bot):
     await bot.add_cog(music(bot))

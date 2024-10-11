@@ -9,6 +9,7 @@ import os
 import traceback
 
 import aiohttp
+import asqlite
 import discord
 from discord import Color
 from discord.ext import commands
@@ -25,10 +26,17 @@ handler = logging.FileHandler(filename='titanium.log', encoding='utf-8', mode='w
 # SQL path check
 print("[INIT] Checking SQL paths...")
 basedir = os.path.dirname("content/sql/")
-print(basedir)
 
 if not os.path.exists(basedir):
     print("[INIT] Paths not present. Creating paths...")
+    os.makedirs(basedir)
+
+# SQL path check
+print("[INIT] Checking temp path...")
+basedir = os.path.dirname("tmp/")
+
+if not os.path.exists(basedir):
+    print("[INIT] Path not present. Creating path...")
     os.makedirs(basedir)
 
 print("[INIT] Path check complete.\n")
@@ -62,6 +70,15 @@ def readconfigfile(path):
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+
+class MyBot(commands.Bot):
+    async def setup_hook(self):
+        self.pool = await asqlite.create_pool('database.db')
+
+    async def close(self):
+        await self.pool.close()
+        await super().close()
+
 bot = commands.Bot(intents = intents, command_prefix = '')
 
 print("[INIT] Reading config files.")

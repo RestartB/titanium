@@ -1,6 +1,7 @@
 import discord
 from discord import Color
 from discord.ext import commands
+from discord.ui import View
 
 
 class welcome(commands.Cog):
@@ -18,16 +19,19 @@ class welcome(commands.Cog):
             embed.add_field(name = "Tips", value = """1. Use slash commands!
 2. Enable the leaderboard! It allows you to track how many messages, words and attachments are being sent.
 3. Enable the fireboard! It allows your members to copy a message to the fireboard channel when it gets enough reactions.""", inline = False)
-            embed.add_field(name = "Feedback", value = "Enjoy the bot? Drop a star on my GitHub repo! (it's free and helps me a ton!) Have a suggestion or has something gone wrong? Submit a GitHub issue and I'll take a look. https://github.com/restartb/titanium", inline = False)
+            embed.add_field(name = "Feedback", value = "Enjoy the bot? Drop a star on my GitHub repo! (it's free and helps me a ton!) Have a suggestion or has something gone wrong? Submit a GitHub issue and I'll take a look.", inline = False)
+
+            view = View()
+            view.add_item(discord.ui.Button(label="GitHub", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
             
             if guild.system_channel is not None:
                 if guild.system_channel.permissions_for(guild.me).send_messages:
-                    await guild.system_channel.send(embed = embed)
+                    await guild.system_channel.send(embed = embed, view = view)
                     return
             
             for channel in guild.channels:
                 if channel.permissions_for(guild.me).send_messages:
-                    await channel.send(embed = embed)
+                    await channel.send(embed = embed, view = view)
                     return
         except Exception:
             pass

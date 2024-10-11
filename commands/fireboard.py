@@ -110,24 +110,6 @@ class fireboard(commands.Cog):
                                         embed = discord.Embed(description=message.content, color=Color.random())
                                         embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
                                         embed.timestamp = message.created_at
-                                        
-                                        image_set = False
-                                        
-                                        for attachment in message.attachments:
-                                            attach_type = attachment.content_type.split("/")[0]
-                                            
-                                            # Show first image
-                                            if attach_type == "image":
-                                                embed.set_image(url=attachment.url)
-                                                image_set = True
-                                                
-                                                break
-
-                                        # Add attachment disclaimer
-                                        if not(image_set) and message.attachments:
-                                            embed.add_field(name = "Attachments", value=f"There are **{len(message.attachments)} attachments** on this message.")
-                                        elif len(message.attachments) > 1:
-                                            embed.add_field(name = "Attachments", value=f"There are **{len(message.attachments) - 1} more attachments** on this message. Showing first image.")
 
                                         # Jump to message button
                                         view = View()
@@ -163,9 +145,9 @@ class fireboard(commands.Cog):
                                                     try:
                                                         boardMessage = await channel.fetch_message(fireMessage[2])
                                                         
-                                                        await boardMessage.edit(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList)
+                                                        await boardMessage.edit(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, files=[await attachment.to_file() for attachment in message.attachments])
                                                     except discord.errors.NotFound:
-                                                        boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view)
+                                                        boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
                                                         
                                                         # Delete old message
                                                         self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
@@ -182,7 +164,7 @@ class fireboard(commands.Cog):
                                                     boardMessage = await channel.fetch_message(fireMessage[2])
                                                     await boardMessage.delete()
 
-                                                    boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view)
+                                                    boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
 
                                                     # Delete old message
                                                     self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
@@ -196,7 +178,7 @@ class fireboard(commands.Cog):
 
                                                     return
                                         
-                                        boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view)
+                                        boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
 
                                         # Insert message
                                         self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, emoji) VALUES (?, ?, ?, ?)", (message.guild.id, message.id, boardMessage.id, str(reaction.emoji)))
@@ -287,24 +269,10 @@ class fireboard(commands.Cog):
                                     embed = discord.Embed(description=message.content, color=Color.random())
                                     embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
                                     embed.timestamp = message.created_at
-                                    
-                                    image_set = False
-                                    
-                                    for attachment in message.attachments:
-                                        attach_type = attachment.content_type.split("/")[0]
-                                        
-                                        # Show first image
-                                        if attach_type == "image":
-                                            embed.set_image(url=attachment.url)
-                                            image_set = True
-                                            
-                                            break
 
                                     # Add attachment disclaimer
-                                    if not(image_set) and message.attachments:
+                                    if message.attachments:
                                         embed.add_field(name = "Attachments", value=f"There are **{len(message.attachments)} attachments** on this message.")
-                                    elif len(message.attachments) > 1:
-                                        embed.add_field(name = "Attachments", value=f"There are **{len(message.attachments) - 1} more attachments** on this message. Showing first image.")
 
                                     # Jump to message button
                                     view = View()
@@ -340,9 +308,9 @@ class fireboard(commands.Cog):
                                                 try:
                                                     boardMessage = await channel.fetch_message(fireMessage[2])
 
-                                                    await boardMessage.edit(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList)
+                                                    await boardMessage.edit(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, files=[await attachment.to_file() for attachment in message.attachments])
                                                 except discord.errors.NotFound:
-                                                    boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view)
+                                                    boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
                                                     
                                                     # Delete old message
                                                     self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
@@ -359,7 +327,7 @@ class fireboard(commands.Cog):
                                                 boardMessage = await channel.fetch_message(fireMessage[2])
                                                 await boardMessage.delete()
 
-                                                boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view)
+                                                boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
 
                                                 # Delete old message
                                                 self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
@@ -373,7 +341,7 @@ class fireboard(commands.Cog):
 
                                                 return
                                     
-                                    boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view)
+                                    boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
 
                                     # Insert message
                                     self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, emoji) VALUES (?, ?, ?, ?)", (message.guild.id, message.id, boardMessage.id, str(reaction.emoji)))
@@ -627,24 +595,10 @@ class fireboard(commands.Cog):
             embed = discord.Embed(description=message.content, color=Color.random())
             embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
             embed.timestamp = message.created_at
-            
-            image_set = False
-            
-            for attachment in message.attachments:
-                attach_type = attachment.content_type.split("/")[0]
-                
-                # Show first image
-                if attach_type == "image":
-                    embed.set_image(url=attachment.url)
-                    image_set = True
-                    
-                    break
 
             # Add attachment disclaimer
-            if not(image_set) and message.attachments:
+            if message.attachments:
                 embed.add_field(name = "Attachments", value=f"There are **{len(message.attachments)} attachments** on this message.")
-            elif len(message.attachments) > 1:
-                embed.add_field(name = "Attachments", value=f"There are **{len(message.attachments) - 1} more attachments** on this message. Showing first image.")
 
             # Jump to message button
             view = View()
@@ -679,7 +633,7 @@ class fireboard(commands.Cog):
                         # Edit with updated embed - reaction amount stays the same
                         boardMessage = await channel.fetch_message(fireMessage[2])
 
-                        await boardMessage.edit(embeds=embedList)
+                        await boardMessage.edit(embeds=embedList, files=[await attachment.to_file() for attachment in message.attachments])
             except discord.errors.NotFound: # Message not found
                 # Delete message from DB
                 self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))

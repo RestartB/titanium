@@ -129,7 +129,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
-            super().__init__(timeout=10800)
+            super().__init__(timeout=None)
 
             self.bot = bot.bot
             self.interaction: discord.Interaction
@@ -268,7 +268,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
-            super().__init__(timeout=10800)
+            super().__init__(timeout=None)
 
             self.bot = bot.bot
             self.interaction: discord.Interaction
@@ -463,7 +463,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
     
     class spotifyEmbedView(View):
         def __init__(self, bot):
-            super().__init__(timeout=10800)
+            super().__init__(timeout=None)
 
             self.bot = bot.bot
             self.interaction: discord.Interaction

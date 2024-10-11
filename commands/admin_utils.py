@@ -164,7 +164,7 @@ class cog_utils(commands.Cog):
             
             class serversPageView(View):
                 def __init__(self, pages):
-                    super().__init__(timeout = 10800)
+                    super().__init__(timeout = 900)
                     
                     self.page = 0
                     self.pages = pages

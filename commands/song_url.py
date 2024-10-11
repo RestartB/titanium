@@ -375,7 +375,7 @@ class song_url(commands.Cog):
                 # Define page view
                 class PlaylistPagesController(View):
                     def __init__(self, pages):
-                        super().__init__(timeout = 10800)
+                        super().__init__(timeout = None)
                         
                         self.page = 0
                         self.pages = pages

@@ -37,7 +37,7 @@ class web_search(commands.Cog):
                 
                 class UrbanDictPageView(View):
                     def __init__(self, pages):
-                        super().__init__(timeout = 1800)
+                        super().__init__(timeout = 900)
                         
                         self.page = 0
                         self.pages = pages

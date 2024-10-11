@@ -8,6 +8,7 @@ import discord
 import psutil
 from discord import Color, app_commands
 from discord.ext import commands
+from discord.ui import View
 
 
 class bot_utils(commands.Cog):
@@ -39,7 +40,10 @@ class bot_utils(commands.Cog):
         embed.add_field(name = "GitHub", value = "You can also find me on GitHub - this is the place to go if you have found a bug or have a feature suggestion! Just submit an issue and I'll take a look. You can also add a star to show some love to the project. It's free and helps me a lot! https://github.com/restartb/titanium")
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         
-        await interaction.followup.send(embed = embed, ephemeral=ephemeral)
+        view = View()
+        view.add_item(discord.ui.Button(label="GitHub", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
+        
+        await interaction.followup.send(embed = embed, ephemeral=ephemeral, view=view)
 
     # Host Info command
     @botGroup.command(name = "host-info", description = "Info about the bot host.")
