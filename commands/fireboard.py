@@ -270,10 +270,6 @@ class fireboard(commands.Cog):
                                     embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
                                     embed.timestamp = message.created_at
 
-                                    # Add attachment disclaimer
-                                    if message.attachments:
-                                        embed.add_field(name = "Attachments", value=f"There are **{len(message.attachments)} attachments** on this message.")
-
                                     # Jump to message button
                                     view = View()
                                     view.add_item(discord.ui.Button(label="Jump to Message", url = message.jump_url, style=discord.ButtonStyle.url))
@@ -595,10 +591,6 @@ class fireboard(commands.Cog):
             embed = discord.Embed(description=message.content, color=Color.random())
             embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
             embed.timestamp = message.created_at
-
-            # Add attachment disclaimer
-            if message.attachments:
-                embed.add_field(name = "Attachments", value=f"There are **{len(message.attachments)} attachments** on this message.")
 
             # Jump to message button
             view = View()
