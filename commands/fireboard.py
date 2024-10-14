@@ -145,7 +145,7 @@ class fireboard(commands.Cog):
                                                     try:
                                                         boardMessage = await channel.fetch_message(fireMessage[2])
                                                         
-                                                        await boardMessage.edit(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, files=[await attachment.to_file() for attachment in message.attachments])
+                                                        await boardMessage.edit(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList)
                                                     except discord.errors.NotFound:
                                                         boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
                                                         
@@ -308,7 +308,7 @@ class fireboard(commands.Cog):
                                                 try:
                                                     boardMessage = await channel.fetch_message(fireMessage[2])
 
-                                                    await boardMessage.edit(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, files=[await attachment.to_file() for attachment in message.attachments])
+                                                    await boardMessage.edit(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList)
                                                 except discord.errors.NotFound:
                                                     boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
                                                     
@@ -633,7 +633,7 @@ class fireboard(commands.Cog):
                         # Edit with updated embed - reaction amount stays the same
                         boardMessage = await channel.fetch_message(fireMessage[2])
 
-                        await boardMessage.edit(embeds=embedList, files=[await attachment.to_file() for attachment in message.attachments])
+                        await boardMessage.edit(embeds=embedList, files=message.attachments)
             except discord.errors.NotFound: # Message not found
                 # Delete message from DB
                 self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
