@@ -41,8 +41,6 @@ class bot_utils(commands.Cog):
 
         view = View()
         view.add_item(discord.ui.Button(label="Add Bot", style=discord.ButtonStyle.url, url="https://discord.com/oauth2/authorize?client_id=1222612840146407484"))
-
-        embed.add_field(name = "Latency", value = f"{round(self.bot.latency*1000, 2)}ms")
         
         await interaction.followup.send(embed = embed, view=view, ephemeral=ephemeral)
 
