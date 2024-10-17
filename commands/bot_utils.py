@@ -25,10 +25,26 @@ class bot_utils(commands.Cog):
     async def ping(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
-        embed = discord.Embed(title = "Pong!")
+        embed = discord.Embed(title = "Pong!", color=Color.random())
         embed.add_field(name = "Latency", value = f"{round(self.bot.latency*1000, 2)}ms")
         
         await interaction.followup.send(embed = embed, ephemeral=ephemeral)
+    
+    # Invite command
+    @botGroup.command(name = "invite", description = "Add the bot to your account or server.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    async def inviteBot(self, interaction: discord.Interaction, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
+        
+        embed = discord.Embed(title = "Invite", description="Use this invite to add the bot to your account or server!", color=Color.green())
+        embed.add_field(name = "Invite", value=f"https://discord.com/oauth2/authorize?client_id=1222612840146407484")
+
+        view = View()
+        view.add_item(discord.ui.Button(label="Add Bot", style=discord.ButtonStyle.url, url="https://discord.com/oauth2/authorize?client_id=1222612840146407484"))
+
+        embed.add_field(name = "Latency", value = f"{round(self.bot.latency*1000, 2)}ms")
+        
+        await interaction.followup.send(embed = embed, view=view, ephemeral=ephemeral)
 
     # Info command
     @botGroup.command(name = "info", description = "Info about the bot.")
