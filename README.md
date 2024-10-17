@@ -20,6 +20,10 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 - Message leaderboard
 - Expandable cog system to allow you to make your own commands
 
+## Credit
+- me: bot code
+- [deeppyer](https://github.com/Ovyerus/deeppyer): deepfry image code [(licenced under MIT)](https://github.com/Ovyerus/deeppyer/blob/master/LICENSE)
+
 ## Self Hosting Titanium
 Self-hosting Titanium is possible, however you must get the required modules and API tokens first.
 

@@ -5,7 +5,7 @@ import os
 import discord
 from discord import Color, app_commands
 from discord.ext import commands
-from PIL import Image
+from PIL import Image, ImageOps, ImageEnhance
 
 
 class image(commands.Cog):
@@ -14,14 +14,23 @@ class image(commands.Cog):
         self.bot: commands.Bot
 
         # Convert to GIF option
-        self.toGif = app_commands.ContextMenu(
+        self.imgGifCTX = app_commands.ContextMenu(
             name="Convert to GIF",
-            callback=self.imgGif_callback,
+            callback=self.gifCallback,
             allowed_contexts=discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
             allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True)
         )
 
-        self.bot.tree.add_command(self.toGif)
+        # Deepfry option
+        self.deepfryCTX = app_commands.ContextMenu(
+            name="Deepfry Images",
+            callback=self.deepfryCallback,
+            allowed_contexts=discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
+            allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True)
+        )
+
+        self.bot.tree.add_command(self.imgGifCTX)
+        self.bot.tree.add_command(self.deepfryCTX)
 
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
     installs = discord.app_commands.AppInstallationType(guild=True, user=True)
@@ -86,10 +95,10 @@ class image(commands.Cog):
                             embed = discord.Embed(title="Image Resized", description=f"Image resized to {newSize[0]}x{newSize[1]}.", color=Color.green())
                             embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
-                            fileNew = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename="image.png")
-                            embed.set_image(url="attachment://image.png")
+                            fileProcessed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"image.{file.content_type.split('/')[-1]}")
+                            embed.set_image(url=f"attachment://image.{file.content_type.split('/')[-1]}")
                             
-                            await interaction.followup.send(embed=embed, file=fileNew, ephemeral=ephemeral)
+                            await interaction.followup.send(embed=embed, file=fileProcessed, ephemeral=ephemeral)
 
                         # Delete temporary files
                         os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
@@ -148,10 +157,10 @@ class image(commands.Cog):
                     embed = discord.Embed(title="Image Converted", description=f"Image converted to GIF.", color=Color.green())
                     embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
-                    file = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename="image.gif")
-                    embed.set_image(url="attachment://image.gif")
+                    fileProcessed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
+                    embed.set_image(url=f"attachment://{filename}_processed.gif")
                     
-                    await interaction.followup.send(embed=embed, file=file, ephemeral=ephemeral)
+                    await interaction.followup.send(embed=embed, file=fileProcessed, ephemeral=ephemeral)
 
                 # Delete temporary files
                 os.remove(os.path.join("tmp", f"{filename}_processed.gif"))
@@ -168,7 +177,7 @@ class image(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
     
     # Image to GIF callback
-    async def imgGif_callback(self, interaction: discord.Interaction, message: discord.Message) -> None:
+    async def gifCallback(self, interaction: discord.Interaction, message: discord.Message) -> None:
         if message.attachments == []:
             await interaction.response.defer(ephemeral=True)
 
@@ -209,7 +218,7 @@ class image(commands.Cog):
                         else: # If file is too large
                             fails.append(f"**{file.filename}** - too large (limit: 20MB, actual: {file.size * 1000000}MB)")
                     else: # If file is not a static image
-                        fails.append(f"**{file.filename}** - not an image")
+                        fails.append(f"**{file.filename}** - not a static image")
                 except Exception:
                     fails.append(f"**{file.filename}** - error during conversion")
                 
@@ -229,55 +238,169 @@ class image(commands.Cog):
             for file in converted:
                 os.remove(os.path.join("tmp", file.filename))
     
-    # # Image Caption command
-    # @imageGroup.command(name = "caption", description = "Add a caption to an image.")
-    # @app_commands.describe(file = "Your target image.")
-    # @app_commands.describe(caption = "Your caption.")
-    # @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
-    # @app_commands.checks.cooldown(1, 20)
-    # async def bounceImage(self, interaction: discord.Interaction, file: discord.Attachment, caption: str, ephemeral: bool = False):
-    #     await interaction.response.defer(ephemeral=ephemeral)
+    # Image to GIF command
+    @imageGroup.command(name = "deepfry", description = "Deepfry an image..")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.checks.cooldown(1, 10)
+    async def deepfryImage(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
         
-    #     if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng":
-    #         if file.size < 20000000:
-    #             # Generate random filename
-    #             letters = string.ascii_lowercase
-    #             filename = ''.join(random.choice(letters) for i in range(8))
+        if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
+            if file.size < 20000000: # 20MB file limit
+                while True:
+                    # Generate random filename
+                    letters = string.ascii_lowercase
+                    filename = ''.join(random.choice(letters) for i in range(8))
+
+                    if not os.path.exists(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")):
+                        break
                 
-    #             # Save file to /tmp
-    #             await file.save(f"/tmp/{filename}.{file.content_type.split('/')[-1]}")
-    #             im = Image.open(f"/tmp/{filename}.{file.content_type.split('/')[-1]}")
+                # Save file to /tmp
+                await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
                 
-    #             # Create a new image with a white box above
-    #             width, height = im.size
-    #             new_height = height + 50  # Adjust the height for the caption box
-    #             new_im = Image.new("RGBA", (width, new_height), (255, 255, 255, 0))
+                # Open image
+                with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as img:
+                    # Crediit: https://github.com/Ovyerus/deeppyer
+                    # MIT Licence - https://github.com/Ovyerus/deeppyer/blob/master/LICENSE
+                    
+                    # Deepfry image
+                    img = img.convert('RGB')
+                    width, height = img.width, img.height
+                    img = img.resize((int(width ** .75), int(height ** .75)), resample=Image.LANCZOS)
+                    img = img.resize((int(width ** .88), int(height ** .88)), resample=Image.BILINEAR)
+                    img = img.resize((int(width ** .9), int(height ** .9)), resample=Image.BICUBIC)
+                    img = img.resize((width, height), resample=Image.BICUBIC)
+                    img = ImageOps.posterize(img, 4)
 
-    #             # Draw the white box and caption text
-    #             draw = ImageDraw.Draw(new_im)
-    #             draw.rectangle([(0, 0), (width, 50)], fill="white")
+                    # Generate colour overlay
+                    r = img.split()[0]
+                    r = ImageEnhance.Contrast(r).enhance(2.0)
+                    r = ImageEnhance.Brightness(r).enhance(1.5)
 
-    #             # Load font with specified size
-    #             font_size = 30  # Change this value to adjust the font size
-    #             font = ImageFont.truetype(os.path.join("content", "futura.ttf"), font_size)
+                    colours = ((254, 0, 2), (255, 255, 15))
+                    r = ImageOps.colorize(r, colours[0], colours[1])
 
-    #             # Calculate text size and position
-    #             text_width, text_height = draw.textlength(caption, font=font), 30
-    #             text_x = (width - text_width) // 2
-    #             text_y = (50 - text_height) // 2
+                    # Overlay red and yellow onto main image and sharpen
+                    img = Image.blend(img, r, 0.75)
+                    img = ImageEnhance.Sharpness(img).enhance(100.0)
+                    
+                    # Save image
+                    img.save(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
 
-    #             # Draw the caption text
-    #             draw.text((text_x, text_y), caption, fill="black", font=font)
+                    # Send resized image
+                    embed = discord.Embed(title="Done", description=f"Image deepfried.", color=Color.green())
+                    embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
-    #             # Paste the original image below the white box
-    #             new_im.paste(im, (0, 50))
+                    fileProcessed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"{filename}_processed.{file.content_type.split('/')[-1]}")
+                    embed.set_image(url=f"attachment://{filename}_processed.{file.content_type.split('/')[-1]}")
+                    
+                    await interaction.followup.send(embed=embed, file=fileProcessed, ephemeral=ephemeral)
 
-    #             # Save the new image to a BytesIO object
-    #             img_data = io.BytesIO()
-    #             new_im.save(img_data, format="PNG")
-    #             img_data.seek(0)
+                # Delete temporary files
+                os.remove(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
+                os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+            else: # If file is too large
+                embed = discord.Embed(title="Error", description=f"Your file is too large. Please ensure it is smaller than 20MB.", color=Color.red())
+                embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
                 
-    #             await interaction.followup.send(file=discord.File(img_data, "captioned_image.png"), ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+        else: # If file is not a static image
+            embed = discord.Embed(title="Error", description=f"Your file is not a static image.", color=Color.red())
+            embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
+            
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+    
+    # Deepfry callback
+    async def deepfryCallback(self, interaction: discord.Interaction, message: discord.Message) -> None:
+        if message.attachments == []:
+            await interaction.response.defer(ephemeral=True)
+
+            embed = discord.Embed(title="Error", description="This message has no attachments.", color=Color.red())
+
+            await interaction.followup.send(embed=embed,ephemeral=True)
+        else:
+            await interaction.response.defer()
+            
+            converted = []
+            fails = []
+            
+            for file in message.attachments:
+                try:
+                    if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
+                        if file.size < 20000000: # 20MB file limit
+                            while True:
+                                # Generate random filename
+                                letters = string.ascii_lowercase
+                                filename = ''.join(random.choice(letters) for i in range(8))
+
+                                if not os.path.exists(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")):
+                                    break
+                            
+                            # Save file to /tmp
+                            await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+                            
+                            # Open image
+                            with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as img:
+                                # Crediit: https://github.com/Ovyerus/deeppyer
+                                # MIT Licence - https://github.com/Ovyerus/deeppyer/blob/master/LICENSE
+                                
+                                # Deepfry image
+                                img = img.convert('RGB')
+                                width, height = img.width, img.height
+                                img = img.resize((int(width ** .75), int(height ** .75)), resample=Image.LANCZOS)
+                                img = img.resize((int(width ** .88), int(height ** .88)), resample=Image.BILINEAR)
+                                img = img.resize((int(width ** .9), int(height ** .9)), resample=Image.BICUBIC)
+                                img = img.resize((width, height), resample=Image.BICUBIC)
+                                img = ImageOps.posterize(img, 4)
+
+                                # Generate colour overlay
+                                r = img.split()[0]
+                                r = ImageEnhance.Contrast(r).enhance(2.0)
+                                r = ImageEnhance.Brightness(r).enhance(1.5)
+
+                                colours = ((254, 0, 2), (255, 255, 15))
+                                r = ImageOps.colorize(r, colours[0], colours[1])
+
+                                # Overlay red and yellow onto main image and sharpen
+                                img = Image.blend(img, r, 0.75)
+                                img = ImageEnhance.Sharpness(img).enhance(100.0)
+                    
+                                # Save image
+                                img.save(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
+
+                                # Add converted file to list
+                                convertedFile = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"{filename}_processed.{file.content_type.split('/')[-1]}")
+                                converted.append(convertedFile)
+
+                            os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+                        else: # If file is too large
+                            fails.append(f"**{file.filename}** - too large (limit: 20MB, actual: {file.size * 1000000}MB)")
+                    else: # If file is not a static image
+                        fails.append(f"**{file.filename}** - not a static image")
+                except Exception:
+                    fails.append(f"**{file.filename}** - error during conversion")
+                
+            # Show fail messages if present
+            if fails != []:
+                embed = discord.Embed(title="Fails", description="\n".join(fails), color=Color.red())
+                embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
+
+                if converted != []:
+                    await interaction.followup.send(embed=embed, files=converted)
+                else:
+                    await interaction.followup.send(embed=embed)
+            else:
+                if converted != []:
+                    await interaction.followup.send(files=converted)
+                else:
+                    embed = discord.Embed(title="Done", description="No images to convert.", color=Color.red())
+                    embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
+                    
+                    await interaction.followup.send(embed=embed)
+            
+            # Remove temporary files
+            for file in converted:
+                os.remove(os.path.join("tmp", file.filename))
 
 async def setup(bot):
     await bot.add_cog(image(bot))
