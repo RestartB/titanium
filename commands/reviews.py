@@ -313,9 +313,9 @@ class reviewCom(commands.Cog):
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.followup.send(embed = embed, ephemeral=ephemeral)
     
-    # Review view command
+    # Server review view command
     @reviewGroup.command(name = "server", description = "See the current server's reviews on ReviewDB.")
-    @app.commands.describe(server_id = "Optional: specify the ID of the server you would like to view. Defaults to the current server.")
+    @app_commands.describe(server_id = "Optional: specify the ID of the server you would like to view. Defaults to the current server.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
     async def reviewServerView(self, interaction: discord.Interaction, server_id: int = 0, ephemeral: bool = False):
