@@ -315,9 +315,10 @@ class reviewCom(commands.Cog):
     
     # Review view command
     @reviewGroup.command(name = "server", description = "See the current server's reviews on ReviewDB.")
+    @app.commands.describe(server_id = "Optional: specify the ID of the server you would like to view. Defaults to the current server.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
-    async def reviewServerView(self, interaction: discord.Interaction, ephemeral: bool = False):
+    async def reviewServerView(self, interaction: discord.Interaction, server_id: int = 0, ephemeral: bool = False):
         try:    
             await interaction.response.defer(ephemeral=ephemeral)
             
@@ -328,7 +329,10 @@ class reviewCom(commands.Cog):
                 await interaction.followup.send(embed = embed, ephemeral=ephemeral)
             
             # Create URL
-            request_url = f"https://manti.vendicated.dev/api/reviewdb/users/{interaction.guild.id}/reviews"
+            if server_id == 0:
+                request_url = f"https://manti.vendicated.dev/api/reviewdb/users/{interaction.guild.id}/reviews"
+            else:
+                request_url = f"https://manti.vendicated.dev/api/reviewdb/users/{int(server_id)}/reviews"
 
             # Send request to ReviewDB
             async with aiohttp.ClientSession() as session:
