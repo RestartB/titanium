@@ -362,8 +362,8 @@ class song_url(commands.Cog):
                             else:
                                 pageStr += f"\n{i}. *(Unknown Media Type)*"
 
-                        # If there's 25 items in the current page, we split it into a new page
-                        if i % 25 == 0:
+                        # If there's 15 items in the current page, we split it into a new page
+                        if i % 15 == 0:
                             pages.append(pageStr)
                             pageStr = ""
 
