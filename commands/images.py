@@ -1,3 +1,5 @@
+# pylint: disable=no-member
+
 import random
 import string
 import os
