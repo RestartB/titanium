@@ -304,8 +304,9 @@ class editHistory(commands.Cog):
     
     # Edit history control command group
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
+    installs = discord.app_commands.AppInstallationType(guild=False, user=False)
     perms = discord.Permissions()
-    editHistoryGroup = app_commands.Group(name="edit-history", description="Control the edit history feature.", default_permissions=perms, allowed_contexts=context)
+    editHistoryGroup = app_commands.Group(name="edit-history", description="Control the edit history feature.", default_permissions=perms, allowed_contexts=context, allowed_installs=installs)
 
     # Enable edit history command
     @editHistoryGroup.command(name="enable", description="Enable the edit history feature.")
