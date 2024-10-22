@@ -7,6 +7,7 @@ import datetime
 import logging
 import os
 import traceback
+from glob import glob
 
 import aiohttp
 import asqlite
@@ -14,8 +15,8 @@ import discord
 from discord import Color
 from discord.ext import commands
 
-print("Welcome to TitaniumCore.")
-print("https://github.com/restartb/titaniumcore\n")
+print("Welcome to Titanium.")
+print("https://github.com/restartb/titanium\n")
 
 # Current Running Path
 path = os.getcwd()
@@ -24,11 +25,11 @@ path = os.getcwd()
 handler = logging.FileHandler(filename='titanium.log', encoding='utf-8', mode='w')
 
 # SQL path check
-print("[INIT] Checking SQL paths...")
+print("[INIT] Checking SQL path...")
 basedir = os.path.dirname("content/sql/")
 
 if not os.path.exists(basedir):
-    print("[INIT] Paths not present. Creating paths...")
+    print("[INIT] Path not present. Creating path...")
     os.makedirs(basedir)
 
 # SQL path check
@@ -71,15 +72,69 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-class MyBot(commands.Bot):
+class titaniumBot(commands.Bot):
     async def setup_hook(self):
-        self.pool = await asqlite.create_pool('database.db')
+        print("[INIT] Creating SQL pools...")
+        
+        # Cache DB Pool
+        open(os.path.join("content", "sql", "cache.db"), "a").close()
+        self.cachePool = await asqlite.create_pool(os.path.join("content", "sql", "cache.db"))
+        
+        # Fireboard DB Pool
+        open(os.path.join("content", "sql", "fireboard.db"), "a").close()
+        self.fireboardPool = await asqlite.create_pool(os.path.join("content", "sql", "fireboard.db"))
+        
+        # Leaderboard DB Pool
+        open(os.path.join("content", "sql", "lb.db"), "a").close()
+        self.lbPool = await asqlite.create_pool(os.path.join("content", "sql", "lb.db"))
 
+        # Isolation DB Pool
+        open(os.path.join("content", "sql", "isolated.db"), "a").close()
+        self.isolationPool = await asqlite.create_pool(os.path.join("content", "sql", "isolated.db"))
+        
+        # Edit History DB Pool
+        open(os.path.join("content", "sql", "editHistory.db"), "a").close()
+        self.editPool = await asqlite.create_pool(os.path.join("content", "sql", "editHistory.db"))
+
+        print("[INIT] SQL pools created.\n")
+        
+        print("[INIT] Loading cogs...")
+        # Find all cogs in command dir
+        for filename in glob(os.path.join("commands", "**"), recursive=True, include_hidden=False):
+            if os.path.isdir(filename) == False:
+                # Determine if file is a python file
+                if filename.endswith(".py"):
+                    filename = filename.replace("\\", "/").replace("/", ".")[:-3]
+                    
+                    print(f"[INIT] Loading normal cog: {filename}...")
+                    await bot.load_extension(filename)
+                    print(f"[INIT] Loaded normal cog: {filename}")
+        
+        print("[INIT] Loaded normal cogs.\n")
+        
+        # Read cogs from private commands folder if it exists
+        if os.path.exists(f"commands_private"):
+            print("[INIT] Loading private cogs...")
+            # Find all cogs in private command dir
+            for filename in os.listdir(f"commands_private"):
+                # Determine if file is a python file
+                if filename.endswith("py"):
+                    # We load it into the bot
+                    print(f"[INIT] Loading private cog: {filename}...")
+                    await bot.load_extension(f"commands_private.{filename[:-3]}")
+                    print(f"[INIT] Loaded private cog: {filename}")
+
+            print("[INIT] Loaded private cogs.\n")
+        else:
+            print("[INIT] Skipping private cogs.\n")
+    
     async def close(self):
-        await self.pool.close()
+        await self.cachePool.close()
+        await self.fireboardPool.close()
+        await self.lbPool.close()
         await super().close()
 
-bot = commands.Bot(intents = intents, command_prefix = '')
+bot = titaniumBot(intents=intents, command_prefix='', help_command=None)
 
 print("[INIT] Reading config files.")
 
@@ -123,37 +178,6 @@ except Exception as error:
     print("[INIT] Bad value in config file! Exiting.")
     print(error)
     exit()
-
-# Cog loading
-async def cog_load():
-    print("[INIT] Loading cogs...")
-    # Find all cogs in command dir
-    for filename in os.listdir(bot.cog_dir):
-        # Determine if file is a python file
-        if filename.endswith("py"):
-            print(f"[INIT] Loading normal cog: {filename}...")
-            await bot.load_extension(f"commands.{filename[:-3]}")
-            print(f"[INIT] Loaded normal cog: {filename}")
-    
-    print("[INIT] Loaded normal cogs.\n")
-    
-    # Read cogs from private commands folder if it exists
-    if os.path.exists(f"commands_private"):
-        print("[INIT] Loading private cogs...")
-        # Find all cogs in private command dir
-        for filename in os.listdir(f"commands_private"):
-            # Determine if file is a python file
-            if filename.endswith("py"):
-                # We load it into the bot
-                print(f"[INIT] Loading private cog: {filename}...")
-                await bot.load_extension(f"commands_private.{filename[:-3]}")
-                print(f"[INIT] Loaded private cog: {filename}")
-
-        print("[INIT] Loaded private cogs.\n")
-    else:
-        print("[INIT] Skipping private cogs.\n")
-
-asyncio.run(cog_load())
 
 # Sync bot cogs when started
 @bot.event
