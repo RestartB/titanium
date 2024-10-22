@@ -28,9 +28,11 @@ class cog_utils(commands.Cog):
     async def load(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
         
+        cog = f"commands.{cog.replace("\\", "/").replace("/", ".")[:-3]}"
+        
         if interaction.user.id in self.bot.dev_ids:
             try:
-                await self.bot.load_extension(f"commands.{cog}")
+                await self.bot.load_extension(cog)
 
                 embed = discord.Embed(title = f"Loaded {cog}!", color = Color.green())
                 await interaction.followup.send(embed = embed)
@@ -46,10 +48,12 @@ class cog_utils(commands.Cog):
     async def unload(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
         
+        cog = f"commands.{cog.replace("\\", "/").replace("/", ".")[:-3]}"
+        
         if interaction.user.id in self.bot.dev_ids:
             try:
                 if cog != "reminders":
-                    await self.bot.unload_extension(f"commands.{cog}")
+                    await self.bot.unload_extension(cog)
 
                     embed = discord.Embed(title = f"Unloaded {cog}!", color = Color.green())
                     await interaction.followup.send(embed = embed)
@@ -68,16 +72,14 @@ class cog_utils(commands.Cog):
     async def reload(self, interaction:discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral = True)
         
+        cog = f"commands.{cog.replace("\\", "/").replace("/", ".")}"
+        
         if interaction.user.id in self.bot.dev_ids:
             try:
-                if cog != "reminders":
-                    await self.bot.reload_extension(f"commands.{cog}")
+                await self.bot.reload_extension(cog)
 
-                    embed = discord.Embed(title = f"Reloaded {cog}!", color = Color.green())
-                    await interaction.followup.send(embed = embed)
-                else:
-                    embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\nCog is protected from reloading.", color = Color.red())
-                    await interaction.followup.send(embed = embed)
+                embed = discord.Embed(title = f"Reloaded {cog}!", color = Color.green())
+                await interaction.followup.send(embed = embed)
             except Exception as error:
                 embed = discord.Embed(title = "Error", description = f"Error while reloading {cog}.\n\n{error}", color = Color.red())
                 await interaction.followup.send(embed = embed)
