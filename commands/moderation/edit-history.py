@@ -22,6 +22,7 @@ class editHistory(commands.Cog):
             name="View Edit History",
             callback=self.editHistoryCallback,
             allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False),
+            allowed_installs = discord.app_commands.AppInstallationType(guild=True, user=False)
         )
 
         # Isolate option
@@ -29,6 +30,7 @@ class editHistory(commands.Cog):
             name="View Edit History (Private)",
             callback=self.editHistoryCallbackPrivate,
             allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False),
+            allowed_installs = discord.app_commands.AppInstallationType(guild=True, user=False)
         )
 
         # Set context menu permissions
