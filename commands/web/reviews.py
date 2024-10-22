@@ -319,10 +319,10 @@ class reviewCom(commands.Cog):
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
     async def reviewServerView(self, interaction: discord.Interaction, server_id: int = 0, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
+
         if interaction.guild is not None:
-            try:    
-                await interaction.response.defer(ephemeral=ephemeral)
-                
+            try:
                 if interaction.guild == None:
                     embed = discord.Embed(title = "Error", description = "This is not a guild!", color = Color.red())
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
