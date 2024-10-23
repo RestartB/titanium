@@ -22,6 +22,7 @@ class editHistory(commands.Cog):
             name="View Edit History",
             callback=self.editHistoryCallback,
             allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False),
+            allowed_installs = discord.app_commands.AppInstallationType(guild=True, user=False)
         )
 
         # Isolate option
@@ -29,6 +30,7 @@ class editHistory(commands.Cog):
             name="View Edit History (Private)",
             callback=self.editHistoryCallbackPrivate,
             allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False),
+            allowed_installs = discord.app_commands.AppInstallationType(guild=True, user=False)
         )
 
         # Set context menu permissions
@@ -304,8 +306,9 @@ class editHistory(commands.Cog):
     
     # Edit history control command group
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
+    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
     perms = discord.Permissions()
-    editHistoryGroup = app_commands.Group(name="edit-history", description="Control the edit history feature.", default_permissions=perms, allowed_contexts=context)
+    editHistoryGroup = app_commands.Group(name="edit-history", description="Control the edit history feature.", default_permissions=perms, allowed_contexts=context, allowed_installs=installs)
 
     # Enable edit history command
     @editHistoryGroup.command(name="enable", description="Enable the edit history feature.")
