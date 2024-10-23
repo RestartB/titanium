@@ -969,8 +969,6 @@ class fireboard(commands.Cog):
         
         # Check fireboard status
         if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
-            embed = discord.Embed(title="Channel Set", description=f"Fireboard channel has been set to **{channel.mention}.**", color=Color.green())
-
             embed = discord.Embed(title = "Fireboard", description="This channel has been configured as the server fireboard.", color=Color.random())
             embed.set_footer(text = "Feel free to delete this message!")
 
@@ -987,6 +985,8 @@ class fireboard(commands.Cog):
             self.connection.commit()
 
             await self.refreshFireLists()
+            
+            embed = discord.Embed(title="Channel Set", description=f"Fireboard channel has been set to **{channel.mention}.**", color=Color.green())
             await interaction.followup.send(embed=embed, ephemeral=True)
         else:
             embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
