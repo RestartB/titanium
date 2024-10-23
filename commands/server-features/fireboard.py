@@ -15,6 +15,7 @@ from discord.ui import View
 class fireboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.lockedMessages = []
         
         # Check DB exists
         open(os.path.join("content", "sql", "fireboard.db"), "a").close()
@@ -57,6 +58,15 @@ class fireboard(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot: discord.ext.commands.Bot
         
+        # Lock system
+        if payload.message_id not in self.lockedMessages:
+            self.lockedMessages.append(payload.message_id)
+        else:
+            while payload.message_id in self.lockedMessages:
+                pass
+
+            self.lockedMessages.append(payload.message_id)
+        
         # Check if message is from bot
         if payload.message_author_id != self.bot.user.id:
             # Get blacklisted roles
@@ -70,6 +80,7 @@ class fireboard(commands.Cog):
             member: discord.Guild = await guild.fetch_member(payload.message_author_id)
             for role in member.roles:
                 if role.id in blacklistedRoles:
+                    self.lockedMessages.remove(payload.message_id)
                     return
                 
             # Get blacklisted channels
@@ -98,6 +109,7 @@ class fireboard(commands.Cog):
                             
                             # Stop if channel is NSFW
                             if channel.nsfw == True:
+                                self.lockedMessages.remove(payload.message_id)
                                 return
 
                             # Get our message
@@ -136,6 +148,9 @@ class fireboard(commands.Cog):
                                         except discord.errors.NotFound:
                                             self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                                             self.connection.commit()
+
+                                            self.lockedMessages.remove(payload.message_id)
+
                                             return
                                         
                                         # See if board message is already present
@@ -159,6 +174,8 @@ class fireboard(commands.Cog):
 
                                                         await self.refreshFireLists()
 
+                                                    self.lockedMessages.remove(payload.message_id)
+                                                    
                                                     return
                                                 else: # Emoji is outdated - resend the message and delete the old one     
                                                     boardMessage = await channel.fetch_message(fireMessage[2])
@@ -176,6 +193,8 @@ class fireboard(commands.Cog):
 
                                                     await self.refreshFireLists()
 
+                                                    self.lockedMessages.remove(payload.message_id)
+                                                    
                                                     return
                                         
                                         boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
@@ -185,21 +204,37 @@ class fireboard(commands.Cog):
                                         self.connection.commit()
 
                                         await self.refreshFireLists()
+
+                                        self.lockedMessages.remove(payload.message_id)
                         else:
+                            self.lockedMessages.remove(payload.message_id)
                             return
                     else:
+                        self.lockedMessages.remove(payload.message_id)
                         return
                 else:
+                    self.lockedMessages.remove(payload.message_id)
                     return
             else:
+                self.lockedMessages.remove(payload.message_id)
                 return
         else:
+            self.lockedMessages.remove(payload.message_id)
             return
 
     # Listen for reaction removal
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
         self.bot: discord.ext.commands.Bot
+        
+        # Lock system
+        if payload.message_id not in self.lockedMessages:
+            self.lockedMessages.append(payload.message_id)
+        else:
+            while payload.message_id in self.lockedMessages:
+                pass
+
+            self.lockedMessages.append(payload.message_id)
         
         if payload.message_author_id != self.bot.user.id:
             # Only trigger if message is already in the fireboard DB
@@ -216,6 +251,8 @@ class fireboard(commands.Cog):
                     try:
                         guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
                     except discord.errors.NotFound:
+                        self.lockedMessages.remove(payload.message_id)
+                        
                         return
 
                     # Get message channel
@@ -223,6 +260,8 @@ class fireboard(commands.Cog):
 
                     # Stop if channel is NSFW
                     if channel.nsfw == True:
+                        self.lockedMessages.remove(payload.message_id)
+                        
                         return
                     
                     # Get our message
@@ -243,6 +282,9 @@ class fireboard(commands.Cog):
                                                 except discord.errors.NotFound:
                                                     self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                                                     self.connection.commit()
+                                                    
+                                                    self.lockedMessages.remove(payload.message_id)
+                                                    
                                                     return
                                                 
                                                 # Delete old message
@@ -255,6 +297,8 @@ class fireboard(commands.Cog):
 
                                                 await self.refreshFireLists()
 
+                                                self.lockedMessages.remove(payload.message_id)
+                                                
                                                 return
                                             except discord.errors.NotFound:
                                                 # Delete message from DB
@@ -263,7 +307,12 @@ class fireboard(commands.Cog):
 
                                                 await self.refreshFireLists()
 
+                                                self.lockedMessages.remove(payload.message_id)
+                                                
                                                 return
+                                    
+                                    self.lockedMessages.remove(payload.message_id)
+                                    
                                     return
                                 else: # Message still legible for fireboard
                                     embed = discord.Embed(description=message.content, color=Color.random())
@@ -295,6 +344,9 @@ class fireboard(commands.Cog):
                                     except discord.errors.NotFound:
                                         self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                                         self.connection.commit()
+                                        
+                                        self.lockedMessages.remove(payload.message_id)
+                                        
                                         return
                                     
                                     # See if board message is already present
@@ -318,6 +370,8 @@ class fireboard(commands.Cog):
 
                                                     await self.refreshFireLists()
 
+                                                self.lockedMessages.remove(payload.message_id)
+                                                
                                                 return
                                             else: # Emoji is outdated - resend the message and delete the old one     
                                                 boardMessage = await channel.fetch_message(fireMessage[2])
@@ -335,6 +389,8 @@ class fireboard(commands.Cog):
 
                                                 await self.refreshFireLists()
 
+                                                self.lockedMessages.remove(payload.message_id)
+                                                
                                                 return
                                     
                                     boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
@@ -355,6 +411,9 @@ class fireboard(commands.Cog):
                                     except discord.errors.NotFound:
                                         self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                                         self.connection.commit()
+                                        
+                                        self.lockedMessages.remove(payload.message_id)
+                                        
                                         return
                                     
                                     # Delete old message
@@ -367,6 +426,8 @@ class fireboard(commands.Cog):
 
                                     await self.refreshFireLists()
 
+                                    self.lockedMessages.remove(payload.message_id)
+                                    
                                     return
                                 except discord.errors.NotFound:
                                     # Delete message from DB
@@ -375,19 +436,35 @@ class fireboard(commands.Cog):
 
                                     await self.refreshFireLists()
 
+                                    self.lockedMessages.remove(payload.message_id)
+                                    
                                     return
+                        self.lockedMessages.remove(payload.message_id)
+
                         return
                 else:
+                    self.lockedMessages.remove(payload.message_id)
                     return
             else:
+                self.lockedMessages.remove(payload.message_id)
                 return
         else:
+            self.lockedMessages.remove(payload.message_id)
             return
     
     # Listen for message reaction clear
     @commands.Cog.listener()
     async def on_raw_reaction_clear(self, payload: discord.RawReactionClearEvent):
         self.bot: discord.ext.commands.Bot
+        
+        # Lock system
+        if payload.message_id not in self.lockedMessages:
+            self.lockedMessages.append(payload.message_id)
+        else:
+            while payload.message_id in self.lockedMessages:
+                pass
+
+            self.lockedMessages.append(payload.message_id)
         
         # Only trigger if message is already in the fireboard DB
         if payload.message_id in [message[1] for message in self.fireMessages]:
@@ -403,6 +480,7 @@ class fireboard(commands.Cog):
             try:
                 guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
             except discord.errors.NotFound:
+                self.lockedMessages.remove(payload.message_id)
                 return
 
             # Get message channel
@@ -421,6 +499,7 @@ class fireboard(commands.Cog):
                         except discord.errors.NotFound:
                             self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                             self.connection.commit()
+                            self.lockedMessages.remove(payload.message_id)
                             return
                         
                         boardMessage = await channel.fetch_message(fireMessage[2])
@@ -432,6 +511,7 @@ class fireboard(commands.Cog):
 
                         await self.refreshFireLists()
 
+                        self.lockedMessages.remove(payload.message_id)
                         return
                     except discord.errors.NotFound:
                         # Delete message from DB
@@ -440,14 +520,25 @@ class fireboard(commands.Cog):
 
                         await self.refreshFireLists()
 
+                        self.lockedMessages.remove(payload.message_id)
                         return
         else:
+            self.lockedMessages.remove(payload.message_id)
             return
     
     # Listen for specific emoji being cleared
     @commands.Cog.listener()
     async def on_raw_reaction_clear_emoji(self, payload: discord.RawReactionClearEmojiEvent):
         self.bot: discord.ext.commands.Bot
+        
+        # Lock system
+        if payload.message_id not in self.lockedMessages:
+            self.lockedMessages.append(payload.message_id)
+        else:
+            while payload.message_id in self.lockedMessages:
+                pass
+
+            self.lockedMessages.append(payload.message_id)
         
         # Only trigger if message is already in the fireboard DB
         if payload.message_id in [message[1] for message in self.fireMessages]:
@@ -464,6 +555,7 @@ class fireboard(commands.Cog):
                 try:
                     guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
                 except discord.errors.NotFound:
+                    self.lockedMessages.remove(payload.message_id)
                     return
 
                 # Get message channel
@@ -479,6 +571,8 @@ class fireboard(commands.Cog):
                             except discord.errors.NotFound:
                                 self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                                 self.connection.commit()
+                                
+                                self.lockedMessages.remove(payload.message_id)
                                 return
                             
                             # Delete message
@@ -491,6 +585,7 @@ class fireboard(commands.Cog):
 
                             await self.refreshFireLists()
 
+                            self.lockedMessages.remove(payload.message_id)
                             return
                         except discord.errors.NotFound:
                             # Delete message from DB
@@ -499,14 +594,25 @@ class fireboard(commands.Cog):
 
                             await self.refreshFireLists()
 
+                            self.lockedMessages.remove(payload.message_id)
                             return
         else:
+            self.lockedMessages.remove(payload.message_id)
             return
     
     # Listen for message being deleted
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         self.bot: discord.ext.commands.Bot
+        
+        # Lock system
+        if payload.message_id not in self.lockedMessages:
+            self.lockedMessages.append(payload.message_id)
+        else:
+            while payload.message_id in self.lockedMessages:
+                pass
+
+            self.lockedMessages.append(payload.message_id)
         
         # Only trigger if message is already in the fireboard DB
         if payload.message_id in [message[1] for message in self.fireMessages]:
@@ -522,6 +628,7 @@ class fireboard(commands.Cog):
             try:
                 guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
             except discord.errors.NotFound:
+                self.lockedMessages.remove(payload.message_id)
                 return
 
             # Get message channel
@@ -537,6 +644,8 @@ class fireboard(commands.Cog):
                         except discord.errors.NotFound:
                             self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                             self.connection.commit()
+                            
+                            self.lockedMessages.remove(payload.message_id)
                             return
                         
                         # Delete message
@@ -549,6 +658,7 @@ class fireboard(commands.Cog):
 
                         await self.refreshFireLists()
 
+                        self.lockedMessages.remove(payload.message_id)
                         return
                     except discord.errors.NotFound:
                         # Delete message from DB
@@ -557,14 +667,25 @@ class fireboard(commands.Cog):
 
                         await self.refreshFireLists()
 
+                        self.lockedMessages.remove(payload.message_id)
                         return
         else:
+            self.lockedMessages.remove(payload.message_id)
             return
     
     # Listen for message being edited
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         self.bot: discord.ext.commands.Bot
+        
+        # Lock system
+        if payload.message_id not in self.lockedMessages:
+            self.lockedMessages.append(payload.message_id)
+        else:
+            while payload.message_id in self.lockedMessages:
+                pass
+
+            self.lockedMessages.append(payload.message_id)
         
         # Only trigger if message is already in the fireboard DB
         if payload.message_id in [message[1] for message in self.fireMessages]:
@@ -580,6 +701,7 @@ class fireboard(commands.Cog):
             try:
                 guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
             except discord.errors.NotFound:
+                self.lockedMessages.remove(payload.message_id)
                 return
             
             # Get message channel
@@ -616,6 +738,8 @@ class fireboard(commands.Cog):
             except discord.errors.NotFound:
                 self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                 self.connection.commit()
+                
+                self.lockedMessages.remove(payload.message_id)
                 return
             
             # Find previous fireboard message
@@ -633,8 +757,10 @@ class fireboard(commands.Cog):
 
                 await self.refreshFireLists()
 
+                self.lockedMessages.remove(payload.message_id)
                 return
         else:
+            self.lockedMessages.remove(payload.message_id)
             return
     
     # Listen for fireboard channel delete
