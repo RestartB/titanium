@@ -974,9 +974,14 @@ class fireboard(commands.Cog):
 
             try:
                 await channel.send(embed = embed)
-            except (discord.errors.Forbidden, discord.errors.NotFound):
-                embed = discord.Embed(title = "Error", description="Looks like I can't send messages in this channel. Check permissions and try again.", color=Color.random())
-                await interaction.followup.send(embed=embed, ephemeral=True)
+            except discord.errors.NotFound as e:
+                embed = discord.Embed(title = "Error", description="Looks like I can't find that channel. Check permissions and try again.", color=Color.random())
+                await interaction.followup.send(embed=embed, content = e, ephemeral=True)
+
+                return
+            except discord.errors.Forbidden as e:
+                embed = discord.Embed(title = "Error", description="Looks like I can't send messages in that channel. Check permissions and try again.", color=Color.random())
+                await interaction.followup.send(embed=embed, content=e, ephemeral=True)
 
                 return
             
