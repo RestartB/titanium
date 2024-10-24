@@ -63,7 +63,7 @@ class fireboard(commands.Cog):
             self.lockedMessages.append(payload.message_id)
         else:
             while payload.message_id in self.lockedMessages:
-                pass
+                await asyncio.sleep(0.5)
 
             self.lockedMessages.append(payload.message_id)
         
@@ -232,7 +232,7 @@ class fireboard(commands.Cog):
             self.lockedMessages.append(payload.message_id)
         else:
             while payload.message_id in self.lockedMessages:
-                pass
+                await asyncio.sleep(0.5)
 
             self.lockedMessages.append(payload.message_id)
         
@@ -462,7 +462,7 @@ class fireboard(commands.Cog):
             self.lockedMessages.append(payload.message_id)
         else:
             while payload.message_id in self.lockedMessages:
-                pass
+                await asyncio.sleep(0.5)
 
             self.lockedMessages.append(payload.message_id)
         
@@ -610,7 +610,7 @@ class fireboard(commands.Cog):
             self.lockedMessages.append(payload.message_id)
         else:
             while payload.message_id in self.lockedMessages:
-                pass
+                await asyncio.sleep(0.5)
 
             self.lockedMessages.append(payload.message_id)
         
@@ -683,7 +683,7 @@ class fireboard(commands.Cog):
             self.lockedMessages.append(payload.message_id)
         else:
             while payload.message_id in self.lockedMessages:
-                pass
+                await asyncio.sleep(0.5)
 
             self.lockedMessages.append(payload.message_id)
         
