@@ -125,6 +125,9 @@ class leaderboard(commands.Cog):
 
                         self.locked = False
 
+                        self.userID: int
+                        self.message: discord.InteractionMessage
+
                         for item in self.children:
                             if item.custom_id == "first" or item.custom_id == "prev":
                                 item.disabled = True
@@ -136,10 +139,10 @@ class leaderboard(commands.Cog):
                         await self.message.edit(view=self)
                 
                     async def interaction_check(self, interaction: discord.Interaction):
-                        if interaction.user.id != self.interaction.user.id:
+                        if interaction.user.id != self.userID:
                             if self.locked:
                                 embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                                await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=5)
+                                await interaction.response.send_message(embed=embed, ephemeral=True)
                             else:
                                 return True
                         else:
@@ -183,10 +186,10 @@ class leaderboard(commands.Cog):
                     
                     @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                     async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if interaction.user.id == self.interaction.user.id:
+                        if interaction.user.id == self.userID:
                             self.locked = not self.locked
 
-                            if self.locked == True:
+                            if self.locked:
                                 button.emoji = "🔒"
                                 button.style = ButtonStyle.red
                             else:
@@ -196,7 +199,7 @@ class leaderboard(commands.Cog):
                             await interaction.response.edit_message(view = self)
                         else:
                             embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
-                            await interaction.response.send_message(embed = embed, delete_after=5)
+                            await interaction.response.send_message(embed = embed, ephemeral=True)
 
                     @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
                     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -242,7 +245,7 @@ class leaderboard(commands.Cog):
                 else:
                     await interaction.followup.send(embed = embed, view = Leaderboard(pages), ephemeral=ephemeral)
 
-                    Leaderboard.interaction = interaction
+                    Leaderboard.userID = interaction.user.id
                     Leaderboard.message = await interaction.original_response()
             else:
                 embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server. Ask an admin to enable it first.", color = Color.red())

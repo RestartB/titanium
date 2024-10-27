@@ -159,7 +159,7 @@ class editHistory(commands.Cog):
                         self.pages: list = pages
 
                         self.response: discord.InteractionMessage
-                        self.ogID: int
+                        self.userID: int
 
                         self.locked = False
 
@@ -179,10 +179,10 @@ class editHistory(commands.Cog):
                 
                     # Block others from controlling when lock is active
                     async def interaction_check(self, interaction: discord.Interaction):
-                        if interaction.user.id != self.ogID:
+                        if interaction.user.id != self.userID:
                             if self.locked:
                                 embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                                await interaction.response.send_message(embed = embed, ephemeral=True, delete_after=5)
+                                await interaction.response.send_message(embed = embed, ephemeral=True)
                             else:
                                 return True
                         else:
@@ -229,10 +229,10 @@ class editHistory(commands.Cog):
                     # Lock / unlock button
                     @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                     async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if interaction.user.id == self.ogID:
+                        if interaction.user.id == self.userID:
                             self.locked = not self.locked
 
-                            if self.locked == True:
+                            if self.locked:
                                 button.emoji = "🔒"
                                 button.style = ButtonStyle.red
                             else:
@@ -242,7 +242,7 @@ class editHistory(commands.Cog):
                             await interaction.response.edit_message(view = self)
                         else:
                             embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
-                            await interaction.response.send_message(embed = embed, ephemeral = True, delete_after=5)
+                            await interaction.response.send_message(embed = embed, ephemeral = True)
 
                     # Next page
                     @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
@@ -285,7 +285,7 @@ class editHistory(commands.Cog):
                 # Create view
                 view = editPages(historyPages)
                 view.response = interaction.response
-                view.ogID = interaction.user.id
+                view.userID = interaction.user.id
 
                 # Send message
                 if len(historyPages) == 1:
