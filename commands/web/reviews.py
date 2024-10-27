@@ -66,7 +66,7 @@ class reviewCom(commands.Cog):
 
                     self.locked = False
 
-                    self.interaction: discord.Interaction
+                    self.userID: int
                     self.message: discord.WebhookMessage
 
                     for item in self.children:
@@ -82,10 +82,10 @@ class reviewCom(commands.Cog):
                 
                 # Page lock
                 async def interaction_check(self, interaction: discord.Interaction):
-                    if interaction.user.id != self.interaction.user.id:
+                    if interaction.user.id != self.userID:
                         if self.locked:
                             embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                            await interaction.response.send_message(embed = embed, ephemeral=True, delete_after=5)
+                            await interaction.response.send_message(embed=embed, ephemeral=True)
                         else:
                             return True
                     else:
@@ -172,10 +172,10 @@ class reviewCom(commands.Cog):
                 # Lock / unlock toggle
                 @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                 async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    if interaction.user.id == self.interaction.user.id:
+                    if interaction.user.id == self.userID:
                         self.locked = not self.locked
 
-                        if self.locked == True:
+                        if self.locked:
                             button.emoji = "🔒"
                             button.style = ButtonStyle.red
                         else:
@@ -185,7 +185,7 @@ class reviewCom(commands.Cog):
                         await interaction.response.edit_message(view = self)
                     else:
                         embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
-                        await interaction.response.send_message(embed = embed, delete_after=5)
+                        await interaction.response.send_message(embed=embed, ephemeral=True)
                 
                 # Next page
                 @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
@@ -296,7 +296,7 @@ class reviewCom(commands.Cog):
                 else:
                     msg = await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral, wait=True)
 
-                    pageView.interaction = interaction
+                    pageView.userID = interaction.user.id
                     pageView.message = msg
             else:
                 embed = discord.Embed(title = "ReviewDB User Reviews", description="This user has no reviews!", color = Color.red())
@@ -372,7 +372,7 @@ class reviewCom(commands.Cog):
                         self.page = 0
                         self.pages = pages
 
-                        self.interaction: discord.Interaction
+                        self.userID: int
                         self.message: discord.WebhookMessage
                         
                         self.locked = False
@@ -388,10 +388,10 @@ class reviewCom(commands.Cog):
                         await self.message.edit(view=self)
                     
                     async def interaction_check(self, interaction: discord.Interaction):
-                        if interaction.server.id != self.interaction.server.id:
+                        if interaction.user.id != self.userID:
                             if self.locked:
                                 embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
-                                await interaction.response.send_message(embed = embed, ephemeral=True, delete_after=5)
+                                await interaction.response.send_message(embed=embed, ephemeral=True)
                             else:
                                 return True
                         else:
@@ -475,10 +475,10 @@ class reviewCom(commands.Cog):
 
                     @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                     async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if interaction.server.id == self.interaction.server.id:
+                        if interaction.user.id == self.userID:
                             self.locked = not self.locked
 
-                            if self.locked == True:
+                            if self.locked:
                                 button.emoji = "🔒"
                                 button.style = ButtonStyle.red
                             else:
@@ -488,7 +488,7 @@ class reviewCom(commands.Cog):
                             await interaction.response.edit_message(view = self)
                         else:
                             embed = discord.Embed(title = "Error", description = "Only the command runner can toggle the page controls lock.", color=Color.red())
-                            await interaction.response.send_message(embed = embed, delete_after=5)
+                            await interaction.response.send_message(embed=embed, ephemeral=True)
                     
                     @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
                     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -596,7 +596,7 @@ class reviewCom(commands.Cog):
                     else:
                         await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral)
 
-                        pageView.interaction = interaction
+                        pageView.userID = interaction.user.id
                         pageView.message = await interaction.original_response()
                 else:
                     embed = discord.Embed(title = "ReviewDB Server Reviews", description="This server has no reviews!", color = Color.red())
