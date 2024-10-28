@@ -15,11 +15,8 @@ class leaderboard(commands.Cog):
         self.bot.loop.create_task(self.sql_setup())
         
     async def sql_setup(self):
-        # Check DB exists
-        open(os.path.join("content", "sql", "lb.db"), "a").close()
-        
         async with self.lbPool.acquire() as sql:
-            if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='optOut';") == None:
+            if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='optOut';") is None:
                 await sql.execute("CREATE TABLE optOut (userID int)")
                 await sql.commit()
             

@@ -3,6 +3,7 @@
 import asyncio
 import os
 import sqlite3
+import random
 
 import discord
 import discord.ext
@@ -25,7 +26,7 @@ class fireboard(commands.Cog):
         
         if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireMessages';").fetchone() == None:
             # Fire Messages - messages that are active on the fireboard
-            self.cursor.execute("CREATE TABLE fireMessages (serverID int, msgID int, boardMsgID int, emoji text)")
+            self.cursor.execute("CREATE TABLE fireMessages (serverID int, msgID int, boardMsgID int, reactAmount int)")
         
         if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireSettings';").fetchone() == None:
             # Fire Settings - server properties for fireboard
@@ -58,421 +59,349 @@ class fireboard(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot: discord.ext.commands.Bot
         
+        queued = False
+        
         # Lock system
-        if payload.message_id not in self.lockedMessages:
-            self.lockedMessages.append(payload.message_id)
-        else:
+        if payload.message_id in self.lockedMessages:
+            queued = True
+
             while payload.message_id in self.lockedMessages:
                 await asyncio.sleep(0.5)
 
-            self.lockedMessages.append(payload.message_id)
+        self.lockedMessages.append(payload.message_id)
         
-        try:    
-            # Check if message is from bot
-            if payload.message_author_id != self.bot.user.id:
-                # Get blacklisted roles
-                blacklistedRoles = []
-                for entry in self.fireRoleBlacklist:
-                    if entry[0] == payload.guild_id:
-                        blacklistedRoles.append(entry[1])
-                
-                # Check if member's roles are blacklisted
-                guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
-                member: discord.Guild = await guild.fetch_member(payload.message_author_id)
-                for role in member.roles:
-                    if role.id in blacklistedRoles:
-                        self.lockedMessages.remove(payload.message_id)
+        try:
+            fetched = False
+            
+            # Find server config
+            for server in self.fireSettings:
+                if server[0] == payload.guild_id:
+                    reactMinimum = server[1]
+                    emoji = server[2]
+                    channelID = server[3]
+                    ignoreBots = (True if int(server[4]) == 1 else False)
+
+                    fetched = True
+
+            # Stop if server has no config (fireboard isn't enabled)
+            if not fetched:
+                return
+            
+            # Stop if message is by Titanium
+            if payload.message_author_id == self.bot.user.id:
+                return
+            
+            # Stop if emoji doesn't match
+            if str(payload.emoji) != emoji:
+                return
+            
+            # --- Edit board message if it already exists ---
+            if payload.message_id in [message[1] for message in self.fireMessages]:
+                # Only fetch updated reaction count if I have queued
+                if queued:
+                    # Fetch message and channel
+                    try:
+                        msgChannel = await self.bot.fetch_channel(payload.channel_id)
+                        message = await msgChannel.fetch_message(payload.message_id)
+                    except discord.errors.NotFound:
                         return
-                    
-                # Get blacklisted channels
-                blacklistedChannels = []
-                for entry in self.fireChannelBlacklist:
-                    if entry[0] == payload.guild_id:
-                        blacklistedChannels.append(entry[1])
                 
-                # Check if channel is blacklisted
-                if payload.channel_id not in blacklistedChannels:
-                    # Only trigger if server has fireboard enabled
-                    if payload.guild_id in [guild[0] for guild in self.fireSettings]:
-                        # Find server config
-                        for server in self.fireSettings:
-                            if server[0] == payload.guild_id:
-                                reactAmount = server[1]
-                                emoji = server[2]
-                                channelID = server[3]
-                                ignoreBots = (True if int(server[4]) == 1 else False)
-                        
-                        # Check if emoji is correct
-                        if str(payload.emoji) == emoji:
-                            if not(ignoreBots and payload.member.bot):
-                                # Get message channel
-                                channel: discord.abc.GuildChannel = await guild.fetch_channel(payload.channel_id)
-                                
-                                # Stop if channel is NSFW
-                                if channel.nsfw == True:
-                                    self.lockedMessages.remove(payload.message_id)
-                                    return
-
-                                # Get our message
-                                message: discord.Message = await channel.fetch_message(payload.message_id)
-
-                                # See if the target reaction is present
-                                for reaction in message.reactions:
-                                    if str(reaction.emoji) == str(emoji):
-                                        if (reaction.normal_count + reaction.burst_count) >= reactAmount:
-                                            embed = discord.Embed(description=message.content, color=Color.random())
-                                            embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
-                                            embed.timestamp = message.created_at
-
-                                            # Jump to message button
-                                            view = View()
-                                            view.add_item(discord.ui.Button(label="Jump to Message", url = message.jump_url, style=discord.ButtonStyle.url))
-
-                                            embedList = [embed]
-                                            
-                                            # Show message reply
-                                            if message.reference:
-                                                try:
-                                                    replyMessage = await channel.fetch_message(message.reference.message_id)
-                                                    
-                                                    replyEmbed = discord.Embed(title="Replying To", description=replyMessage.content, color=Color.random())
-                                                    replyEmbed.set_author(name=replyMessage.author.name, icon_url=replyMessage.author.display_avatar.url)
-                                                    replyEmbed.timestamp = replyMessage.created_at
-
-                                                    embedList.insert(0, replyEmbed)
-                                                except discord.errors.NotFound:
-                                                    pass
-                                            
-                                            # Grab fireboard channel, remove server config if it doesn't exist
-                                            try:
-                                                channel: discord.TextChannel = await guild.fetch_channel(channelID)
-                                            except discord.errors.NotFound:
-                                                self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
-                                                self.connection.commit()
-
-                                                self.lockedMessages.remove(payload.message_id)
-
-                                                return
-                                            
-                                            # See if board message is already present
-                                            for fireMessage in self.fireMessages:
-                                                if fireMessage[1] == message.id:
-                                                    if str(reaction.emoji) == fireMessage[3]: # Emoji is up to date and message is present - edit message
-                                                        try:
-                                                            boardMessage = await channel.fetch_message(fireMessage[2])
-                                                        
-                                                            await boardMessage.edit(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList)
-                                                        except discord.errors.NotFound:
-                                                            boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
-                                                            
-                                                            # Delete old message
-                                                            self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
-                                                            self.connection.commit()
-                                                            
-                                                            # Insert message
-                                                            self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, emoji) VALUES (?, ?, ?, ?)", (message.guild.id, message.id, boardMessage.id, str(reaction.emoji)))
-                                                            self.connection.commit()
-
-                                                            await self.refreshFireLists()
-
-                                                        self.lockedMessages.remove(payload.message_id)
-                                                        
-                                                        return
-                                                    else: # Emoji is outdated - resend the message and delete the old one     
-                                                        boardMessage = await channel.fetch_message(fireMessage[2])
-                                                        await boardMessage.delete()
-
-                                                        boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
-
-                                                        # Delete old message
-                                                        self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
-                                                        self.connection.commit()
-                                                        
-                                                        # Insert message
-                                                        self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, emoji) VALUES (?, ?, ?, ?)", (message.guild.id, message.id, boardMessage.id, str(reaction.emoji)))
-                                                        self.connection.commit()
-
-                                                        await self.refreshFireLists()
-
-                                                        self.lockedMessages.remove(payload.message_id)
-                                                        
-                                                        return
-                                            
-                                            boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
-
-                                            # Insert message
-                                            self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, emoji) VALUES (?, ?, ?, ?)", (message.guild.id, message.id, boardMessage.id, str(reaction.emoji)))
-                                            self.connection.commit()
-
-                                            await self.refreshFireLists()
-
-                                            self.lockedMessages.remove(payload.message_id)
-                            else:
-                                self.lockedMessages.remove(payload.message_id)
-                                return
-                        else:
-                            self.lockedMessages.remove(payload.message_id)
-                            return
-                    else:
-                        self.lockedMessages.remove(payload.message_id)
+                    # Stop if not enough reactions
+                    for reaction in message.reactions:
+                        if str(reaction.emoji) == emoji:
+                            reactCount = reaction.count
+                            break
+                    
+                    if reactCount < reactMinimum:
                         return
                 else:
-                    self.lockedMessages.remove(payload.message_id)
-                    return
-            else:
-                self.lockedMessages.remove(payload.message_id)
+                    reactCount = None
+                
+                # Set updated react count
+                if reactCount is not None:
+                    self.connection.execute(f"UPDATE fireMessages SET reactionAmount = ? WHERE msgID = ?", (reactCount, payload.message_id,))
+                    await self.refreshFireLists()
+                else:
+                    self.connection.execute(f"UPDATE fireMessages SET reactionAmount = reactionAmount + 1 WHERE msgID = ?", (payload.message_id,))
+                    await self.refreshFireLists()
+
+                # Get message from message list
+                message = [message for message in self.fireMessages if message[1] == payload.message_id][0]
+
+                # Get board message
+                boardChannel = await self.bot.fetch_channel(channelID)
+                boardMessage = await boardChannel.fetch_message(message[2])
+
+                await boardMessage.edit(content=f"**{message[3]} {emoji}** | <@{payload.message_author_id}> | <#{payload.channel_id}>", embeds=boardMessage.embeds)
+
                 return
+            
+            # Stop if message is in a blacklisted channel
+            if payload.channel_id in [channel[1] for channel in self.fireChannelBlacklist]:
+                return
+            
+            # Stop if message is by a blacklisted role
+            guild = await self.bot.fetch_guild(payload.guild_id)
+            member = await guild.fetch_member(payload.user_id)
+
+            if any(role[1] in [role.id for role in member.roles] for role in self.fireRoleBlacklist):
+                return
+            
+            # Fetch message and channel
+            try:
+                msgChannel = await self.bot.fetch_channel(payload.channel_id)
+                message = await msgChannel.fetch_message(payload.message_id)
+            except discord.errors.NotFound:
+                return
+            
+            # Stop if message is by a bot
+            if ignoreBots and message.author.bot:
+                return
+            
+            # Stop if message is in an NSFW channel
+            if message.channel.nsfw:
+                return
+            
+            # Stop if not enough reactions
+            for reaction in message.reactions:
+                if str(reaction.emoji) == emoji:
+                    reactCount = reaction.count
+                    break
+            
+            if reactCount < reactMinimum:
+                return
+
+            # --- Send message to fireboard ---
+            
+            # Create embed
+            embed = discord.Embed(description=message.content, color=Color.random())
+            embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
+            embed.timestamp = message.created_at
+
+            # Jump to message button
+            view = View()
+            view.add_item(discord.ui.Button(label="Jump to Message", url = message.jump_url, style=discord.ButtonStyle.url))
+
+            embedList = [embed]
+
+            # Add reply embed
+            if message.reference:
+                try:
+                    replyMessage = await msgChannel.fetch_message(message.reference.message_id)
+                    
+                    replyEmbed = discord.Embed(title="Replying To", description=replyMessage.content, color=Color.random())
+                    replyEmbed.set_author(name=replyMessage.author.name, icon_url=replyMessage.author.display_avatar.url)
+                    replyEmbed.timestamp = replyMessage.created_at
+
+                    embedList.insert(0, replyEmbed)
+                except discord.errors.NotFound:
+                    pass
+            
+            # Send message
+            boardChannel = await self.bot.fetch_channel(channelID)
+            boardMessage = await boardChannel.send(content=f"**{reactCount} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
+
+            # Insert message to DB
+            self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, reactionAmount) VALUES (?, ?, ?, ?)", (payload.guild_id, payload.message_id, boardMessage.id, reactCount))
+            self.connection.commit()
+
+            await self.refreshFireLists()
         except Exception as e:
-            self.lockedMessages.remove(payload.message_id)
             raise e
+        finally:
+            self.lockedMessages.remove(payload.message_id)
 
     # Listen for reaction removal
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
         self.bot: discord.ext.commands.Bot
         
+        queued = False
+        
         # Lock system
-        if payload.message_id not in self.lockedMessages:
-            self.lockedMessages.append(payload.message_id)
-        else:
+        if payload.message_id in self.lockedMessages:
+            queued = True
+
             while payload.message_id in self.lockedMessages:
                 await asyncio.sleep(0.5)
 
-            self.lockedMessages.append(payload.message_id)
+        self.lockedMessages.append(payload.message_id)
         
         try:
-            if payload.message_author_id != self.bot.user.id:
-                # Only trigger if message is already in the fireboard DB
-                if payload.message_id in [message[1] for message in self.fireMessages]:
-                    # Get server config
-                    for server in self.fireSettings:
-                        if server[0] == payload.guild_id:
-                            reactAmount = server[1]
-                            emoji = server[2]
-                            channelID = server[3]
-                            ignoreBots = (True if int(server[4]) == 1 else False)
+            fetched = False
+            
+            # Find server config
+            for server in self.fireSettings:
+                if server[0] == payload.guild_id:
+                    reactMinimum = server[1]
+                    emoji = server[2]
+                    channelID = server[3]
+                    ignoreBots = (True if int(server[4]) == 1 else False)
+
+                    fetched = True
+
+            # Stop if server has no config (fireboard isn't enabled)
+            if not fetched:
+                return
+            
+            # Stop if message is by Titanium
+            if payload.message_author_id == self.bot.user.id:
+                return
+            
+            # Stop if emoji doesn't match
+            if str(payload.emoji) != emoji:
+                return
+            
+            # --- Edit board message if it already exists ---
+            if payload.message_id in [message[1] for message in self.fireMessages]:
+                prevReactCount = [message for message in self.fireMessages if message[1] == payload.message_id][0][3]
+                
+                # Only fetch updated reaction count if I have queued
+                if queued == True:
+                    # Fetch message and channel
+                    try:
+                        msgChannel = await self.bot.fetch_channel(payload.channel_id)
+                        message = await msgChannel.fetch_message(payload.message_id)
+                    except discord.errors.NotFound:
+                        return
+                
+                    # Stop if not enough reactions
+                    for reaction in message.reactions:
+                        if str(reaction.emoji) == emoji:
+                            reactCount = reaction.count
+                            break
                     
-                    if str(payload.emoji) == emoji:
-                        try:
-                            guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
-                        except discord.errors.NotFound:
-                            self.lockedMessages.remove(payload.message_id)
-                            
-                            return
-
-                        # Get message channel
-                        channel: discord.abc.GuildChannel = await guild.fetch_channel(payload.channel_id)
-
-                        # Stop if channel is NSFW
-                        if channel.nsfw == True:
-                            self.lockedMessages.remove(payload.message_id)
-                            
-                            return
-                        
-                        # Get our message
-                        message: discord.Message = await channel.fetch_message(payload.message_id)
-
-                        if emoji in [str(reaction.emoji) for reaction in message.reactions]:
-                            # See if the target reaction is present
-                            for reaction in message.reactions:
-                                if str(reaction.emoji) == str(emoji):
-                                    if (reaction.normal_count + reaction.burst_count) < reactAmount: # Message illegible for fireboard
-                                        # See if board message is already present
-                                        for fireMessage in self.fireMessages:
-                                            if fireMessage[1] == message.id:
-                                                try:
-                                                    # Grab fireboard channel
-                                                    try:
-                                                        channel: discord.TextChannel = await guild.fetch_channel(channelID)
-                                                    except discord.errors.NotFound:
-                                                        self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
-                                                        self.connection.commit()
-                                                        
-                                                        self.lockedMessages.remove(payload.message_id)
-                                                        
-                                                        return
-                                                    
-                                                    # Delete old message
-                                                    boardMessage = await channel.fetch_message(fireMessage[2])
-                                                    await boardMessage.delete()
-
-                                                    # Delete message from DB
-                                                    self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
-                                                    self.connection.commit()
-
-                                                    await self.refreshFireLists()
-
-                                                    self.lockedMessages.remove(payload.message_id)
-                                                    
-                                                    return
-                                                except discord.errors.NotFound:
-                                                    # Delete message from DB
-                                                    self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
-                                                    self.connection.commit()
-
-                                                    await self.refreshFireLists()
-
-                                                    self.lockedMessages.remove(payload.message_id)
-                                                    
-                                                    return
-                                        
-                                        self.lockedMessages.remove(payload.message_id)
-                                        
-                                        return
-                                    else: # Message still legible for fireboard
-                                        embed = discord.Embed(description=message.content, color=Color.random())
-                                        embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
-                                        embed.timestamp = message.created_at
-
-                                        # Jump to message button
-                                        view = View()
-                                        view.add_item(discord.ui.Button(label="Jump to Message", url = message.jump_url, style=discord.ButtonStyle.url))
-
-                                        embedList = [embed]
-                                        
-                                        # Add reply embed
-                                        if message.reference:
-                                            try:
-                                                replyMessage = await channel.fetch_message(message.reference.message_id)
-                                                
-                                                replyEmbed = discord.Embed(title="Replying To", description=replyMessage.content, color=Color.random())
-                                                replyEmbed.set_author(name=replyMessage.author.name, icon_url=replyMessage.author.display_avatar.url)
-                                                replyEmbed.timestamp = replyMessage.created_at
-
-                                                embedList.insert(0, replyEmbed)
-                                            except discord.errors.NotFound:
-                                                pass
-                                        
-                                        # Fetch fireboard channel
-                                        try:
-                                            channel: discord.TextChannel = await guild.fetch_channel(channelID)
-                                        except discord.errors.NotFound:
-                                            self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
-                                            self.connection.commit()
-                                            
-                                            self.lockedMessages.remove(payload.message_id)
-                                            
-                                            return
-                                        
-                                        # See if board message is already present
-                                        for fireMessage in self.fireMessages:
-                                            if fireMessage[1] == message.id:
-                                                if str(reaction.emoji) == fireMessage[3]: # Emoji is up to date and message is present - edit message
-                                                    try:
-                                                        boardMessage = await channel.fetch_message(fireMessage[2])
-
-                                                        await boardMessage.edit(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList)
-                                                    except discord.errors.NotFound:
-                                                        boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
-                                                        
-                                                        # Delete old message
-                                                        self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
-                                                        self.connection.commit()
-                                                        
-                                                        # Insert message
-                                                        self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, emoji) VALUES (?, ?, ?, ?)", (message.guild.id, message.id, boardMessage.id, str(reaction.emoji)))
-                                                        self.connection.commit()
-
-                                                        await self.refreshFireLists()
-
-                                                    self.lockedMessages.remove(payload.message_id)
-                                                    
-                                                    return
-                                                else: # Emoji is outdated - resend the message and delete the old one     
-                                                    boardMessage = await channel.fetch_message(fireMessage[2])
-                                                    await boardMessage.delete()
-
-                                                    boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
-
-                                                    # Delete old message
-                                                    self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
-                                                    self.connection.commit()
-                                                    
-                                                    # Insert message
-                                                    self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, emoji) VALUES (?, ?, ?, ?)", (message.guild.id, message.id, boardMessage.id, str(reaction.emoji)))
-                                                    self.connection.commit()
-
-                                                    await self.refreshFireLists()
-
-                                                    self.lockedMessages.remove(payload.message_id)
-                                                    
-                                                    return
-                                        
-                                        boardMessage = await channel.send(content=f"**{reaction.normal_count + reaction.burst_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
-
-                                        # Insert message
-                                        self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, emoji) VALUES (?, ?, ?, ?)", (message.guild.id, message.id, boardMessage.id, str(reaction.emoji)))
-                                        self.connection.commit()
-
-                                        await self.refreshFireLists()
-                        else:
-                            # See if board message is already present
-                            for fireMessage in self.fireMessages:
-                                if fireMessage[1] == message.id:
-                                    try:
-                                        # Grab fireboard channel
-                                        try:
-                                            channel: discord.TextChannel = await guild.fetch_channel(channelID)
-                                        except discord.errors.NotFound:
-                                            self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
-                                            self.connection.commit()
-                                            
-                                            self.lockedMessages.remove(payload.message_id)
-                                            
-                                            return
-                                        
-                                        # Delete old message
-                                        boardMessage = await channel.fetch_message(fireMessage[2])
-                                        await boardMessage.delete()
-
-                                        # Delete message from DB
-                                        self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
-                                        self.connection.commit()
-
-                                        await self.refreshFireLists()
-
-                                        self.lockedMessages.remove(payload.message_id)
-                                        
-                                        return
-                                    except discord.errors.NotFound:
-                                        # Delete message from DB
-                                        self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
-                                        self.connection.commit()
-
-                                        await self.refreshFireLists()
-
-                                        self.lockedMessages.remove(payload.message_id)
-                                        
-                                        return
-                            self.lockedMessages.remove(payload.message_id)
-
-                            return
-                    else:
-                        self.lockedMessages.remove(payload.message_id)
+                    if reactCount < reactMinimum:
                         return
                 else:
-                    self.lockedMessages.remove(payload.message_id)
+                    reactCount = None
+                
+                # Set updated react count
+                if reactCount is not None:
+                    self.connection.execute(f"UPDATE fireMessages SET reactionAmount = ? WHERE msgID = ?", (reactCount, payload.message_id,))
+                    await self.refreshFireLists()
+                else:
+                    self.connection.execute(f"UPDATE fireMessages SET reactionAmount = reactionAmount - 1 WHERE msgID = ?", (payload.message_id,))
+                    await self.refreshFireLists()
+
+                # Get message from message list
+                message = [message for message in self.fireMessages if message[1] == payload.message_id][0]
+
+                # Get board message
+                boardChannel = await self.bot.fetch_channel(channelID)
+                boardMessage = await boardChannel.fetch_message(message[2])
+
+                # Remove message if not enough reactions
+                if message[3] < reactMinimum:
+                    await boardMessage.delete()
+                    self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
+                    self.connection.commit()
+
+                    await self.refreshFireLists()
+
                     return
-            else:
-                self.lockedMessages.remove(payload.message_id)
+                
+                # Workaround for lack of message author ID
+                content = boardMessage.content
+                content = content.replace(f"{prevReactCount} {emoji}", f"{message[3]} {emoji}")
+                
+                await boardMessage.edit(content=content)
+
                 return
+            
+            # Stop if message is in a blacklisted channel
+            if payload.channel_id in [channel[1] for channel in self.fireChannelBlacklist]:
+                return
+            
+            # Stop if message is by a blacklisted role
+            guild = await self.bot.fetch_guild(payload.guild_id)
+            member = await guild.fetch_member(payload.user_id)
+
+            if any(role[1] in [role.id for role in member.roles] for role in self.fireRoleBlacklist):
+                return
+
+            # Fetch message and channel
+            try:
+                msgChannel = await self.bot.fetch_channel(payload.channel_id)
+                message = await msgChannel.fetch_message(payload.message_id)
+            except discord.errors.NotFound:
+                return
+            
+            # Stop if message is by a bot
+            if ignoreBots and message.author.bot:
+                return
+            
+            # Stop if message is in an NSFW channel
+            if message.channel.nsfw:
+                return
+            
+            # Get reaction count
+            reactCount = 0
+
+            for reaction in message.reactions:
+                if str(reaction.emoji) == emoji:
+                    reactCount = reaction.count
+                    break
+            
+            # Stop if not enough reactions
+            if reactCount < reactMinimum:
+                return
+
+            # --- Send message to fireboard ---
+            
+            # Create embed
+            embed = discord.Embed(description=message.content, color=Color.random())
+            embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
+            embed.timestamp = message.created_at
+
+            # Jump to message button
+            view = View()
+            view.add_item(discord.ui.Button(label="Jump to Message", url = message.jump_url, style=discord.ButtonStyle.url))
+
+            embedList = [embed]
+
+            # Add reply embed
+            if message.reference:
+                try:
+                    replyMessage = await msgChannel.fetch_message(message.reference.message_id)
+                    
+                    replyEmbed = discord.Embed(title="Replying To", description=replyMessage.content, color=Color.random())
+                    replyEmbed.set_author(name=replyMessage.author.name, icon_url=replyMessage.author.display_avatar.url)
+                    replyEmbed.timestamp = replyMessage.created_at
+
+                    embedList.insert(0, replyEmbed)
+                except discord.errors.NotFound:
+                    pass
+            
+            # Send message
+            boardChannel = await self.bot.fetch_channel(channelID)
+            boardMessage = await boardChannel.send(content=f"**{reactCount} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
+
+            # Insert message to DB
+            self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, reactionAmount) VALUES (?, ?, ?, ?)", (payload.guild_id, payload.message_id, boardMessage.id, reactCount))
+            self.connection.commit()
+
+            await self.refreshFireLists()
         except Exception as e:
-            self.lockedMessages.remove(payload.message_id)
             raise e
+        finally:
+            self.lockedMessages.remove(payload.message_id)
     
     # Listen for message reaction clear
     @commands.Cog.listener()
     async def on_raw_reaction_clear(self, payload: discord.RawReactionClearEvent):
         self.bot: discord.ext.commands.Bot
         
+        queued = False
+        
         # Lock system
-        if payload.message_id not in self.lockedMessages:
-            self.lockedMessages.append(payload.message_id)
-        else:
+        if payload.message_id in self.lockedMessages:
+            queued = True
+
             while payload.message_id in self.lockedMessages:
                 await asyncio.sleep(0.5)
 
-            self.lockedMessages.append(payload.message_id)
+        self.lockedMessages.append(payload.message_id)
         
         try:
             # Only trigger if message is already in the fireboard DB
@@ -480,7 +409,7 @@ class fireboard(commands.Cog):
                 # Find server config
                 for server in self.fireSettings:
                     if server[0] == payload.guild_id:
-                        reactAmount = server[1]
+                        reactMinimum = server[1]
                         emoji = server[2]
                         channelID = server[3]
                         ignoreBots = (True if int(server[4]) == 1 else False)
@@ -489,7 +418,6 @@ class fireboard(commands.Cog):
                 try:
                     guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
                 except discord.errors.NotFound:
-                    self.lockedMessages.remove(payload.message_id)
                     return
 
                 # Get message channel
@@ -520,7 +448,6 @@ class fireboard(commands.Cog):
 
                             await self.refreshFireLists()
 
-                            self.lockedMessages.remove(payload.message_id)
                             return
                         except discord.errors.NotFound:
                             # Delete message from DB
@@ -529,35 +456,36 @@ class fireboard(commands.Cog):
 
                             await self.refreshFireLists()
 
-                            self.lockedMessages.remove(payload.message_id)
                             return
             else:
-                self.lockedMessages.remove(payload.message_id)
                 return
         except Exception as e:
-            self.lockedMessages.remove(payload.message_id)
             raise e
+        finally:
+            self.lockedMessages.remove(payload.message_id)
     
     # Listen for specific emoji being cleared
     @commands.Cog.listener()
     async def on_raw_reaction_clear_emoji(self, payload: discord.RawReactionClearEmojiEvent):
         self.bot: discord.ext.commands.Bot
         
+        queued = False
+        
         # Lock system
-        if payload.message_id not in self.lockedMessages:
-            self.lockedMessages.append(payload.message_id)
-        else:
-            while payload.message_id in self.lockedMessages:
-                pass
+        if payload.message_id in self.lockedMessages:
+            queued = True
 
-            self.lockedMessages.append(payload.message_id)
+            while payload.message_id in self.lockedMessages:
+                await asyncio.sleep(0.5)
+
+        self.lockedMessages.append(payload.message_id)
         
         try:
             # Only trigger if message is already in the fireboard DB
             if payload.message_id in [message[1] for message in self.fireMessages]:
                 for server in self.fireSettings:
                     if server[0] == payload.guild_id:
-                        reactAmount = server[1]
+                        reactMinimum = server[1]
                         emoji = server[2]
                         channelID = server[3]
                         ignoreBots = (True if int(server[4]) == 1 else False)
@@ -568,7 +496,6 @@ class fireboard(commands.Cog):
                     try:
                         guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
                     except discord.errors.NotFound:
-                        self.lockedMessages.remove(payload.message_id)
                         return
 
                     # Get message channel
@@ -585,7 +512,6 @@ class fireboard(commands.Cog):
                                     self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                                     self.connection.commit()
                                     
-                                    self.lockedMessages.remove(payload.message_id)
                                     return
                                 
                                 # Delete message
@@ -598,7 +524,6 @@ class fireboard(commands.Cog):
 
                                 await self.refreshFireLists()
 
-                                self.lockedMessages.remove(payload.message_id)
                                 return
                             except discord.errors.NotFound:
                                 # Delete message from DB
@@ -607,28 +532,29 @@ class fireboard(commands.Cog):
 
                                 await self.refreshFireLists()
 
-                                self.lockedMessages.remove(payload.message_id)
                                 return
             else:
-                self.lockedMessages.remove(payload.message_id)
                 return
         except Exception as e:
-            self.lockedMessages.remove(payload.message_id)
             raise e
+        finally:
+            self.lockedMessages.remove(payload.message_id)
     
     # Listen for message being deleted
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         self.bot: discord.ext.commands.Bot
         
+        queued = False
+        
         # Lock system
-        if payload.message_id not in self.lockedMessages:
-            self.lockedMessages.append(payload.message_id)
-        else:
+        if payload.message_id in self.lockedMessages:
+            queued = True
+
             while payload.message_id in self.lockedMessages:
                 await asyncio.sleep(0.5)
 
-            self.lockedMessages.append(payload.message_id)
+        self.lockedMessages.append(payload.message_id)
         
         try:
             # Only trigger if message is already in the fireboard DB
@@ -636,7 +562,7 @@ class fireboard(commands.Cog):
                 # Fetch server config
                 for server in self.fireSettings:
                     if server[0] == payload.guild_id:
-                        reactAmount = server[1]
+                        reactMinimum = server[1]
                         emoji = server[2]
                         channelID = server[3]
                         ignoreBots = (True if int(server[4]) == 1 else False)
@@ -645,7 +571,6 @@ class fireboard(commands.Cog):
                 try:
                     guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
                 except discord.errors.NotFound:
-                    self.lockedMessages.remove(payload.message_id)
                     return
 
                 # Get message channel
@@ -662,7 +587,6 @@ class fireboard(commands.Cog):
                                 self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                                 self.connection.commit()
                                 
-                                self.lockedMessages.remove(payload.message_id)
                                 return
                             
                             # Delete message
@@ -675,7 +599,6 @@ class fireboard(commands.Cog):
 
                             await self.refreshFireLists()
 
-                            self.lockedMessages.remove(payload.message_id)
                             return
                         except discord.errors.NotFound:
                             # Delete message from DB
@@ -684,36 +607,37 @@ class fireboard(commands.Cog):
 
                             await self.refreshFireLists()
 
-                            self.lockedMessages.remove(payload.message_id)
                             return
             else:
-                self.lockedMessages.remove(payload.message_id)
                 return
         except Exception as e:
-            self.lockedMessages.remove(payload.message_id)
             raise e
+        finally:
+            self.lockedMessages.remove(payload.message_id)
     
     # Listen for message being edited
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         self.bot: discord.ext.commands.Bot
         
+        queued = False
+        
         # Lock system
-        if payload.message_id not in self.lockedMessages:
-            self.lockedMessages.append(payload.message_id)
-        else:
+        if payload.message_id in self.lockedMessages:
+            queued = True
+
             while payload.message_id in self.lockedMessages:
                 await asyncio.sleep(0.5)
 
-            self.lockedMessages.append(payload.message_id)
-        
+        self.lockedMessages.append(payload.message_id)
+
         try:
             # Only trigger if message is already in the fireboard DB
             if payload.message_id in [message[1] for message in self.fireMessages]:
                 # Fetch server config
                 for server in self.fireSettings:
                     if server[0] == payload.guild_id:
-                        reactAmount = server[1]
+                        reactMinimum = server[1]
                         emoji = server[2]
                         channelID = server[3]
                         ignoreBots = (True if int(server[4]) == 1 else False)
@@ -722,7 +646,6 @@ class fireboard(commands.Cog):
                 try:
                     guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
                 except discord.errors.NotFound:
-                    self.lockedMessages.remove(payload.message_id)
                     return
                 
                 # Get message channel
@@ -760,7 +683,6 @@ class fireboard(commands.Cog):
                     self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                     self.connection.commit()
                     
-                    self.lockedMessages.remove(payload.message_id)
                     return
                 
                 # Find previous fireboard message
@@ -778,14 +700,13 @@ class fireboard(commands.Cog):
 
                     await self.refreshFireLists()
 
-                    self.lockedMessages.remove(payload.message_id)
                     return
             else:
-                self.lockedMessages.remove(payload.message_id)
                 return
         except Exception as e:
-            self.lockedMessages.remove(payload.message_id)
             raise e
+        finally:
+            self.lockedMessages.remove(payload.message_id)
     
     # Listen for fireboard channel delete
     @commands.Cog.listener()
@@ -840,7 +761,7 @@ class fireboard(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
         else:
             # Default settings
-            reactAmount = 3
+            reactMinimum = 3
             emoji = "🔥"
             channelID = interaction.channel_id
             ignoreBots = True
@@ -858,13 +779,13 @@ class fireboard(commands.Cog):
                 return
             
             # Insert to DB, refresh lists
-            self.cursor.execute(f"INSERT INTO fireSettings (serverID, reactAmount, emoji, channelID, ignoreBots) VALUES (?, ?, ?, ?, ?)", (interaction.guild_id, reactAmount, emoji, channelID, ignoreBots,))
+            self.cursor.execute(f"INSERT INTO fireSettings (serverID, reactAmount, emoji, channelID, ignoreBots) VALUES (?, ?, ?, ?, ?)", (interaction.guild_id, reactMinimum, emoji, channelID, ignoreBots,))
             self.connection.commit()
 
             await self.refreshFireLists()
             
             embed = discord.Embed(title = "Enabled", description="Fireboard has been enabled in the current channel.", color=Color.green())
-            embed.add_field(name="Info", value=f"**Reaction Requirement:** `{reactAmount} reactions`\n**Fireboard Channel:** <#{channelID}>\n**Emoji:** {emoji}\n**Ignore Bots:** `{ignoreBots}`")
+            embed.add_field(name="Info", value=f"**Reaction Requirement:** `{reactMinimum} reactions`\n**Fireboard Channel:** <#{channelID}>\n**Emoji:** {emoji}\n**Ignore Bots:** `{ignoreBots}`")
 
             await interaction.followup.send(embed=embed, ephemeral=True)
     
@@ -936,12 +857,12 @@ class fireboard(commands.Cog):
             # Fetch server settings
             for server in self.fireSettings:
                 if server[0] == interaction.guild_id:
-                    reactAmount = server[1]
+                    reactMinimum = server[1]
                     emoji = server[2]
                     channelID = server[3]
                     ignoreBots = (True if int(server[4]) == 1 else False)
             
-            embed = discord.Embed(title="Server Fireboard Settings", description=f"**Reaction Requirement:** `{reactAmount} reactions`\n**Fireboard Channel:** <#{channelID}>\n**Emoji:** {emoji}\n**Ignore Bots:** `{ignoreBots}`", color=Color.random())
+            embed = discord.Embed(title="Server Fireboard Settings", description=f"**Reaction Requirement:** `{reactMinimum} reactions`\n**Fireboard Channel:** <#{channelID}>\n**Emoji:** {emoji}\n**Ignore Bots:** `{ignoreBots}`", color=Color.random())
 
             await interaction.followup.send(embed=embed, ephemeral=True)
         else:
