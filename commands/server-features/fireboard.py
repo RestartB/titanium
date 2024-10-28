@@ -49,7 +49,7 @@ class fireboard(commands.Cog):
             print("Migrating fireboard database...")
 
             self.cursor.execute("ALTER TABLE fireMessages DROP COLUMN emoji")
-            self.cursor.execute("ALTER TABLE fireMessages ADD COLUMN reactAmount int")
+            self.cursor.execute("ALTER TABLE fireMessages ADD COLUMN reactionAmount int")
 
             self.connection.commit()
         
