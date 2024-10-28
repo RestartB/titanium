@@ -105,8 +105,10 @@ class fireboard(commands.Cog):
             
             # --- Edit board message if it already exists ---
             if payload.message_id in [message[1] for message in self.fireMessages]:
-                # Only fetch updated reaction count if I have queued
-                if queued:
+                message = [message for message in self.fireMessages if message[1] == payload.message_id][0]
+                
+                # Only fetch updated reaction count if I have queued or reaction amount is undefined
+                if queued or message[3] is None:
                     # Fetch message and channel
                     try:
                         msgChannel = await self.bot.fetch_channel(payload.channel_id)
