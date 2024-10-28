@@ -42,21 +42,18 @@ class fireboard(commands.Cog):
             
         self.connection.commit()
         
-        self.fireMessages = self.cursor.execute("SELECT * FROM fireMessages").fetchall()
-        self.fireSettings = self.cursor.execute("SELECT * FROM fireSettings").fetchall()
-        self.fireChannelBlacklist = self.cursor.execute("SELECT * FROM fireChannelBlacklist").fetchall()
-        self.fireRoleBlacklist = self.cursor.execute("SELECT * FROM fireRoleBlacklist").fetchall()
-
         # Migrate to new reactAmount column
         columns = [i[1] for i in self.cursor.execute('PRAGMA table_info(fireMessages)')]
 
         if "reactionAmount" not in columns:
             print("Migrating fireboard database...")
-            
+
             self.cursor.execute("ALTER TABLE fireMessages DROP COLUMN emoji")
             self.cursor.execute("ALTER TABLE fireMessages ADD COLUMN reactAmount int")
 
             self.connection.commit()
+        
+        self.bot.loop.create_task(self.refreshFireLists())
     
     # List refresh function
     async def refreshFireLists(self):
