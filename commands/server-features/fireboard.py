@@ -45,7 +45,7 @@ class fireboard(commands.Cog):
         # Migrate to new reactAmount column
         columns = [i[1] for i in self.cursor.execute('PRAGMA table_info(fireMessages)')]
 
-        if "reactionAmount" not in columns:
+        if "emoji" in columns:
             print("Migrating fireboard database...")
 
             self.cursor.execute("ALTER TABLE fireMessages DROP COLUMN emoji")
