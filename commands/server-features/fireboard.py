@@ -267,7 +267,7 @@ class fireboard(commands.Cog):
                 prevReactCount = [message for message in self.fireMessages if message[1] == payload.message_id][0][3]
                 
                 # Only fetch updated reaction count if I have queued
-                if queued == True:
+                if queued or prevReactCount is None:
                     # Fetch message and channel
                     try:
                         msgChannel = await self.bot.fetch_channel(payload.channel_id)
