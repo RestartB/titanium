@@ -12,6 +12,7 @@ from discord.ui import Select, View
 from spotipy.oauth2 import SpotifyClientCredentials
 
 import utils.spotify_elements as elements
+from utils.escape_markdown import escape_markdown as escape
 
 
 class spotify(commands.Cog):
@@ -159,9 +160,9 @@ class spotify(commands.Cog):
                     artist_string = ""
                     for artist in item['artists']:
                         if artist_string == "":
-                            artist_string = artist['name'].replace('*', '-') 
+                            artist_string = await escape(artist['name'])
                         else:
-                            artist_string += f", {artist['name']}".replace('*', '-')
+                            artist_string += f", {await escape(artist['name'])}"
                     
                     if len(item['name']) > 100:
                         title = item['name'][:97] + "..."
