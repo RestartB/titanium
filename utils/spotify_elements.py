@@ -2,6 +2,7 @@ import os
 import random
 import string
 from urllib.parse import quote
+from utils.escape_markdown import escape_markdown as escape
 
 import aiohttp
 import discord
@@ -31,7 +32,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     explicit = item['explicit']
 
     # Set up new embed
-    embed = discord.Embed(title = f"{item['name']}{f' {self.bot.explicit_emoji}' if explicit else ''}", description=f"on **[{str(item['album']['name']).replace('*', '')}](<{item['album']['external_urls']['spotify']}>) • {item['album']['release_date'].split('-', 1)[0]}**", color = Color.from_rgb(r = 255, g = 255, b = 255))
+    embed = discord.Embed(title = f"{item['name']}{f' {self.bot.explicit_emoji}' if explicit else ''}", description=f"on **[{await escape(item['album']['name'])}](<{item['album']['external_urls']['spotify']}>) • {item['album']['release_date'].split('-', 1)[0]}**", color = Color.from_rgb(r = 255, g = 255, b = 255))
     
     embed.set_thumbnail(url = item['album']['images'][0]['url'])
     embed.set_author(name = artist_string, url=item["artists"][0]["external_urls"]["spotify"], icon_url=artist_img)
@@ -213,21 +214,21 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
         artist_string = ""
         for artist in top_tracks['tracks'][i]['artists']:
             if artist_string == "":
-                artist_string = artist['name'].replace('*', '-') 
+                artist_string = await escape(artist['name'])
             else:
-                artist_string += f", {artist['name']}".replace('*', '-')
+                artist_string += f", {await escape(artist['name'])}"
                 
         # Hide artist string from song listing if there is only one artist
         if len(top_tracks['tracks'][i]['artists']) == 1:
             if topsong_string == "":
-                topsong_string = f"{i + 1}. **{top_tracks['tracks'][i]['name'].replace('*', '-')}**"
+                topsong_string = f"{i + 1}. **{await escape(top_tracks['tracks'][i]['name'])}**"
             else:
-                topsong_string += f"\n{i + 1}. **{top_tracks['tracks'][i]['name'].replace('*', '-')}**"
+                topsong_string += f"\n{i + 1}. **{await escape(top_tracks['tracks'][i]['name'])}**"
         else:
             if topsong_string == "":
-                topsong_string = f"{i + 1}. **{top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
+                topsong_string = f"{i + 1}. **{await escape(top_tracks['tracks'][i]['name'])}** - {artist_string}"
             else:
-                topsong_string += f"\n{i + 1}. **{top_tracks['tracks'][i]['name'].replace('*', '-')}** - {artist_string}"
+                topsong_string += f"\n{i + 1}. **{await escape(top_tracks['tracks'][i]['name'])}** - {artist_string}"
     
     embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
 
@@ -346,22 +347,22 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         artist_string = ""
         for artist in item['tracks']['items'][i]['artists']:
             if artist_string == "":
-                artist_string = artist['name'].replace('*', '-') 
+                artist_string = await escape(artist['name'])
             else:
-                artist_string += ", " + artist['name'].replace('*', '-')
+                artist_string += ", " + await escape(artist['name'])
                 
         # Hide artist string from song listing if there is only one artist
         if len(item['tracks']['items'][i]['artists']) == 1:
-            songlist_string += f"\n{i + 1}. **{item['tracks']['items'][i]['name'].replace('*', '-')}**"
+            songlist_string += f"\n{i + 1}. **{await escape(item['tracks']['items'][i]['name'])}**"
         else:
-            songlist_string += f"\n{i + 1}. **{item['tracks']['items'][i]['name'].replace('*', '-')}** - {artist_string}"
+            songlist_string += f"\n{i + 1}. **{await escape(item['tracks']['items'][i]['name'])}** - {artist_string}"
 
     artist_string = ""
     for artist in item['artists']:
         if artist_string == "":
-            artist_string = artist['name'].replace('*', '-') 
+            artist_string = await escape(artist['name'])
         else:
-            artist_string = artist_string + ", " + artist['name'].replace('*', '-')
+            artist_string = artist_string + ", " + await escape(artist['name'])
     
     embed = discord.Embed(title = f"{item['name']}", description = songlist_string, color = Color.from_rgb(r = 255, g = 255, b = 255))
     embed.set_footer(text = f"Getting colour information...{' • Cached Result' if cached else ''}")

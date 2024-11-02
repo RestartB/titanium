@@ -17,6 +17,7 @@ from url_cleaner import UrlCleaner
 
 import utils.songlink_exceptions as songlink_exceptions
 import utils.spotify_elements as elements
+from utils.escape_markdown import escape_markdown as escape
 
 
 class song_url(commands.Cog):
@@ -343,16 +344,16 @@ class song_url(commands.Cog):
                             
                             # If there's nothing in the current page, make a new one
                             if pageStr == "":
-                                pageStr = f"{i}. **{playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
+                                pageStr = f"{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
                             # Else, add string to existing page
                             else:
-                                pageStr += f"\n{i}. **{playlist_item['track']['name'].replace('*', '-')}** - {artist_string}"
+                                pageStr += f"\n{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
                         elif playlist_item['track']['type'] == "episode":
                             # Item is a podcast
                             if pageStr == "":
-                                pageStr = f"{i}. **{playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
+                                pageStr = f"{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
                             else:
-                                pageStr += f"\n{i}. **{playlist_item['track']['album']['name'].replace('*', '-')}** - {playlist_item['track']['name'].replace('*', '-')} (Podcast)"
+                                pageStr += f"\n{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
                         else:
                             # Item type is unknown / unsupported
                             # If there's nothing in the current page, make a new one
