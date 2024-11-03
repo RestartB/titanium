@@ -76,19 +76,24 @@ class animals(commands.Cog):
     async def sand_cat(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
-        # Fetch image
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://ees4.dev/betterapi") as request:
-                if request.status == 429:
-                    embed = discord.Embed(title = "The service has been rate limited. Try again later.", color = Color.red())
-                    await interaction.followup.send(embed = embed)
-                    return
-                elif request.status == 522:
-                    embed = discord.Embed(title = "The service timed out. Try again later.", color = Color.red())
-                    await interaction.followup.send(embed = embed)
-                    return
-                else:
-                    request_data = await request.json()
+        request_data = {}
+        request_data["filename"] = ""
+        
+        # Check if image is a valid file type
+        while str(request_data["filename"]).endswith((".png", ".jpg", ".jpeg", ".webp")) == False:
+            # Fetch image
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://ees4.dev/betterapi") as request:
+                    if request.status == 429:
+                        embed = discord.Embed(title = "The service has been rate limited. Try again later.", color = Color.red())
+                        await interaction.followup.send(embed = embed)
+                        return
+                    elif request.status == 522:
+                        embed = discord.Embed(title = "The service timed out. Try again later.", color = Color.red())
+                        await interaction.followup.send(embed = embed)
+                        return
+                    else:
+                        request_data = await request.json()
         
         # Create and send embed
         embed_title = random.choice(self.cat_titles)
