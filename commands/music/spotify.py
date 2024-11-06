@@ -35,7 +35,7 @@ class spotify(commands.Cog):
             ])
     @app_commands.describe(search_type = "The type of media you are searching for. Supported types are song, artist and album.")
     @app_commands.describe(search = "What you are searching for.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def spotify_search(self, interaction: discord.Interaction, search_type: app_commands.Choice[str], search: str, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
@@ -204,7 +204,7 @@ class spotify(commands.Cog):
     # Spotify Image command
     @spotifyGroup.command(name = "image", description = "Get high quality album art from a Spotify URL.")
     @app_commands.describe(url = "The target Spotify URL. Song, album, playlist and spotify.link URLs are supported.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
     async def spotify_image(self, interaction: discord.Interaction, url: str, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)

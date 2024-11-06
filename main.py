@@ -1,4 +1,4 @@
-# TitaniumCore
+# Titanium
 # Made by Restart, 2024
 
 # Imports
@@ -57,7 +57,7 @@ def readconfigfile(path):
         tokens_dict = dict(config.items('TOKENS'))
     except Exception:
         print("[INIT] Config file malformed: Error while reading Tokens section! The file may be missing or malformed.")
-        exit()
+        exit(1)
 
     # Read path section of config file, add it to dict
     try:
@@ -65,7 +65,7 @@ def readconfigfile(path):
         options_dict = dict(config.items('OPTIONS'))
     except Exception:
         print("[INIT] Config file malformed: Error while reading Options section! The file may be missing or malformed.")
-        exit()
+        exit(1)
 
 # Bot Setup
 intents = discord.Intents.default()
@@ -107,7 +107,7 @@ class titaniumBot(commands.Bot):
         for filename in glob(os.path.join("commands", "**"), recursive=True, include_hidden=False):
             if os.path.isdir(filename) == False:
                 # Determine if file is a python file
-                if filename.endswith(".py"):
+                if filename.endswith(".py") and not filename.startswith("."):
                     filename = filename.replace("\\", "/").replace("/", ".")[:-3]
                     
                     print(f"[INIT] Loading normal cog: {filename}...")

@@ -15,7 +15,7 @@ class user_utils(commands.Cog):
 
     # Server Info command
     @userGroup.command(name = "info", description = "Get info about a user.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def server_info(self, interaction: discord.Interaction, user: discord.User, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
@@ -66,7 +66,7 @@ class user_utils(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(user = "The target user.")  
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def pfp(self, interaction: discord.Interaction, user: discord.User, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         

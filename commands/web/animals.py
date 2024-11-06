@@ -7,6 +7,7 @@ from discord.ext import commands
 
 
 class animals(commands.Cog):
+    # noinspection SpellCheckingInspection
     def __init__(self, bot):
         self.bot = bot
 
@@ -18,6 +19,7 @@ class animals(commands.Cog):
     animalGroup = app_commands.Group(name="animals", description="See cute animals.", allowed_contexts=context, allowed_installs=installs)
     
     # Cat command
+    # noinspection SpellCheckingInspection
     @animalGroup.command(name = "cat", description = "Get a random cat picture.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)
@@ -44,6 +46,7 @@ class animals(commands.Cog):
         await interaction.followup.send(embed = embed)
 
     # Dog command
+    # noinspection SpellCheckingInspection
     @animalGroup.command(name = "dog", description = "Get a random dog picture.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)
@@ -70,6 +73,7 @@ class animals(commands.Cog):
         await interaction.followup.send(embed = embed, ephemeral=ephemeral)
     
     # Sand Cat command
+    # noinspection SpellCheckingInspection
     @animalGroup.command(name = "sand-cat", description = "Get a random sand cat picture.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)

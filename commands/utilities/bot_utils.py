@@ -21,7 +21,7 @@ class bot_utils(commands.Cog):
     
     # Ping command
     @botGroup.command(name = "ping", description = "Ping the bot.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def ping(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
@@ -32,7 +32,7 @@ class bot_utils(commands.Cog):
     
     # Invite command
     @botGroup.command(name = "invite", description = "Add the bot to your account or server.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def inviteBot(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
@@ -46,7 +46,7 @@ class bot_utils(commands.Cog):
 
     # Info command
     @botGroup.command(name = "info", description = "Info about the bot.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def info(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
@@ -61,7 +61,7 @@ class bot_utils(commands.Cog):
 
     # Host Info command
     @botGroup.command(name = "host-info", description = "Info about the bot host.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def host_info(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         

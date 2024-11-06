@@ -16,7 +16,7 @@ class web_search(commands.Cog):
 
     # Urban Dictionary command
     @searchGroup.command(name = "urban-dictionary", description = "Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1,10)
     async def urban_dict(self, interaction: discord.Interaction, query: str, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
@@ -205,7 +205,7 @@ class web_search(commands.Cog):
 
     # Wikipedia command
     @searchGroup.command(name = "wikipedia", description = "Search Wikipedia for information.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 5)
     async def wiki(self, interaction: discord.Interaction, search: str, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)

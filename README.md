@@ -12,7 +12,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 ## Included Features
 - Wikipedia and Urban Dictionary search
 - Random Dog and Cat images
-- Fun commands like the 8 ball and fish command
+- Fun commands like the 8-ball and fish command
 - Search Spotify and get full quailty Album Art (Spotify API Keys needed)
 - Get lyrics for songs
 - Convert any streaming service URL to Spotify and get info
@@ -73,7 +73,7 @@ Titanium comes with some included commands. Below is a list of what commands are
   - **admin sync:** sync the command tree.
   - **admin clear-console:** clear the console.
   - **admin send-message:** send a message as the bot.
-  - **admin server-list:** see a list of all of the servers the bot is in.
+  - **admin server-list:** see a list of all the servers the bot is in.
 - **Animal Commands** *(animals.py)*
   - **animals cat:** see a random image of a cat.
   - **animals dog:** see a random image of a dog.
@@ -90,7 +90,7 @@ Titanium comes with some included commands. Below is a list of what commands are
   - **lb-control reset:** reset the server leaderboard.
   - **lb-control reset-user:** reset a user on the server leaderboard.
 - **Misc Commands** *(misc.py)*
-  - **fun 8ball:** consult the mystical 8 ball for an answer to a question.
+  - **fun 8ball:** consult the mystical 8-ball for an answer to a question.
   - **fun random-num:** get a random number.
   - **fun dice:** roll a dice.
   - **fun github-roast:** get a GitHub profile roast from https://github-roast.pages.dev/.

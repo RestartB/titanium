@@ -14,7 +14,7 @@ class server_utils(commands.Cog):
 
     # Server Icon command
     @serverGroup.command(name = "icon", description = "Show the server's icon.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def server_icon(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
@@ -32,7 +32,7 @@ class server_utils(commands.Cog):
         
     # Server Info command
     @serverGroup.command(name = "info", description = "Get info about the server.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def server_info(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
@@ -95,7 +95,7 @@ class server_utils(commands.Cog):
 
     # Server Info command
     @serverGroup.command(name = "boosts", description = "Beta: get info about this server's boost stats.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def server_boost(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         

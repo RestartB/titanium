@@ -43,7 +43,7 @@ class image(commands.Cog):
     @app_commands.describe(target_x = "Set a target width for the image. Defaults to the original length.")
     @app_commands.describe(target_y = "Set a target height for the image. Defaults to the original length.")
     @app_commands.describe(scale = "Scale the resolution by a certain amount. Overrides target_x and target_y if set.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 20)
     async def resizeImage(self, interaction: discord.Interaction, file: discord.Attachment, scale: float = None, target_x: int = None, target_y: int = None, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
@@ -132,7 +132,7 @@ class image(commands.Cog):
     
     # Image to GIF command
     @imageGroup.command(name = "to-gif", description = "Convert an image to GIF.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
     async def gifImage(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
@@ -242,7 +242,7 @@ class image(commands.Cog):
     
     # Image to GIF command
     @imageGroup.command(name = "deepfry", description = "Deepfry an image..")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
     async def deepfryImage(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
