@@ -17,7 +17,7 @@ class reviewCom(commands.Cog):
     @reviewGroup.command(name = "user", description = "See a user's reviews on ReviewDB.")
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(user = "The user you want to see the reviews of.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     async def reviewView(self, interaction: discord.Interaction, user: discord.User, ephemeral: bool = False):
         try:    
             await interaction.response.defer(ephemeral=ephemeral)
@@ -316,7 +316,7 @@ class reviewCom(commands.Cog):
     # Server review view command
     @reviewGroup.command(name = "server", description = "See the current server's reviews on ReviewDB.")
     @app_commands.describe(server_id = "Optional: specify the ID of the server you would like to view. Defaults to the current server.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
     async def reviewServerView(self, interaction: discord.Interaction, server_id: int = 0, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)

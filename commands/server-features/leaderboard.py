@@ -82,7 +82,7 @@ class leaderboard(commands.Cog):
         app_commands.Choice(name="Attachments Sent", value="attachmentCount"),
         ])
     @app_commands.describe(sort_type = "What to sort the leaderboard by.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
+    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
     async def leaderboard(self, interaction: discord.Interaction, sort_type: app_commands.Choice[str], ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
