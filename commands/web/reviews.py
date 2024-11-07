@@ -124,7 +124,7 @@ class reviewCom(commands.Cog):
 
                             i += 1
 
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
                 
                 # Previous page
@@ -166,7 +166,7 @@ class reviewCom(commands.Cog):
 
                             i += 1
 
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
 
                 # Lock / unlock toggle
@@ -226,7 +226,7 @@ class reviewCom(commands.Cog):
 
                             i += 1
 
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
                 
                 # Last page button
@@ -262,7 +262,7 @@ class reviewCom(commands.Cog):
 
                             i += 1
 
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
 
             embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
@@ -289,7 +289,7 @@ class reviewCom(commands.Cog):
 
                         i += 1
                 
-                embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
+                embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
                 
                 if len(pages) == 1:
                     await interaction.followup.send(embed = embed, ephemeral=ephemeral)
@@ -429,7 +429,7 @@ class reviewCom(commands.Cog):
 
                                 i += 1
 
-                        embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                        embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                         await interaction.response.edit_message(embed = embed, view = self)
                     
                     @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
@@ -470,7 +470,7 @@ class reviewCom(commands.Cog):
 
                                 i += 1
 
-                        embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                        embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                         await interaction.response.edit_message(embed = embed, view = self)
 
                     @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
@@ -528,7 +528,7 @@ class reviewCom(commands.Cog):
 
                                 i += 1
 
-                        embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                        embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                         await interaction.response.edit_message(embed = embed, view = self)
                     
                     @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
@@ -563,7 +563,7 @@ class reviewCom(commands.Cog):
 
                                 i += 1
 
-                        embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
+                        embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                         await interaction.response.edit_message(embed = embed, view = self)
 
                 embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
@@ -589,7 +589,7 @@ class reviewCom(commands.Cog):
 
                             i += 1
                     
-                    embed.set_footer(text = f"Currently controlling: {interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
+                    embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page 1/{len(pages)}", icon_url = interaction.user.display_avatar.url)
                     
                     if len(pages) == 1:
                         await interaction.followup.send(embed = embed, ephemeral=ephemeral)

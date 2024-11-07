@@ -122,8 +122,7 @@ class titaniumBot(commands.Bot):
             # Find all cogs in private command dir
             for filename in os.listdir(f"commands_private"):
                 # Determine if file is a python file
-                if filename.endswith("py"):
-                    # We load it into the bot
+                if filename.endswith(".py") and not filename.startswith("."):
                     print(f"[INIT] Loading private cog: {filename}...")
                     await bot.load_extension(f"commands_private.{filename[:-3]}")
                     print(f"[INIT] Loaded private cog: {filename}")
