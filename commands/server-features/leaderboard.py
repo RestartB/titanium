@@ -8,7 +8,7 @@ from discord.ext import commands
 from discord.ui import View
 
 
-class leaderboard(commands.Cog):
+class Leaderboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.lbPool: asqlite.Pool = bot.lbPool
@@ -463,4 +463,4 @@ class leaderboard(commands.Cog):
                 await interaction.edit_original_response(embed = embed, view = view)
         
 async def setup(bot):
-    await bot.add_cog(leaderboard(bot))
+    await bot.add_cog(Leaderboard(bot))

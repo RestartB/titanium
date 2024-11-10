@@ -13,7 +13,7 @@ from discord.ext import commands
 from discord.ui import View
 
 
-class fireboard(commands.Cog):
+class Fireboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.lockedMessages = []
@@ -806,7 +806,7 @@ class fireboard(commands.Cog):
         
         # Check fireboard status
         if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
-            class disableView(View):
+            class DisableView(View):
                 def __init__(self, bot):
                     super().__init__(timeout=60)
 
@@ -842,7 +842,7 @@ class fireboard(commands.Cog):
                     
                     await self.interaction.edit_original_response(embed=embed, view=None)
 
-            viewInstance = disableView(self)
+            viewInstance = DisableView(self)
             viewInstance.interaction = interaction
             viewInstance.connection = self.connection
             viewInstance.cursor = self.cursor
@@ -1056,7 +1056,7 @@ class fireboard(commands.Cog):
         
         # Check fireboard status
         if interaction.guild_id in [guild[0] for guild in self.fireSettings]:
-            class blacklistViewer(View):
+            class BlacklistViewer(View):
                 def __init__(self):
                     super().__init__(timeout=240)
 
@@ -1116,7 +1116,7 @@ class fireboard(commands.Cog):
                         embed = discord.Embed(title="Channel Blacklist", description="No channels have been blacklisted.", color=Color.random())
                         await interaction.edit_original_response(embed=embed, view=self)
             
-            viewInstance = blacklistViewer()
+            viewInstance = BlacklistViewer()
             viewInstance.fireChannelBlacklist = self.fireChannelBlacklist
             viewInstance.fireRoleBlacklist = self.fireRoleBlacklist
             viewInstance.interaction = interaction
@@ -1139,4 +1139,4 @@ class fireboard(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
 
 async def setup(bot):
-    await bot.add_cog(fireboard(bot))
+    await bot.add_cog(Fireboard(bot))

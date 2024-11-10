@@ -8,7 +8,7 @@ import sqlite3
 from datetime import datetime
 
 
-class editHistory(commands.Cog):
+class EditHistory(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
         self.editPool: asqlite.Pool = bot.editPool
@@ -151,7 +151,7 @@ class editHistory(commands.Cog):
                         historyPages.append(f"**Edited <t:{edit[1]}:R> (<t:{edit[1]}:f>)**\n{edit[2]}")
                 
                 # Edit Page view
-                class editPages(View):
+                class EditPages(View):
                     def __init__(self, pages: list):
                         super().__init__(timeout = 600) # 10 minute timeout
                         
@@ -285,7 +285,7 @@ class editHistory(commands.Cog):
                         await interaction.response.edit_message(embed = embed, view = self)
                 
                 # Create view
-                view = editPages(historyPages)
+                view = EditPages(historyPages)
                 view.userID = interaction.user.id
 
                 # Send message
@@ -376,4 +376,4 @@ class editHistory(commands.Cog):
             await interaction.followup.send(embed=embed)  
 
 async def setup(bot):
-    await bot.add_cog(editHistory(bot))
+    await bot.add_cog(EditHistory(bot))

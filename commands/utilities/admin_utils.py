@@ -12,7 +12,7 @@ from discord.ui import View
 import utils.return_ctrlguild as ctrl
 
 
-class cog_utils(commands.Cog):
+class CogUtils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot: discord.ext.commands.Bot
@@ -164,7 +164,7 @@ class cog_utils(commands.Cog):
             if page != []:
                 pages.append(page)
             
-            class serversPageView(View):
+            class ServersPageView(View):
                 def __init__(self, pages):
                     super().__init__(timeout = 900)
                     
@@ -264,7 +264,7 @@ class cog_utils(commands.Cog):
             if len(pages) == 1:
                 await interaction.followup.send(embed = embed)
             else:
-                viewInstance = serversPageView(pages)
+                viewInstance = ServersPageView(pages)
                 
                 webhook = await interaction.followup.send(embed = embed, view = viewInstance, wait=True)
                 viewInstance.msgID = webhook.id
@@ -288,4 +288,4 @@ class cog_utils(commands.Cog):
             await interaction.followup.send(embed = embed)
 
 async def setup(bot):
-    await bot.add_cog(cog_utils(bot))
+    await bot.add_cog(CogUtils(bot))

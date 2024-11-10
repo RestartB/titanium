@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord.ui import View
 
 
-class web_search(commands.Cog):
+class WebSearch(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -250,4 +250,4 @@ class web_search(commands.Cog):
                 await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
 async def setup(bot):
-    await bot.add_cog(web_search(bot))
+    await bot.add_cog(WebSearch(bot))

@@ -6,7 +6,7 @@ from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import View
 
-class music(commands.Cog):
+class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -96,13 +96,13 @@ class music(commands.Cog):
                     options.append(discord.SelectOption(label = song_name, description = list_description, value = id_list[i]))
 
             # Song select view
-            class songSelectView(View):
+            class SongSelectView(View):
                 def __init__(self, options: list):
                     super().__init__(timeout = 120) # 2 minute timeout
 
                     self.msgID: int
                     
-                    dropdownInstance = dropdown(options)
+                    dropdownInstance = Dropdown(options)
                     self.add_item(dropdownInstance)
                     
                     # Pass in view's self to allow it to be stopped
@@ -119,7 +119,7 @@ class music(commands.Cog):
                         pass
             
             # Song select dropdown class
-            class dropdown(discord.ui.Select):
+            class Dropdown(discord.ui.Select):
                 def __init__(self, options: list):
                     super().__init__(placeholder="Select Song", min_values=1, max_values=1, options=options)
 
@@ -185,7 +185,7 @@ class music(commands.Cog):
                         else: # Multiple pages - send embed with page controller
                             embed.set_footer(text = f"lrclib.net - Page 1/{len(pages)}")
                             
-                            pagesInstance = lyricPages(pages, list_place)
+                            pagesInstance = LyricPages(pages, list_place)
                             await interaction.edit_original_response(embed = embed, view = pagesInstance)
 
                             # Pass through interaction to get original sender ID - used for lock button
@@ -203,7 +203,7 @@ class music(commands.Cog):
                         await interaction.edit_original_response(embed = embed, view = view)
             
             # Lyrics Page view
-            class lyricPages(View):
+            class LyricPages(View):
                 def __init__(self, pages: list, list_place: int):
                     super().__init__(timeout = 1200) # 20 minute timeout
                     
@@ -340,11 +340,11 @@ class music(commands.Cog):
                     
                     await interaction.response.edit_message(embed = embed, view = self)
             
-            songSelectViewInstance = songSelectView(options)
+            songSelectViewInstance = SongSelectView(options)
             
             # Edit initial message to show dropdown
             webhook = await interaction.followup.send(embed=embed, view=songSelectViewInstance, wait=True)
             songSelectViewInstance.msgID = webhook.id
 
 async def setup(bot):
-    await bot.add_cog(music(bot))
+    await bot.add_cog(Music(bot))

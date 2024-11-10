@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord.ui import View
 
 
-class reviewCom(commands.Cog):
+class Reviews(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -18,7 +18,7 @@ class reviewCom(commands.Cog):
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(user = "The user you want to see the reviews of.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
-    async def reviewView(self, interaction: discord.Interaction, user: discord.User, ephemeral: bool = False):
+    async def userReviews(self, interaction: discord.Interaction, user: discord.User, ephemeral: bool = False):
         try:    
             await interaction.response.defer(ephemeral=ephemeral)
 
@@ -58,7 +58,7 @@ class reviewCom(commands.Cog):
             if pageList != []:
                 pages.append(pageList)
             
-            class pageView(View):
+            class PageView(View):
                 def __init__(self, pages):
                     super().__init__(timeout = 900)
                     self.page = 0
@@ -298,10 +298,12 @@ class reviewCom(commands.Cog):
                 if len(pages) == 1:
                     await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                 else:
-                    webhook = await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral, wait=True)
+                    pageViewInstance = PageView(pages)
+                    
+                    webhook = await interaction.followup.send(embed = embed, view = pageViewInstance, ephemeral=ephemeral, wait=True)
 
-                    pageView.userID = interaction.user.id
-                    pageView.msgID = webhook.id
+                    pageViewInstance.userID = interaction.user.id
+                    pageViewInstance.msgID = webhook.id
             else:
                 embed = discord.Embed(title = "ReviewDB User Reviews", description="This user has no reviews!", color = Color.red())
                 embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
@@ -322,7 +324,7 @@ class reviewCom(commands.Cog):
     @app_commands.describe(server_id = "Optional: specify the ID of the server you would like to view. Defaults to the current server.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
-    async def reviewServerView(self, interaction: discord.Interaction, server_id: int = 0, ephemeral: bool = False):
+    async def serverReviews(self, interaction: discord.Interaction, server_id: int = 0, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
         if interaction.guild is not None:
@@ -370,7 +372,7 @@ class reviewCom(commands.Cog):
                 if pageList != []:
                     pages.append(pageList)
                 
-                class pageView(View):
+                class PageView(View):
                     def __init__(self, pages):
                         super().__init__(timeout = 900)
                         self.page = 0
@@ -603,10 +605,12 @@ class reviewCom(commands.Cog):
                     if len(pages) == 1:
                         await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                     else:
-                        webhook = await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral, wait=True)
+                        pageViewInstance = PageView(pages)
+                        
+                        webhook = await interaction.followup.send(embed = embed, view = pageViewInstance, ephemeral=ephemeral, wait=True)
 
-                        pageView.userID = interaction.user.id
-                        pageView.msgID = webhook.id
+                        pageViewInstance.userID = interaction.user.id
+                        pageViewInstance.msgID = webhook.id
                 else:
                     embed = discord.Embed(title = "ReviewDB Server Reviews", description="This server has no reviews!", color = Color.red())
                     embed.set_author(name=interaction.guild.name, icon_url=(interaction.guild.icon.url if interaction.guild.icon is not None else ""))
@@ -628,4 +632,4 @@ class reviewCom(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 async def setup(bot):
-    await bot.add_cog(reviewCom(bot))
+    await bot.add_cog(Reviews(bot))

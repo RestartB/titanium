@@ -4,7 +4,7 @@ from discord.ext import commands
 from discord.ui import View
 
 
-class welcome(commands.Cog):
+class Welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
@@ -37,4 +37,4 @@ class welcome(commands.Cog):
             pass
 
 async def setup(bot):
-    await bot.add_cog(welcome(bot))
+    await bot.add_cog(Welcome(bot))

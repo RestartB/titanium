@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.ui import View
 
 
-class bot_utils(commands.Cog):
+class BotUtils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -89,4 +89,4 @@ class bot_utils(commands.Cog):
         await interaction.edit_original_response(embed = embed)
 
 async def setup(bot):
-    await bot.add_cog(bot_utils(bot))
+    await bot.add_cog(BotUtils(bot))
