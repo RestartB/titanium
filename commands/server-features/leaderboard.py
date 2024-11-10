@@ -123,17 +123,22 @@ class leaderboard(commands.Cog):
                         self.locked = False
 
                         self.userID: int
-                        self.message: discord.InteractionMessage
+                        self.msgID: int
 
                         for item in self.children:
                             if item.custom_id == "first" or item.custom_id == "prev":
                                 item.disabled = True
 
+                    # Timeout
                     async def on_timeout(self) -> None:
-                        for item in self.children:
-                            item.disabled = True
-
-                        await self.message.edit(view=self)
+                        try:
+                            for item in self.children:
+                                item.disabled = True
+                            
+                            msg = await interaction.channel.fetch_message(self.msgID)
+                            await msg.edit(view = self)
+                        except Exception:
+                            pass
                 
                     async def interaction_check(self, interaction: discord.Interaction):
                         if interaction.user.id != self.userID:
@@ -240,10 +245,10 @@ class leaderboard(commands.Cog):
                 if len(pages) == 1:
                     await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                 else:
-                    await interaction.followup.send(embed = embed, view = Leaderboard(pages), ephemeral=ephemeral)
+                    webhook = await interaction.followup.send(embed = embed, view = Leaderboard(pages), ephemeral=ephemeral, wait=True)
 
                     Leaderboard.userID = interaction.user.id
-                    Leaderboard.message = await interaction.original_response()
+                    Leaderboard.msgID = webhook.id
             else:
                 embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server. Ask an admin to enable it first.", color = Color.red())
                 await interaction.followup.send(embed = embed, ephemeral=ephemeral)
