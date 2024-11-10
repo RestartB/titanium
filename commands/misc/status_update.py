@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 
 
-class status_update(commands.Cog):
+class StatusUpdate(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
@@ -25,4 +25,4 @@ class status_update(commands.Cog):
             await asyncio.sleep(3600)
 
 async def setup(bot):
-    await bot.add_cog(status_update(bot))
+    await bot.add_cog(StatusUpdate(bot))

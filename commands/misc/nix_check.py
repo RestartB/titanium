@@ -3,7 +3,7 @@ from discord import Color, app_commands
 from discord.ext import commands
 
 
-class nix_check(commands.Cog):
+class NixCheck(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
@@ -23,4 +23,4 @@ class nix_check(commands.Cog):
         await interaction.followup.send(embed=embed, ephemeral=True)
 
 async def setup(bot):
-    await bot.add_cog(nix_check(bot))
+    await bot.add_cog(NixCheck(bot))

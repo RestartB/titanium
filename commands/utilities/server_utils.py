@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord.ui import View
 
 
-class server_utils(commands.Cog):
+class ServerUtils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -112,4 +112,4 @@ class server_utils(commands.Cog):
         await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
 async def setup(bot):
-    await bot.add_cog(server_utils(bot))
+    await bot.add_cog(ServerUtils(bot))

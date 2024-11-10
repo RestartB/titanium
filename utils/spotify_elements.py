@@ -38,7 +38,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     embed.set_author(name = artist_string, url=item["artists"][0]["external_urls"]["spotify"], icon_url=artist_img)
     embed.set_footer(text = f"Getting colour information...{' • Cached Result' if cached else ''}")
 
-    class spotifyButtonsMenu(View):
+    class SpotifyButtonsMenu(View):
         def __init__(self, bot):
             super().__init__(timeout=30)
 
@@ -128,7 +128,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             
             await interaction.delete_original_response()
     
-    class spotifyEmbedView(View):
+    class SpotifyEmbedView(View):
         def __init__(self, bot):
             super().__init__(timeout=None)
 
@@ -157,13 +157,13 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer(ephemeral=ephemeral)
             
-            menuInstance = spotifyButtonsMenu(self.bot)
+            menuInstance = SpotifyButtonsMenu(self.bot)
             ogMsg = await interaction.followup.send(view=menuInstance, wait=True, ephemeral=ephemeral)
 
             menuInstance.interaction = interaction
             menuInstance.ogMsg = ogMsg
 
-    viewInstance = spotifyEmbedView(self)
+    viewInstance = SpotifyEmbedView(self)
     
     try:
         # Detect if embed already exists
@@ -236,7 +236,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
     
     embed.add_field(name = "Top Songs", value = topsong_string, inline = False)
 
-    class spotifyButtonsMenu(View):
+    class SpotifyButtonsMenu(View):
         def __init__(self, bot):
             super().__init__(timeout=30)
 
@@ -297,7 +297,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
         async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer(ephemeral=ephemeral)
             
-            menuInstance = spotifyButtonsMenu(self.bot)
+            menuInstance = SpotifyButtonsMenu(self.bot)
             ogMsg = await interaction.followup.send(view=menuInstance, wait=True, ephemeral=ephemeral)
 
             menuInstance.interaction = interaction

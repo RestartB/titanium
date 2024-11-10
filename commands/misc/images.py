@@ -10,7 +10,7 @@ from discord.ext import commands
 from PIL import Image, ImageOps, ImageEnhance
 
 
-class image(commands.Cog):
+class Images(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot: commands.Bot
@@ -405,4 +405,4 @@ class image(commands.Cog):
                 os.remove(os.path.join("tmp", file.filename))
 
 async def setup(bot):
-    await bot.add_cog(image(bot))
+    await bot.add_cog(Images(bot))

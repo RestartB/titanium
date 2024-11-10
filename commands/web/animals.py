@@ -6,7 +6,7 @@ from discord import Color, app_commands
 from discord.ext import commands
 
 
-class animals(commands.Cog):
+class Animals(commands.Cog):
     # noinspection SpellCheckingInspection
     def __init__(self, bot):
         self.bot = bot
@@ -109,4 +109,4 @@ class animals(commands.Cog):
         await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
 async def setup(bot):
-    await bot.add_cog(animals(bot))
+    await bot.add_cog(Animals(bot))

@@ -20,7 +20,7 @@ import utils.spotify_elements as elements
 from utils.escape_markdown import escape_markdown as escape
 
 
-class song_url(commands.Cog):
+class SongURL(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.auth_manager = SpotifyClientCredentials(client_id = self.bot.spotify_id, client_secret = self.bot.spotify_secret)
@@ -536,4 +536,4 @@ class song_url(commands.Cog):
             return
 
 async def setup(bot):
-    await bot.add_cog(song_url(bot))
+    await bot.add_cog(SongURL(bot))
