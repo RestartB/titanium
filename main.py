@@ -71,8 +71,9 @@ def readconfigfile(path):
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+intents.presences = True
 
-class titaniumBot(commands.Bot):
+class TitaniumBot(commands.Bot):
     async def setup_hook(self):
         print("[INIT] Creating SQL pools...")
         
@@ -137,7 +138,7 @@ class titaniumBot(commands.Bot):
         await self.lbPool.close()
         await super().close()
 
-bot = titaniumBot(intents=intents, command_prefix='', help_command=None)
+bot = TitaniumBot(intents=intents, command_prefix='', help_command=None)
 
 print("[INIT] Reading config files.")
 
