@@ -171,17 +171,22 @@ class cog_utils(commands.Cog):
                     self.page = 0
                     self.pages = pages
 
-                    self.message: discord.Message
+                    self.msgID: int
 
                     for item in self.children:
                         if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True
                 
+                # Timeout
                 async def on_timeout(self) -> None:
-                    for item in self.children:
-                        item.disabled = True
-
-                    await self.message.edit(view=self)
+                    try:
+                        for item in self.children:
+                            item.disabled = True
+                        
+                        msg = await interaction.channel.fetch_message(self.msgID)
+                        await msg.edit(view = self)
+                    except Exception:
+                        pass
             
                 @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
                 async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -257,9 +262,12 @@ class cog_utils(commands.Cog):
             embed.set_footer(text=f"Page 1/{len(pages)}")
             
             if len(pages) == 1:
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
             else:
-                await interaction.edit_original_response(embed = embed, view = serversPageView(pages))
+                viewInstance = serversPageView(pages)
+                
+                webhook = await interaction.followup.send(embed = embed, view = viewInstance, wait=True)
+                viewInstance.msgID = webhook.id
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
             await interaction.followup.send(embed = embed)

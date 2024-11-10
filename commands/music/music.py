@@ -100,7 +100,7 @@ class music(commands.Cog):
                 def __init__(self, options: list):
                     super().__init__(timeout = 120) # 2 minute timeout
 
-                    self.msg = discord.WebhookMessage
+                    self.msgID: int
                     
                     dropdownInstance = dropdown(options)
                     self.add_item(dropdownInstance)
@@ -109,10 +109,14 @@ class music(commands.Cog):
                     dropdownInstance.viewSelf = self
                             
                 async def on_timeout(self) -> None:
-                    for item in self.children:
-                        item.disabled = True
-
-                    await self.msg.edit(view=self)
+                    try:
+                        for item in self.children:
+                            item.disabled = True
+                        
+                        msg = await interaction.channel.fetch_message(self.msgID)
+                        await msg.edit(view = self)
+                    except Exception:
+                        pass
             
             # Song select dropdown class
             class dropdown(discord.ui.Select):
@@ -207,7 +211,7 @@ class music(commands.Cog):
                     self.pages: list = pages
                     self.list_place: int = list_place
 
-                    self.response: discord.InteractionMessage
+                    self.msgID: int
                     self.userID: int
 
                     self.locked = False
@@ -220,14 +224,16 @@ class music(commands.Cog):
                         if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True
                 
-                # Disable all buttons on timeout
+                # Timeout
                 async def on_timeout(self) -> None:
-                    for item in self.children:
-                        if item.style != ButtonStyle.url:
+                    try:
+                        for item in self.children:
                             item.disabled = True
-
-                    # Edit message with disabled view
-                    await self.response.edit(view=self)
+                        
+                        msg = await interaction.channel.fetch_message(self.msgID)
+                        await msg.edit(view = self)
+                    except Exception:
+                        pass
             
                 # Block others from controlling when lock is active
                 async def interaction_check(self, interaction: discord.Interaction):
@@ -337,7 +343,8 @@ class music(commands.Cog):
             songSelectViewInstance = songSelectView(options)
             
             # Edit initial message to show dropdown
-            await interaction.followup.send(embed=embed, view=songSelectViewInstance)
+            webhook = await interaction.followup.send(embed=embed, view=songSelectViewInstance, wait=True)
+            songSelectViewInstance.msgID = webhook.id
 
 async def setup(bot):
     await bot.add_cog(music(bot))

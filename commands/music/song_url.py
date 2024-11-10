@@ -286,7 +286,7 @@ class song_url(commands.Cog):
 
                 embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-                await interaction.edit_original_response(embed = embed)
+                webhook = await interaction.followup.send(embed = embed, ephemeral=ephemeral, wait=True)
                 
                 # Get image URL
                 image_url = result_info["images"][0]["url"]
@@ -302,7 +302,7 @@ class song_url(commands.Cog):
                         async for chunk in request.content.iter_chunked(10):
                             file.write(chunk)
                         file.close()
-                        
+                
                 # Get dominant colour for embed
                 color_thief = ColorThief(f'{filename}.jpg')
                 dominant_color = color_thief.get_color()
@@ -384,7 +384,7 @@ class song_url(commands.Cog):
                         self.locked = False
 
                         self.userID: int
-                        self.message: discord.InteractionMessage
+                        self.msgID: int
                         
                         spotify_button = discord.ui.Button(label=f'Show on Spotify', style=ButtonStyle.url, url=result_info["external_urls"]["spotify"])
                         self.add_item(spotify_button)
@@ -393,12 +393,16 @@ class song_url(commands.Cog):
                             if item.custom_id == "first" or item.custom_id == "prev":
                                 item.disabled = True
                     
+                    # Timeout
                     async def on_timeout(self) -> None:
-                        for item in self.children:
-                            if item.style != ButtonStyle.url:
+                        try:
+                            for item in self.children:
                                 item.disabled = True
-
-                        await self.message.edit(view=self)
+                            
+                            msg = await interaction.channel.fetch_message(self.msgID)
+                            await msg.edit(view = self)
+                        except Exception:
+                            pass
                     
                     async def interaction_check(self, interaction: discord.Interaction):
                         if interaction.user.id != self.userID:
@@ -522,9 +526,9 @@ class song_url(commands.Cog):
                     await interaction.edit_original_response(embed = embed, view = view)
                 # Else, make embed with page buttons
                 else:
-                    await interaction.edit_original_response(embed = embed, view = PlaylistPagesController(pages))
+                    webhook = await interaction.edit_original_response(embed = embed, view = PlaylistPagesController(pages))
 
-                    PlaylistPagesController.message = await interaction.original_response()
+                    PlaylistPagesController.msgID = webhook.id
                     PlaylistPagesController.userID = interaction.user.id
         except KeyError:
             embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())

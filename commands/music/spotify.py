@@ -48,7 +48,7 @@ class spotify(commands.Cog):
             # Check if result is blank
             if len(result['tracks']['items']) == 0:
                 embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
             else:
                 # Sort through request data
                 i = 0
@@ -93,14 +93,15 @@ class spotify(commands.Cog):
                     # Find unique ID of selection in the list
                     item = result['tracks']['items'][int(select.values[0])]
 
-                    await elements.song(self=self, item=item, interaction=interaction, ephemeral=ephemeral)
+                    await elements.song(self=self, item=item, interaction=interaction, ephemeral=ephemeral, msgID = webhook.id)
+            
             # Set up list with provided values
             select.callback = response
             view = View()
             view.add_item(select)
 
             # Edit initial message to show dropdown
-            await interaction.edit_original_response(embed = embed, view = view)
+            webhook = await interaction.followup.send(embed = embed, view = view, wait=True)
         elif search_type.value == "artist":
             # Search Spotify
             result = self.sp.search(search, type = 'artist', limit = 5)
@@ -108,7 +109,7 @@ class spotify(commands.Cog):
             # Check if result is blank
             if len(result['artists']['items']) == 0:
                 embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
             else:
                 # Sort through request data
                 i = 0
@@ -137,14 +138,15 @@ class spotify(commands.Cog):
 
                     result_top_tracks = self.sp.artist_top_tracks(item['id'])
                     
-                    await elements.artist(self=self, item=result_info, top_tracks=result_top_tracks, interaction=interaction, ephemeral=ephemeral)
+                    await elements.artist(self=self, item=result_info, top_tracks=result_top_tracks, interaction=interaction, ephemeral=ephemeral, msgID = webhook.id)
+                
                 # Set up list with provided values
                 select.callback = response
                 view = View()
                 view.add_item(select)
 
                 # Edit initial message to show dropdown
-                await interaction.edit_original_response(embed = embed, view = view)
+                webhook = await interaction.followup.send(embed = embed, view = view, wait = True)
         elif search_type.value == "album":
             # Search Spotify
             result = self.sp.search(search, type = 'album', limit = 5)
@@ -152,7 +154,7 @@ class spotify(commands.Cog):
             # Check if result is blank
             if len(result['albums']['items']) == 0:
                 embed = discord.Embed(title = "Error", description="No results were found.", color = Color.red())
-                await interaction.edit_original_response(embed = embed)
+                await interaction.followup.send(embed = embed)
             else:
                 # Sort through request data
                 i = 0
@@ -191,7 +193,7 @@ class spotify(commands.Cog):
 
                     result_info = self.sp.album(item['id'])
                     
-                    await elements.album(self=self, item=result_info, interaction=interaction, ephemeral=ephemeral)
+                    await elements.album(self=self, item=result_info, interaction=interaction, ephemeral=ephemeral, msgID = webhook.id)
                 
                 # Set up list with provided values
                 select.callback = response
@@ -199,7 +201,7 @@ class spotify(commands.Cog):
                 view.add_item(select)
                 
                 # Edit initial message to show dropdown
-                await interaction.edit_original_response(embed = embed, view = view)
+                webhook = await interaction.followup.send(embed = embed, view = view, wait=True)
 
     # Spotify Image command
     @spotifyGroup.command(name = "image", description = "Get high quality album art from a Spotify URL.")

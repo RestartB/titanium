@@ -45,17 +45,22 @@ class web_search(commands.Cog):
                         self.locked = False
                         
                         self.userID: int
-                        self.message: discord.InteractionMessage
+                        self.msgID: int
 
                         for item in self.children:
                             if item.custom_id == "first" or item.custom_id == "prev":
                                 item.disabled = True
                 
+                    # Timeout
                     async def on_timeout(self) -> None:
-                        for item in self.children:
-                            item.disabled = True
-
-                        await self.message.edit(view=self)
+                        try:
+                            for item in self.children:
+                                item.disabled = True
+                            
+                            msg = await interaction.channel.fetch_message(self.msgID)
+                            await msg.edit(view = self)
+                        except Exception:
+                            pass
                     
                     async def interaction_check(self, interaction: discord.Interaction):
                         if interaction.user.id != self.userID:
@@ -182,10 +187,10 @@ class web_search(commands.Cog):
                 if len(item_list) == 1:
                     await interaction.followup.send(embeds = embed_list, ephemeral=ephemeral)
                 else:
-                    await interaction.followup.send(embeds = embed_list, view = UrbanDictPageView(item_list), ephemeral=ephemeral)
+                    webhook = await interaction.followup.send(embeds = embed_list, view = UrbanDictPageView(item_list), ephemeral=ephemeral, wait=True)
 
                     UrbanDictPageView.userID = interaction.user.id
-                    UrbanDictPageView.message = await interaction.original_response()
+                    UrbanDictPageView.msgID = webhook.id
             else:
                 embed = discord.Embed(title = "No results found.", color = Color.red())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)

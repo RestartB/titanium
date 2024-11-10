@@ -158,8 +158,8 @@ class editHistory(commands.Cog):
                         self.page = 0
                         self.pages: list = pages
 
-                        self.response: discord.InteractionMessage
                         self.userID: int
+                        self.msgID: int
 
                         self.locked = False
 
@@ -168,14 +168,16 @@ class editHistory(commands.Cog):
                             if item.custom_id == "first" or item.custom_id == "prev":
                                 item.disabled = True
                     
-                    # Disable all buttons on timeout
+                    # Timeout
                     async def on_timeout(self) -> None:
-                        for item in self.children:
-                            if item.style != ButtonStyle.url:
+                        try:
+                            for item in self.children:
                                 item.disabled = True
-
-                        # Edit message with disabled view
-                        await self.response.edit(view=self)
+                            
+                            msg = await interaction.channel.fetch_message(self.msgID)
+                            await msg.edit(view = self)
+                        except Exception:
+                            pass
                 
                     # Block others from controlling when lock is active
                     async def interaction_check(self, interaction: discord.Interaction):
@@ -284,7 +286,6 @@ class editHistory(commands.Cog):
                 
                 # Create view
                 view = editPages(historyPages)
-                view.response = interaction.response
                 view.userID = interaction.user.id
 
                 # Send message
@@ -297,12 +298,11 @@ class editHistory(commands.Cog):
                     embed = discord.Embed(title = "Edit History", description = historyPages[0], color = Color.random())
                     embed.set_footer(text = f"Page 1/{len(historyPages)}")
                     
-                    await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+                    webhook = await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral, wait=True)
+                    view.msgID = webhook.id
             else:
-                embed = discord.Embed(title = "Edit History", description = historyPages[0], color = Color.random())
-                embed.set_footer(text = f"Page 1/{len(historyPages)}")
-
-                await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+                embed = discord.Embed(title="Edit History", description="No edit history found for this message.", color=Color.red())
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
     
     # Edit history control command group
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)

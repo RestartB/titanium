@@ -67,18 +67,22 @@ class reviewCom(commands.Cog):
                     self.locked = False
 
                     self.userID: int
-                    self.message: discord.WebhookMessage
+                    self.msgID: int
 
                     for item in self.children:
                         if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True
             
-                # View timeout
+                # Timeout
                 async def on_timeout(self) -> None:
-                    for item in self.children:
-                        item.disabled = True
-
-                    await self.message.edit(view=self)
+                    try:
+                        for item in self.children:
+                            item.disabled = True
+                        
+                        msg = await interaction.channel.fetch_message(self.msgID)
+                        await msg.edit(view = self)
+                    except Exception:
+                        pass
                 
                 # Page lock
                 async def interaction_check(self, interaction: discord.Interaction):
@@ -294,10 +298,10 @@ class reviewCom(commands.Cog):
                 if len(pages) == 1:
                     await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                 else:
-                    msg = await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral, wait=True)
+                    webhook = await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral, wait=True)
 
                     pageView.userID = interaction.user.id
-                    pageView.message = msg
+                    pageView.msgID = webhook.id
             else:
                 embed = discord.Embed(title = "ReviewDB User Reviews", description="This user has no reviews!", color = Color.red())
                 embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
@@ -373,7 +377,7 @@ class reviewCom(commands.Cog):
                         self.pages = pages
 
                         self.userID: int
-                        self.message: discord.WebhookMessage
+                        self.msgID: int
                         
                         self.locked = False
 
@@ -381,11 +385,16 @@ class reviewCom(commands.Cog):
                             if item.custom_id == "first" or item.custom_id == "prev":
                                 item.disabled = True
                 
+                    # Timeout
                     async def on_timeout(self) -> None:
-                        for item in self.children:
-                            item.disabled = True
-
-                        await self.message.edit(view=self)
+                        try:
+                            for item in self.children:
+                                item.disabled = True
+                            
+                            msg = await interaction.channel.fetch_message(self.msgID)
+                            await msg.edit(view = self)
+                        except Exception:
+                            pass
                     
                     async def interaction_check(self, interaction: discord.Interaction):
                         if interaction.user.id != self.userID:
@@ -594,10 +603,10 @@ class reviewCom(commands.Cog):
                     if len(pages) == 1:
                         await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                     else:
-                        await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral)
+                        webhook = await interaction.followup.send(embed = embed, view = pageView(pages), ephemeral=ephemeral, wait=True)
 
                         pageView.userID = interaction.user.id
-                        pageView.message = await interaction.original_response()
+                        pageView.msgID = webhook.id
                 else:
                     embed = discord.Embed(title = "ReviewDB Server Reviews", description="This server has no reviews!", color = Color.red())
                     embed.set_author(name=interaction.guild.name, icon_url=(interaction.guild.icon.url if interaction.guild.icon is not None else ""))
