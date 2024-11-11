@@ -209,6 +209,8 @@ class CogUtils(commands.Cog):
                         self.page -= 1
 
                         for item in self.children:
+                            item.disabled = False
+                            
                             if item.custom_id == "first" or item.custom_id == "prev":
                                 item.disabled = True
                     else:
