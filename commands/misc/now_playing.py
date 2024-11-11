@@ -1,11 +1,14 @@
 import discord
 from discord import Color, app_commands
 from discord.ext import commands
+from discord.ui import View
 
 import utils.spotify_elements as elements
 
 from spotipy.oauth2 import SpotifyClientCredentials
 import spotipy
+
+from urllib.parse import quote
 
 
 class NowPlaying(commands.Cog):
@@ -73,7 +76,16 @@ class NowPlaying(commands.Cog):
                 embed.set_footer(text=f"@{user.name} - {activity.name}", icon_url=user.display_avatar.url)
                 embed.set_thumbnail(url=activity.large_image_url)
 
-                await interaction.followup.send(embed=embed)
+                # Create View
+                view = View()
+                
+                if activity.url is not None:
+                    view.add_item(discord.ui.Button(url=activity.url, label="View Activity", style=discord.ButtonStyle.url))
+                
+                view.add_item(discord.ui.Button(url=f'https://www.google.com/search?q={(quote(activity.details)).replace("%2B", "+")}+{(quote(activity.state)).replace("%2B", "+")}+{(quote(activity.small_image_text)).replace("%2B", "+")}', label="Search on Google", style=discord.ButtonStyle.url))
+                
+                # Send Embed
+                await interaction.followup.send(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(NowPlaying(bot))
