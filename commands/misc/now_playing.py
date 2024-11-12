@@ -92,7 +92,7 @@ class NowPlaying(commands.Cog):
                     await interaction.followup.send(embed=embed, view=view)
                 else:
                     # Create Embed
-                    embed = discord.Embed(title = f"{activityType}{(' to' if activityType == 'Listening' else '')}", description=activity.state, color=Color.random())
+                    embed = discord.Embed(title = f"{activityType}{(' to' if activityType == 'Listening' else '')}", description=activity.name, color=Color.random())
 
                     embed.set_footer(text=f"@{user.name}", icon_url=user.display_avatar.url)
                     embed.set_thumbnail(url=activity.large_image_url)
