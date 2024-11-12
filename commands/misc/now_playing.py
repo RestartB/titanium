@@ -69,26 +69,42 @@ class NowPlaying(commands.Cog):
                 else:
                     activityType = ""
                 
-                # Create Embed
-                embed = discord.Embed(title = f"{activity.details}", description=activity.state, color=Color.random())
-                embed.set_author(name=f"{activityType}{(" to " if activityType == "Listening" else " - ") if activity.small_image_text is not None else ''}{activity.small_image_text}", icon_url=activity.small_image_url)
+                if activity.details:
+                    # Create Embed
+                    embed = discord.Embed(title = f"{activity.details}", description=activity.state, color=Color.random())
+                    embed.set_author(name=f"{activityType}{(" to " if activityType == "Listening" else " - ") if activity.small_image_text is not None else ''}{activity.small_image_text}", icon_url=activity.small_image_url)
 
-                embed.set_footer(text=f"@{user.name} - {activity.name}", icon_url=user.display_avatar.url)
-                embed.set_thumbnail(url=activity.large_image_url)
+                    embed.set_footer(text=f"@{user.name} - {activity.name}", icon_url=user.display_avatar.url)
+                    embed.set_thumbnail(url=activity.large_image_url)
 
-                # Create View
-                view = View()
-                
-                if activity.url is not None:
-                    view.add_item(discord.ui.Button(url=activity.url, label="View Activity", style=discord.ButtonStyle.url))
-                
-                try:
-                    view.add_item(discord.ui.Button(url=f'https://www.google.com/search?q={quote_plus(activity.details)}+{quote_plus(activity.state)}+{quote_plus(activity.small_image_text)}', label="Search on Google", style=discord.ButtonStyle.url))
-                except Exception:
-                    pass
-                
-                # Send Embed
-                await interaction.followup.send(embed=embed, view=view)
+                    # Create View
+                    view = View()
+                    
+                    if activity.url is not None:
+                        view.add_item(discord.ui.Button(url=activity.url, label="View Activity", style=discord.ButtonStyle.url))
+                    
+                    try:
+                        view.add_item(discord.ui.Button(url=f'https://www.google.com/search?q={quote_plus(activity.details)}+{quote_plus(activity.state)}+{quote_plus(activity.small_image_text)}', label="Search on Google", style=discord.ButtonStyle.url))
+                    except Exception:
+                        pass
+                    
+                    # Send Embed
+                    await interaction.followup.send(embed=embed, view=view)
+                else:
+                    # Create Embed
+                    embed = discord.Embed(title = f"{activityType}{(' to' if activityType == 'Listening' else '')}", description=activity.state, color=Color.random())
+
+                    embed.set_footer(text=f"@{user.name}", icon_url=user.display_avatar.url)
+                    embed.set_thumbnail(url=activity.large_image_url)
+
+                    # Create View
+                    view = View()
+                    
+                    if activity.url is not None:
+                        view.add_item(discord.ui.Button(url=activity.url, label="View Activity", style=discord.ButtonStyle.url))
+                    
+                    # Send Embed
+                    await interaction.followup.send(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(NowPlaying(bot))
