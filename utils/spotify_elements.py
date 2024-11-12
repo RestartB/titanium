@@ -1,7 +1,7 @@
 import os
 import random
 import string
-from urllib.parse import quote
+from urllib.parse import quote_plus
 from utils.escape_markdown import escape_markdown as escape
 
 import aiohttp
@@ -54,7 +54,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             songlink_button = discord.ui.Button(label="Other Streaming Services", style=discord.ButtonStyle.url, url=f"https://song.link/{item['external_urls']['spotify']}", row = 0)
             self.add_item(songlink_button)
 
-            google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 0)
+            google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={quote_plus(item["name"])}+{quote_plus(artist_string)}', row = 0)
             self.add_item(google_button)
 
         async def on_timeout(self) -> None:
@@ -249,7 +249,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
                 add_button = discord.ui.Button(label=add_button_text, style=discord.ButtonStyle.url, url=add_button_url, row = 0)
                 self.add_item(add_button)
 
-            google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 0)
+            google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={quote_plus(item["name"])}+{quote_plus(artist_string)}', row = 0)
             self.add_item(google_button)
 
         async def on_timeout(self) -> None:
@@ -397,7 +397,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
             self.add_item(songlink_button)
 
             # Add Search on Google button
-            google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(item["name"])).replace("%2B", "+")}+{(quote(artist_string)).replace("%2B", "+")}', row = 0)
+            google_button = discord.ui.Button(label='Search on Google', style=discord.ButtonStyle.url, url=f'https://www.google.com/search?q={quote_plus(item["name"])}+{quote_plus(artist_string)}', row = 0)
             self.add_item(google_button)
 
         async def on_timeout(self) -> None:

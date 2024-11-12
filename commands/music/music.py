@@ -1,4 +1,4 @@
-from urllib.parse import quote
+from urllib.parse import quote_plus
 
 import aiohttp
 import discord
@@ -174,7 +174,7 @@ class Music(commands.Cog):
                         embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = pages[0], color = Color.random())
 
                         if len(pages) == 1: # One page - send embed without page controller
-                            google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
+                            google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={quote_plus(song_list[list_place])}+{quote_plus(artist_list[list_place])}')
                             
                             view = View()
                             view.add_item(google_button)
@@ -192,7 +192,7 @@ class Music(commands.Cog):
                             pagesInstance.response = await interaction.original_response()
                             pagesInstance.userID = interaction.user.id
                     except AttributeError: # No lyrics
-                        google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={(quote(song_list[list_place])).replace("%2B", "+")}+{(quote(artist_list[list_place])).replace("%2B", "+")}')
+                        google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={quote_plus(song_list[list_place])}+{quote_plus(artist_list[list_place])}')
                         
                         view = View()
                         view.add_item(google_button)

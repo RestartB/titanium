@@ -8,12 +8,12 @@ import utils.spotify_elements as elements
 from spotipy.oauth2 import SpotifyClientCredentials
 import spotipy
 
-from urllib.parse import quote
 import string
 from colorthief import ColorThief
 import random
 import aiohttp
 import os
+from urllib.parse import quote_plus
 
 
 class NowPlaying(commands.Cog):
@@ -93,7 +93,10 @@ class NowPlaying(commands.Cog):
                 if activity.url is not None:
                     view.add_item(discord.ui.Button(url=activity.url, label="View Activity", style=discord.ButtonStyle.url))
                 
-                view.add_item(discord.ui.Button(url=f'https://www.google.com/search?q={(quote(activity.details)).replace("%2B", "+")}+{(quote(activity.state)).replace("%2B", "+")}+{(quote(activity.small_image_text)).replace("%2B", "+")}', label="Search on Google", style=discord.ButtonStyle.url))
+                try:
+                    view.add_item(discord.ui.Button(url=f'https://www.google.com/search?q={quote_plus(activity.details)}+{quote_plus(activity.state)}+{quote_plus(activity.small_image_text)}', label="Search on Google", style=discord.ButtonStyle.url))
+                except Exception:
+                    pass
                 
                 # Send Embed
                 await interaction.followup.send(embed=embed, view=view)
