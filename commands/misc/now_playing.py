@@ -9,6 +9,11 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import spotipy
 
 from urllib.parse import quote
+import string
+from colorthief import ColorThief
+import random
+import aiohttp
+import os
 
 
 class NowPlaying(commands.Cog):
@@ -69,8 +74,14 @@ class NowPlaying(commands.Cog):
                 else:
                     activityType = ""
                 
+                # Select colour
+                if activity.large_image_url is not None:
+                    color = Color.from_rgb(r=255, g=255, b=255)
+                else:
+                    color = Color.random()
+                
                 # Create Embed
-                embed = discord.Embed(title = f"{activity.details}", description=activity.state, color=Color.random())
+                embed = discord.Embed(title = f"{activity.details}", description=activity.state, color=color)
                 embed.set_author(name=f"{activityType}{(" to " if activityType == "Listening" else " - ") if activity.small_image_text is not None else ''}{activity.small_image_text}", icon_url=activity.small_image_url)
 
                 embed.set_footer(text=f"@{user.name} - {activity.name}", icon_url=user.display_avatar.url)
@@ -86,6 +97,25 @@ class NowPlaying(commands.Cog):
                 
                 # Send Embed
                 await interaction.followup.send(embed=embed, view=view)
+
+                letters = string.ascii_lowercase
+                filename = ''.join(random.choice(letters) for i in range(8))
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(activity.large_image_url) as request:
+                        file = open(f'{filename}.jpg', 'wb')
+                        async for chunk in request.content.iter_chunked(10):
+                            file.write(chunk)
+                        file.close()
+                        
+                color_thief = ColorThief(f'{filename}.jpg')
+                dominant_color = color_thief.get_color()
+
+                os.remove(f'{filename}.jpg')
+
+                embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
+
+                await interaction.edit_original_response(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(NowPlaying(bot))
