@@ -52,7 +52,19 @@ class NowPlaying(commands.Cog):
 
             await interaction.followup.send(embed=embed)
         else:
-            activity = member.activity
+            # Iterate through activities
+            for activity in member.activities:
+                # Pick first activity that is not a CustomActivity
+                if isinstance(activity, discord.CustomActivity):
+                    # Check if it is the only activity
+                    if len(member.activities) == 1:
+                        embed = discord.Embed(title = "No Activity", description=f"{user.mention} is currently not doing any activites.", color = Color.red())
+
+                        await interaction.followup.send(embed=embed)
+                    else:
+                        pass
+                else:
+                    break
             
             # Check if activity is Spotify
             if isinstance(activity, discord.Spotify): # Spotify
