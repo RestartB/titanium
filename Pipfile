@@ -16,6 +16,7 @@ url-cleaner = "*"
 isort = "*"
 asqlite = "*"
 pillow = "*"
+pylast = "*"
 
 [dev-packages]
 
