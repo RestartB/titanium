@@ -261,7 +261,7 @@ class Leaderboard(commands.Cog):
         async def delete_callback(interaction: discord.Interaction):
             await interaction.response.defer(ephemeral = True)
 
-            embed = discord.Embed(title = "Opting out...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
+            embed = discord.Embed(title = "Opting out...", description=f"{self.bot.options['loading-emoji']} Please wait...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
             if interaction.user.id in self.optOutList:
@@ -299,7 +299,7 @@ class Leaderboard(commands.Cog):
         async def delete_callback(interaction: discord.Interaction):
             await interaction.response.defer(ephemeral = True)
 
-            embed = discord.Embed(title = "Opting in...", description=f"{self.bot.loading_emoji} Please wait...", color = Color.orange())
+            embed = discord.Embed(title = "Opting in...", description=f"{self.bot.options['loading-emoji']} Please wait...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
             if not(interaction.user.id in self.optOutList):
@@ -352,7 +352,7 @@ class Leaderboard(commands.Cog):
     async def enable_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
-        embed = discord.Embed(title = "Enabling...", description=f"{self.bot.loading_emoji} Enabling the leaderboard...", color = Color.orange())
+        embed = discord.Embed(title = "Enabling...", description=f"{self.bot.options['loading-emoji']} Enabling the leaderboard...", color = Color.orange())
         await interaction.edit_original_response(embed = embed)
 
         async with self.lbPool.acquire() as sql:
@@ -376,7 +376,7 @@ class Leaderboard(commands.Cog):
         async def delete_callback(interaction: discord.Interaction):
             await interaction.response.defer(ephemeral = True)
 
-            embed = discord.Embed(title = "Disabling...", description=f"{self.bot.loading_emoji} Disabling the leaderboard...", color = Color.orange())
+            embed = discord.Embed(title = "Disabling...", description=f"{self.bot.options['loading-emoji']} Disabling the leaderboard...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
             async with self.lbPool.acquire() as sql:
@@ -413,7 +413,7 @@ class Leaderboard(commands.Cog):
                 async def delete_callback(interaction: discord.Interaction):
                     await interaction.response.defer(ephemeral = True)
 
-                    embed = discord.Embed(title = "Resetting...", description=f"{self.bot.loading_emoji} Resetting the leaderboard...", color = Color.orange())
+                    embed = discord.Embed(title = "Resetting...", description=f"{self.bot.options['loading-emoji']} Resetting the leaderboard...", color = Color.orange())
                     await interaction.edit_original_response(embed = embed, view = None)
 
                     await sql.execute(f"DELETE FROM '{interaction.guild.id}';")
@@ -445,7 +445,7 @@ class Leaderboard(commands.Cog):
                 async def delete_callback(interaction: discord.Interaction):
                     await interaction.response.defer(ephemeral = True)
 
-                    embed = discord.Embed(title = "Removing...", description=f"{self.bot.loading_emoji} Target: {user.mention}", color = Color.orange())
+                    embed = discord.Embed(title = "Removing...", description=f"{self.bot.options['loading-emoji']} Target: {user.mention}", color = Color.orange())
                     await interaction.edit_original_response(embed = embed, view = None)
 
                     await sql.execute(f"DELETE FROM '{interaction.guild.id}' WHERE userMention = '{user.mention}';")

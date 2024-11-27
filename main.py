@@ -8,6 +8,7 @@ import logging
 import os
 import traceback
 from glob import glob
+import configparser
 
 import aiohttp
 import asqlite
@@ -23,6 +24,9 @@ path = os.getcwd()
 
 # Logging handler
 handler = logging.FileHandler(filename='titanium.log', encoding='utf-8', mode='w')
+
+# Config Parser
+config = configparser.RawConfigParser()
 
 # SQL path check
 print("[INIT] Checking SQL path...")
@@ -43,18 +47,11 @@ if not os.path.exists(basedir):
 print("[INIT] Path check complete.\n")
 
 # ------ Config File Reader ------
-def readconfigfile(path):
-    #Make dicts global
-    global tokens_dict, options_dict
-
-    # Set up reader
-    import configparser
-    config = configparser.RawConfigParser()
-
+def readconfigfile(path) -> tuple[dict, dict]:
     # Read options section of config file, add it to dict
     try:
         config.read(path)
-        tokens_dict = dict(config.items('TOKENS'))
+        tokens = dict(config.items('TOKENS'))
     except Exception:
         print("[INIT] Config file malformed: Error while reading Tokens section! The file may be missing or malformed.")
         exit(1)
@@ -62,10 +59,15 @@ def readconfigfile(path):
     # Read path section of config file, add it to dict
     try:
         config.read(path)
-        options_dict = dict(config.items('OPTIONS'))
+        options = dict(config.items('OPTIONS'))
     except Exception:
         print("[INIT] Config file malformed: Error while reading Options section! The file may be missing or malformed.")
         exit(1)
+
+    global discord_token
+    discord_token = tokens['discord-bot-token']
+
+    return options, tokens
 
 # Bot Setup
 intents = discord.Intents.default()
@@ -75,6 +77,40 @@ intents.presences = True
 
 class TitaniumBot(commands.Bot):
     async def setup_hook(self):
+        print("[INIT] Reading config files.")
+
+        # Read config files
+        self.options, self.tokens = readconfigfile('config.cfg')
+
+        # Config File Vars
+        try:
+            self.path = path
+
+            self.options['owner-ids'] = self.options['owner-ids'].split(",")
+
+            if self.options['cog-dir'] == '':
+                self.options['cog-dir'] = "commands"
+            else:
+                pass
+
+            if self.options['sync-on-start'] == 'True':
+                self.options['sync-on-start'] = True
+            else:
+                self.options['sync-on-start'] = False
+
+            # Convert Dev IDs from str to int
+            dev_ids = []
+            for id in self.options['owner-ids']:
+                dev_ids.append(int(id))
+
+            self.options['owner-ids'] = dev_ids
+
+            print("[INIT] Config files read.\n")
+        except Exception as error:
+            print("[INIT] Bad value in config file! Exiting.")
+            print(error)
+            exit()
+
         print("[INIT] Creating SQL pools...")
         
         # Cache DB Pool
@@ -140,54 +176,11 @@ class TitaniumBot(commands.Bot):
 
 bot = TitaniumBot(intents=intents, command_prefix='', help_command=None)
 
-print("[INIT] Reading config files.")
-
-# Read config files
-readconfigfile('config.cfg')
-
-# Config File Vars
-try:
-    bot.path = path
-
-    bot.token = tokens_dict['discord-bot-token']
-    bot.spotify_id = tokens_dict['spotify-api-id']
-    bot.spotify_secret = tokens_dict['spotify-api-secret']
-    # bot.reviewdb_token = tokens_dict['reviewdb-token']
-    
-    bot.dev_ids_str = options_dict['owner-ids'].split(",")
-    bot.support_server = options_dict['support-server']
-    bot.control_server = options_dict['control-guild']
-    bot.error_webhook = str(options_dict['error-webhook'])
-
-    if options_dict['cog-dir'] == '':
-        bot.cog_dir = "commands"
-    else:
-        bot.cog_dir = options_dict['cog-dir']
-    
-    if options_dict['sync-on-start'] == 'True':
-        bot.sync_on_start = True
-    else:
-        bot.sync_on_start = False
-
-    # Convert Dev IDs from str to int
-    bot.dev_ids = []
-    for id in bot.dev_ids_str:
-        bot.dev_ids.append(int(id))
-    
-    bot.loading_emoji = str(options_dict['loading-emoji'])
-    bot.explicit_emoji = str(options_dict['explicit-emoji'])
-    
-    print("[INIT] Config files read.\n")
-except Exception as error:
-    print("[INIT] Bad value in config file! Exiting.")
-    print(error)
-    exit()
-
 # Sync bot cogs when started
 @bot.event
 async def on_ready():
     # Sync tree if sync on start is enabled
-    if bot.sync_on_start == True:
+    if bot.options['sync-on-start']:
         # Control Server Sync
         print("[INIT] Syncing control server command tree...")
         guild = bot.get_guild(1213954608632700989)
@@ -214,7 +207,7 @@ async def on_message(message):
 async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     # Unexpected Error
     if isinstance(error, discord.app_commands.errors.CommandInvokeError):
-        if bot.error_webhook == "":
+        if bot.options['error-webhook'] == "":
             embed = discord.Embed(title = "Unexpected Error", description = "An unexpected error has occurred. Try again later.", color = Color.red())
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             
@@ -238,7 +231,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
                 embed.add_field(name="Command", value=interaction.command.name)
                 embed.add_field(name="Parameters", value=", ".join(f"{param.name}: {interaction.namespace[param.name]}" for param in interaction.command.parameters))
 
-                webhook = discord.Webhook.from_url(str(bot.error_webhook), session=session)
+                webhook = discord.Webhook.from_url(str(bot.options['error-webhook']), session=session)
                 await webhook.send(embed=embed)
     # Cooldown
     elif isinstance(error, discord.app_commands.errors.CommandOnCooldown):
@@ -262,8 +255,11 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
         await msg.delete()
 
 try:
+    config.read("config.cfg")
+    bot_token = dict(config.items('TOKENS'))["discord-bot-token"]
+
     # Run bot with token
-    bot.run(bot.token, log_handler=handler, log_level=logging.INFO)
+    bot.run(bot_token, log_handler=handler, log_level=logging.INFO)
 except discord.errors.PrivilegedIntentsRequired:
     print("[FATAL] Bot is missing the Message Content and/or Server Members intent! Please enable it in the Discord Developers web portal. Exiting...")
     exit()

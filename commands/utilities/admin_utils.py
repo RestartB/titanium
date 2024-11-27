@@ -30,7 +30,7 @@ class CogUtils(commands.Cog):
         
         cog = f"commands.{cog.replace("\\", "/").replace("/", ".")[:-3]}"
         
-        if interaction.user.id in self.bot.dev_ids:
+        if interaction.user.id in self.bot.options['owner-ids']:
             try:
                 await self.bot.load_extension(cog)
 
@@ -50,7 +50,7 @@ class CogUtils(commands.Cog):
         
         cog = f"commands.{cog.replace("\\", "/").replace("/", ".")[:-3]}"
         
-        if interaction.user.id in self.bot.dev_ids:
+        if interaction.user.id in self.bot.options['owner-ids']:
             try:
                 if cog != "reminders":
                     await self.bot.unload_extension(cog)
@@ -74,7 +74,7 @@ class CogUtils(commands.Cog):
         
         cog = f"commands.{cog.replace("\\", "/").replace("/", ".")}"
         
-        if interaction.user.id in self.bot.dev_ids:
+        if interaction.user.id in self.bot.options['owner-ids']:
             try:
                 await self.bot.reload_extension(cog)
 
@@ -92,9 +92,9 @@ class CogUtils(commands.Cog):
     async def tree_sync(self, interaction:discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
-        if interaction.user.id in self.bot.dev_ids:
+        if interaction.user.id in self.bot.options['owner-ids']:
             # Loading prompt
-            embed = discord.Embed(title = "Syncing tree...", description=f"{self.bot.loading_emoji} This may take a moment.", color = Color.orange())
+            embed = discord.Embed(title = "Syncing tree...", description=f"{self.bot.options['loading-emoji']} This may take a moment.", color = Color.orange())
             await interaction.followup.send(embed = embed)
 
             # Control Server Sync
@@ -119,7 +119,7 @@ class CogUtils(commands.Cog):
     async def clear_console(self, interaction: discord.Interaction,):
         await interaction.response.defer(ephemeral = True)
         
-        if interaction.user.id in self.bot.dev_ids:
+        if interaction.user.id in self.bot.options['owner-ids']:
             os.system('cls' if os.name=='nt' else 'clear')
 
             await interaction.followup.send(f"Cleared the console.")
@@ -132,7 +132,7 @@ class CogUtils(commands.Cog):
     async def send_message(self, interaction: discord.Interaction, message: str, channel_id: str):
         await interaction.response.defer(ephemeral = True)
         
-        if interaction.user.id in self.bot.dev_ids:
+        if interaction.user.id in self.bot.options['owner-ids']:
             channel = self.bot.get_channel(int(channel_id))
             
             embed = discord.Embed(title="Message from Bot Admin", description=message, color=Color.random())
@@ -150,7 +150,7 @@ class CogUtils(commands.Cog):
     async def server_list(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
-        if interaction.user.id in self.bot.dev_ids:
+        if interaction.user.id in self.bot.options['owner-ids']:
             page = []
             pages = []
             
@@ -279,7 +279,7 @@ class CogUtils(commands.Cog):
     async def error_test(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
 
-        if interaction.user.id in self.bot.dev_ids:
+        if interaction.user.id in self.bot.options['owner-ids']:
             embed = discord.Embed(title=f"Error Test", description="Error in 3 seconds...")
             await interaction.followup.send(embed=embed)
 

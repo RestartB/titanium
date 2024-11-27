@@ -887,7 +887,7 @@ class Fireboard(commands.Cog):
         
         # Check fireboard status
         if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
-            embed = discord.Embed(title = "Waiting for Reaction", description=f"{self.bot.loading_emoji} React with this message with your target emoji to set the fireboard emoji.", color=Color.orange())
+            embed = discord.Embed(title = "Waiting for Reaction", description=f"{self.bot.options['loading-emoji']} React with this message with your target emoji to set the fireboard emoji.", color=Color.orange())
             
             msg = await interaction.followup.send(embed=embed, ephemeral=False)
 
