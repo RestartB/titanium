@@ -23,7 +23,7 @@ from utils.escape_markdown import escape_markdown as escape
 class SongURL(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.auth_manager = SpotifyClientCredentials(client_id = self.bot.spotify_id, client_secret = self.bot.spotify_secret)
+        self.auth_manager = SpotifyClientCredentials(client_id = self.bot.tokens['spotify-api-id'], client_secret = self.bot.tokens['spotify-api-secret'])
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
 
         self.cleaner = UrlCleaner()
@@ -192,7 +192,7 @@ class SongURL(commands.Cog):
                 except Exception as error:
                     print("[SPOTURL] Error while expanding URL.")
                     print(error)
-                    if interaction.user.id in self.bot.dev_ids:
+                    if interaction.user.id in self.bot.options['owner-ids']:
                         embed = discord.Embed(title = "Error occurred while expanding URL.", description = error, color = Color.red())
                         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                         await interaction.followup.send(embed = embed)
@@ -284,7 +284,7 @@ class SongURL(commands.Cog):
                 pages = []
                 pageStr = ""
 
-                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Getting images...", color = Color.orange())
+                embed = discord.Embed(title = "Loading...", description = f"{self.bot.options['loading-emoji']} Getting images...", color = Color.orange())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 webhook = await interaction.followup.send(embed = embed, ephemeral=ephemeral, wait=True)
                 
@@ -310,7 +310,7 @@ class SongURL(commands.Cog):
                 # Remove file when done
                 os.remove(f'{filename}.jpg')
 
-                embed = discord.Embed(title = "Loading...", description = f"{self.bot.loading_emoji} Parsing info...", color = Color.orange())
+                embed = discord.Embed(title = "Loading...", description = f"{self.bot.options['loading-emoji']} Parsing info...", color = Color.orange())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed)
                 

@@ -342,7 +342,7 @@ class EditHistory(commands.Cog):
             async def delete_callback(interaction: discord.Interaction):
                 await interaction.response.defer(ephemeral=True)
 
-                embed = discord.Embed(title="Disabling...", description=f"{self.bot.loading_emoji} Disabling edit history...", color=Color.orange())
+                embed = discord.Embed(title="Disabling...", description=f"{self.bot.options['loading-emoji']} Disabling edit history...", color=Color.orange())
                 await interaction.edit_original_response(embed=embed, view=None)
 
                 # Acquire a connection from the edit pool

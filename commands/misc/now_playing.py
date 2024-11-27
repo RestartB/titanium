@@ -20,7 +20,7 @@ class NowPlaying(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.auth_manager = SpotifyClientCredentials(client_id = self.bot.spotify_id, client_secret = self.bot.spotify_secret)
+        self.auth_manager = SpotifyClientCredentials(client_id = self.bot.tokens['spotify-api-id'], client_secret = self.bot.tokens['spotify-api-secret'])
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
     
     # Now Playing command
