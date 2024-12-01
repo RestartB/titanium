@@ -318,50 +318,58 @@ class SongURL(commands.Cog):
                     resultCurrent = self.sp.playlist_items(url, market="GB", offset = (current * 100))
                     # Work through all tracks in playlist, adding them to a page
                     for playlist_item in resultCurrent['items']:
-                        i += 1
-                        artist_string = ""
+                        try:
+                            i += 1
+                            artist_string = ""
 
-                        # Check if item is a track, podcast, unavailable in current reigon or unknown
-                        if playlist_item['track'] == None:
-                            # Item type is unavailable in the GB reigon
-                            # If there's nothing in the current page, make a new one
+                            # Check if item is a track, podcast, unavailable in current reigon or unknown
+                            if playlist_item['track'] == None:
+                                # Item type is unavailable in the GB reigon
+                                # If there's nothing in the current page, make a new one
+                                if pageStr == "":
+                                    pageStr = f"{i}. *(Media Unavailable)*"
+                                # Else, add string to existing page
+                                else:
+                                    pageStr += f"\n{i}. *(Media Unavailable)*"
+                            elif playlist_item['track']['type'] == "track":
+                                # Item is a track
+                                # Work through all artists of item
+                                for artist in playlist_item['track']['artists']:
+                                    # If there is no artists already in the artist string
+                                    if artist_string == "":
+                                        # We set the artist string to the artist we're currently on
+                                        artist_string = artist['name'].replace("*", "-")
+                                    else:
+                                        # Else, we add the current artist to the existing artist string
+                                        artist_string += f", {artist['name']}".replace("*", "-")
+                                
+                                # If there's nothing in the current page, make a new one
+                                if pageStr == "":
+                                    pageStr = f"{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
+                                # Else, add string to existing page
+                                else:
+                                    pageStr += f"\n{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
+                            elif playlist_item['track']['type'] == "episode":
+                                # Item is a podcast
+                                if pageStr == "":
+                                    pageStr = f"{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
+                                else:
+                                    pageStr += f"\n{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
+                            else:
+                                # Item type is unknown / unsupported
+                                # If there's nothing in the current page, make a new one
+                                if pageStr == "":
+                                    pageStr = f"{i}. *(Unknown Media Type)*"
+                                # Else, add string to existing page
+                                else:
+                                    pageStr += f"\n{i}. *(Unknown Media Type)*"
+                        except KeyError:
+                            # Create new page if current page is empty
                             if pageStr == "":
                                 pageStr = f"{i}. *(Media Unavailable)*"
                             # Else, add string to existing page
                             else:
                                 pageStr += f"\n{i}. *(Media Unavailable)*"
-                        elif playlist_item['track']['type'] == "track":
-                            # Item is a track
-                            # Work through all artists of item
-                            for artist in playlist_item['track']['artists']:
-                                # If there is no artists already in the artist string
-                                if artist_string == "":
-                                    # We set the artist string to the artist we're currently on
-                                    artist_string = artist['name'].replace("*", "-")
-                                else:
-                                    # Else, we add the current artist to the existing artist string
-                                    artist_string += f", {artist['name']}".replace("*", "-")
-                            
-                            # If there's nothing in the current page, make a new one
-                            if pageStr == "":
-                                pageStr = f"{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
-                            # Else, add string to existing page
-                            else:
-                                pageStr += f"\n{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
-                        elif playlist_item['track']['type'] == "episode":
-                            # Item is a podcast
-                            if pageStr == "":
-                                pageStr = f"{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
-                            else:
-                                pageStr += f"\n{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
-                        else:
-                            # Item type is unknown / unsupported
-                            # If there's nothing in the current page, make a new one
-                            if pageStr == "":
-                                pageStr = f"{i}. *(Unknown Media Type)*"
-                            # Else, add string to existing page
-                            else:
-                                pageStr += f"\n{i}. *(Unknown Media Type)*"
 
                         # If there's 15 items in the current page, we split it into a new page
                         if i % 15 == 0:
