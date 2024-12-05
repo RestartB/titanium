@@ -143,6 +143,14 @@ class SongURL(commands.Cog):
                     await self.refreshCache()
                     
                     try:
+                        embed = discord.Embed(title="Loading...",
+                                              description=f"{self.bot.options['loading-emoji']} Converting your song link to Spotify to get more info. This will take a few moments; we will let you know if something goes wrong.",
+                                              color=Color.orange())
+                        embed.set_footer(text=f"@{interaction.user.name}",
+                                         icon_url=interaction.user.display_avatar.url)
+
+                        await interaction.followup.send(embed = embed, ephemeral = ephemeral)
+
                         url, platform, platform_api = await songlinkRequest(url)
 
                         cached = False
@@ -166,6 +174,14 @@ class SongURL(commands.Cog):
                             await self.refreshCache()
 
                             try:
+                                embed = discord.Embed(title="Loading...",
+                                                      description=f"{self.bot.options['loading-emoji']} Converting your song link to Spotify to get more info. This will take a few moments; we will let you know if something goes wrong.",
+                                                      color=Color.orange())
+                                embed.set_footer(text=f"@{interaction.user.name}",
+                                                 icon_url=interaction.user.display_avatar.url)
+
+                                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
                                 url = self.cleaner.clean(url)
                                 url, platform, platform_api = await songlinkRequest(url)
 
