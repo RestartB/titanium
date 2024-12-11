@@ -120,7 +120,7 @@ class UserUtils(commands.Cog):
                 user = interaction.user
             
             if hat_size is None:
-                size = app_commands.Choice(name="Normal", value=4)
+                hat_size = app_commands.Choice(name="Normal", value=4)
             
             if position is None:
                 position = app_commands.Choice(name="Top Middle", value="topmiddle")
