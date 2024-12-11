@@ -91,8 +91,9 @@ class UserUtils(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(user = "The target user.")
+    @app_commands.describe(hat = "Optional: whether to add a christmas hat. Defaults to true.")
     @app_commands.describe(snow = "Optional: whether to add snow. Defaults to true.")
-    @app_commands.describe(position = "Optional: the position of the hat on the user's head. Defaults to top middle.")
+    @app_commands.describe(position = "Optional: the position of the hat on the user's head when enabled. Defaults to top middle.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.choices(position=[
             app_commands.Choice(name="Top Left", value="topleft"),
@@ -102,7 +103,7 @@ class UserUtils(commands.Cog):
             app_commands.Choice(name="Bottom Middle", value="bottommiddle"),
             app_commands.Choice(name="Bottom Right", value="bottomright"),
             ])
-    async def christmas(self, interaction: discord.Interaction, user: discord.User, snow: bool = True, position: app_commands.Choice[str] = None, ephemeral: bool = False):
+    async def christmas(self, interaction: discord.Interaction, user: discord.User, hat: bool = True, snow: bool = True, position: app_commands.Choice[str] = None, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
         try:
@@ -111,15 +112,15 @@ class UserUtils(commands.Cog):
             
             if position is None:
                 position = app_commands.Choice(name="Top Middle", value="topmiddle")
-            
+
             # Generate random filename
             letters = string.ascii_lowercase
             filename = ''.join(random.choice(letters) for i in range(8))
 
+            # Get user PFP
             await user.display_avatar.save(os.path.join("tmp", f"{filename}.png"))
             
             img = Image.open(os.path.join("tmp", f"{filename}.png"))
-            hat = Image.open(os.path.join("content", "hat.png"))
 
             # Resize to 256px x 256px while maintianing aspect ratio
             width = 256
@@ -127,29 +128,36 @@ class UserUtils(commands.Cog):
 
             img.thumbnail((width, height), Image.Resampling.LANCZOS)
             
-            # Resize the hat to fit the head - maintain aspect ratio
-            hat = hat.resize((hat.width//4, hat.height//4))
+            # Christmas hat
+            if hat:
+                hatImg = Image.open(os.path.join("content", "hat.png"))
 
-            # Put hat on head in requested position
-            if position.value == "topleft":
-                img.paste(hat, (0, 0), hat)
-            elif position.value == "topmiddle":
-                img.paste(hat, (img.width//4, 0), hat)
-            elif position.value == "topright":
-                img.paste(hat, (img.width//2, 0), hat)
-            elif position.value == "bottomleft":
-                img.paste(hat, (0, img.height//2), hat)
-            elif position.value == "bottommiddle":
-                img.paste(hat, (img.width//4, img.height//2), hat)
-            elif position.value == "bottomright":
-                img.paste(hat, (img.width//2, img.height//2), hat)
+                # Resize the hat to fit the head - maintain aspect ratio
+                hatImg = hatImg.resize((hatImg.width//4, hatImg.height//4))
+
+                # Put hat on head in requested position
+                if position.value == "topleft":
+                    img.paste(hatImg, (0, 0), hatImg)
+                elif position.value == "topmiddle":
+                    img.paste(hatImg, (img.width//4, 0), hatImg)
+                elif position.value == "topright":
+                    img.paste(hatImg, (img.width//2, 0), hatImg)
+                elif position.value == "bottomleft":
+                    img.paste(hatImg, (0, img.height//2), hatImg)
+                elif position.value == "bottommiddle":
+                    img.paste(hatImg, (img.width//4, img.height//2), hatImg)
+                elif position.value == "bottomright":
+                    img.paste(hatImg, (img.width//2, img.height//2), hatImg)
             
+            # Snow overlay
             if snow:
                 snow = Image.open(os.path.join("content", "snow.png"))
                 img.paste(snow, (0, 0), snow)
 
+            # Save image
             img.save(os.path.join('tmp', f'{filename}-processed.png'))
             
+            # Create embed, add attachment
             embed = discord.Embed(title = "Christmas PFP", color = (user.accent_color if user.accent_color != None else Color.random()))
             embed.set_image(url = "attachment://image.png")
             embed.set_author(name=f"{user.name} (@{user.name})", icon_url=user.display_avatar.url)
@@ -160,6 +168,7 @@ class UserUtils(commands.Cog):
             # Send Embed
             msg = await interaction.followup.send(embed=embed, file=fileProcessed, ephemeral=ephemeral, wait=True)
 
+            # Get image URL
             view = View()
             view.add_item(discord.ui.Button(label="Download PFP", style=discord.ButtonStyle.url, url=msg.embeds[0].image.url, row = 0))
 
