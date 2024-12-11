@@ -98,8 +98,8 @@ class UserUtils(commands.Cog):
     @app_commands.describe(snow = "Optional: whether to add snow. Defaults to true.")
     @app_commands.describe(hat_size = "Optional: the size of the hat on the user's head when enabled. Defaults to normal.")
     @app_commands.describe(position = "Optional: the position of the hat on the user's head when enabled. Defaults to top middle.")
-    @app_commands.describe(x_offset = "Optional: manual x position adjustment (-128 to 128). Defaults to 0.")
-    @app_commands.describe(y_offset = "Optional: manual y position adjustment (-128 to 128). Defaults to 0.")
+    @app_commands.describe(x_offset = "Optional: manual x (horizontal) position adjustment (-128 to 128). Defaults to 0.")
+    @app_commands.describe(y_offset = "Optional: manual y (vertical) position adjustment (-128 to 128). Defaults to 0.")
     @app_commands.describe(rotation = "Optional: rotation angle in degrees (-180 to 180). Defaults to 0.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.choices(hat_size=[
@@ -184,7 +184,7 @@ class UserUtils(commands.Cog):
                 base_x, base_y = positions[position.value]
 
                 # Adjust vertical position for large hat
-                if position.value.startswith("top") and hat_size.value == 2 and y_offset == 0:
+                if position.value.startswith("top") and hat_size.value == 2:
                     base_y = base_y - 80
 
                 # Get base position and apply offsets
