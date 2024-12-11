@@ -98,6 +98,9 @@ class UserUtils(commands.Cog):
     @app_commands.describe(snow = "Optional: whether to add snow. Defaults to true.")
     @app_commands.describe(hat_size = "Optional: the size of the hat on the user's head when enabled. Defaults to normal.")
     @app_commands.describe(position = "Optional: the position of the hat on the user's head when enabled. Defaults to top middle.")
+    @app_commands.describe(x_offset = "Optional: manual x position adjustment (-128 to 128). Defaults to 0.")
+    @app_commands.describe(y_offset = "Optional: manual y position adjustment (-128 to 128). Defaults to 0.")
+    @app_commands.describe(rotation = "Optional: rotation angle in degrees (-180 to 180). Defaults to 0.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.choices(hat_size=[
             app_commands.Choice(name="Small", value=6),
@@ -112,10 +115,24 @@ class UserUtils(commands.Cog):
             app_commands.Choice(name="Bottom Middle", value="bottommiddle"),
             app_commands.Choice(name="Bottom Right", value="bottomright"),
             ])
-    async def christmas(self, interaction: discord.Interaction, user: discord.User, hat: bool = True, snow: bool = True, hat_size: app_commands.Choice[int] = None, position: app_commands.Choice[str] = None, ephemeral: bool = False):
+    async def christmas(self, interaction: discord.Interaction, 
+                   user: discord.User, 
+                   hat: bool = True,
+                   snow: bool = True,
+                   hat_size: app_commands.Choice[int] = None,
+                   position: app_commands.Choice[str] = None,
+                   x_offset: app_commands.Range[int, -128, 128] = 0,
+                   y_offset: app_commands.Range[int, -128, 128] = 0, 
+                   rotation: app_commands.Range[int, -180, 180] = 0,
+                   ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
         try:
+            # Validate ranges
+            x_offset = max(-128, min(128, x_offset))
+            y_offset = max(-128, min(128, y_offset))
+            rotation = max(-180, min(180, rotation))
+            
             if user is None:
                 user = interaction.user
             
@@ -149,6 +166,10 @@ class UserUtils(commands.Cog):
                 new_hat_height = hatImg.height // hat_size.value
                 hatImg = hatImg.resize((new_hat_width, new_hat_height), Image.Resampling.LANCZOS)
 
+                # Rotate if needed
+                if rotation != 0:
+                    hatImg = hatImg.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+
                 # Calculate positions based on hat size
                 positions = {
                     "topleft": (0, 0),
@@ -160,13 +181,18 @@ class UserUtils(commands.Cog):
                 }
 
                 # Place hat at calculated position
-                hat_pos = positions[position.value]
+                base_x, base_y = positions[position.value]
 
                 # Adjust vertical position for large hat
-                if position.value.startswith("top") and hat_size.value == 2:
-                    hat_pos = (hat_pos[0], hat_pos[1] - 80)
+                if position.value.startswith("top") and hat_size.value == 2 and y_offset == 0:
+                    base_y = base_y - 80
 
-                img.paste(hatImg, hat_pos, hatImg)
+                # Get base position and apply offsets
+                base_x, base_y = positions[position.value]
+                final_x = base_x + x_offset
+                final_y = base_y + y_offset
+                
+                img.paste(hatImg, (final_x, final_y), hatImg)
             
             # Snow overlay
             if snow:
