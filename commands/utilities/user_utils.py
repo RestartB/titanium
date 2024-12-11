@@ -80,7 +80,7 @@ class UserUtils(commands.Cog):
         
         embed = discord.Embed(title = "PFP", color = (user.accent_color if user.accent_color != None else Color.random()))
         embed.set_image(url = user.display_avatar.url)
-        embed.set_author(name=f"{user.name} (@{user.name})", icon_url=user.display_avatar.url)
+        embed.set_author(name=f"{user.display_name} (@{user.name})", icon_url=user.display_avatar.url)
         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
         view = View()
@@ -96,7 +96,7 @@ class UserUtils(commands.Cog):
     @app_commands.describe(user = "The target user.")
     @app_commands.describe(hat = "Optional: whether to add a christmas hat. Defaults to true.")
     @app_commands.describe(snow = "Optional: whether to add snow. Defaults to true.")
-    @app_commands.describe(position = "Optional: the size of the hat on the user's head when enabled. Defaults to normal.")
+    @app_commands.describe(hat_size = "Optional: the size of the hat on the user's head when enabled. Defaults to normal.")
     @app_commands.describe(position = "Optional: the position of the hat on the user's head when enabled. Defaults to top middle.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.choices(hat_size=[
@@ -112,14 +112,14 @@ class UserUtils(commands.Cog):
             app_commands.Choice(name="Bottom Middle", value="bottommiddle"),
             app_commands.Choice(name="Bottom Right", value="bottomright"),
             ])
-    async def christmas(self, interaction: discord.Interaction, user: discord.User, hat: bool = True, snow: bool = True, size: app_commands.Choice[str] = None, position: app_commands.Choice[str] = None, ephemeral: bool = False):
+    async def christmas(self, interaction: discord.Interaction, user: discord.User, hat: bool = True, snow: bool = True, hat_size: app_commands.Choice[int] = None, position: app_commands.Choice[str] = None, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
         try:
             if user is None:
                 user = interaction.user
             
-            if size is None:
+            if hat_size is None:
                 size = app_commands.Choice(name="Normal", value=4)
             
             if position is None:
@@ -145,21 +145,28 @@ class UserUtils(commands.Cog):
                 hatImg = Image.open(os.path.join("content", "hat.png"))
 
                 # Resize the hat to fit the head - maintain aspect ratio
-                hatImg = hatImg.resize((hatImg.width//int(size.value), hatImg.height//int(size.value)), Image.Resampling.LANCZOS)
+                new_hat_width = hatImg.width // hat_size.value
+                new_hat_height = hatImg.height // hat_size.value
+                hatImg = hatImg.resize((new_hat_width, new_hat_height), Image.Resampling.LANCZOS)
 
-                # Put hat on head in requested position
-                if position.value == "topleft":
-                    img.paste(hatImg, (0, 0), hatImg)
-                elif position.value == "topmiddle":
-                    img.paste(hatImg, (img.width//4, 0), hatImg)
-                elif position.value == "topright":
-                    img.paste(hatImg, (img.width//2, 0), hatImg)
-                elif position.value == "bottomleft":
-                    img.paste(hatImg, (0, img.height//2), hatImg)
-                elif position.value == "bottommiddle":
-                    img.paste(hatImg, (img.width//4, img.height//2), hatImg)
-                elif position.value == "bottomright":
-                    img.paste(hatImg, (img.width//2, img.height//2), hatImg)
+                # Calculate positions based on hat size
+                positions = {
+                    "topleft": (0, 0),
+                    "topmiddle": ((img.width - new_hat_width) // 2, 0),
+                    "topright": (img.width - new_hat_width, 0),
+                    "bottomleft": (0, img.height - new_hat_height),
+                    "bottommiddle": ((img.width - new_hat_width) // 2, img.height - new_hat_height),
+                    "bottomright": (img.width - new_hat_width, img.height - new_hat_height)
+                }
+
+                # Place hat at calculated position
+                hat_pos = positions[position.value]
+
+                # Adjust vertical position for large hat
+                if position.value.startswith("top") and hat_size.value == 2:
+                    hat_pos = (hat_pos[0], hat_pos[1] - 80)
+
+                img.paste(hatImg, hat_pos, hatImg)
             
             # Snow overlay
             if snow:
@@ -172,7 +179,7 @@ class UserUtils(commands.Cog):
             # Create embed, add attachment
             embed = discord.Embed(title = "Christmas PFP", color = (user.accent_color if user.accent_color != None else Color.random()))
             embed.set_image(url = "attachment://image.png")
-            embed.set_author(name=f"{user.name} (@{user.name})", icon_url=user.display_avatar.url)
+            embed.set_author(name=f"{user.display_name} (@{user.name})", icon_url=user.display_avatar.url)
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
             fileProcessed = discord.File(fp=os.path.join("tmp", f"{filename}-processed.png"), filename=f"image.png")
