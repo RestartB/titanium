@@ -185,7 +185,7 @@ class UserUtils(commands.Cog):
 
                 # Adjust vertical position for large hat
                 if position.value.startswith("top") and hat_size.value == 2:
-                    base_y = base_y - 80
+                    base_y = base_y + 80
 
                 # Get base position and apply offsets
                 base_x, base_y = positions[position.value]
