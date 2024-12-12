@@ -207,18 +207,27 @@ async def on_message(message):
 async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     # Unexpected Error
     if isinstance(error, discord.app_commands.errors.CommandInvokeError):
+        print("\n*** Unexpected error occurred. ***")
+        
+        traceback.print_exc()
+
         if bot.options['error-webhook'] == "":
+            print("\nNo error webhook present. Editing user message")
+            
             embed = discord.Embed(title = "Unexpected Error", description = "An unexpected error has occurred. Try again later.", color = Color.red())
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             
             await interaction.edit_original_response(embed = embed, view=None)
         else:
+            print("\nEditing user message.")
+
             embed = discord.Embed(title = "Unexpected Error", description = "An unexpected error has occurred. Try again later. Info has been sent to the bot owner.", color = Color.red())
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
             
             await interaction.edit_original_response(embed = embed, view=None)
 
             async with aiohttp.ClientSession() as session:
+                print("Sending error to webhook.")
                 embed = discord.Embed(title="Error", description=f"""```python\n{traceback.format_exc()}```""", color=Color.red())
                 
                 embed.timestamp = datetime.datetime.now()
@@ -229,10 +238,27 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
                 embed.add_field(name="Time", value=interaction.created_at.strftime("%d/%m/%Y, %H:%M:%S"))
 
                 embed.add_field(name="Command", value=interaction.command.name)
-                embed.add_field(name="Parameters", value=", ".join(f"{param.name}: {interaction.namespace[param.name]}" for param in interaction.command.parameters))
+                # Safely get parameters if they exist
+                try:
+                    params = []
+                    for param in interaction.command.parameters:
+                        if param.name in interaction.namespace:
+                            params.append(f"{param.name}: {interaction.namespace[param.name]}")
+                    if params:
+                        embed.add_field(name="Parameters", value=", ".join(params))
+                except:
+                    pass
 
-                webhook = discord.Webhook.from_url(str(bot.options['error-webhook']), session=session)
-                await webhook.send(embed=embed)
+                try:
+                    print(str(bot.options['error-webhook']))
+                    webhook = discord.Webhook.from_url(str(bot.options['error-webhook']), session=session)
+                    await webhook.send(embed=embed)
+
+                    print("Error sent to webhook.")
+                except Exception as webhookException:
+                    print(f"Error sending to webhook: {webhookException}")  
+        
+        print("\n*** Done! ***")
     # Cooldown
     elif isinstance(error, discord.app_commands.errors.CommandOnCooldown):
         await interaction.response.defer(ephemeral=True)

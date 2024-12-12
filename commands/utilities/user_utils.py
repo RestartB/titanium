@@ -149,59 +149,57 @@ class UserUtils(commands.Cog):
             # Get user PFP
             await user.display_avatar.save(os.path.join("tmp", f"{filename}.png"))
             
-            img = Image.open(os.path.join("tmp", f"{filename}.png"))
+            with Image.open(os.path.join("tmp", f"{filename}.png")) as img:
+                # Resize to 256px x 256px while maintianing aspect ratio
+                width = 256
+                height = width * img.height // img.width 
 
-            # Resize to 256px x 256px while maintianing aspect ratio
-            width = 256
-            height = width * img.height // img.width 
-
-            img.thumbnail((width, height), Image.Resampling.LANCZOS)
-            
-            # Christmas hat
-            if hat:
-                hatImg = Image.open(os.path.join("content", "hat.png"))
-
-                # Resize the hat to fit the head - maintain aspect ratio
-                new_hat_width = hatImg.width // hat_size.value
-                new_hat_height = hatImg.height // hat_size.value
-                hatImg = hatImg.resize((new_hat_width, new_hat_height), Image.Resampling.LANCZOS)
-
-                # Rotate if needed
-                if rotation != 0:
-                    hatImg = hatImg.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
-
-                # Calculate positions based on hat size
-                positions = {
-                    "topleft": (0, 0),
-                    "topmiddle": ((img.width - new_hat_width) // 2, 0),
-                    "topright": (img.width - new_hat_width, 0),
-                    "bottomleft": (0, img.height - new_hat_height),
-                    "bottommiddle": ((img.width - new_hat_width) // 2, img.height - new_hat_height),
-                    "bottomright": (img.width - new_hat_width, img.height - new_hat_height)
-                }
-
-                # Place hat at calculated position
-                base_x, base_y = positions[position.value]
-
-                # Adjust vertical position for large hat
-                if position.value.startswith("top") and hat_size.value == 2:
-                    base_y = base_y + 80
-
-                # Get base position and apply offsets
-                base_x, base_y = positions[position.value]
-                final_x = base_x + x_offset
-                final_y = base_y + y_offset
+                img.thumbnail((width, height), Image.Resampling.LANCZOS)
                 
-                img.paste(hatImg, (final_x, final_y), hatImg)
-            
-            # Snow overlay
-            if snow:
-                snow = Image.open(os.path.join("content", "snow.png"))
-                img.paste(snow, (0, 0), snow)
+                # Christmas hat
+                if hat:
+                    with Image.open(os.path.join("content", "hat.png")) as hatImg:
+                        # Resize the hat to fit the head - maintain aspect ratio
+                        new_hat_width = hatImg.width // hat_size.value
+                        new_hat_height = hatImg.height // hat_size.value
+                        hatImg = hatImg.resize((new_hat_width, new_hat_height), Image.Resampling.LANCZOS)
 
-            # Save image
-            img.save(os.path.join('tmp', f'{filename}-processed.png'))
-            
+                        # Rotate if needed
+                        if rotation != 0:
+                            hatImg = hatImg.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+
+                        # Calculate positions based on hat size
+                        positions = {
+                            "topleft": (0, 0),
+                            "topmiddle": ((img.width - new_hat_width) // 2, 0),
+                            "topright": (img.width - new_hat_width, 0),
+                            "bottomleft": (0, img.height - new_hat_height),
+                            "bottommiddle": ((img.width - new_hat_width) // 2, img.height - new_hat_height),
+                            "bottomright": (img.width - new_hat_width, img.height - new_hat_height)
+                        }
+
+                        # Place hat at calculated position
+                        base_x, base_y = positions[position.value]
+
+                        # Adjust vertical position for large hat
+                        if position.value.startswith("top") and hat_size.value == 2:
+                            base_y = base_y + 80
+
+                        # Get base position and apply offsets
+                        base_x, base_y = positions[position.value]
+                        final_x = base_x + x_offset
+                        final_y = base_y + y_offset
+                        
+                        img.paste(hatImg, (final_x, final_y), hatImg)
+                
+                # Snow overlay
+                if snow:
+                    with Image.open(os.path.join("content", "snow.png")) as snow: 
+                        img.paste(snow, (0, 0), snow)
+
+                # Save image
+                img.save(os.path.join('tmp', f'{filename}-processed.png'))
+                
             # Create embed, add attachment
             embed = discord.Embed(title = "Christmas PFP", color = (user.accent_color if user.accent_color != None else Color.random()))
             embed.set_image(url = "attachment://image.png")
