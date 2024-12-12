@@ -15,8 +15,8 @@ flask = "*"
 url-cleaner = "*"
 isort = "*"
 asqlite = "*"
-pylast = "*"
 pillow = "*"
+pygit2 = "*"
 
 [dev-packages]
 
