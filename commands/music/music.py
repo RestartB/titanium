@@ -2,7 +2,6 @@ from urllib.parse import quote_plus
 
 import aiohttp
 import discord
-import pylast
 from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import View
