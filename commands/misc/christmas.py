@@ -180,7 +180,7 @@ class Christmas(commands.Cog):
     @app_commands.describe(file = "The image to edit.")
     @app_commands.describe(hat = "Optional: whether to add a christmas hat. Defaults to true.")
     @app_commands.describe(snow = "Optional: whether to add snow. Defaults to true.")
-    @app_commands.describe(hat_width = "Optional: the width of the christmas hat when enabled. Defaults to 350.")
+    @app_commands.describe(hat_width = "Optional: the width in px of the christmas hat when enabled. Defaults to half of image length.")
     @app_commands.describe(position = "Optional: the position of the hat on the user's head when enabled. Defaults to top middle.")
     @app_commands.describe(x_offset = "Optional: manual x (horizontal) position adjustment (-128 to 128). Defaults to 0.")
     @app_commands.describe(y_offset = "Optional: manual y (vertical) position adjustment (-128 to 128). Defaults to 0.")
@@ -201,7 +201,7 @@ class Christmas(commands.Cog):
                    file: discord.Attachment, 
                    hat: bool = True,
                    snow: bool = True,
-                   hat_width: app_commands.Range[int, 10, 1000] = 350,
+                   hat_width: app_commands.Range[int, 10, 1000] = 0,
                    position: app_commands.Choice[str] = None,
                    x_offset: int = 0,
                    y_offset: int = 0, 
@@ -230,11 +230,10 @@ class Christmas(commands.Cog):
                 # Christmas hat
                 if hat:
                     with Image.open(os.path.join("content", "hat.png")) as hatImg:
-                        # # Resize the hat to fit the head - maintain aspect ratio
-                        # new_hat_width = hatImg.width // hat_size.value
-                        # new_hat_height = hatImg.height // hat_size.value
-                        # hatImg = hatImg.resize((new_hat_width, new_hat_height), Image.Resampling.LANCZOS)
-
+                        # Set width to half of image width if not specified
+                        if hat_width == 0:
+                            hat_width = img.width // 2
+                        
                         # Resize to new size while maintianing aspect ratio
                         new_hat_width = hat_width
                         new_hat_height = new_hat_width * hatImg.height // hatImg.width
@@ -259,10 +258,6 @@ class Christmas(commands.Cog):
 
                         # Place hat at calculated position
                         base_x, base_y = positions[position.value]
-
-                        # # Adjust vertical position for large hat
-                        # if position.value.startswith("top") and hat_size.value == 2:
-                        #     base_y = base_y + 80
 
                         # Get base position and apply offsets
                         base_x, base_y = positions[position.value]
