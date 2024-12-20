@@ -16,9 +16,10 @@ class WebSearch(commands.Cog):
 
     # Urban Dictionary command
     @searchGroup.command(name = "urban-dictionary", description = "Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!")
+    @app_commands.describe(page = "Optional: page to jump to. Defaults to first page.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1,10)
-    async def urban_dict(self, interaction: discord.Interaction, query: str, ephemeral: bool = False):
+    async def urban_dict(self, interaction: discord.Interaction, query: str, page: int = 0, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
         embed_list = []
@@ -84,7 +85,8 @@ class WebSearch(commands.Cog):
                             if item.custom_id == "first" or item.custom_id == "prev":
                                 item.disabled = True
                         
-                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        embed = discord.Embed(title = f"{self.pages[self.page]['word']}", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        embed.set_author(name="Urban Dictionary", icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro")
                         
                         embed.set_footer(text = f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
                         embed_list.append(embed)
@@ -109,7 +111,8 @@ class WebSearch(commands.Cog):
                             for item in self.children:
                                 item.disabled = False
                         
-                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        embed = discord.Embed(title = f"{self.pages[self.page]['word']}", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        embed.set_author(name="Urban Dictionary", icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro")
                         
                         embed.set_footer(text = f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
                         embed_list.append(embed)
@@ -151,7 +154,8 @@ class WebSearch(commands.Cog):
                             for item in self.children:
                                 item.disabled = False
                         
-                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        embed = discord.Embed(title = f"{self.pages[self.page]['word']}", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        embed.set_author(name="Urban Dictionary", icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro")
                         
                         embed.set_footer(text = f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
                         embed_list.append(embed)
@@ -170,7 +174,8 @@ class WebSearch(commands.Cog):
                             if item.custom_id == "next" or item.custom_id == "last":
                                 item.disabled = True
                         
-                        embed = discord.Embed(title = f"{self.pages[self.page]['word']} (Urban Dictionary)", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        embed = discord.Embed(title = f"{self.pages[self.page]['word']}", description = f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||", url = self.pages[self.page]['permalink'], color = Color.random())
+                        embed.set_author(name="Urban Dictionary", icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro")
                         
                         embed.set_footer(text = f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
                         embed_list.append(embed)
@@ -180,9 +185,18 @@ class WebSearch(commands.Cog):
                 embed = discord.Embed(title = "Content Warning", description = "Urban Dictionary has very little moderation and content may be inappropriate! View at your own risk.", color = Color.orange())
                 embed_list.append(embed)
                 
-                embed = discord.Embed(title = f"{item_list[0]['word']} (Urban Dictionary)", description = f"**Author: {item_list[0]['author']}**\n\n||{(item_list[0]['definition'].replace('[', '')).replace(']', '')}||", url = item_list[0]['permalink'], color = Color.random())
-                embed.set_footer(text = f"@{interaction.user.name} - Page 1/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
-                embed_list.append(embed)
+                try:
+                    embed = discord.Embed(title = f"{item_list[page - 1]['word']}", description = f"**Author: {item_list[page - 1]['author']}**\n\n||{(item_list[page - 1]['definition'].replace('[', '')).replace(']', '')}||", url = item_list[page - 1]['permalink'], color = Color.random())
+                    embed.set_author(name="Urban Dictionary", icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro")
+                    
+                    embed.set_footer(text = f"@{interaction.user.name} - Page {page}/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
+                    embed_list.append(embed)
+                except IndexError:
+                    embed = discord.Embed(title = f"Error", description = f"**Page {page}** does not exist! Try another page.", color = Color.red())
+                    embed.set_footer(text = f"@{interaction.user.name} - Page 1/{len(item_list)}", icon_url = interaction.user.display_avatar.url)
+
+                    await interaction.followup.send(embed = embed, ephemeral=ephemeral)
+                    return
                 
                 if len(item_list) == 1:
                     await interaction.followup.send(embeds = embed_list, ephemeral=ephemeral)
