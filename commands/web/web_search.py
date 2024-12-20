@@ -19,7 +19,7 @@ class WebSearch(commands.Cog):
     @app_commands.describe(page = "Optional: page to jump to. Defaults to first page.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1,10)
-    async def urban_dict(self, interaction: discord.Interaction, query: str, page: int = 0, ephemeral: bool = False):
+    async def urban_dict(self, interaction: discord.Interaction, query: str, page: app_commands.Range[int, 1, 10] = 0, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
         embed_list = []
@@ -48,7 +48,7 @@ class WebSearch(commands.Cog):
                         self.userID: int
                         self.msgID: int
 
-                        if page == 0:
+                        if page == 1:
                             for item in self.children:
                                 if item.custom_id == "first" or item.custom_id == "prev":
                                     item.disabled = True
