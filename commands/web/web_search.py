@@ -48,9 +48,10 @@ class WebSearch(commands.Cog):
                         self.userID: int
                         self.msgID: int
 
-                        for item in self.children:
-                            if item.custom_id == "first" or item.custom_id == "prev":
-                                item.disabled = True
+                        if page == 0:
+                            for item in self.children:
+                                if item.custom_id == "first" or item.custom_id == "prev":
+                                    item.disabled = True
                 
                     # Timeout
                     async def on_timeout(self) -> None:
