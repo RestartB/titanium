@@ -45,6 +45,10 @@ class Leaderboard(commands.Cog):
     async def on_message(self, message):
         # Catch possible errors
         try:
+            # Stop if this is a DM
+            if message.guild == None:
+                return
+            
             # Check if user is Bot
             if message.author.bot != True:
                 if not(message.author.id in self.optOutList):

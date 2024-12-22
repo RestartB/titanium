@@ -67,6 +67,10 @@ class Fireboard(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot: discord.ext.commands.Bot
         
+        # Stop if this is a DM
+        if payload.guild_id == None:
+            return
+        
         queued = False
         
         # Lock system
@@ -227,6 +231,10 @@ class Fireboard(commands.Cog):
         self.bot: discord.ext.commands.Bot
         
         queued = False
+
+        # Stop if this is a DM
+        if payload.guild_id == None:
+            return
         
         # Lock system
         if payload.message_id in self.lockedMessages:
@@ -403,6 +411,10 @@ class Fireboard(commands.Cog):
         self.bot: discord.ext.commands.Bot
         
         queued = False
+
+        # Stop if this is a DM
+        if payload.guild_id == None:
+            return
         
         # Lock system
         if payload.message_id in self.lockedMessages:
@@ -480,6 +492,10 @@ class Fireboard(commands.Cog):
         self.bot: discord.ext.commands.Bot
         
         queued = False
+
+        # Stop if this is a DM
+        if payload.guild_id == None:
+            return
         
         # Lock system
         if payload.message_id in self.lockedMessages:
@@ -556,6 +572,10 @@ class Fireboard(commands.Cog):
         self.bot: discord.ext.commands.Bot
         
         queued = False
+
+        # Stop if this is a DM
+        if payload.guild_id == None:
+            return
         
         # Lock system
         if payload.message_id in self.lockedMessages:
@@ -631,6 +651,10 @@ class Fireboard(commands.Cog):
         self.bot: discord.ext.commands.Bot
         
         queued = False
+
+        # Stop if this is a DM
+        if payload.guild_id == None:
+            return
         
         # Lock system
         if payload.message_id in self.lockedMessages:
