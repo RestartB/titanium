@@ -1,0 +1,20 @@
+[project]
+name = "titanium"
+version = "0.1.0"
+description = "Titanium Discord Bot"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.11.11",
+    "asqlite>=2.0.0",
+    "colorthief>=0.2.1",
+    "discord-py>=2.4.0",
+    "isort>=5.13.2",
+    "pillow>=11.0.0",
+    "psutil>=6.1.1",
+    "py-cpuinfo>=9.0.0",
+    "pygit2>=1.16.0",
+    "spotipy>=2.24.0",
+    "url-cleaner>=0.1.5",
+    "wikipedia>=1.4.0",
+]

@@ -49,13 +49,12 @@ To use the Spotify commands in Titanium, a Spotify Client ID and Secret are requ
 4. Copy the Client ID and Secret for your app, and paste them into their respective fields in the config file.
 
 ### Python Modules
-Titanium relies on several Python packages. The recommended way to install these packages is with `pipenv`. A `Pipfile` and `Pipfile.lock` have been provided, see the instructions below to use it:\
+Titanium relies on several Python packages. A `pyproject.toml` file has been provided; it contains the list of required dependencies and target Python version that can be used with many package managers. I have also provided `uv.lock` and `.python-version` files for the **uv** package manager, see the instructions below to use it:\
 \
 **Installation**
-1. Run `pip install pipenv --user` to install pipenv
-2. Open a terminal inside Titanium's root directory
-3. Run `pipenv install` to install all required packages
-4. Run `pipenv run python main.py` to start the bot
+1. [Install UV.](https://docs.astral.sh/uv/getting-started/installation/) This is the tool I use to manage dependencies for the project.
+2. Open a terminal inside Titanium's root directory.
+3. Run `uv run main.py` to install all required packages and start the bot.
 
 If an error occurs, please create a GitHub issue and I will take a look.
 
@@ -66,6 +65,10 @@ You will need your Discord Client ID to make this URL. You can get this from the
 
 ## Included Commands
 Titanium comes with some included commands. Below is a list of what commands are in each cog file:
+
+> [!NOTE]
+> This list was last updated 21/08/2024 and is now considered outdated. Please check the command list by looking in the files themselves, or from the command list within Discord.
+
 - **Admin Commands** *(admin_utils.py)*
   - **admin load:** load a cog.
   - **admin unload:** unload a cog.
@@ -115,10 +118,10 @@ Titanium comes with some included commands. Below is a list of what commands are
 
 ## Included Cogs
 Titanium also includes some non command cogs, which are also stored in the command folder. The list is below:
-- **spotify_autoembed.py**
-  - Stores the event handler for Spotify Auto-embedding.
 - **status_update.py**
   - Stores the autoupdater for the bot's activity status.
+- **welcome.py**
+  - Stores the automatic welcome message for when the bot joins a server.
 
 ## Developing your own Cogs
 Titanium is modular and will load compatible cogs automatically.

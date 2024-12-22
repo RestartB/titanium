@@ -4,29 +4,21 @@
 /tmp
 
 # Commands
-/commands/__pycache__
 /commands/.*
 /commands_private
-/utils/__pycache__
+__pycache__
 
 # Testing
 /test
 /testing
 /.vscode
 TEST_*.py
-main-pp.py
 
 # IDEs
 config.cfg
 .replit
-*.lock
-*.toml
 .idea
 .nova
-
-# venv
-/venv
-!Pipfile.lock
 
 # Misc
 .cache
