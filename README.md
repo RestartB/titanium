@@ -123,6 +123,13 @@ Titanium also includes some non command cogs, which are also stored in the comma
 - **welcome.py**
   - Stores the automatic welcome message for when the bot joins a server.
 
+## Intents
+Titanium uses several privileged intents. If your bot instance is verified (required for 100+ servers), you **MUST** get approval from Discord before you can use them.
+
+- Presence Intent - needed for the now playing command.
+- Server Members Intent - needed for server member counts in the server info command.
+- Message Content Intent - Required for getting message content for the starboard, and for processing the leaderboard.
+
 ## Developing your own Cogs
 Titanium is modular and will load compatible cogs automatically.
 
