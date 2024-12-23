@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -20,4 +20,4 @@ jobs:
         pip install uv
     - name: Analysing the code with pylint
       run: |
-        uv run pylint $(git ls-files '*.py') --errors-only
+        uv run --with pylint pylint $(git ls-files '*.py') --errors-only
