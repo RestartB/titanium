@@ -290,7 +290,7 @@ class CogUtils(commands.Cog):
             await interaction.followup.send(embed = embed)
     
     @adminGroup.command(name = "defer-test", description = "Admin Only: test defer.")
-    async def error_test(self, interaction: discord.Interaction, seconds: int):
+    async def defer_test(self, interaction: discord.Interaction, seconds: int):
         await interaction.response.defer(ephemeral = True)
 
         if interaction.user.id in self.bot.options['owner-ids']:
