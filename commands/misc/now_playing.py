@@ -20,8 +20,10 @@ class NowPlaying(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.auth_manager = SpotifyClientCredentials(client_id = self.bot.tokens['spotify-api-id'], client_secret = self.bot.tokens['spotify-api-secret'])
-        self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
+        # Only load if Spotify API key is present
+        if bot.tokens['spotify-api-id'] != "" and bot.tokens['spotify-api-secret'] != "":
+            self.auth_manager = SpotifyClientCredentials(client_id = self.bot.tokens['spotify-api-id'], client_secret = self.bot.tokens['spotify-api-secret'])
+            self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
     
     # Now Playing command
     @app_commands.command(name = "now-playing", description = "Show current activity / now playing status.")
@@ -66,8 +68,8 @@ class NowPlaying(commands.Cog):
                 else:
                     break
             
-            # Check if activity is Spotify
-            if isinstance(activity, discord.Spotify): # Spotify
+            # Check if activity is Spotify and API keys are present
+            if isinstance(activity, discord.Spotify) and self.bot.tokens['spotify-api-id'] != "" and self.bot.tokens['spotify-api-secret'] != "": # Spotify 
                 item = self.sp.track(activity.track_id)
                 
                 await elements.song(self, item=item, interaction=interaction)

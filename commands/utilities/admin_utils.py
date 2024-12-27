@@ -288,6 +288,17 @@ class CogUtils(commands.Cog):
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
             await interaction.followup.send(embed = embed)
+    
+    @adminGroup.command(name = "defer-test", description = "Admin Only: test defer.")
+    async def error_test(self, interaction: discord.Interaction, seconds: int):
+        await interaction.response.defer(ephemeral = True)
+
+        if interaction.user.id in self.bot.options['owner-ids']:
+            await asyncio.sleep(seconds)
+            await interaction.followup.send("Done.")
+        else:
+            embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
+            await interaction.followup.send(embed = embed)
 
 async def setup(bot):
     await bot.add_cog(CogUtils(bot))

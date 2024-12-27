@@ -385,4 +385,6 @@ class Spotify(commands.Cog):
             await interaction.edit_original_response(embed = embed)
 
 async def setup(bot):
-    await bot.add_cog(Spotify(bot))
+    # Only load if Spotify API key is present
+    if bot.tokens['spotify-api-id'] != "" and bot.tokens['spotify-api-secret'] != "":
+        await bot.add_cog(Spotify(bot))
