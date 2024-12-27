@@ -1,11 +1,11 @@
+import sqlite3
+from datetime import datetime
+
 import asqlite
 import discord
 from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import View
-
-import sqlite3
-from datetime import datetime
 
 
 class EditHistory(commands.Cog):

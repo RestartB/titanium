@@ -1,7 +1,7 @@
-from url_cleaner import UrlCleaner
 import discord
 from discord import Color, app_commands
 from discord.ext import commands
+from url_cleaner import UrlCleaner
 
 
 class StripTracking(commands.Cog):

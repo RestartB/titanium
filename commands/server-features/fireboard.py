@@ -3,7 +3,6 @@
 import asyncio
 import os
 import sqlite3
-import random
 
 import discord
 import discord.ext

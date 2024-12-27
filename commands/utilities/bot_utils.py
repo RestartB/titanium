@@ -1,10 +1,10 @@
 import datetime
+import platform
 import time
 from datetime import timedelta
 
 import cpuinfo
 import discord
-import platform
 import psutil
 import pygit2
 from discord import Color, app_commands

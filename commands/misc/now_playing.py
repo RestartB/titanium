@@ -1,19 +1,18 @@
+import os
+import random
+import string
+from urllib.parse import quote_plus
+
+import aiohttp
 import discord
+import spotipy
+from colorthief import ColorThief
 from discord import Color, app_commands
 from discord.ext import commands
 from discord.ui import View
+from spotipy.oauth2 import SpotifyClientCredentials
 
 import utils.spotify_elements as elements
-
-from spotipy.oauth2 import SpotifyClientCredentials
-import spotipy
-
-import string
-from colorthief import ColorThief
-import random
-import aiohttp
-import os
-from urllib.parse import quote_plus
 
 
 class NowPlaying(commands.Cog):

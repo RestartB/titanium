@@ -6,6 +6,7 @@ from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import View
 
+
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

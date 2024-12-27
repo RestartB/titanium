@@ -1,13 +1,13 @@
 # pylint: disable=no-member
 
+import os
 import random
 import string
-import os
 
 import discord
 from discord import Color, app_commands
 from discord.ext import commands
-from PIL import Image, ImageOps, ImageEnhance
+from PIL import Image, ImageEnhance, ImageOps
 
 
 class Images(commands.Cog):

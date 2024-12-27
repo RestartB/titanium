@@ -3,12 +3,12 @@
 
 # Imports
 import asyncio
+import configparser
 import datetime
 import logging
 import os
 import traceback
 from glob import glob
-import configparser
 
 import aiohttp
 import asqlite

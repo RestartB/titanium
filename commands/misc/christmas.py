@@ -1,15 +1,15 @@
 # pylint: disable=no-member
 
+import os
+import random
+import string
+
 import discord
 import discord.ext
 from discord import Color, app_commands
 from discord.ext import commands
 from discord.ui import View
-
 from PIL import Image
-import string
-import random
-import os
 
 
 def invert(num: int):

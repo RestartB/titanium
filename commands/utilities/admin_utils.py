@@ -4,9 +4,9 @@ import os
 
 import discord
 import discord.ext
+import discord.ext.commands
 from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
-import discord.ext.commands
 from discord.ui import View
 
 import utils.return_ctrlguild as ctrl

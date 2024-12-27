@@ -2,7 +2,6 @@ import os
 import random
 import string
 from urllib.parse import quote_plus
-from utils.escape_markdown import escape_markdown as escape
 
 import aiohttp
 import discord
@@ -10,6 +9,8 @@ import spotipy
 from colorthief import ColorThief
 from discord import Color
 from discord.ui import View
+
+from utils.escape_markdown import escape_markdown as escape
 
 
 # Song parse function

@@ -1,6 +1,4 @@
-import os
 import asqlite
-
 import discord
 import discord.ext
 from discord import ButtonStyle, Color, app_commands
