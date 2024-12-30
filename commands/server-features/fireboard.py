@@ -851,7 +851,7 @@ class Fireboard(commands.Cog):
             
             if success:
                 embed = discord.Embed(title="Done!", description="Fireboard was disabled.", color=Color.green())
-                await self.cog.refreshFireLists()
+                await self.cog.refreshFireLists() # pylint: disable=no-member
             else:
                 embed = discord.Embed(title="Error", description="Failed to disable fireboard.", color=Color.red())
             
