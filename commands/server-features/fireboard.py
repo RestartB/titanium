@@ -3,6 +3,7 @@
 import asyncio
 import os
 import sqlite3
+import asqlite
 
 import discord
 import discord.ext
@@ -15,51 +16,40 @@ from discord.ui import View
 class Fireboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.fireboardPool: asqlite.Pool = bot.fireboardPool
         self.lockedMessages = []
         
-        # Check DB exists
-        open(os.path.join("content", "sql", "fireboard.db"), "a").close()
-        
-        self.connection = sqlite3.connect(os.path.join("content", "sql", "fireboard.db"))
-        self.cursor = self.connection.cursor()
-        
-        if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireMessages';").fetchone() == None:
-            # Fire Messages - messages that are active on the fireboard
-            self.cursor.execute("CREATE TABLE fireMessages (serverID int, msgID int, boardMsgID int, reactAmount int)")
-        
-        if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireSettings';").fetchone() == None:
-            # Fire Settings - server properties for fireboard
-            self.cursor.execute("CREATE TABLE fireSettings (serverID int, reactAmount int, emoji text, channelID int, ignoreBots int)")
-        
-        if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireChannelBlacklist';").fetchone() == None:
-            # Fire Channel Blacklist - blacklisted channels
-            self.cursor.execute("CREATE TABLE fireChannelBlacklist (serverID int, channelID int)")
-        
-        if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireRoleBlacklist';").fetchone() == None:
-            # Fire Role Blacklist - blacklisted roles
-            self.cursor.execute("CREATE TABLE fireRoleBlacklist (serverID int, roleID int)")
-            
-        self.connection.commit()
-        
-        # Migrate to new reactAmount column
-        columns = [i[1] for i in self.cursor.execute('PRAGMA table_info(fireMessages)')]
-
-        if "emoji" in columns:
-            print("Migrating fireboard database...")
-
-            self.cursor.execute("ALTER TABLE fireMessages DROP COLUMN emoji")
-            self.cursor.execute("ALTER TABLE fireMessages ADD COLUMN reactionAmount int")
-
-            self.connection.commit()
-        
+        self.bot.loop.create_task(self.setup())
         self.bot.loop.create_task(self.refreshFireLists())
+    
+    # SQL Setup
+    async def setup(self):
+        async with self.fireboardPool.acquire() as sql:
+            if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireMessages';") is None:
+                # Fire Messages - messages that are active on the fireboard
+                await sql.execute("CREATE TABLE fireMessages (serverID int, msgID int, boardMsgID int, reactAmount int)")
+            
+            if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireSettings';") is None:
+                # Fire Settings - server properties for fireboard
+                await sql.execute("CREATE TABLE fireSettings (serverID int, reactAmount int, emoji text, channelID int, ignoreBots int)")
+            
+            if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireChannelBlacklist';") is None:
+                # Fire Channel Blacklist - blacklisted channels
+                await sql.execute("CREATE TABLE fireChannelBlacklist (serverID int, channelID int)")
+            
+            if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireRoleBlacklist';") is None:
+                # Fire Role Blacklist - blacklisted roles
+                await sql.execute("CREATE TABLE fireRoleBlacklist (serverID int, roleID int)")
+                
+            await sql.commit()
     
     # List refresh function
     async def refreshFireLists(self):
-        self.fireMessages = self.cursor.execute("SELECT * FROM fireMessages").fetchall()
-        self.fireSettings = self.cursor.execute("SELECT * FROM fireSettings").fetchall()
-        self.fireChannelBlacklist = self.cursor.execute("SELECT * FROM fireChannelBlacklist").fetchall()
-        self.fireRoleBlacklist = self.cursor.execute("SELECT * FROM fireRoleBlacklist").fetchall()
+        async with self.fireboardPool.acquire() as sql:
+            self.fireMessages = await sql.fetchall("SELECT * FROM fireMessages")
+            self.fireSettings = await sql.fetchall("SELECT * FROM fireSettings")
+            self.fireChannelBlacklist = await sql.fetchall("SELECT * FROM fireChannelBlacklist")
+            self.fireRoleBlacklist = await sql.fetchall("SELECT * FROM fireRoleBlacklist")
 
     # Listen for reactions
     @commands.Cog.listener()
@@ -130,13 +120,14 @@ class Fireboard(commands.Cog):
                 else:
                     reactCount = None
                 
-                # Set updated react count
-                if reactCount is not None:
-                    self.connection.execute(f"UPDATE fireMessages SET reactionAmount = ? WHERE msgID = ?", (reactCount, payload.message_id,))
-                    await self.refreshFireLists()
-                else:
-                    self.connection.execute(f"UPDATE fireMessages SET reactionAmount = reactionAmount + 1 WHERE msgID = ?", (payload.message_id,))
-                    await self.refreshFireLists()
+                async with self.fireboardPool.acquire() as sql:
+                    # Set updated react count
+                    if reactCount is not None:
+                        await sql.execute(f"UPDATE fireMessages SET reactionAmount = ? WHERE msgID = ?", (reactCount, payload.message_id,))
+                        await self.refreshFireLists()
+                    else:
+                        await sql.execute(f"UPDATE fireMessages SET reactionAmount = reactionAmount + 1 WHERE msgID = ?", (payload.message_id,))
+                        await self.refreshFireLists()
 
                 # Get message from message list
                 message = [message for message in self.fireMessages if message[1] == payload.message_id][0]
@@ -214,9 +205,10 @@ class Fireboard(commands.Cog):
             boardChannel = await self.bot.fetch_channel(channelID)
             boardMessage = await boardChannel.send(content=f"**{reactCount} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
 
-            # Insert message to DB
-            self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, reactionAmount) VALUES (?, ?, ?, ?)", (payload.guild_id, payload.message_id, boardMessage.id, reactCount))
-            self.connection.commit()
+            async with self.fireboardPool.acquire() as sql:
+                # Insert message to DB
+                await sql.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, reactionAmount) VALUES (?, ?, ?, ?)", (payload.guild_id, payload.message_id, boardMessage.id, reactCount))
+                await sql.commit()
 
             await self.refreshFireLists()
         except Exception as e:
@@ -293,13 +285,14 @@ class Fireboard(commands.Cog):
                 else:
                     reactCount = None
                 
-                # Set updated react count
-                if reactCount is not None:
-                    self.connection.execute(f"UPDATE fireMessages SET reactionAmount = ? WHERE msgID = ?", (reactCount, payload.message_id,))
-                    await self.refreshFireLists()
-                else:
-                    self.connection.execute(f"UPDATE fireMessages SET reactionAmount = reactionAmount - 1 WHERE msgID = ?", (payload.message_id,))
-                    await self.refreshFireLists()
+                async with self.fireboardPool.acquire() as sql:
+                    # Set updated react count
+                    if reactCount is not None:
+                        await sql.execute(f"UPDATE fireMessages SET reactionAmount = ? WHERE msgID = ?", (reactCount, payload.message_id,))
+                        await self.refreshFireLists()
+                    else:
+                        await sql.execute(f"UPDATE fireMessages SET reactionAmount = reactionAmount - 1 WHERE msgID = ?", (payload.message_id,))
+                        await self.refreshFireLists()
 
                 # Get message from message list
                 message = [message for message in self.fireMessages if message[1] == payload.message_id][0]
@@ -311,8 +304,10 @@ class Fireboard(commands.Cog):
                 # Remove message if not enough reactions
                 if message[3] < reactMinimum:
                     await boardMessage.delete()
-                    self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
-                    self.connection.commit()
+                    
+                    async with self.fireboardPool.acquire() as sql:
+                        await sql.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
+                        await sql.commit()
 
                     await self.refreshFireLists()
 
@@ -394,9 +389,10 @@ class Fireboard(commands.Cog):
             boardChannel = await self.bot.fetch_channel(channelID)
             boardMessage = await boardChannel.send(content=f"**{reactCount} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embedList, view=view, files=[await attachment.to_file() for attachment in message.attachments])
 
-            # Insert message to DB
-            self.cursor.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, reactionAmount) VALUES (?, ?, ?, ?)", (payload.guild_id, payload.message_id, boardMessage.id, reactCount))
-            self.connection.commit()
+            async with self.fireboardPool.acquire() as sql:
+                # Insert message to DB
+                await sql.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, reactionAmount) VALUES (?, ?, ?, ?)", (payload.guild_id, payload.message_id, boardMessage.id, reactCount))
+                await sql.commit()
 
             await self.refreshFireLists()
         except Exception as e:
@@ -450,34 +446,36 @@ class Fireboard(commands.Cog):
                 # See if board message is already present
                 for fireMessage in self.fireMessages:
                     if fireMessage[1] == message.id:
-                        try:
-                            # Delete message
+                        async with self.fireboardPool.acquire() as sql:
                             try:
-                                channel: discord.TextChannel = await guild.fetch_channel(channelID)
-                            except discord.errors.NotFound:
-                                self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
-                                self.connection.commit()
-                                self.lockedMessages.remove(payload.message_id)
+                                # Delete message
+                                try:
+                                    channel: discord.TextChannel = await guild.fetch_channel(channelID)
+                                except discord.errors.NotFound:
+                                    await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
+                                    await sql.commit()
+                                    self.lockedMessages.remove(payload.message_id)
+                                    
+                                    return
+                                
+                                boardMessage = await channel.fetch_message(fireMessage[2])
+                                await boardMessage.delete()
+
+                                # Delete message from DB
+                                await sql.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
+                                await sql.commit()
+
+                                await self.refreshFireLists()
+
                                 return
-                            
-                            boardMessage = await channel.fetch_message(fireMessage[2])
-                            await boardMessage.delete()
+                            except discord.errors.NotFound:
+                                # Delete message from DB
+                                await sql.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
+                                await sql.commit()
 
-                            # Delete message from DB
-                            self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
-                            self.connection.commit()
+                                await self.refreshFireLists()
 
-                            await self.refreshFireLists()
-
-                            return
-                        except discord.errors.NotFound:
-                            # Delete message from DB
-                            self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (message.id,))
-                            self.connection.commit()
-
-                            await self.refreshFireLists()
-
-                            return
+                                return
             else:
                 return
         except Exception as e:
@@ -529,35 +527,36 @@ class Fireboard(commands.Cog):
                     # See if board message is already present
                     for fireMessage in self.fireMessages:
                         if fireMessage[1] == payload.message_id:
-                            try:
-                                # Fetch fireboard channel
+                            async with self.fireboardPool.acquire() as sql:
                                 try:
-                                    channel: discord.TextChannel = await guild.fetch_channel(channelID)
-                                except discord.errors.NotFound:
-                                    self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
-                                    self.connection.commit()
+                                    # Fetch fireboard channel
+                                    try:
+                                        channel: discord.TextChannel = await guild.fetch_channel(channelID)
+                                    except discord.errors.NotFound:
+                                        await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
+                                        await sql.commit()
+                                        
+                                        return
                                     
+                                    # Delete message
+                                    boardMessage = await channel.fetch_message(fireMessage[2])
+                                    await boardMessage.delete()
+
+                                    # Delete message from DB
+                                    await sql.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
+                                    await sql.commit()
+
+                                    await self.refreshFireLists()
+
                                     return
-                                
-                                # Delete message
-                                boardMessage = await channel.fetch_message(fireMessage[2])
-                                await boardMessage.delete()
+                                except discord.errors.NotFound:
+                                    # Delete message from DB
+                                    await sql.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
+                                    await sql.commit()
 
-                                # Delete message from DB
-                                self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
-                                self.connection.commit()
+                                    await self.refreshFireLists()
 
-                                await self.refreshFireLists()
-
-                                return
-                            except discord.errors.NotFound:
-                                # Delete message from DB
-                                self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
-                                self.connection.commit()
-
-                                await self.refreshFireLists()
-
-                                return
+                                    return
             else:
                 return
         except Exception as e:
@@ -608,35 +607,36 @@ class Fireboard(commands.Cog):
                 # See if board message is already present
                 for fireMessage in self.fireMessages:
                     if fireMessage[1] == payload.message_id:
-                        try:
-                            # Fetch fireboard channel
+                        async with self.fireboardPool.acquire() as sql:
                             try:
-                                channel: discord.TextChannel = await guild.fetch_channel(channelID)
-                            except discord.errors.NotFound:
-                                self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
-                                self.connection.commit()
+                                # Fetch fireboard channel
+                                try:
+                                    channel: discord.TextChannel = await guild.fetch_channel(channelID)
+                                except discord.errors.NotFound:
+                                    await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
+                                    await sql.commit()
+                                    
+                                    return
                                 
+                                # Delete message
+                                boardMessage = await channel.fetch_message(fireMessage[2])
+                                await boardMessage.delete()
+
+                                # Delete message from DB
+                                await sql.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
+                                await sql.commit()
+
+                                await self.refreshFireLists()
+
                                 return
-                            
-                            # Delete message
-                            boardMessage = await channel.fetch_message(fireMessage[2])
-                            await boardMessage.delete()
+                            except discord.errors.NotFound:
+                                # Delete message from DB
+                                await sql.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
+                                await sql.commit()
 
-                            # Delete message from DB
-                            self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
-                            self.connection.commit()
+                                await self.refreshFireLists()
 
-                            await self.refreshFireLists()
-
-                            return
-                        except discord.errors.NotFound:
-                            # Delete message from DB
-                            self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
-                            self.connection.commit()
-
-                            await self.refreshFireLists()
-
-                            return
+                                return
             else:
                 return
         except Exception as e:
@@ -713,9 +713,10 @@ class Fireboard(commands.Cog):
                 try:
                     channel: discord.TextChannel = await guild.fetch_channel(channelID)
                 except discord.errors.NotFound:
-                    self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
-                    self.connection.commit()
-                    
+                    async with self.fireboardPool.acquire() as sql:
+                        await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
+                        await sql.commit()
+                        
                     return
                 
                 # Find previous fireboard message
@@ -727,11 +728,12 @@ class Fireboard(commands.Cog):
 
                             await boardMessage.edit(embeds=embedList, files=message.attachments)
                 except discord.errors.NotFound: # Message not found
-                    # Delete message from DB
-                    self.cursor.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
-                    self.connection.commit()
+                    async with self.fireboardPool.acquire() as sql:
+                        # Delete message from DB
+                        await sql.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
+                        await sql.commit()
 
-                    await self.refreshFireLists()
+                        await self.refreshFireLists()
 
                     return
             else:
@@ -749,10 +751,11 @@ class Fireboard(commands.Cog):
             for server in self.fireSettings:
                 if server[0] == channel.guild.id:
                     if server[3] == channel.id:
-                        # Delete fireboard config
-                        self.cursor.execute(f"DELETE FROM fireMessages WHERE serverID = ?", (channel.guild.id,))
-                        self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (channel.guild.id,))
-                        self.connection.commit()
+                        async with self.fireboardPool.acquire() as sql:
+                            # Delete fireboard config
+                            await sql.execute(f"DELETE FROM fireMessages WHERE serverID = ?", (channel.guild.id,))
+                            await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (channel.guild.id,))
+                            await sql.commit()
 
                         await self.refreshFireLists()
 
@@ -767,10 +770,11 @@ class Fireboard(commands.Cog):
         if guild.id in [guild[0] for guild in self.fireSettings]:
             for server in self.fireSettings:
                 if server[0] == guild.id:
-                    # Delete fireboard config
-                    self.cursor.execute(f"DELETE FROM fireMessages WHERE serverID = ?", (guild.id,))
-                    self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (guild.id,))
-                    self.connection.commit()
+                    async with self.fireboardPool.acquire() as sql:
+                        # Delete fireboard config
+                        await sql.execute(f"DELETE FROM fireMessages WHERE serverID = ?", (guild.id,))
+                        await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (guild.id,))
+                        await sql.commit()
 
                     await self.refreshFireLists()
 
@@ -811,9 +815,10 @@ class Fireboard(commands.Cog):
 
                 return
             
-            # Insert to DB, refresh lists
-            self.cursor.execute(f"INSERT INTO fireSettings (serverID, reactAmount, emoji, channelID, ignoreBots) VALUES (?, ?, ?, ?, ?)", (interaction.guild_id, reactMinimum, emoji, channelID, ignoreBots,))
-            self.connection.commit()
+            async with self.fireboardPool.acquire() as sql:
+                # Insert to DB, refresh lists
+                await sql.execute(f"INSERT INTO fireSettings (serverID, reactAmount, emoji, channelID, ignoreBots) VALUES (?, ?, ?, ?, ?)", (interaction.guild_id, reactMinimum, emoji, channelID, ignoreBots,))
+                await sql.commit()
 
             await self.refreshFireLists()
             
@@ -822,63 +827,64 @@ class Fireboard(commands.Cog):
 
             await interaction.followup.send(embed=embed, ephemeral=True)
     
+    class ConfirmDisableView(View):
+        def __init__(self):
+            super().__init__(timeout=60)
+            
+        async def disable_fireboard(self, interaction: discord.Interaction, pool: asqlite.Pool):
+            async with pool.acquire() as sql:
+                try:
+                    await sql.execute("DELETE FROM fireMessages WHERE serverID = ?", (interaction.guild_id,))
+                    await sql.execute("DELETE FROM fireSettings WHERE serverID = ?", (interaction.guild_id,))
+                    await sql.execute("DELETE FROM fireChannelBlacklist WHERE serverID = ?", (interaction.guild_id,))
+                    await sql.execute("DELETE FROM fireRoleBlacklist WHERE serverID = ?", (interaction.guild_id,))
+                    await sql.commit()
+                    return True
+                except Exception:
+                    return False
+
+        @discord.ui.button(label='Disable', style=discord.ButtonStyle.red)
+        async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.defer(ephemeral=True)
+            
+            success = await self.disable_fireboard(interaction, self.pool)
+            
+            if success:
+                embed = discord.Embed(title="Done!", description="Fireboard was disabled.", color=Color.green())
+                await self.cog.refreshFireLists()
+            else:
+                embed = discord.Embed(title="Error", description="Failed to disable fireboard.", color=Color.red())
+            
+            await interaction.edit_original_response(embed=embed, view=None)
+            self.stop()
+
+        async def on_timeout(self):
+            for item in self.children:
+                item.disabled = True
+            
+            embed = discord.Embed(title="Timeout", description="You didn't press the button in time.", color=Color.red())
+            await self.message.edit(embed=embed, view=self)
+    
     # Fireboard disable command
     @fireGroup.command(name="disable", description="Disable the server fireboard.")
     async def disableFireboard(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         
-        # Check fireboard status
-        if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
-            class DisableView(View):
-                def __init__(self, bot):
-                    super().__init__(timeout=60)
-
-                    self.bot = bot.bot
-                
-                # Timeout
-                async def on_timeout(self) -> None:
-                    self.interaction: discord.Interaction
-                    
-                    for item in self.children:
-                        item.disabled = True
-
-                    embed = discord.Embed(title = "Timeout", description="You didn't press the button in time.", color=Color.red())
-                    
-                    await self.interaction.edit_original_response(embed=embed, view=self)
-                
-                # Disable button
-                @discord.ui.button(label=f'Disable', style=discord.ButtonStyle.red, row = 0)
-                async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    await interaction.response.defer(ephemeral=True)
-                    
-                    self.connection: sqlite3.Connection
-                    self.cursor: sqlite3.Cursor
-
-                    # Delete all server info from DB, refresh list
-                    self.cursor.execute(f"DELETE FROM fireMessages WHERE serverID = ?", (interaction.guild.id,))
-                    self.cursor.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (interaction.guild.id,))
-                    self.connection.commit()
-
-                    await self.botSelf.refreshFireLists() # pylint: disable=no-member
-
-                    embed = discord.Embed(title = "Done!", description="Fireboard was disabled.", color=Color.green())
-                    
-                    await self.interaction.edit_original_response(embed=embed, view=None)
-
-            viewInstance = DisableView(self)
-            viewInstance.interaction = interaction
-            viewInstance.connection = self.connection
-            viewInstance.cursor = self.cursor
-            viewInstance.botSelf = self
-        
-            # Confirmation
-            embed = discord.Embed(title = "Are you sure?", description="All data about this server's fireboard will be deleted. The fireboard will be disabled. This is a destructive action!", color=Color.orange())
-
-            await interaction.followup.send(embed=embed, view=viewInstance, ephemeral=True)
+        if interaction.guild_id in [guild[0] for guild in self.fireSettings]:
+            view = self.ConfirmDisableView()
+            view.pool = self.fireboardPool
+            view.cog = self
+            
+            embed = discord.Embed(
+                title="Are you sure?", 
+                description="All data about this server's fireboard will be deleted. This cannot be undone!",
+                color=Color.orange()
+            )
+            
+            message = await interaction.followup.send(embed=embed, view=view, ephemeral=True, wait=True)
+            view.message = message
         else:
-            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
-
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.followup.send("Fireboard is not enabled in this server!", ephemeral=True)
     
     # Fireboard server info command
     @fireGroup.command(name="info", description="View fireboard config for this server.")
@@ -923,9 +929,10 @@ class Fireboard(commands.Cog):
 
                 reaction: discord.Reaction = reaction
                 
-                # Change emoji in DB, refresh lists
-                self.cursor.execute(f"UPDATE fireSettings SET emoji = ? WHERE serverID = ?", (str(reaction.emoji), interaction.guild_id,))
-                self.connection.commit()
+                async with self.fireboardPool.acquire() as sql:
+                    # Change emoji in DB, refresh lists
+                    await sql.execute(f"UPDATE fireSettings SET emoji = ? WHERE serverID = ?", (str(reaction.emoji), interaction.guild_id,))
+                    await sql.commit()
                 
                 embed = discord.Embed(title = "Emoji Set", description=f"Set emoji to **{str(reaction.emoji)}.**", color=Color.green())
                 
@@ -963,9 +970,10 @@ class Fireboard(commands.Cog):
 
                 return
             
-            # Update channel in DB, refresh lists
-            self.cursor.execute(f"UPDATE fireSettings SET channelID = ? WHERE serverID = ?", (channel.id, interaction.guild_id,))
-            self.connection.commit()
+            async with self.fireboardPool.acquire() as sql:
+                # Update channel in DB, refresh lists
+                await sql.execute(f"UPDATE fireSettings SET channelID = ? WHERE serverID = ?", (channel.id, interaction.guild_id,))
+                await sql.commit()
 
             await self.refreshFireLists()
             
@@ -985,9 +993,10 @@ class Fireboard(commands.Cog):
         if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
             embed = discord.Embed(title="Set", description=f"Reaction requirement has been set to **{amount} reactions.**", color=Color.green())
 
-            # Update reaction requirement in DB, refresh lists
-            self.cursor.execute(f"UPDATE fireSettings SET reactAmount = ? WHERE serverID = ?", (amount, interaction.guild_id,))
-            self.connection.commit()
+            async with self.fireboardPool.acquire() as sql:
+                # Update reaction requirement in DB, refresh lists
+                await sql.execute(f"UPDATE fireSettings SET reactAmount = ? WHERE serverID = ?", (amount, interaction.guild_id,))
+                await sql.commit()
 
             await self.refreshFireLists()
             await interaction.followup.send(embed=embed, ephemeral=True)
@@ -1005,9 +1014,10 @@ class Fireboard(commands.Cog):
         if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
             embed = discord.Embed(title="Set", description=f"Bot messages will **{"be ignored." if value else "not be ignored."}**", color=Color.green())
 
-            # Update setting in DB, refresh lists
-            self.cursor.execute(f"UPDATE fireSettings SET ignoreBots = ? WHERE serverID = ?", (value, interaction.guild_id,))
-            self.connection.commit()
+            async with self.fireboardPool.acquire() as sql:
+                # Update setting in DB, refresh lists
+                await sql.execute(f"UPDATE fireSettings SET ignoreBots = ? WHERE serverID = ?", (value, interaction.guild_id,))
+                await sql.commit()
 
             await self.refreshFireLists()
             await interaction.followup.send(embed=embed, ephemeral=True)
@@ -1023,22 +1033,23 @@ class Fireboard(commands.Cog):
         
         # Check fireboard status
         if interaction.guild_id in [guild[0] for guild in self.fireSettings]:
-            if channel.id in [channelEntry[1] for channelEntry in self.fireChannelBlacklist]:
-                self.cursor.execute("DELETE FROM fireChannelBlacklist WHERE serverID = ? AND channelID = ?", (interaction.guild_id, channel.id,))
-                self.connection.commit()
+            async with self.fireboardPool.acquire() as sql:
+                if channel.id in [channelEntry[1] for channelEntry in self.fireChannelBlacklist]:
+                    await sql.execute("DELETE FROM fireChannelBlacklist WHERE serverID = ? AND channelID = ?", (interaction.guild_id, channel.id,))
+                    await sql.commit()
 
-                await self.refreshFireLists()
-                
-                embed = discord.Embed(title = "Set", description = f"Removed {channel.mention} from the channel blacklist.")
-                await interaction.followup.send(embed=embed, ephemeral=True)
-            else:
-                self.cursor.execute(f"INSERT INTO fireChannelBlacklist (serverID, channelID) VALUES (?, ?)", (interaction.guild_id, channel.id,))
-                self.connection.commit()
+                    await self.refreshFireLists()
+                    
+                    embed = discord.Embed(title = "Set", description = f"Removed {channel.mention} from the channel blacklist.")
+                    await interaction.followup.send(embed=embed, ephemeral=True)
+                else:
+                    await sql.execute(f"INSERT INTO fireChannelBlacklist (serverID, channelID) VALUES (?, ?)", (interaction.guild_id, channel.id,))
+                    await sql.commit()
 
-                await self.refreshFireLists()
-                
-                embed = discord.Embed(title = "Set", description = f"Added {channel.mention} to the channel blacklist.")
-                await interaction.followup.send(embed=embed, ephemeral=True)
+                    await self.refreshFireLists()
+                    
+                    embed = discord.Embed(title = "Set", description = f"Added {channel.mention} to the channel blacklist.")
+                    await interaction.followup.send(embed=embed, ephemeral=True)
         else:
             embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
 
@@ -1051,22 +1062,23 @@ class Fireboard(commands.Cog):
         
         # Check fireboard status
         if interaction.guild_id in [guild[0] for guild in self.fireSettings]:
-            if role.id in [roleEntry[1] for roleEntry in self.fireRoleBlacklist]:
-                self.cursor.execute("DELETE FROM fireRoleBlacklist WHERE serverID = ? AND roleID = ?", (interaction.guild_id, role.id,))
-                self.connection.commit()
+            async with self.fireboardPool.acquire() as sql:
+                if role.id in [roleEntry[1] for roleEntry in self.fireRoleBlacklist]:
+                    await sql.execute("DELETE FROM fireRoleBlacklist WHERE serverID = ? AND roleID = ?", (interaction.guild_id, role.id,))
+                    await sql.commit()
 
-                await self.refreshFireLists()
-                
-                embed = discord.Embed(title = "Set", description = f"Removed {role.mention} from the role blacklist.")
-                await interaction.followup.send(embed=embed, ephemeral=True)
-            else:
-                self.cursor.execute(f"INSERT INTO fireRoleBlacklist (serverID, roleID) VALUES (?, ?)", (interaction.guild_id, role.id,))
-                self.connection.commit()
+                    await self.refreshFireLists()
+                    
+                    embed = discord.Embed(title = "Set", description = f"Removed {role.mention} from the role blacklist.")
+                    await interaction.followup.send(embed=embed, ephemeral=True)
+                else:
+                    await sql.execute(f"INSERT INTO fireRoleBlacklist (serverID, roleID) VALUES (?, ?)", (interaction.guild_id, role.id,))
+                    await sql.commit()
 
-                await self.refreshFireLists()
-                
-                embed = discord.Embed(title = "Set", description = f"Added {role.mention} to the role blacklist.")
-                await interaction.followup.send(embed=embed, ephemeral=True)
+                    await self.refreshFireLists()
+                    
+                    embed = discord.Embed(title = "Set", description = f"Added {role.mention} to the role blacklist.")
+                    await interaction.followup.send(embed=embed, ephemeral=True)
         else:
             embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
 
