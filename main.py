@@ -137,6 +137,10 @@ class TitaniumBot(commands.Bot):
         open(os.path.join("content", "sql", "economy.db"), "a").close()
         self.economyPool = await asqlite.create_pool(os.path.join("content", "sql", "economy.db"))
 
+        # Tags Pool
+        open(os.path.join("content", "sql", "tags.db"), "a").close()
+        self.tagsPool = await asqlite.create_pool(os.path.join("content", "sql", "tags.db"))
+
         print("[INIT] SQL pools created.\n")
         
         print("[INIT] Loading cogs...")

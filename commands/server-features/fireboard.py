@@ -1,10 +1,8 @@
 # pylint: disable=possibly-used-before-assignment
 
 import asyncio
-import os
-import sqlite3
-import asqlite
 
+import asqlite
 import discord
 import discord.ext
 import discord.ext.commands
