@@ -59,7 +59,7 @@ class UserUtils(commands.Cog):
         
         view = View()
         view.add_item(discord.ui.Button(label="User URL", style=discord.ButtonStyle.url, url=f"https://discord.com/users/{user.id}", row = 0))
-        view.add_item(discord.ui.Button(label="Open in Browser", style=discord.ButtonStyle.url, url=user.display_avatar.url, row = 0))
+        view.add_item(discord.ui.Button(label="Open PFP in Browser", style=discord.ButtonStyle.url, url=user.display_avatar.url, row = 0))
         
         # Send Embed
         await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)

@@ -221,7 +221,10 @@ class Tags(commands.Cog):
 
     # Tags Create command
     @tagsGroup.command(name = "create", description = "Create a new tag.")
-    async def tagsCreate(self, interaction: discord.Interaction, name: str, content: str):
+    @app_commands.describe(name = "The name of the tag.")
+    @app_commands.describe(content = "The content of the tag. Overridden by attachment if you add one.")
+    @app_commands.describe(attachment = "Optional: quickly add an attachment to the tag. Overrides content.")
+    async def tagsCreate(self, interaction: discord.Interaction, name: str, content: str = None, attachment: discord.Attachment = None):
         await interaction.response.defer(ephemeral=True)
 
         name = name.lower()
@@ -230,16 +233,29 @@ class Tags(commands.Cog):
             embed = discord.Embed(title = "Error", description = "That tag already exists.", color = Color.red())
             await interaction.followup.send(embed = embed, ephemeral=True)
         else:
-            async with self.tagsPool.acquire() as sql:
-                await sql.execute("INSERT INTO tags (creatorID, name, content) VALUES (?, ?, ?)", (interaction.user.id, name, content))
-            
-            if interaction.user.id not in self.tags:
-                self.tags[interaction.user.id] = {}
-            
-            self.tags[interaction.user.id][name] = content
-            
-            embed = discord.Embed(title = "Success", description = "Tag created.", color = Color.green())
-            await interaction.followup.send(embed = embed, ephemeral=True)
+            if content is None and attachment is None:
+                embed = discord.Embed(title = "Error", description = "You must provide content or an attachment.", color = Color.red())
+                await interaction.followup.send(embed = embed, ephemeral=True)
+            else:
+                if content is not None:
+                    async with self.tagsPool.acquire() as sql:
+                        await sql.execute("INSERT INTO tags (creatorID, name, content) VALUES (?, ?, ?)", (interaction.user.id, name, content))
+                    
+                    if interaction.user.id not in self.tags:
+                        self.tags[interaction.user.id] = {}
+                    
+                    self.tags[interaction.user.id][name] = content
+                else:
+                    async with self.tagsPool.acquire() as sql:
+                        await sql.execute("INSERT INTO tags (creatorID, name, content) VALUES (?, ?, ?)", (interaction.user.id, name, attachment.url))
+                    
+                    if interaction.user.id not in self.tags:
+                        self.tags[interaction.user.id] = {}
+                    
+                    self.tags[interaction.user.id][name] = attachment.url
+                
+                embed = discord.Embed(title = "Success", description = "Tag created.", color = Color.green())
+                await interaction.followup.send(embed = embed, ephemeral=True)
     
     # Tags Delete command
     @tagsGroup.command(name = "delete", description = "Delete a tag.")
