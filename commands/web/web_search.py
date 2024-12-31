@@ -19,7 +19,7 @@ class WebSearch(commands.Cog):
     @app_commands.describe(page = "Optional: page to jump to. Defaults to first page.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1,10)
-    async def urban_dict(self, interaction: discord.Interaction, query: str, page: app_commands.Range[int, 1, 10] = 0, ephemeral: bool = False):
+    async def urban_dict(self, interaction: discord.Interaction, query: str, page: app_commands.Range[int, 1, 10] = 1, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
         embed_list = []
@@ -33,15 +33,17 @@ class WebSearch(commands.Cog):
             item_list = []
 
             if len(request_data['list']) != 0:
+                page = max(1, min(len(request_data['list']), page))
+                
                 for item in request_data['list']:
                     item_list.append(item)
                 
                 class UrbanDictPageView(View):
-                    def __init__(self, pages):
+                    def __init__(self, pages, startPage):
                         super().__init__(timeout = 900)
                         
-                        self.page = 0
-                        self.pages = pages
+                        self.page = startPage - 1
+                        self.pages: list = pages
 
                         self.locked = False
                         
@@ -52,7 +54,11 @@ class WebSearch(commands.Cog):
                             for item in self.children:
                                 if item.custom_id == "first" or item.custom_id == "prev":
                                     item.disabled = True
-                
+                        elif page + 1 >= len(item_list):
+                            for item in self.children:
+                                if item.custom_id == "next" or item.custom_id == "last":
+                                    item.disabled = True
+                    
                     # Timeout
                     async def on_timeout(self) -> None:
                         try:
@@ -202,7 +208,7 @@ class WebSearch(commands.Cog):
                 if len(item_list) == 1:
                     await interaction.followup.send(embeds = embed_list, ephemeral=ephemeral)
                 else:
-                    webhook = await interaction.followup.send(embeds = embed_list, view = UrbanDictPageView(item_list), ephemeral=ephemeral, wait=True)
+                    webhook = await interaction.followup.send(embeds = embed_list, view = UrbanDictPageView(item_list, page), ephemeral=ephemeral, wait=True)
 
                     UrbanDictPageView.userID = interaction.user.id
                     UrbanDictPageView.msgID = webhook.id
