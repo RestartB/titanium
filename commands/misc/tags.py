@@ -9,9 +9,6 @@ from thefuzz import process
 class Tags(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    
-    def __init__(self, bot):
-        self.bot = bot
         self.tagsPool: asqlite.Pool = bot.tagsPool
         self.tags: dict = {}
         
