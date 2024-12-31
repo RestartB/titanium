@@ -53,7 +53,15 @@ class Tags(commands.Cog):
         if interaction.user.id not in self.tags:
             myTags = []
         else:
-            myTags = ((f"{key[:47]}..." if len(key) > 50 else key) for key in list(self.tags[interaction.user.id].keys()))
+            def format_tag_content(content: str) -> str:
+                if content.startswith('https://cdn.discordapp.com/'):
+                    return '`[Attachment]`'
+                return f"`{content[:30]}...`" if len(content) > 30 else f'`{content}`'
+            
+            myTags = (
+                f"{key} ({format_tag_content(self.tags[interaction.user.id][key])})"
+                for key in self.tags[interaction.user.id].keys()
+            )
         
         if myTags == []:
             embed = discord.Embed(title = "Tags", description = "You don't have any tags.", color = Color.red())
