@@ -243,7 +243,7 @@ class Tags(commands.Cog):
     
     # Tags Delete command
     @tagsGroup.command(name = "delete", description = "Delete a tag.")
-    @app_commands.describe(tags = "The tag to delete.")
+    @app_commands.describe(tag = "The tag to delete.")
     @app_commands.autocomplete(tag=tagAutocomplete)
     async def tagsDelete(self, interaction: discord.Interaction, tag: str):
         await interaction.response.defer(ephemeral=True)
