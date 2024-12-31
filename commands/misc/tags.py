@@ -215,7 +215,7 @@ class Tags(commands.Cog):
     # Tags Use command
     @tagsGroup.command(name = "use", description = "Use a tag.")
     @app_commands.autocomplete(tag=tagAutocomplete)
-    async def tagsList(self, interaction: discord.Interaction, tag: str, ephemeral: bool = False):
+    async def tagsUse(self, interaction: discord.Interaction, tag: str, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
         tag = tag.lower()
