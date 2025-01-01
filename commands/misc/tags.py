@@ -227,7 +227,7 @@ class Tags(commands.Cog):
     # Tags Create command
     @tagsGroup.command(name = "create", description = "Create a new tag.")
     @app_commands.describe(name = "The name of the tag. Max 100 characters.")
-    @app_commands.describe(content = "The content of the tag. Overridden by attachment if you add one.")
+    @app_commands.describe(content = "Optional: the content of the tag. Overridden by attachment if you add one.")
     @app_commands.describe(attachment = "Optional: quickly add an attachment to the tag. Overrides content.")
     async def tagsCreate(self, interaction: discord.Interaction, name: str, content: str = None, attachment: discord.Attachment = None):
         await interaction.response.defer(ephemeral=True)
@@ -263,6 +263,61 @@ class Tags(commands.Cog):
                     self.tags[interaction.user.id][name] = content
                 
                 embed = discord.Embed(title = "Success", description = "Tag created.", color = Color.green())
+                await interaction.followup.send(embed = embed, ephemeral=True)
+    
+    # Tags Edit command
+    @tagsGroup.command(name = "edit", description = "Edit a tag.")
+    @app_commands.describe(tag = "The tag to edit.")
+    @app_commands.describe(name = "Optional: provide a new name for the tag.")
+    @app_commands.describe(content = "Optional: the new content of the tag. Overridden by attachment if you add one.")
+    @app_commands.describe(attachment = "Optional: quickly add an attachment to the tag. Overrides content.")
+    @app_commands.autocomplete(tag=tagAutocomplete)
+    async def tagsEdit(self, interaction: discord.Interaction, tag: str, name: str = None, content: str = None, attachment: discord.Attachment = None):
+        await interaction.response.defer(ephemeral=True)
+
+        tag = tag.lower()
+
+        if interaction.user.id not in self.tags or tag not in list(self.tags[interaction.user.id].keys()):
+            embed = discord.Embed(title = "Error", description = "That tag doesn't exist.", color = Color.red())
+            await interaction.followup.send(embed = embed, ephemeral=True)
+        else:
+            if content is None and attachment is None and name is None:
+                embed = discord.Embed(title = "Error", description = "You must provide a new name, new content or a new attachment.", color = Color.red())
+                await interaction.followup.send(embed = embed, ephemeral=True)
+            else:
+                if attachment is not None:
+                    async with self.tagsPool.acquire() as sql:
+                        await sql.execute("UPDATE tags SET content = ? WHERE creatorID = ? AND name = ?", (attachment.url, interaction.user.id, tag,))
+                    
+                    if interaction.user.id not in self.tags:
+                        self.tags[interaction.user.id] = {}
+                    
+                    self.tags[interaction.user.id][tag] = attachment.url
+                else:
+                    async with self.tagsPool.acquire() as sql:
+                        await sql.execute("UPDATE tags SET content = ? WHERE creatorID = ? AND name = ?", (content, interaction.user.id, tag,))
+                    
+                    if interaction.user.id not in self.tags:
+                        self.tags[interaction.user.id] = {}
+                    
+                    self.tags[interaction.user.id][tag] = content
+                
+                if name is not None:
+                    if len(name) > 100:
+                        embed = discord.Embed(title = "Error", description = "New tag name is too long.", color = Color.red())
+                        await interaction.followup.send(embed = embed, ephemeral=True)
+                    else:  
+                        if name in list(self.tags[interaction.user.id].keys()):
+                            embed = discord.Embed(title = "Error", description = "New tag name is already in use.", color = Color.red())
+                            await interaction.followup.send(embed = embed, ephemeral=True)
+                        else:
+                            async with self.tagsPool.acquire() as sql:
+                                await sql.execute("UPDATE tags SET name = ? WHERE creatorID = ? AND name = ?", (name, interaction.user.id, tag,))
+                            
+                            self.tags[interaction.user.id][name] = self.tags[interaction.user.id][tag]
+                            del self.tags[interaction.user.id][tag]
+                
+                embed = discord.Embed(title = "Success", description = "Tag updated.", color = Color.green())
                 await interaction.followup.send(embed = embed, ephemeral=True)
     
     # Tags Delete command
