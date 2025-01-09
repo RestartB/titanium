@@ -1,4 +1,3 @@
-import sqlite3
 from datetime import datetime
 
 import asqlite
@@ -44,13 +43,10 @@ class EditHistory(commands.Cog):
     # Synchronize server list
     async def syncServerList(self):
         async with self.editPool.acquire() as sql:
-            try: # Table exists
-                self.enabledServers = [server[0] for server in await sql.fetchall("SELECT * FROM settings")]
-            except sqlite3.OperationalError: # Table does not exist, create it
-                await sql.execute("CREATE TABLE settings (guildID int)")
-                await sql.commit()
+            await sql.execute("CREATE TABLE IF NOT EXISTS settings (guildID int)")
+            await sql.commit()
 
-                self.enabledServers = []
+            self.enabledServers = [server[0] for server in await sql.fetchall("SELECT * FROM settings")]
     
     # Listen for message being edited
     @commands.Cog.listener()
@@ -59,40 +55,40 @@ class EditHistory(commands.Cog):
             if payload.guild_id in self.enabledServers:
                 if payload.data["edited_timestamp"] is not None:
                     async with self.editPool.acquire() as sql:
-                        try: # Check if table exists
-                            await sql.fetchone(f"SELECT * FROM '{payload.guild_id}-{payload.message_id}'")
-                        except sqlite3.OperationalError: # Table does not exist
-                            await sql.execute(f"CREATE TABLE '{payload.guild_id}-{payload.message_id}' (editID INTEGER PRIMARY KEY AUTOINCREMENT, timestamp int, content text)")
-                            
+                        await sql.execute(f"CREATE TABLE IF NOT EXISTS '{payload.guild_id}-{payload.message_id}' (editID INTEGER PRIMARY KEY AUTOINCREMENT, timestamp int, content text)")
+                        await sql.commit()
+
+                        # Check if table is blank
+                        if await sql.fetchone(f"SELECT * FROM '{payload.guild_id}-{payload.message_id}'") is None:
                             # Add original message
                             if payload.cached_message is not None: # Message is cached
                                 createdTimestamp = int(payload.cached_message.created_at.timestamp())
                                 
                                 if payload.cached_message.edited_at is None: # Message is not edited
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, payload.cached_message.content))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, payload.cached_message.content,))
                                 else: # Message is edited
                                     # Add initial message and edited message
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, "Message content unavailable."))
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (createdTimestamp, payload.cached_message.content))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, "Message content unavailable.",))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (createdTimestamp, payload.cached_message.content,))
                             else: # Message is not cached
                                 createdTimestamp = int(datetime.strptime(payload.data["timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp())
                                 editedOfflineTimestamp = int(datetime.strptime(payload.data["edited_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp())
 
                                 if payload.data["edited_timestamp"] is None: # Message is not edited
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, "Message content unavailable."))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, "Message content unavailable.",))
                                 else: # Message is edited
                                     # Add initial message and edited message
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, "Message content unavailable."))
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (editedOfflineTimestamp, "Message content unavailable."))
-                        finally: # Add edit to table
-                            editedTimestamp = int(datetime.strptime(payload.data["edited_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp())
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, "Message content unavailable.",))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (editedOfflineTimestamp, "Message content unavailable.",))
                             
-                            if (payload.data["content"] is not None) and payload.data["content"] != "": # Normal edit
-                                # Add edit
-                                await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (editedTimestamp, payload.data["content"]))
-                            else: # Embed or attachment edit
-                                # Add edit
-                                await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (editedTimestamp, "No content, likely an embed or attachment edit."))
+                        editedTimestamp = int(datetime.strptime(payload.data["edited_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp())
+                        
+                        if (payload.data["content"] is not None) and payload.data["content"] != "": # Normal edit
+                            # Add edit
+                            await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (editedTimestamp, payload.data["content"],))
+                        else: # Embed or attachment edit
+                            # Add edit
+                            await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (editedTimestamp, "No content, likely an embed or attachment edit.",))
     
     # Listen for message being deleted
     @commands.Cog.listener()
@@ -100,14 +96,8 @@ class EditHistory(commands.Cog):
         if payload.guild_id is not None:
             if payload.guild_id in self.enabledServers:
                 async with self.editPool.acquire() as sql:
-                    try: # Check if table exists
-                        await sql.fetchone(f"SELECT * FROM '{payload.guild_id}-{payload.message_id}'")
-
-                        await sql.execute(f"DROP TABLE '{payload.guild_id}-{payload.message_id}'")
-
-                        await sql.commit()
-                    except sqlite3.OperationalError:
-                        return
+                    await sql.execute(f"DROP TABLE IF EXISTS '{payload.guild_id}-{payload.message_id}'")
+                    await sql.commit()
 
     # Edit history callback
     async def editHistoryCallback(self, interaction: discord.Interaction, message: discord.Message):

@@ -124,10 +124,6 @@ class TitaniumBot(commands.Bot):
         # Leaderboard DB Pool
         open(os.path.join("content", "sql", "lb.db"), "a").close()
         self.lbPool = await asqlite.create_pool(os.path.join("content", "sql", "lb.db"))
-
-        # Isolation DB Pool
-        open(os.path.join("content", "sql", "isolated.db"), "a").close()
-        self.isolationPool = await asqlite.create_pool(os.path.join("content", "sql", "isolated.db"))
         
         # Edit History DB Pool
         open(os.path.join("content", "sql", "editHistory.db"), "a").close()

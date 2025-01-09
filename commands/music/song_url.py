@@ -1,11 +1,11 @@
 import datetime
 import os
 import random
-import sqlite3
 import string
 from urllib.parse import quote
 
 import aiohttp
+import asqlite
 import discord
 import spotipy
 from colorthief import ColorThief
@@ -26,26 +26,27 @@ class SongURL(commands.Cog):
         self.auth_manager = SpotifyClientCredentials(client_id = self.bot.tokens['spotify-api-id'], client_secret = self.bot.tokens['spotify-api-secret'])
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
 
+        self.cachePool: asqlite.Pool = bot.cachePool
+
         self.cleaner = UrlCleaner()
         self.cleaner.ruler.update_rules()
 
-        # Check DB exists
-        open(os.path.join("content", "sql", "cache.db"), "a").close()
+        # Setup
+        self.bot.loop.create_task(self.setup())
 
-        self.connection = sqlite3.connect(os.path.join("content", "sql", "cache.db"))
-        self.cursor = self.connection.cursor()
-
-        if self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='songlinkCache';").fetchone() == None:
+    # List refresh function
+    async def setup(self):
+        async with self.cachePool.acquire() as sql:
             # song.link Cache - store previous results
-            self.cursor.execute("CREATE TABLE songlinkCache (userURL text, spotifyURL text, platformRich text, platformRaw text, ttl int)")
-            
-            self.connection.commit()
+            await sql.execute("CREATE TABLE IF NOT EXISTS songlinkCache (userURL text, spotifyURL text, platformRich text, platformRaw text, ttl int)")
+            await sql.commit()
         
-        self.cache = self.cursor.execute("SELECT * FROM songlinkCache").fetchall()
-    
+            self.cache = await sql.fetchall("SELECT * FROM songlinkCache")
+
     # List refresh function
     async def refreshCache(self):
-        self.cache = self.cursor.execute("SELECT * FROM songlinkCache").fetchall()
+        async with self.cachePool.acquire() as sql:
+            self.cache = sql.fetchall("SELECT * FROM songlinkCache")
     
     # Song URL command
     @app_commands.command(name = "song-url", description = "Get info about a song link.")
@@ -123,9 +124,10 @@ class SongURL(commands.Cog):
             # 90 day TTL
             ttl = int(datetime.datetime.now().timestamp()) + 7776000
             
-            # Add to cache
-            self.cursor.execute(f"INSERT INTO songlinkCache (userURL, spotifyURL, platformRich, platformRaw, ttl) VALUES (?, ?, ?, ?, ?)", (userURL, url, platform, platform_api, ttl,))
-            self.connection.commit()
+            async with self.cachePool.acquire() as sql:
+                # Add to cache
+                await sql.execute(f"INSERT INTO songlinkCache (userURL, spotifyURL, platformRich, platformRaw, ttl) VALUES (?, ?, ?, ?, ?)", (userURL, url, platform, platform_api, ttl,))
+                await sql.commit()
 
             await self.refreshCache()
             
@@ -136,9 +138,10 @@ class SongURL(commands.Cog):
             if not("spotify" in url):
                 # Check if URL is in cache
                 if (url not in [entry[0] for entry in self.cache]) or bypass_cache: # Not cached
-                    # Remove from DB
-                    self.cursor.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
-                    self.connection.commit()
+                    async with self.cachePool.acquire() as sql:
+                        # Remove from DB
+                        await sql.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
+                        await sql.commit()
 
                     await self.refreshCache()
                     
@@ -167,9 +170,10 @@ class SongURL(commands.Cog):
 
                             break
                         elif entry[0] == url:
-                            # Remove from DB
-                            self.cursor.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
-                            self.connection.commit()
+                            async with self.cachePool.acquire() as sql:
+                                # Remove from DB
+                                await sql.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
+                                await sql.commit()
 
                             await self.refreshCache()
 
