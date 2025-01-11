@@ -46,7 +46,7 @@ class SongURL(commands.Cog):
     # List refresh function
     async def refreshCache(self):
         async with self.cachePool.acquire() as sql:
-            self.cache = sql.fetchall("SELECT * FROM songlinkCache")
+            self.cache = await sql.fetchall("SELECT * FROM songlinkCache")
     
     # Song URL command
     @app_commands.command(name = "song-url", description = "Get info about a song link.")
