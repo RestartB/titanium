@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import random
 import string
@@ -210,8 +211,8 @@ class SongURL(commands.Cog):
                         async with session.get(url) as request:
                             url = str(request.url)
                 except Exception as error:
-                    print("[SPOTURL] Error while expanding URL.")
-                    print(error)
+                    logging.error(f"[SPOTURL] Error while expanding URL: {error}")
+                    
                     if interaction.user.id in self.bot.options['owner-ids']:
                         embed = discord.Embed(title = "Error occurred while expanding URL.", description = error, color = Color.red())
                         embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)

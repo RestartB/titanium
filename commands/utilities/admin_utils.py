@@ -1,6 +1,8 @@
 import asyncio
 import datetime
+import logging
 import os
+import traceback
 
 import discord
 import discord.ext
@@ -36,8 +38,8 @@ class CogUtils(commands.Cog):
 
                 embed = discord.Embed(title = f"Loaded {cog}!", color = Color.green())
                 await interaction.followup.send(embed = embed)
-            except Exception as error:
-                embed = discord.Embed(title = "Error", description = f"Error while loading {cog}.\n\n{error}", color = Color.red())
+            except Exception as e:
+                embed = discord.Embed(title = "Error", description = f"Error while loading {cog}.\n\n```python\n{traceback.format_exc()}```", color = Color.red())
                 await interaction.followup.send(embed = embed)
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
@@ -52,16 +54,12 @@ class CogUtils(commands.Cog):
         
         if interaction.user.id in self.bot.options['owner-ids']:
             try:
-                if cog != "reminders":
-                    await self.bot.unload_extension(cog)
+                await self.bot.unload_extension(cog)
 
-                    embed = discord.Embed(title = f"Unloaded {cog}!", color = Color.green())
-                    await interaction.followup.send(embed = embed)
-                else:
-                    embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\nCog is protected from unloading. Please reload the bot without the cog present to unload.", color = Color.red())
-                    await interaction.followup.send(embed = embed)
-            except Exception as error:
-                embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\n{error}", color = Color.red())
+                embed = discord.Embed(title = f"Unloaded {cog}!", color = Color.green())
+                await interaction.followup.send(embed = embed)
+            except Exception as e:
+                embed = discord.Embed(title = "Error", description = f"Error while unloading {cog}.\n\n```python\n{traceback.format_exc()}```", color = Color.red())
                 await interaction.followup.send(embed = embed)
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
@@ -80,8 +78,8 @@ class CogUtils(commands.Cog):
 
                 embed = discord.Embed(title = f"Reloaded {cog}!", color = Color.green())
                 await interaction.followup.send(embed = embed)
-            except Exception as error:
-                embed = discord.Embed(title = "Error", description = f"Error while reloading {cog}.\n\n{error}", color = Color.red())
+            except Exception as e:
+                embed = discord.Embed(title = "Error", description = f"Error while reloading {cog}.\n\n```python\n{traceback.format_exc()}```", color = Color.red())
                 await interaction.followup.send(embed = embed)
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
@@ -98,15 +96,15 @@ class CogUtils(commands.Cog):
             await interaction.followup.send(embed = embed)
 
             # Control Server Sync
-            print("[INIT] Syncing control server command tree...")
+            logging.info("[INIT] Syncing control server command tree...")
             guild = self.bot.get_guild(1213954608632700989)
             sync = await self.bot.tree.sync(guild=guild)
-            print(f"[INIT] Control server command tree synced. {len(sync)} command total.")
+            logging.info(f"[INIT] Control server command tree synced. {len(sync)} command total.")
             
             # Global Sync
-            print("[INIT] Syncing global command tree...")
+            logging.info("[INIT] Syncing global command tree...")
             sync = await self.bot.tree.sync(guild=None)
-            print(f"[INIT] Global command tree synced. {len(sync)} commands total.")
+            logging.info(f"[INIT] Global command tree synced. {len(sync)} commands total.")
 
             embed = discord.Embed(title =  "Success!", description = f"Tree synced. {len(sync)} commands loaded.", color = Color.green())
             await interaction.edit_original_response(embed = embed)

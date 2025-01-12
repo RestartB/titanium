@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import string
@@ -222,8 +223,8 @@ class Spotify(commands.Cog):
                     
                 url_expanded = True
             except Exception as error:
-                print("[SPOTIMG] Error while expanding URL.")
-                print(error)
+                logging.error("[SPOTIMG] Error while expanding URL.")
+                logging.error(error)
                 if interaction.user.id in self.bot.options['owner-ids']:
                     embed = discord.Embed(title = "Error occurred while expanding URL.", description = error, color = Color.red())
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)

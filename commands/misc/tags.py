@@ -18,13 +18,9 @@ class Tags(commands.Cog):
     # Setup function
     async def setup(self):
         async with self.tagsPool.acquire() as sql:
-            print("[TAGS] Setting up tags table...")
-            
             # Create table if it doesn't exist
             await sql.execute("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY, creatorID INTEGER, name TEXT, content TEXT)")
             await sql.commit()
-        
-        print("[TAGS] Tags table setup complete.")
 
     # List refresh function
     async def getTagLists(self):

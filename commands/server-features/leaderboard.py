@@ -1,3 +1,5 @@
+import logging
+
 import asqlite
 import discord
 import discord.ext
@@ -70,8 +72,8 @@ class Leaderboard(commands.Cog):
             else:
                 pass
         except Exception as error:
-            print("Error occurred while logging message for leaderboard!")
-            print(error)
+            logging.error("Error occurred while logging message for leaderboard!")
+            logging.error(error)
     
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
     lbGroup = app_commands.Group(name="leaderboard", description="View the server leaderboard.", allowed_contexts=context)
