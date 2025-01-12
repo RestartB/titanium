@@ -31,13 +31,16 @@ class NowPlaying(commands.Cog):
     @app_commands.describe(user = "Optional: the user to show the activity of. If not provided, it will show your own activity.")
     async def nowPlaying(self, interaction: discord.Interaction, user: discord.User = None):
         if user is None:
+            userSet = False
             user = interaction.user
+        else:
+            userSet = True
         
         # Check if Titanium is in a mutual guild with the user
-        if user.mutual_guilds is None: 
+        if user.mutual_guilds is None or len(user.mutual_guilds) == 0: 
             # Send error message - no mutual guilds
             await interaction.response.defer(ephemeral=True)
-            embed = discord.Embed(title = "No Mutual Guilds", description="Titanium must be in a mutual guild with the user to be able to see their status.", color = Color.red())
+            embed = discord.Embed(title = "No Mutual Guilds", description=f"Titanium must be in a mutual guild with {user.mention if userSet else 'you'} to be able to see their status.", color = Color.red())
 
             await interaction.followup.send(embed=embed, ephemeral=True)
             return 0

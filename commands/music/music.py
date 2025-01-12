@@ -137,39 +137,32 @@ class Music(commands.Cog):
                     list_place = id_list.index(int(self.values[0]))
                     
                     try:
-                        lyrics_split = lyrics_list[list_place].split("\n\n")
+                        lyrics_split = str(lyrics_list[list_place]).split("\n\n")
 
                         pages = []
                         current_page = ""
-                        paragraphTotal = 0
 
-                        # Page split
-                        for paragraph in lyrics_split:
-                            paragraphTotal += 1
-                            
-                            if longer_pages == True:
-                                if len(paragraph) + len(current_page) < 4096:
-                                    current_page = current_page + "\n\n" + paragraph
-                                else:
-                                    pages.append(current_page)
-                                    current_page = ""
-                                    current_page = current_page + paragraph
-                            else:
-                                if len(paragraph) + len(current_page) < 1000:
-                                    current_page = current_page + "\n\n" + paragraph
-
-                                    if paragraphTotal == 4:
+                        if len(lyrics_split) == 1: # No page split
+                            pages = lyrics_split
+                        else:
+                            for i, paragraph in enumerate(lyrics_split):
+                                print(paragraph)
+                                if longer_pages:
+                                    if len(current_page) > 4096:
                                         pages.append(current_page)
-                                        current_page = ""
+                                        current_page = paragraph
+                                    else:
+                                        current_page += paragraph + "\n\n"
                                 else:
-                                    pages.append(current_page)
-                                    current_page = ""
-                                    paragraphTotal = 1
-                                    current_page = current_page + paragraph
+                                    if not(i == 0) and i % 5 == 0 or len(current_page) > 1024:
+                                        pages.append(current_page)
+                                        current_page = paragraph
+                                    else:
+                                        current_page += paragraph + "\n\n"
 
-                        # Add any remaining contents
-                        if current_page != "":
-                            pages.append(current_page)
+                            # Add any remaining contents
+                            if current_page != "":
+                                pages.append(current_page)
 
                         # Create lyric embed
                         embed = discord.Embed(title = f"Lyrics: {song_list[list_place]} - {artist_list[list_place]}", description = pages[0], color = Color.random())
