@@ -148,7 +148,7 @@ class Music(commands.Cog):
                             for i, paragraph in enumerate(lyrics_split):
                                 print(paragraph)
                                 if longer_pages:
-                                    if len(current_page) > 4096:
+                                    if not(i == 0) and len(current_page) > 4096:
                                         pages.append(current_page)
                                         current_page = paragraph
                                     else:
