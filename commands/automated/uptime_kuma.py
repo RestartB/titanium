@@ -34,7 +34,7 @@ class UptimeKuma(commands.Cog):
                         logging.debug(f"[KUMA] Retrying ping... (retry {retry})")
                     
                     if not self.bot.is_closed():
-                        async with await session.get(f"http://192.168.1.4:3001/api/push/iaHDSrJnaq?status=up&msg=OK&ping={round(self.bot.latency*1000, 2)}") as req:
+                        async with await session.get(f"{self.bot.options["uptime-kuma-push"]}/api/push/iaHDSrJnaq?status=up&msg=OK&ping={round(self.bot.latency*1000, 2)}") as req:
                             json = await req.json()
 
                             if json["ok"] == True:
@@ -43,7 +43,7 @@ class UptimeKuma(commands.Cog):
                                 logging.debug(f"[KUMA] Ping failed (status: {json}), trying again.")
                                 retry += 1
                     else:
-                        async with await session.get("http://192.168.1.4:3001/api/push/iaHDSrJnaq?status=down&msg=DISCONNECTED") as req:
+                        async with await session.get(f"{self.bot.options["uptime-kuma-push"]}/api/push/iaHDSrJnaq?status=down&msg=DISCONNECTED") as req:
                             json = await req.json()
                             
                             if json["ok"] == True:
