@@ -113,11 +113,6 @@ class TitaniumBot(commands.Bot):
 
             self.options['owner-ids'] = self.options['owner-ids'].split(",")
 
-            if self.options['cog-dir'] == '':
-                self.options['cog-dir'] = "commands"
-            else:
-                pass
-
             if self.options['sync-on-start'] == 'True':
                 self.options['sync-on-start'] = True
             else:
