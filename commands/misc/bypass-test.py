@@ -7,6 +7,19 @@ from discord.ui import View
 class BypassTest(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+        # Bypass test option
+        self.bypassCTX = app_commands.ContextMenu(
+            name="Bypass Test",
+            callback=self.bypassCallback,
+            allowed_contexts=discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
+            allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True)
+        )
+    
+    # Image to GIF callback
+    async def bypassCallback(self, interaction: discord.Interaction, message: discord.Message) -> None:
+        await interaction.response.defer()
+        await interaction.followup.send("Can you see me?", ephemeral=False)
     
     # Bypass test command
     @app_commands.command(name = "bypass-test", description = "Test bypass for external apps.")
