@@ -15,8 +15,10 @@ class BypassTest(commands.Cog):
             allowed_contexts=discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
             allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True)
         )
+
+        self.bot.tree.add_command(self.bypassCTX)
     
-    # Image to GIF callback
+    # Bypass test callback
     async def bypassCallback(self, interaction: discord.Interaction, message: discord.Message) -> None:
         await interaction.response.defer()
         await interaction.followup.send("Can you see me?", ephemeral=False)
