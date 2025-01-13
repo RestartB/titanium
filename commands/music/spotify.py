@@ -281,7 +281,7 @@ class Spotify(commands.Cog):
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     
                     view = View()
-                    view.add_item(discord.ui.Button(label="Download", style=discord.ButtonStyle.url, url=result["images"][0]["url"]))
+                    view.add_item(discord.ui.Button(label="Open in Browser", style=discord.ButtonStyle.url, url=result["album"]["images"][0]["url"]))
                     
                     await interaction.edit_original_response(embed = embed, view = view)
                 else:
