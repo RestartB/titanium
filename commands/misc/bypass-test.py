@@ -22,8 +22,8 @@ class BypassTest(commands.Cog):
                 super().__init__()
             
             @discord.ui.button(label="Test Bypass", style=discord.ButtonStyle.primary)
-            async def test_bypass(self, button: discord.ui.Button, interaction: discord.Interaction):
-                await 
+            async def test_bypass(self, interaction: discord.Interaction, button: discord.ui.Button):
+                await interaction.response.defer()
                 await interaction.followup.send("Can you see me?", ephemeral=False)
         
         await interaction.followup.send(embed=embed, view=BypassView())
