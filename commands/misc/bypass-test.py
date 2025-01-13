@@ -23,6 +23,7 @@ class BypassTest(commands.Cog):
             
             @discord.ui.button(label="Test Bypass", style=discord.ButtonStyle.primary)
             async def test_bypass(self, button: discord.ui.Button, interaction: discord.Interaction):
+                await 
                 await interaction.followup.send("Can you see me?", ephemeral=False)
         
         await interaction.followup.send(embed=embed, view=BypassView())
