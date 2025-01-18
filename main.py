@@ -22,7 +22,7 @@ path = os.getcwd()
 
 # Create Root Logger
 dt_fmt = '%Y-%m-%d %H:%M:%S'
-logging.basicConfig(level=logging.DEBUG, format='[{asctime}] [{levelname:<8}] {name}: {message}', datefmt=dt_fmt, style='{')
+logging.basicConfig(level=logging.INFO, format='[{asctime}] [{levelname:<8}] {name}: {message}', datefmt=dt_fmt, style='{')
 
 # Get loggers
 rootLogger = logging.getLogger()
@@ -34,7 +34,7 @@ discordLogger.setLevel(logging.INFO)
 handler = logging.handlers.RotatingFileHandler(
     filename='logs/titanium.log',
     encoding='utf-8',
-    maxBytes=32 * 1024 * 1024,  # 32 MiB
+    maxBytes=20 * 1024 * 1024,  # 32 MiB
     backupCount=5,  # Rotate through 5 files
 )
 
