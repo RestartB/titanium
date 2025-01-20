@@ -27,7 +27,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 - [deeppyer](https://github.com/Ovyerus/deeppyer): deepfry image code [(licenced under MIT)](https://github.com/Ovyerus/deeppyer/blob/master/LICENSE)
 
 ## Quick Start
-You can quickly start using Titanium with the following link to add the main Titanium instance:
+You can quickly start using Titanium with the following link to add the main Titanium instance:\
 [Add Titanium](https://titaniumbot.me/invite) ([Privacy Policy](/Privacy.md))
 
 If you would like to self host your own instance of Titanium instead, please read the section below.
