@@ -1,5 +1,5 @@
 # Titanium Privacy Policy
-*v1.0.1, updated 20/01/25 (DD/MM/YY)*\
+*v1.1.0, updated 20/01/25 (DD/MM/YY)*\
 This document explains how Titanium treats your data. **Please note that this Privacy Policy only applies to the official main Titanium bot instance. When using other Titanium instances, please refer to their own Privacy Policies.**
 
 ## Definitions
@@ -89,6 +89,16 @@ When you run a Titanium command or use a Titanium context menu item, we collect 
 - User that ran the command / context menu item
 
 We do not collect any arguments that you provide (URLs, attachments, etc).
+
+## If an error occurs while you are using Titanium, we collect the following information to fix issues and improve the bot experience:
+- Command / context menu item used
+- Arguments provided when running the command *(if applicable)*
+- Developer information about the error
+- Time the command / context menu item was ran at
+- Guild the command / context menu item was ran in *(not collected if the bot is not in the guild)*
+- User that ran the command / context menu item
+
+We are currently working on a way to opt out of this error collection and will have more information to share about this at a later time.
 
 ## Processing Location
 Titanium is hosted in the United Kingdom. By using Titanium, you agree to your data being processed according to this privacy policy, and local laws / regulations in the United Kingdom.
