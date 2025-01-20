@@ -1,5 +1,5 @@
 # Titanium Privacy Policy
-*v1.1.0, updated 20/01/25 (DD/MM/YY)*\
+*v1.1.1, updated 20/01/25 (DD/MM/YY)*\
 This document explains how Titanium treats your data. **Please note that this Privacy Policy only applies to the official main Titanium bot instance. When using other Titanium instances, please refer to their own Privacy Policies.**
 
 ## Definitions
@@ -90,7 +90,8 @@ When you run a Titanium command or use a Titanium context menu item, we collect 
 
 We do not collect any arguments that you provide (URLs, attachments, etc).
 
-## If an error occurs while you are using Titanium, we collect the following information to fix issues and improve the bot experience:
+## Error Collection
+If an error occurs while you are using Titanium, we collect the following information to fix issues and improve the bot experience:
 - Command / context menu item used
 - Arguments provided when running the command *(if applicable)*
 - Developer information about the error
