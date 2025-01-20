@@ -24,6 +24,8 @@ class UptimeKuma(commands.Cog):
     # Uptime Kuma Ping
     @tasks.loop(seconds=10)
     async def kumaPing(self):
+        await self.bot.wait_until_ready()
+        
         # Send info to Uptime Kuma server
         async with aiohttp.ClientSession() as session:
             retry = 0
