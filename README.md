@@ -1,8 +1,10 @@
 # Titanium
 Welcome to Titanium, the multipurpose, open source Discord bot.
 
+[Add Titanium Now!](https://titaniumbot.me/invite) ([Privacy Policy](/Privacy.md))
+
 ## Contributions Welcome!
-Have an improvement you want to make? Developed a new cog that you want to be in the main bot? Contributions are welcome! Make a pull request and I'll take a look. :)
+Have an improvement you want to make? Developed a new cog that you want to be in the main bot? Contributions are welcome! Make a pull request and I'll take a look. :3
 
 ### Licence
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -23,6 +25,12 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 ## Credit
 - me: bot code
 - [deeppyer](https://github.com/Ovyerus/deeppyer): deepfry image code [(licenced under MIT)](https://github.com/Ovyerus/deeppyer/blob/master/LICENSE)
+
+## Quick Start
+You can quickly start using Titanium with the following link to add the main Titanium instance:
+[Add Titanium](https://titaniumbot.me/invite) ([Privacy Policy](/Privacy.md))
+
+If you would like to self host your own instance of Titanium instead, please read the section below.
 
 ## Self Hosting Titanium
 Self-hosting Titanium is possible, however you must get the required modules and API tokens first.

@@ -38,7 +38,7 @@ class BotUtils(commands.Cog):
         await interaction.response.defer(ephemeral=ephemeral)
         
         embed = discord.Embed(title = "Invite", description="Use this invite to add the bot to your account or server!", color=Color.green())
-        embed.add_field(name = "Invite", value=f"https://discord.com/oauth2/authorize?client_id=1222612840146407484")
+        embed.add_field(name = "Invite", value=f"https://titaniumbot.me/invite")
 
         view = View()
         view.add_item(discord.ui.Button(label="Add Bot", style=discord.ButtonStyle.url, url="https://discord.com/oauth2/authorize?client_id=1222612840146407484"))
