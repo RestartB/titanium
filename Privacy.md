@@ -1,5 +1,5 @@
 # Titanium Privacy Policy
-*v1.0, updated 20/01/25 (DD/MM/YY)*
+*v1.0.1, updated 20/01/25 (DD/MM/YY)*\
 This document explains how Titanium treats your data. **Please note that this Privacy Policy only applies to the official main Titanium bot instance. When using other Titanium instances, please refer to their own Privacy Policies.**
 
 ## Definitions
@@ -82,11 +82,11 @@ When using Titanium's image processing features, the image will be temporarily d
 Unless otherwise specified in feature-specific sections, we retain data only for as long as necessary to provide our bot's services. When data is no longer needed, it is deleted from our server.
 
 ## Bot Usage Collection
-When you use Titanium, we collect the following information:
-- Command used
-- Time the command was ran
-- Guild the command was ran in *(not collected if the bot is not in the guild)*
-- User that ran the command
+When you run a Titanium command or use a Titanium context menu item, we collect the following information:
+- Command / context menu item used
+- Time the command / context menu item was ran at
+- Guild the command / context menu item was ran in *(not collected if the bot is not in the guild)*
+- User that ran the command / context menu item
 
 We do not collect any arguments that you provide (URLs, attachments, etc).
 
