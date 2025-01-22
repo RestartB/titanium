@@ -5,6 +5,5 @@
   ],
   "lockFileMaintenance": {
     "enabled": true
-  },
-  "separateMinorPatch": true
+  }
 }
