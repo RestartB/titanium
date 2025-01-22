@@ -5,5 +5,12 @@
   ],
   "lockFileMaintenance": {
     "enabled": true
-  }
+  },
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "enabled": true
+    }
+  ]
 }
