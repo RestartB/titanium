@@ -5,5 +5,7 @@
   ],
   "lockFileMaintenance": {
     "enabled": true
-  }
+  },
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0
 }
