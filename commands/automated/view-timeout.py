@@ -27,7 +27,11 @@ class ViewTimeout(commands.Cog):
             view = discord.ui.View.from_message(response)
 
             for item in view.children:
-                item.disabled = True
+                try:
+                    if item.style != discord.ButtonStyle.url:
+                        item.disabled = True
+                except Exception:
+                    item.disabled = True
 
             # Edit the message
             await response.edit(view=view)
