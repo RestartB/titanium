@@ -45,13 +45,17 @@ class Videos(commands.Cog):
                     # Save file to /tmp
                     await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
                     
+                    # Send converting message
                     embed = discord.Embed(title="Converting...", description=f"{self.bot.options['loading-emoji']} Converting your video...", color=Color.green())
                     embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
+
+                    await interaction.edit_original_response(embed=embed)
 
                     # Save file to /tmp
                     input_path = os.path.join(os.getcwd(), "tmp", f"{filename}.{file.content_type.split('/')[-1]}")
                     output_path = os.path.join(os.getcwd(), "tmp", f"{filename}_processed.gif")
                     
+                    # Run ffmpeg to convert to GIF, cap length at 10s
                     proc = await asyncio.create_subprocess_exec(
                         "ffmpeg",
                         "-t", "10",
