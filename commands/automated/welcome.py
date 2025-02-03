@@ -22,7 +22,9 @@ class Welcome(commands.Cog):
             embed.add_field(name = "Feedback", value = "Enjoy the bot? Drop a star on my GitHub repo! (it's free and helps me a ton!) Have a suggestion or has something gone wrong? Submit a GitHub issue and I'll take a look.", inline = False)
 
             view = View()
-            view.add_item(discord.ui.Button(label="GitHub", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
+            view.add_item(discord.ui.Button(label="Website", style=discord.ButtonStyle.url, url="https://titaniumbot.me"))
+        view.add_item(discord.ui.Button(label="Privacy Policy", style=discord.ButtonStyle.url, url="https://github.com/RestartB/titanium/blob/main/Privacy.md"))
+        view.add_item(discord.ui.Button(label="GitHub", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
             
             if guild.system_channel is not None:
                 if guild.system_channel.permissions_for(guild.me).send_messages:
