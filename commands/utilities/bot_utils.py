@@ -52,7 +52,7 @@ class BotUtils(commands.Cog):
         await interaction.response.defer(ephemeral=ephemeral)
         
         embed = discord.Embed(title = "Titanium", description = "Hi, I'm Titanium! I'm a multi-purpose, open source Discord bot created by Restart (<@563372552643149825>). I use slash commands - use `/` to see all of my commands!", color = Color.green())
-        embed.add_field(name = "GitHub", value = "You can also find me on GitHub - this is the place to go if you have found a bug or have a feature suggestion! Just submit an issue and I'll take a look. You can also add a star to show some love to the project. It's free and helps me a lot! https://github.com/restartb/titanium")
+        embed.add_field(name = "GitHub", value = "You can also find me on GitHub - this is the place to go if you have found a bug or have a feature suggestion! Just submit an issue and I'll take a look. You can also add a star to show some love to the project. It's free and helps me a lot!")
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
         repo = pygit2.Repository('.git')
@@ -77,6 +77,8 @@ class BotUtils(commands.Cog):
         embed.add_field(name = "Current Version", value = (f':white_check_mark: Up to date ({local_short})' if synced else f':x: Out of date ({local_short}, latest: {remote_short})'), inline = False)
         
         view = View()
+        view.add_item(discord.ui.Button(label="Website", style=discord.ButtonStyle.url, url="https://titaniumbot.me"))
+        view.add_item(discord.ui.Button(label="Privacy Policy", style=discord.ButtonStyle.url, url="https://github.com/RestartB/titanium/blob/main/Privacy.md"))
         view.add_item(discord.ui.Button(label="GitHub", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
         
         await interaction.followup.send(embed = embed, ephemeral=ephemeral, view=view)
