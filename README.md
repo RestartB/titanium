@@ -30,7 +30,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You can quickly start using Titanium with the following link to add the main Titanium instance:\
 [Add Titanium](https://titaniumbot.me/invite) ([Privacy Policy](/Privacy.md))
 
-If you would like to self host your own instance of Titanium instead, please read the section below.
+If you would like to self-host your own instance of Titanium instead, please read the section below.
 
 ## Self Hosting Titanium
 Self-hosting Titanium is possible, however you must get the required modules and API tokens first.
@@ -125,7 +125,7 @@ Titanium comes with some included commands. Below is a list of what commands are
   - **wikipedia:** search Wikipedia for an answer.
 
 ## Included Cogs
-Titanium also includes some non command cogs, which are also stored in the command folder. The list is below:
+Titanium also includes some non-command cogs, which are also stored in the command folder. The list is below:
 - **status_update.py**
   - Stores the autoupdater for the bot's activity status.
 - **welcome.py**

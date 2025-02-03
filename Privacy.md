@@ -9,7 +9,7 @@ This document explains how Titanium treats your data. **Please note that this Pr
 - *"guild"* - a Discord server. Not to be confused with the bot hosting server (labelled *"the server"*).
 
 ## Data we collect
-When using certain Titanium features, we may need to collect and process some data. Titanium accesses this data using the Discord API; all of the data is publicly accessible. The data collected may include but is not limited to:
+When using certain Titanium features, we may need to collect and process some data. Titanium accesses this data using the Discord API; all data accessed is publicly accessible. The data collected may include but is not limited to:
 - User Information *(incl. IDs, profile picture URLs)*
 - User Permissions in guilds
 - Guild Information *(incl. guild members)*
