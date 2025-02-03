@@ -52,7 +52,7 @@ class BotUtils(commands.Cog):
         await interaction.response.defer(ephemeral=ephemeral)
         
         embed = discord.Embed(title = "Titanium", description = "Hi, I'm Titanium! I'm a multi-purpose, open source Discord bot created by Restart (<@563372552643149825>). I use slash commands - use `/` to see all of my commands!", color = Color.green())
-        embed.add_field(name = "GitHub", value = "You can also find me on GitHub - this is the place to go if you have found a bug or have a feature suggestion! Just submit an issue and I'll take a look. You can also add a star to show some love to the project. It's free and helps me a lot!")
+        embed.add_field(name = "Feedback", value = "Enjoy the bot? Drop a star on my GitHub repo! (it's free and helps me a ton!) Have a suggestion or has something gone wrong? Submit a GitHub issue and I'll take a look.", inline = False)
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
         repo = pygit2.Repository('.git')
