@@ -94,7 +94,7 @@ class Spotify(commands.Cog):
                     # Find unique ID of selection in the list
                     item = result['tracks']['items'][int(select.values[0])]
 
-                    await elements.song(self=self, item=item, interaction=interaction, ephemeral=ephemeral, msgID = webhook.id)
+                    await elements.song(self=self, item=item, interaction=interaction, ephemeral=ephemeral, msg_id= webhook.id)
             
             # Set up list with provided values
             select.callback = response
@@ -139,7 +139,7 @@ class Spotify(commands.Cog):
 
                     result_top_tracks = self.sp.artist_top_tracks(item['id'])
                     
-                    await elements.artist(self=self, item=result_info, top_tracks=result_top_tracks, interaction=interaction, ephemeral=ephemeral, msgID = webhook.id)
+                    await elements.artist(self=self, item=result_info, top_tracks=result_top_tracks, interaction=interaction, ephemeral=ephemeral, msg_id= webhook.id)
                 
                 # Set up list with provided values
                 select.callback = response
@@ -194,7 +194,7 @@ class Spotify(commands.Cog):
 
                     result_info = self.sp.album(item['id'])
                     
-                    await elements.album(self=self, item=result_info, interaction=interaction, ephemeral=ephemeral, msgID = webhook.id)
+                    await elements.album(self=self, item=result_info, interaction=interaction, ephemeral=ephemeral, msg_id= webhook.id)
                 
                 # Set up list with provided values
                 select.callback = response
@@ -214,6 +214,7 @@ class Spotify(commands.Cog):
         
         if "spotify.link" in url:
             try:  
+                # noinspection HttpUrlsUsage
                 url = url.replace('www.', '').replace('http://', '').replace('https://', '').rstrip('/')
                 url = f"https://{url}"
                 
@@ -331,7 +332,7 @@ class Spotify(commands.Cog):
                     
                     await interaction.edit_original_response(embed = embed, view = view)
                 else:
-                    embed = discord.Embed(title = "No album art available.", color = Color.red)
+                    embed = discord.Embed(title = "No album art available.", color = Color.red())
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed)
             # Playlist URL
@@ -373,7 +374,7 @@ class Spotify(commands.Cog):
                     
                     await interaction.edit_original_response(embed = embed, view = view)
                 else:
-                    embed = discord.Embed(title = "No cover art available.", color = Color.red)
+                    embed = discord.Embed(title = "No cover art available.", color = Color.red())
                     embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                     await interaction.edit_original_response(embed = embed)
             else:

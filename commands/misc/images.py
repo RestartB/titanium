@@ -10,6 +10,7 @@ from discord.ext import commands
 from PIL import Image, ImageEnhance, ImageOps
 
 
+# noinspection PyTypeChecker
 class Images(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -18,7 +19,7 @@ class Images(commands.Cog):
         # Convert to GIF option
         self.imgGifCTX = app_commands.ContextMenu(
             name="Convert to GIF",
-            callback=self.gifCallback,
+            callback=self.gif_callback,
             allowed_contexts=discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
             allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True)
         )
@@ -26,7 +27,7 @@ class Images(commands.Cog):
         # Deepfry option
         self.deepfryCTX = app_commands.ContextMenu(
             name="Deepfry Images",
-            callback=self.deepfryCallback,
+            callback=self.deepfry_callback,
             allowed_contexts=discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
             allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True)
         )
@@ -45,7 +46,7 @@ class Images(commands.Cog):
     @app_commands.describe(scale = "Scale the resolution by a certain amount. Overrides target_x and target_y if set.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 20)
-    async def resizeImage(self, interaction: discord.Interaction, file: discord.Attachment, scale: float = None, target_x: int = None, target_y: int = None, ephemeral: bool = False):
+    async def resize_image(self, interaction: discord.Interaction, file: discord.Attachment, scale: float = None, target_x: int = None, target_y: int = None, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
         if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
@@ -78,29 +79,29 @@ class Images(commands.Cog):
                         # Open image
                         with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as im:
                             # Resize image
-                            resizedImage = im.resize((int(target_x), int(target_y)))
+                            resized_image = im.resize((int(target_x), int(target_y)))
                             
                             # Save resized image
-                            resizedImage.save(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
-                            newSize = resizedImage.size
+                            resized_image.save(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
+                            new_size = resized_image.size
 
-                            fileSize = os.path.getsize(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
+                            file_size = os.path.getsize(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
                             
-                            if fileSize > 20000000: # Check if image is too large
-                                embed = discord.Embed(title="Error", description=f"The result of this operation is too large. Please ensure it is smaller than 20MB. (current size: {fileSize / 6})", color=Color.red())
+                            if file_size > 20000000: # Check if image is too large
+                                embed = discord.Embed(title="Error", description=f"The result of this operation is too large. Please ensure it is smaller than 20MB. (current size: {file_size / 6})", color=Color.red())
                                 embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
                                 
                                 await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                                 return
                             
                             # Send resized image
-                            embed = discord.Embed(title="Image Resized", description=f"Image resized to {newSize[0]}x{newSize[1]}.", color=Color.green())
+                            embed = discord.Embed(title="Image Resized", description=f"Image resized to {new_size[0]}x{new_size[1]}.", color=Color.green())
                             embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
-                            fileProcessed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"image.{file.content_type.split('/')[-1]}")
+                            file_processed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"image.{file.content_type.split('/')[-1]}")
                             embed.set_image(url=f"attachment://image.{file.content_type.split('/')[-1]}")
                             
-                            await interaction.followup.send(embed=embed, file=fileProcessed, ephemeral=ephemeral)
+                            await interaction.followup.send(embed=embed, file=file_processed, ephemeral=ephemeral)
 
                         # Delete temporary files
                         os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
@@ -134,7 +135,7 @@ class Images(commands.Cog):
     @imageGroup.command(name = "to-gif", description = "Convert an image to GIF.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
-    async def gifImage(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
+    async def gif_image(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
         if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
@@ -159,10 +160,10 @@ class Images(commands.Cog):
                     embed = discord.Embed(title="Image Converted", description=f"Image converted to GIF.", color=Color.green())
                     embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
-                    fileProcessed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
+                    file_processed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
                     embed.set_image(url=f"attachment://{filename}_processed.gif")
                     
-                    await interaction.followup.send(embed=embed, file=fileProcessed, ephemeral=ephemeral)
+                    await interaction.followup.send(embed=embed, file=file_processed, ephemeral=ephemeral)
 
                 # Delete temporary files
                 os.remove(os.path.join("tmp", f"{filename}_processed.gif"))
@@ -179,7 +180,7 @@ class Images(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
     
     # Image to GIF callback
-    async def gifCallback(self, interaction: discord.Interaction, message: discord.Message) -> None:
+    async def gif_callback(self, interaction: discord.Interaction, message: discord.Message) -> None:
         if message.attachments == []:
             await interaction.response.defer(ephemeral=True)
 
@@ -213,8 +214,8 @@ class Images(commands.Cog):
                                 im.save(os.path.join("tmp", f"{filename}_processed.gif"))
 
                                 # Add converted file to list
-                                convertedFile = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
-                                converted.append(convertedFile)
+                                converted_file = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
+                                converted.append(converted_file)
 
                             os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
                         else: # If file is too large
@@ -244,7 +245,7 @@ class Images(commands.Cog):
     @imageGroup.command(name = "deepfry", description = "Deepfry an image..")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
-    async def deepfryImage(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
+    async def deepfry_image(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
         if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
@@ -293,10 +294,10 @@ class Images(commands.Cog):
                     embed = discord.Embed(title="Done", description=f"Image deepfried.", color=Color.green())
                     embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
-                    fileProcessed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"{filename}_processed.{file.content_type.split('/')[-1]}")
+                    file_processed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"{filename}_processed.{file.content_type.split('/')[-1]}")
                     embed.set_image(url=f"attachment://{filename}_processed.{file.content_type.split('/')[-1]}")
                     
-                    await interaction.followup.send(embed=embed, file=fileProcessed, ephemeral=ephemeral)
+                    await interaction.followup.send(embed=embed, file=file_processed, ephemeral=ephemeral)
 
                 # Delete temporary files
                 os.remove(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
@@ -313,7 +314,7 @@ class Images(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
     
     # Deepfry callback
-    async def deepfryCallback(self, interaction: discord.Interaction, message: discord.Message) -> None:
+    async def deepfry_callback(self, interaction: discord.Interaction, message: discord.Message) -> None:
         if message.attachments == []:
             await interaction.response.defer(ephemeral=True)
 
@@ -371,8 +372,8 @@ class Images(commands.Cog):
                                 img.save(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
 
                                 # Add converted file to list
-                                convertedFile = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"{filename}_processed.{file.content_type.split('/')[-1]}")
-                                converted.append(convertedFile)
+                                converted_file = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"{filename}_processed.{file.content_type.split('/')[-1]}")
+                                converted.append(converted_file)
 
                             os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
                         else: # If file is too large

@@ -8,14 +8,14 @@ from discord.ext import commands, tasks
 class StatusUpdate(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.statusUpdate.start()
+        self.status_update.start()
         
     def cog_unload(self):
-        self.statusUpdate.cancel()
+        self.status_update.cancel()
 
     # Uptime Kuma Ping
     @tasks.loop(hours=1)
-    async def statusUpdate(self):
+    async def status_update(self):
         await self.bot.wait_until_ready()
         
         try:

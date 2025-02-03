@@ -29,18 +29,18 @@ class NowPlaying(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(user = "Optional: the user to show the activity of. If not provided, it will show your own activity.")
-    async def nowPlaying(self, interaction: discord.Interaction, user: discord.User = None):
+    async def now_playing(self, interaction: discord.Interaction, user: discord.User = None):
         if user is None:
-            userSet = False
+            user_set = False
             user = interaction.user
         else:
-            userSet = True
+            user_set = True
         
         # Check if Titanium is in a mutual guild with the user
         if user.mutual_guilds is None or len(user.mutual_guilds) == 0: 
             # Send error message - no mutual guilds
             await interaction.response.defer(ephemeral=True)
-            embed = discord.Embed(title = "No Mutual Guilds", description=f"Titanium must be in a mutual guild with {user.mention if userSet else 'you'} to be able to see their status.", color = Color.red())
+            embed = discord.Embed(title = "No Mutual Guilds", description=f"Titanium must be in a mutual guild with {user.mention if user_set else 'you'} to be able to see their status.", color = Color.red())
 
             await interaction.followup.send(embed=embed, ephemeral=True)
             return 0
@@ -78,17 +78,17 @@ class NowPlaying(commands.Cog):
             else: # Other
                 # Set Activity String
                 if activity.type == discord.ActivityType.playing:
-                    activityType = "Playing"
+                    activity_type = "Playing"
                 elif activity.type == discord.ActivityType.streaming:
-                    activityType = "Streaming"
+                    activity_type = "Streaming"
                 elif activity.type == discord.ActivityType.listening:
-                    activityType = "Listening"
+                    activity_type = "Listening"
                 elif activity.type == discord.ActivityType.watching:
-                    activityType = "Watching"
+                    activity_type = "Watching"
                 elif activity.type == discord.ActivityType.custom:
-                    activityType = "Custom"
+                    activity_type = "Custom"
                 else:
-                    activityType = ""
+                    activity_type = ""
                 
                 # Select colour
                 if activity.large_image_url is not None:
@@ -99,7 +99,7 @@ class NowPlaying(commands.Cog):
                 if activity.details:
                     # Create Embed
                     embed = discord.Embed(title = f"{activity.details}", description=activity.state, color=Color.random())
-                    embed.set_author(name=f"{activityType}{(" to " if activityType == "Listening" else " - ") if activity.small_image_text is not None else ''}{activity.small_image_text}", icon_url=activity.small_image_url)
+                    embed.set_author(name=f"{activity_type}{(" to " if activity_type == "Listening" else " - ") if activity.small_image_text is not None else ''}{activity.small_image_text}", icon_url=activity.small_image_url)
 
                     embed.set_footer(text=f"@{user.name} - {activity.name}", icon_url=user.display_avatar.url)
                     embed.set_thumbnail(url=activity.large_image_url)
@@ -119,7 +119,7 @@ class NowPlaying(commands.Cog):
                     await interaction.followup.send(embed=embed, view=view)
                 else:
                     # Create Embed
-                    embed = discord.Embed(title = f"{activityType}{(' to' if activityType == 'Listening' else '')}", description=activity.name, color=Color.random())
+                    embed = discord.Embed(title = f"{activity_type}{(' to' if activity_type == 'Listening' else '')}", description=activity.name, color=Color.random())
 
                     embed.set_author(name=f"@{user.name}", icon_url=user.display_avatar.url)
                     embed.set_thumbnail(url=activity.large_image_url)

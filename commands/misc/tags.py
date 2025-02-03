@@ -9,11 +9,11 @@ from thefuzz import process
 class Tags(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.tagsPool: asqlite.Pool = bot.tagsPool
+        self.tagsPool: asqlite.Pool = bot.tags_pool
         self.tags: dict = {}
         
         self.bot.loop.create_task(self.setup())
-        self.bot.loop.create_task(self.getTagLists())
+        self.bot.loop.create_task(self.get_tag_lists())
     
     # Setup function
     async def setup(self):
@@ -23,7 +23,7 @@ class Tags(commands.Cog):
             await sql.commit()
 
     # List refresh function
-    async def getTagLists(self):
+    async def get_tag_lists(self):
         async with self.tagsPool.acquire() as sql:
             # Get all tags
             tags = await sql.fetchall("SELECT * FROM tags")
@@ -40,45 +40,45 @@ class Tags(commands.Cog):
     
     # Tags List command
     @tagsGroup.command(name = "list", description = "View your tags.")
-    async def tagsList(self, interaction: discord.Interaction):
+    async def tags_list(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
         if interaction.user.id not in self.tags:
-            myTags = []
+            my_tags = []
         else:
             def format_tag_content(content: str) -> str:
                 if content.startswith('https://cdn.discordapp.com/'):
                     return '`[Attachment]`'
                 return f"`{content[:30]}...`" if len(content) > 30 else f'`{content}`'
             
-            myTags = (
+            my_tags = (
                 f"{key} ({format_tag_content(self.tags[interaction.user.id][key])})"
                 for key in self.tags[interaction.user.id].keys()
             )
         
-        if myTags == []:
+        if my_tags == []:
             embed = discord.Embed(title = "Tags", description = "You don't have any tags.", color = Color.red())
             await interaction.followup.send(embed = embed, ephemeral=True)
         else:
             pages = []
-            pageStr = ""
+            page_str = ""
             i = 0
 
-            for tag in myTags:
+            for tag in my_tags:
                 i += 1
                 
-                if pageStr == "":
-                    pageStr += f"{i}. {tag}"
+                if page_str == "":
+                    page_str += f"{i}. {tag}"
                 else:
-                    pageStr += f"\n{i}. {tag}"
+                    page_str += f"\n{i}. {tag}"
 
                 # If there's 10 items in the current page, we split it into a new page
                 if i % 10 == 0:
-                    pages.append(pageStr)
-                    pageStr = ""
+                    pages.append(page_str)
+                    page_str = ""
 
-            if pageStr != "":
-                pages.append(pageStr)
+            if page_str != "":
+                pages.append(page_str)
             
             class Leaderboard(View):
                 def __init__(self, pages):
@@ -185,7 +185,7 @@ class Tags(commands.Cog):
 
                 Leaderboard.msgID = webhook.id
     
-    async def tagAutocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    async def tag_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         if interaction.user.id not in self.tags or self.tags[interaction.user.id] == []:
             return []
         else:
@@ -207,8 +207,8 @@ class Tags(commands.Cog):
     
     # Tags Use command
     @tagsGroup.command(name = "use", description = "Use a tag.")
-    @app_commands.autocomplete(tag=tagAutocomplete)
-    async def tagsUse(self, interaction: discord.Interaction, tag: str, ephemeral: bool = False):
+    @app_commands.autocomplete(tag=tag_autocomplete)
+    async def tags_use(self, interaction: discord.Interaction, tag: str, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
         tag = tag.lower()
@@ -225,7 +225,7 @@ class Tags(commands.Cog):
     @app_commands.describe(name = "The name of the tag. Max 100 characters.")
     @app_commands.describe(content = "Optional: the content of the tag. Overridden by attachment if you add one.")
     @app_commands.describe(attachment = "Optional: quickly add an attachment to the tag. Overrides content.")
-    async def tagsCreate(self, interaction: discord.Interaction, name: str, content: str = None, attachment: discord.Attachment = None):
+    async def tags_create(self, interaction: discord.Interaction, name: str, content: str = None, attachment: discord.Attachment = None):
         await interaction.response.defer(ephemeral=True)
 
         name = name.lower()
@@ -267,8 +267,8 @@ class Tags(commands.Cog):
     @app_commands.describe(name = "Optional: provide a new name for the tag.")
     @app_commands.describe(content = "Optional: the new content of the tag. Overridden by attachment if you add one.")
     @app_commands.describe(attachment = "Optional: quickly add an attachment to the tag. Overrides content.")
-    @app_commands.autocomplete(tag=tagAutocomplete)
-    async def tagsEdit(self, interaction: discord.Interaction, tag: str, name: str = None, content: str = None, attachment: discord.Attachment = None):
+    @app_commands.autocomplete(tag=tag_autocomplete)
+    async def tags_edit(self, interaction: discord.Interaction, tag: str, name: str = None, content: str = None, attachment: discord.Attachment = None):
         await interaction.response.defer(ephemeral=True)
 
         tag = tag.lower()
@@ -319,8 +319,8 @@ class Tags(commands.Cog):
     # Tags Delete command
     @tagsGroup.command(name = "delete", description = "Delete a tag.")
     @app_commands.describe(tag = "The tag to delete.")
-    @app_commands.autocomplete(tag=tagAutocomplete)
-    async def tagsDelete(self, interaction: discord.Interaction, tag: str):
+    @app_commands.autocomplete(tag=tag_autocomplete)
+    async def tags_delete(self, interaction: discord.Interaction, tag: str):
         await interaction.response.defer(ephemeral=True)
 
         tag = tag.lower()

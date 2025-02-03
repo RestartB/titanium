@@ -22,37 +22,37 @@ class UserUtils(commands.Cog):
         if interaction.guild is not None:
             try:
                 member = interaction.guild.get_member(user.id)
-                userInstalled = False
+                user_installed = False
 
                 if member == None:
                     member = user
-                    inGuild = False
+                    in_guild = False
                 else:
-                    inGuild = True
+                    in_guild = True
             except Exception:
                 member = user
-                inGuild = False
+                in_guild = False
         else:
             member = user
-            userInstalled = True
-            inGuild = False
+            user_installed = True
+            in_guild = False
         
         embed = discord.Embed(title = f"User Info", color = Color.random())
         embed.set_author(name=f"{member.display_name} (@{member.name})", icon_url=member.display_avatar.url)
 
-        creationDate = int(member.created_at.timestamp())
-        joinDate = (int(member.joined_at.timestamp()) if inGuild else None)
+        creation_date = int(member.created_at.timestamp())
+        join_date = (int(member.joined_at.timestamp()) if in_guild else None)
         
         embed.add_field(name = "ID", value = member.id)
         
         # Other info
-        embed.add_field(name = "Joined Discord", value = f"<t:{creationDate}:R> (<t:{creationDate}:f>)")
-        (embed.add_field(name = "Joined Server", value = f"<t:{joinDate}:R> (<t:{joinDate}:f>)") if inGuild else None)
+        embed.add_field(name = "Joined Discord", value = f"<t:{creation_date}:R> (<t:{creation_date}:f>)")
+        (embed.add_field(name = "Joined Server", value = f"<t:{join_date}:R> (<t:{join_date}:f>)") if in_guild else None)
 
-        if userInstalled:
+        if user_installed:
             embed.description = ""
             embed.set_footer(text = f"@{interaction.user.name} - add Titanium to the server for more info.", icon_url = interaction.user.display_avatar.url)
-        elif inGuild:
+        elif in_guild:
             roles = []
             
             for role in member.roles:
@@ -61,7 +61,7 @@ class UserUtils(commands.Cog):
             embed.add_field(name = "Roles", value = ", ".join(roles))
 
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
-        elif not inGuild:
+        elif not in_guild:
             embed.set_footer(text = f"@{interaction.user.name} - target is not in the server, showing limited info.", icon_url = interaction.user.display_avatar.url)
         
         embed.set_thumbnail(url = member.display_avatar.url)

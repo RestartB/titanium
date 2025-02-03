@@ -18,7 +18,7 @@ class Reviews(commands.Cog):
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(user = "The user you want to see the reviews of.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
-    async def userReviews(self, interaction: discord.Interaction, user: discord.User, ephemeral: bool = False):
+    async def user_reviews(self, interaction: discord.Interaction, user: discord.User, ephemeral: bool = False):
         try:    
             await interaction.response.defer(ephemeral=ephemeral)
 
@@ -30,33 +30,33 @@ class Reviews(commands.Cog):
                 async with session.get(request_url) as request:
                     reviews = await request.json()
             
-            reviewCount = reviews["reviewCount"]
+            review_count = reviews["review_count"]
             reviews = reviews["reviews"]
             
             i = 0
-            prettyReview = 0
-            pageList = []
+            pretty_review = 0
+            page_list = []
             pages = []
 
             # Create pages
             for review in reviews:
                 i += 1
             
-                if pageList == []:
-                    pageList.append([review, prettyReview])
+                if page_list == []:
+                    page_list.append([review, pretty_review])
                 else:
-                    pageList.append([review, prettyReview])
+                    page_list.append([review, pretty_review])
                 
-                prettyReview += 1
+                pretty_review += 1
 
                 # If there's 4 items in the current page, we split it into a new page
                 if i % 4 == 0:
-                    pages.append(pageList)
-                    pageList = []
+                    pages.append(page_list)
+                    page_list = []
             
             # Add a page if remaining contents isn't empty
-            if pageList != []:
-                pages.append(pageList)
+            if page_list != []:
+                pages.append(page_list)
             
             class PageView(View):
                 def __init__(self, pages):
@@ -106,25 +106,25 @@ class Reviews(commands.Cog):
                         if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True
                     
-                    embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
+                    embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{review_count} reviews** for this user.", color = Color.random())
                     embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
                     
                     i = 1
                     for item in self.pages[self.page]:
                         if item[0]["id"] == 0:
-                            reviewContent = item[0]["comment"]
+                            review_content = item[0]["comment"]
                             
-                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                            embed.add_field(name = "System", value = review_content, inline = False)
                         else:
-                            reviewTimestamp = item[0]["timestamp"]
+                            review_timestamp = item[0]["timestamp"]
                             
                             # Handle strings being too long
                             if len(item[0]["comment"]) > 1024:
-                                reviewContent = item[0]["comment"][:1021] + "..."
+                                review_content = item[0]["comment"][:1021] + "..."
                             else:
-                                reviewContent = item[0]["comment"]
+                                review_content = item[0]["comment"]
                             
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{review_timestamp}:d>", value = review_content, inline = False)
 
                             i += 1
 
@@ -148,25 +148,25 @@ class Reviews(commands.Cog):
                         for item in self.children:
                             item.disabled = False
 
-                    embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
+                    embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{review_count} reviews** for this user.", color = Color.random())
                     embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
 
                     i = 1
                     for item in self.pages[self.page]:
                         if item[0]["id"] == 0:
-                            reviewContent = item[0]["comment"]
+                            review_content = item[0]["comment"]
                             
-                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                            embed.add_field(name = "System", value = review_content, inline = False)
                         else:
-                            reviewTimestamp = item[0]["timestamp"]
+                            review_timestamp = item[0]["timestamp"]
                             
                             # Handle strings being too long
                             if len(item[0]["comment"]) > 1024:
-                                reviewContent = item[0]["comment"][:1021] + "..."
+                                review_content = item[0]["comment"][:1021] + "..."
                             else:
-                                reviewContent = item[0]["comment"]
+                                review_content = item[0]["comment"]
                             
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{review_timestamp}:d>", value = review_content, inline = False)
 
                             i += 1
 
@@ -208,25 +208,25 @@ class Reviews(commands.Cog):
                         for item in self.children:
                             item.disabled = False
                     
-                    embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
+                    embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{review_count} reviews** for this user.", color = Color.random())
                     embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
 
                     i = 1
                     for item in self.pages[self.page]:
                         if item[0]["id"] == 0:
-                            reviewContent = item[0]["comment"]
+                            review_content = item[0]["comment"]
                     
-                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                            embed.add_field(name = "System", value = review_content, inline = False)
                         else:
-                            reviewTimestamp = item[0]["timestamp"]
+                            review_timestamp = item[0]["timestamp"]
                             
                             # Handle strings being too long
                             if len(item[0]["comment"]) > 1024:
-                                reviewContent = item[0]["comment"][:1021] + "..."
+                                review_content = item[0]["comment"][:1021] + "..."
                             else:
-                                reviewContent = item[0]["comment"]
+                                review_content = item[0]["comment"]
                             
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{review_timestamp}:d>", value = review_content, inline = False)
 
                             i += 1
 
@@ -244,32 +244,32 @@ class Reviews(commands.Cog):
                         if item.custom_id == "next" or item.custom_id == "last":
                             item.disabled = True
                     
-                    embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
+                    embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{review_count} reviews** for this user.", color = Color.random())
                     embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
 
                     i = 1
                     for item in self.pages[self.page]:
                         if item[0]["id"] == 0:
-                            reviewContent = item[0]["comment"]
+                            review_content = item[0]["comment"]
                     
-                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                            embed.add_field(name = "System", value = review_content, inline = False)
                         else:
-                            reviewTimestamp = item[0]["timestamp"]
+                            review_timestamp = item[0]["timestamp"]
                             
                             # Handle strings being too long
                             if len(item[0]["comment"]) > 1024:
-                                reviewContent = item[0]["comment"][:1021] + "..."
+                                review_content = item[0]["comment"][:1021] + "..."
                             else:
-                                reviewContent = item[0]["comment"]
+                                review_content = item[0]["comment"]
                             
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{review_timestamp}:d>", value = review_content, inline = False)
 
                             i += 1
 
                     embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
 
-            embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{reviewCount} reviews** for this user.", color = Color.random())
+            embed = discord.Embed(title = f"ReviewDB User Reviews", description = f"There are **{review_count} reviews** for this user.", color = Color.random())
             embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
             
             if not(len(pages) == 0):
@@ -277,19 +277,19 @@ class Reviews(commands.Cog):
                 i = 1
                 for item in pages[0]:
                     if int(item[0]["id"]) == 0:
-                        reviewContent = item[0]["comment"]
+                        review_content = item[0]["comment"]
                         
-                        embed.add_field(name = "System", value = reviewContent, inline = False)
+                        embed.add_field(name = "System", value = review_content, inline = False)
                     else:
-                        reviewTimestamp = item[0]["timestamp"]
+                        review_timestamp = item[0]["timestamp"]
                             
                         # Handle strings being too long
                         if len(item[0]["comment"]) > 1024:
-                            reviewContent = item[0]["comment"][:1021] + "..."
+                            review_content = item[0]["comment"][:1021] + "..."
                         else:
-                            reviewContent = item[0]["comment"]
+                            review_content = item[0]["comment"]
                         
-                        embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                        embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{review_timestamp}:d>", value = review_content, inline = False)
 
                         i += 1
                 
@@ -298,12 +298,12 @@ class Reviews(commands.Cog):
                 if len(pages) == 1:
                     await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                 else:
-                    pageViewInstance = PageView(pages)
+                    page_view_instance = PageView(pages)
                     
-                    webhook = await interaction.followup.send(embed = embed, view = pageViewInstance, ephemeral=ephemeral, wait=True)
+                    webhook = await interaction.followup.send(embed = embed, view = page_view_instance, ephemeral=ephemeral, wait=True)
 
-                    pageViewInstance.userID = interaction.user.id
-                    pageViewInstance.msgID = webhook.id
+                    page_view_instance.userID = interaction.user.id
+                    page_view_instance.msgID = webhook.id
             else:
                 embed = discord.Embed(title = "ReviewDB User Reviews", description="This user has no reviews!", color = Color.red())
                 embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
@@ -324,7 +324,7 @@ class Reviews(commands.Cog):
     @app_commands.describe(server_id = "Optional: specify the ID of the server you would like to view. Defaults to the current server.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
-    async def serverReviews(self, interaction: discord.Interaction, server_id: str = "", ephemeral: bool = False):
+    async def server_reviews(self, interaction: discord.Interaction, server_id: str = "", ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
         try:
@@ -361,31 +361,31 @@ class Reviews(commands.Cog):
                 async with session.get(request_url) as request:
                     reviews = await request.json()
 
-            reviewCount = reviews["reviewCount"]
+            review_count = reviews["review_count"]
             reviews = reviews["reviews"]
 
             i = 0
-            prettyReview = 0
-            pageList = []
+            pretty_review = 0
+            page_list = []
             pages = []
 
             for review in reviews:
                 i += 1
 
-                if pageList == []:
-                    pageList.append([review, prettyReview])
+                if page_list == []:
+                    page_list.append([review, pretty_review])
                 else:
-                    pageList.append([review, prettyReview])
+                    page_list.append([review, pretty_review])
 
-                prettyReview += 1
+                pretty_review += 1
 
                 # If there's 4 items in the current page, we split it into a new page
                 if i % 4 == 0:
-                    pages.append(pageList)
-                    pageList = []
+                    pages.append(page_list)
+                    page_list = []
 
-            if pageList != []:
-                pages.append(pageList)
+            if page_list != []:
+                pages.append(page_list)
 
             class PageView(View):
                 def __init__(self, pages):
@@ -433,25 +433,25 @@ class Reviews(commands.Cog):
                         if item.custom_id == "first" or item.custom_id == "prev":
                             item.disabled = True
 
-                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
+                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{review_count} reviews** for this server.", color = Color.random())
                     embed.set_author(name=guild.name, icon_url=(guild.icon.url if guild.icon is not None else ""))
 
                     i = 1
                     for item in self.pages[self.page]:
                         if item[0]["id"] == 0:
-                            reviewContent = item[0]["comment"]
+                            review_content = item[0]["comment"]
 
-                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                            embed.add_field(name = "System", value = review_content, inline = False)
                         else:
-                            reviewTimestamp = item[0]["timestamp"]
+                            review_timestamp = item[0]["timestamp"]
 
                             # Handle strings being too long
                             if len(item[0]["comment"]) > 1024:
-                                reviewContent = item[0]["comment"][:1021] + "..."
+                                review_content = item[0]["comment"][:1021] + "..."
                             else:
-                                reviewContent = item[0]["comment"]
+                                review_content = item[0]["comment"]
 
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{review_timestamp}:d>", value = review_content, inline = False)
 
                             i += 1
 
@@ -474,25 +474,25 @@ class Reviews(commands.Cog):
                         for item in self.children:
                             item.disabled = False
 
-                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
+                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{review_count} reviews** for this server.", color = Color.random())
                     embed.set_author(name=guild.name, icon_url=(guild.icon.url if guild.icon is not None else ""))
 
                     i = 1
                     for item in self.pages[self.page]:
                         if item[0]["id"] == 0:
-                            reviewContent = item[0]["comment"]
+                            review_content = item[0]["comment"]
 
-                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                            embed.add_field(name = "System", value = review_content, inline = False)
                         else:
-                            reviewTimestamp = item[0]["timestamp"]
+                            review_timestamp = item[0]["timestamp"]
 
                             # Handle strings being too long
                             if len(item[0]["comment"]) > 1024:
-                                reviewContent = item[0]["comment"][:1021] + "..."
+                                review_content = item[0]["comment"][:1021] + "..."
                             else:
-                                reviewContent = item[0]["comment"]
+                                review_content = item[0]["comment"]
 
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{review_timestamp}:d>", value = review_content, inline = False)
 
                             i += 1
 
@@ -532,25 +532,25 @@ class Reviews(commands.Cog):
                         for item in self.children:
                             item.disabled = False
 
-                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
+                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{review_count} reviews** for this server.", color = Color.random())
                     embed.set_author(name=guild.name, icon_url=(guild.icon.url if guild.icon is not None else ""))
 
                     i = 1
                     for item in self.pages[self.page]:
                         if item[0]["id"] == 0:
-                            reviewContent = item[0]["comment"]
+                            review_content = item[0]["comment"]
 
-                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                            embed.add_field(name = "System", value = review_content, inline = False)
                         else:
-                            reviewTimestamp = item[0]["timestamp"]
+                            review_timestamp = item[0]["timestamp"]
 
                             # Handle strings being too long
                             if len(item[0]["comment"]) > 1024:
-                                reviewContent = item[0]["comment"][:1021] + "..."
+                                review_content = item[0]["comment"][:1021] + "..."
                             else:
-                                reviewContent = item[0]["comment"]
+                                review_content = item[0]["comment"]
 
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{review_timestamp}:d>", value = review_content, inline = False)
 
                             i += 1
 
@@ -567,51 +567,51 @@ class Reviews(commands.Cog):
                         if item.custom_id == "next" or item.custom_id == "last":
                             item.disabled = True
 
-                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
+                    embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{review_count} reviews** for this server.", color = Color.random())
                     embed.set_author(name=guild.name, icon_url=(guild.icon.url if guild.icon is not None else ""))
 
                     i = 1
                     for item in self.pages[self.page]:
                         if item[0]["id"] == 0:
-                            reviewContent = item[0]["comment"]
+                            review_content = item[0]["comment"]
 
-                            embed.add_field(name = "System", value = reviewContent, inline = False)
+                            embed.add_field(name = "System", value = review_content, inline = False)
                         else:
-                            reviewTimestamp = item[0]["timestamp"]
+                            review_timestamp = item[0]["timestamp"]
 
                             # Handle strings being too long
                             if len(item[0]["comment"]) > 1024:
-                                reviewContent = item[0]["comment"][:1021] + "..."
+                                review_content = item[0]["comment"][:1021] + "..."
                             else:
-                                reviewContent = item[0]["comment"]
+                                review_content = item[0]["comment"]
 
-                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                            embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{review_timestamp}:d>", value = review_content, inline = False)
 
                             i += 1
 
                     embed.set_footer(text = f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}", icon_url = interaction.user.display_avatar.url)
                     await interaction.response.edit_message(embed = embed, view = self)
 
-            embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{reviewCount} reviews** for this server.", color = Color.random())
+            embed = discord.Embed(title = f"ReviewDB Server Reviews", description = f"There are **{review_count} reviews** for this server.", color = Color.random())
             embed.set_author(name=guild.name, icon_url=(guild.icon.url if guild.icon is not None else ""))
 
             if not(len(pages) == 0):
                 i = 1
                 for item in pages[0]:
                     if int(item[0]["id"]) == 0:
-                        reviewContent = item[0]["comment"]
+                        review_content = item[0]["comment"]
 
-                        embed.add_field(name = "System", value = reviewContent, inline = False)
+                        embed.add_field(name = "System", value = review_content, inline = False)
                     else:
-                        reviewTimestamp = item[0]["timestamp"]
+                        review_timestamp = item[0]["timestamp"]
 
                         # Handle strings being too long
                         if len(item[0]["comment"]) > 1024:
-                            reviewContent = item[0]["comment"][:1021] + "..."
+                            review_content = item[0]["comment"][:1021] + "..."
                         else:
-                            reviewContent = item[0]["comment"]
+                            review_content = item[0]["comment"]
 
-                        embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{reviewTimestamp}:d>", value = reviewContent, inline = False)
+                        embed.add_field(name = f"{item[1]}. @{item[0]['sender']['username']} - <t:{review_timestamp}:d>", value = review_content, inline = False)
 
                         i += 1
 
@@ -620,12 +620,12 @@ class Reviews(commands.Cog):
                 if len(pages) == 1:
                     await interaction.followup.send(embed = embed, ephemeral=ephemeral)
                 else:
-                    pageViewInstance = PageView(pages)
+                    page_view_instance = PageView(pages)
 
-                    webhook = await interaction.followup.send(embed = embed, view = pageViewInstance, ephemeral=ephemeral, wait=True)
+                    webhook = await interaction.followup.send(embed = embed, view = page_view_instance, ephemeral=ephemeral, wait=True)
 
-                    pageViewInstance.userID = interaction.user.id
-                    pageViewInstance.msgID = webhook.id
+                    page_view_instance.userID = interaction.user.id
+                    page_view_instance.msgID = webhook.id
             else:
                 embed = discord.Embed(title = "ReviewDB Server Reviews", description="This server has no reviews!", color = Color.red())
                 embed.set_author(name=guild.name, icon_url=(guild.icon.url if guild.icon is not None else ""))

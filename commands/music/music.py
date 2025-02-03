@@ -103,11 +103,11 @@ class Music(commands.Cog):
 
                     self.msgID: int
                     
-                    dropdownInstance = Dropdown(options)
-                    self.add_item(dropdownInstance)
+                    dropdown_instance = Dropdown(options)
+                    self.add_item(dropdown_instance)
                     
                     # Pass in view's self to allow it to be stopped
-                    dropdownInstance.viewSelf = self
+                    dropdown_instance.viewSelf = self
                             
                 async def on_timeout(self) -> None:
                     try:
@@ -178,12 +178,12 @@ class Music(commands.Cog):
                         else: # Multiple pages - send embed with page controller
                             embed.set_footer(text = f"lrclib.net - Page 1/{len(pages)}")
                             
-                            pagesInstance = LyricPages(pages, list_place)
-                            await interaction.edit_original_response(embed = embed, view = pagesInstance)
+                            pages_instance = LyricPages(pages, list_place)
+                            await interaction.edit_original_response(embed = embed, view = pages_instance)
 
                             # Pass through interaction to get original sender ID - used for lock button
-                            pagesInstance.response = await interaction.original_response()
-                            pagesInstance.userID = interaction.user.id
+                            pages_instance.response = await interaction.original_response()
+                            pages_instance.userID = interaction.user.id
                     except AttributeError: # No lyrics
                         google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={quote_plus(song_list[list_place])}+{quote_plus(artist_list[list_place])}')
                         
@@ -333,11 +333,11 @@ class Music(commands.Cog):
                     
                     await interaction.response.edit_message(embed = embed, view = self)
             
-            songSelectViewInstance = SongSelectView(options)
+            song_select_view_instance = SongSelectView(options)
             
             # Edit initial message to show dropdown
-            webhook = await interaction.followup.send(embed=embed, view=songSelectViewInstance, wait=True)
-            songSelectViewInstance.msgID = webhook.id
+            webhook = await interaction.followup.send(embed=embed, view=song_select_view_instance, wait=True)
+            song_select_view_instance.msgID = webhook.id
 
 async def setup(bot):
     await bot.add_cog(Music(bot))

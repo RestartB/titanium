@@ -17,7 +17,7 @@ class StripTracking(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(url = "The URL to strip tracking from.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.")
-    async def stripTracking(self, interaction: discord.Interaction, url: str, ephemeral: bool = False):
+    async def strip_tracking(self, interaction: discord.Interaction, url: str, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=True)
 
         url = self.cleaner.clean(url)

@@ -10,16 +10,16 @@ from discord.ui import View
 class EditHistory(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
-        self.editPool: asqlite.Pool = bot.editPool
+        self.editPool: asqlite.Pool = bot.edit_pool
         self.enabledServers = []
 
         # Sync server list
-        self.bot.loop.create_task(self.syncServerList())
+        self.bot.loop.create_task(self.sync_server_list())
     
         # Isolate option
         self.editHistoryCTX = app_commands.ContextMenu(
             name="View Edit History",
-            callback=self.editHistoryCallback,
+            callback=self.edit_history_callback,
             allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False),
             allowed_installs = discord.app_commands.AppInstallationType(guild=True, user=False)
         )
@@ -27,7 +27,7 @@ class EditHistory(commands.Cog):
         # Isolate option
         self.editHistoryPrivateCTX = app_commands.ContextMenu(
             name="View Edit History (Private)",
-            callback=self.editHistoryCallbackPrivate,
+            callback=self.edit_history_callback_private,
             allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False),
             allowed_installs = discord.app_commands.AppInstallationType(guild=True, user=False)
         )
@@ -41,7 +41,7 @@ class EditHistory(commands.Cog):
         self.bot.tree.add_command(self.editHistoryPrivateCTX)
     
     # Synchronize server list
-    async def syncServerList(self):
+    async def sync_server_list(self):
         async with self.editPool.acquire() as sql:
             await sql.execute("CREATE TABLE IF NOT EXISTS settings (guildID int)")
             await sql.commit()
@@ -62,33 +62,33 @@ class EditHistory(commands.Cog):
                         if await sql.fetchone(f"SELECT * FROM '{payload.guild_id}-{payload.message_id}'") is None:
                             # Add original message
                             if payload.cached_message is not None: # Message is cached
-                                createdTimestamp = int(payload.cached_message.created_at.timestamp())
+                                created_timestamp = int(payload.cached_message.created_at.timestamp())
                                 
                                 if payload.cached_message.edited_at is None: # Message is not edited
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, payload.cached_message.content,))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (created_timestamp, payload.cached_message.content,))
                                 else: # Message is edited
                                     # Add initial message and edited message
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, "Message content unavailable.",))
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (createdTimestamp, payload.cached_message.content,))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (created_timestamp, "Message content unavailable.",))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (created_timestamp, payload.cached_message.content,))
                             else: # Message is not cached
-                                createdTimestamp = int(datetime.strptime(payload.data["timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp())
-                                editedOfflineTimestamp = int(datetime.strptime(payload.data["edited_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp())
+                                created_timestamp = int(datetime.strptime(payload.data["timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp())
+                                edited_offline_timestamp = int(datetime.strptime(payload.data["edited_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp())
 
                                 if payload.data["edited_timestamp"] is None: # Message is not edited
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, "Message content unavailable.",))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (created_timestamp, "Message content unavailable.",))
                                 else: # Message is edited
                                     # Add initial message and edited message
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (createdTimestamp, "Message content unavailable.",))
-                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (editedOfflineTimestamp, "Message content unavailable.",))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (editID, timestamp, content) VALUES (0, ?, ?)", (created_timestamp, "Message content unavailable.",))
+                                    await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (edited_offline_timestamp, "Message content unavailable.",))
                             
-                        editedTimestamp = int(datetime.strptime(payload.data["edited_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp())
+                        edited_timestamp = int(datetime.strptime(payload.data["edited_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp())
                         
                         if (payload.data["content"] is not None) and payload.data["content"] != "": # Normal edit
                             # Add edit
-                            await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (editedTimestamp, payload.data["content"],))
+                            await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (edited_timestamp, payload.data["content"],))
                         else: # Embed or attachment edit
                             # Add edit
-                            await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (editedTimestamp, "No content, likely an embed or attachment edit.",))
+                            await sql.execute(f"INSERT INTO '{payload.guild_id}-{payload.message_id}' (timestamp, content) VALUES (?, ?)", (edited_timestamp, "No content, likely an embed or attachment edit.",))
     
     # Listen for message being deleted
     @commands.Cog.listener()
@@ -100,34 +100,34 @@ class EditHistory(commands.Cog):
                     await sql.commit()
 
     # Edit history callback
-    async def editHistoryCallback(self, interaction: discord.Interaction, message: discord.Message):
+    async def edit_history_callback(self, interaction: discord.Interaction, message: discord.Message):
         await interaction.response.defer()
 
         if interaction.guild_id in self.enabledServers: # Edit history is enabled
             # Hand off to history function with ephemeral disabled
-            await self.editHistory(interaction, message, ephemeral=False)
+            await self.edit_history(interaction, message, ephemeral=False)
         else:
             embed = discord.Embed(title="Edit History", description="Edit history is not enabled for this server.", color=Color.red())
             await interaction.followup.send(embed=embed)
     
     # Private edit history callback
-    async def editHistoryCallbackPrivate(self, interaction: discord.Interaction, message: discord.Message):
+    async def edit_history_callback_private(self, interaction: discord.Interaction, message: discord.Message):
         await interaction.response.defer(ephemeral=True)
 
         if interaction.guild_id in self.enabledServers: # Edit history is enabled
             # Hand off to history function with ephemeral enabled
-            await self.editHistory(interaction, message, ephemeral=True)
+            await self.edit_history(interaction, message, ephemeral=True)
         else:
             embed = discord.Embed(title="Edit History", description="Edit history is not enabled for this server.", color=Color.red())
             await interaction.followup.send(embed=embed, ephemeral=True)
     
     # Edit history function
-    async def editHistory(self, interaction: discord.Interaction, message: discord.Message, ephemeral: bool=True):
+    async def edit_history(self, interaction: discord.Interaction, message: discord.Message, ephemeral: bool=True):
         async with self.editPool.acquire() as sql:
             target = await sql.fetchall(f"SELECT * FROM '{interaction.guild_id}-{message.id}'")
             
             if target is not None:
-                historyPages = []
+                history_pages = []
                 
                 # edit[0] = edit ID
                 # edit[1] = timestamp
@@ -136,9 +136,9 @@ class EditHistory(commands.Cog):
                 # Work through each edit
                 for edit in target:
                     if edit[0] == 0: # Original message
-                        historyPages.append(f"**Original Message Created <t:{edit[1]}:R> (<t:{edit[1]}:f>)**\n{edit[2]}")
+                        history_pages.append(f"**Original Message Created <t:{edit[1]}:R> (<t:{edit[1]}:f>)**\n{edit[2]}")
                     else: # Edit
-                        historyPages.append(f"**Edited <t:{edit[1]}:R> (<t:{edit[1]}:f>)**\n{edit[2]}")
+                        history_pages.append(f"**Edited <t:{edit[1]}:R> (<t:{edit[1]}:f>)**\n{edit[2]}")
                 
                 # Edit Page view
                 class EditPages(View):
@@ -275,18 +275,18 @@ class EditHistory(commands.Cog):
                         await interaction.response.edit_message(embed = embed, view = self)
                 
                 # Create view
-                view = EditPages(historyPages)
+                view = EditPages(history_pages)
                 view.userID = interaction.user.id
 
                 # Send message
-                if len(historyPages) == 1:
-                    embed = discord.Embed(title = "Edit History", description = historyPages[0], color = Color.random())
+                if len(history_pages) == 1:
+                    embed = discord.Embed(title = "Edit History", description = history_pages[0], color = Color.random())
                     embed.set_footer(text = "Page 1/1")
                     
                     await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
                 else:
-                    embed = discord.Embed(title = "Edit History", description = historyPages[0], color = Color.random())
-                    embed.set_footer(text = f"Page 1/{len(historyPages)}")
+                    embed = discord.Embed(title = "Edit History", description = history_pages[0], color = Color.random())
+                    embed.set_footer(text = f"Page 1/{len(history_pages)}")
                     
                     webhook = await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral, wait=True)
                     view.msgID = webhook.id
@@ -316,7 +316,7 @@ class EditHistory(commands.Cog):
                 await sql.execute("INSERT INTO settings (guildID) VALUES (?)", (interaction.guild_id,))
 
             # Synchronize the server list
-            await self.syncServerList()
+            await self.sync_server_list()
             
             embed = discord.Embed(title="Edit History", description="Enabled edit history for this server.", color=Color.green())
             await interaction.followup.send(embed=embed)
@@ -347,7 +347,7 @@ class EditHistory(commands.Cog):
                     await sql.commit()
                 
                 # Synchronize the server list
-                await self.syncServerList()
+                await self.sync_server_list()
                 
                 embed = discord.Embed(title="Disabled.", color=Color.green())
                 await interaction.edit_original_response(embed=embed)

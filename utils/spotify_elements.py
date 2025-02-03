@@ -14,7 +14,7 @@ from utils.escape_markdown import escape_markdown as escape
 
 
 # Song parse function
-async def song(self, item: spotipy.Spotify.track, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False, ephemeral: bool = False, msgID: int = None):
+async def song(self, item: spotipy.Spotify.track, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False, ephemeral: bool = False, msg_id: int = None):
     """
     Handle Spotify song embeds.
     """
@@ -134,7 +134,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             super().__init__(timeout=None)
 
             self.bot = bot.bot
-            self.msgID: int
+            self.msg_id: int
 
             seconds, item['duration_ms'] = divmod(item['duration_ms'], 1000)
             minutes, seconds = divmod(seconds, 60)
@@ -149,7 +149,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
                 for item in self.children:
                     item.disabled = True
                 
-                msg = await interaction.channel.fetch_message(self.msgID)
+                msg = await interaction.channel.fetch_message(self.msg_id)
                 await msg.edit(view = self)
             except Exception:
                 pass
@@ -158,24 +158,24 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
         async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer(ephemeral=ephemeral)
             
-            menuInstance = SpotifyButtonsMenu(self.bot)
-            ogMsg = await interaction.followup.send(view=menuInstance, wait=True, ephemeral=ephemeral)
+            menu_instance = SpotifyButtonsMenu(self.bot)
+            og_msg = await interaction.followup.send(view=menu_instance, wait=True, ephemeral=ephemeral)
 
-            menuInstance.interaction = interaction
-            menuInstance.ogMsg = ogMsg
+            menu_instance.interaction = interaction
+            menu_instance.ogMsg = og_msg
 
-    viewInstance = SpotifyEmbedView(self)
+    view_instance = SpotifyEmbedView(self)
     
     try:
         # Detect if embed already exists
         (await interaction.original_response()).embeds[0]
-        await interaction.edit_original_response(embed = embed, view = viewInstance)
+        await interaction.edit_original_response(embed = embed, view = view_instance)
 
-        viewInstance.msgID = msgID
+        view_instance.msg_id = msg_id
     except IndexError:
         # Send new embed
-        webhook = await interaction.followup.send(embed = embed, view = viewInstance, ephemeral=ephemeral, wait=True)
-        viewInstance.msgID = webhook.id
+        webhook = await interaction.followup.send(embed = embed, view = view_instance, ephemeral=ephemeral, wait=True)
+        view_instance.msg_id = webhook.id
 
     # Generate random filename
     letters = string.ascii_lowercase
@@ -202,7 +202,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
     await interaction.edit_original_response(embed = embed)
 
 # Artist parse function
-async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify.artist_top_tracks, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, ephemeral: bool = False, msgID: int = None):
+async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify.artist_top_tracks, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, ephemeral: bool = False, msg_id: int = None):
     """
     Handle Spotify artist embeds.
     """
@@ -272,12 +272,12 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
             
             await interaction.delete_original_response()
     
-    class spotifyEmbedView(View):
+    class SpotifyEmbedView(View):
         def __init__(self, bot):
             super().__init__(timeout=None)
 
             self.bot = bot.bot
-            self.msgID: int
+            self.msg_id: int
 
             # Add Open in Spotify button
             spotify_button = discord.ui.Button(label=f'Show on Spotify', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
@@ -289,7 +289,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
                 for item in self.children:
                     item.disabled = True
                 
-                msg = await interaction.channel.fetch_message(self.msgID)
+                msg = await interaction.channel.fetch_message(self.msg_id)
                 await msg.edit(view = self)
             except Exception:
                 pass
@@ -298,25 +298,25 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
         async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer(ephemeral=ephemeral)
             
-            menuInstance = SpotifyButtonsMenu(self.bot)
-            ogMsg = await interaction.followup.send(view=menuInstance, wait=True, ephemeral=ephemeral)
+            menu_instance = SpotifyButtonsMenu(self.bot)
+            og_msg = await interaction.followup.send(view=menu_instance, wait=True, ephemeral=ephemeral)
 
-            menuInstance.interaction = interaction
-            menuInstance.ogMsg = ogMsg
+            menu_instance.interaction = interaction
+            menu_instance.ogMsg = og_msg
 
-    viewInstance = spotifyEmbedView(self)
+    view_instance = SpotifyEmbedView(self)
     
     try:
         # Detect if embed already exists
         (await interaction.original_response()).embeds[0]
-        await interaction.edit_original_response(embed = embed, view = viewInstance)
+        await interaction.edit_original_response(embed = embed, view = view_instance)
 
-        viewInstance.msgID = msgID
+        view_instance.msg_id = msg_id
     except IndexError:
         # Send new embed
-        webhook = await interaction.followup.send(embed = embed, view = viewInstance, ephemeral=ephemeral, wait=True)
+        webhook = await interaction.followup.send(embed = embed, view = view_instance, ephemeral=ephemeral, wait=True)
 
-        viewInstance.msgID = webhook.id
+        view_instance.msg_id = webhook.id
 
     # Generate random filename
     letters = string.ascii_lowercase
@@ -343,7 +343,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
     await interaction.edit_original_response(embed = embed)
 
 # Album parse function
-async def album(self, item: spotipy.Spotify.album, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False, ephemeral: bool = False, msgID: int = None):
+async def album(self, item: spotipy.Spotify.album, interaction: discord.Interaction, add_button_url: str = None, add_button_text: str = None, cached: bool = False, ephemeral: bool = False, msg_id: int = None):
     """
     Handle Spotify album embeds.
     """
@@ -380,7 +380,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
     embed.set_thumbnail(url = item["images"][0]["url"])
     embed.set_author(name=artist_string, url=item["artists"][0]["external_urls"]["spotify"], icon_url=artist_img)
 
-    class spotifyButtonsMenu(View):
+    class SpotifyButtonsMenu(View):
         def __init__(self, bot):
             super().__init__(timeout=30)
 
@@ -472,12 +472,12 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
             
             await interaction.delete_original_response()
     
-    class spotifyEmbedView(View):
+    class SpotifyEmbedView(View):
         def __init__(self, bot):
             super().__init__(timeout=None)
 
             self.bot = bot.bot
-            self.msgID: int
+            self.msg_id: int
 
             # Add Open in Spotify button
             spotify_button = discord.ui.Button(label=f'Play on Spotify', style=discord.ButtonStyle.url, url=item['external_urls']['spotify'], row = 0)
@@ -489,7 +489,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
                 for item in self.children:
                     item.disabled = True
                 
-                msg = await interaction.channel.fetch_message(self.msgID)
+                msg = await interaction.channel.fetch_message(self.msg_id)
                 await msg.edit(view = self)
             except Exception:
                 pass
@@ -498,25 +498,25 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
         async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer(ephemeral=ephemeral)
             
-            menuInstance = spotifyButtonsMenu(self.bot)
-            ogMsg = await interaction.followup.send(view=menuInstance, wait=True, ephemeral=ephemeral)
+            menu_instance = SpotifyButtonsMenu(self.bot)
+            og_msg = await interaction.followup.send(view=menu_instance, wait=True, ephemeral=ephemeral)
 
-            menuInstance.interaction = interaction
-            menuInstance.ogMsg = ogMsg
+            menu_instance.interaction = interaction
+            menu_instance.ogMsg = og_msg
 
-    viewInstance = spotifyEmbedView(self)
+    view_instance = SpotifyEmbedView(self)
     
     try:
         # Detect if embed already exists
         (await interaction.original_response()).embeds[0]
-        await interaction.edit_original_response(embed = embed, view = viewInstance)
+        await interaction.edit_original_response(embed = embed, view = view_instance)
 
-        viewInstance.msgID = msgID
+        view_instance.msg_id = msg_id
     except IndexError:
         # Send new embed
-        webhook = await interaction.followup.send(embed = embed, view = viewInstance, ephemeral=ephemeral, wait=True)
+        webhook = await interaction.followup.send(embed = embed, view = view_instance, ephemeral=ephemeral, wait=True)
 
-        viewInstance.msgID = webhook.id
+        view_instance.msg_id = webhook.id
 
     # Generate random filename
     letters = string.ascii_lowercase

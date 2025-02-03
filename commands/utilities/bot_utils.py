@@ -34,7 +34,7 @@ class BotUtils(commands.Cog):
     # Invite command
     @botGroup.command(name = "invite", description = "Add the bot to your account or server.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
-    async def inviteBot(self, interaction: discord.Interaction, ephemeral: bool = False):
+    async def invite_bot(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
         embed = discord.Embed(title = "Invite", description="Use this invite to add the bot to your account or server!", color=Color.green())

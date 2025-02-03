@@ -11,7 +11,7 @@ from discord.ui import View
 class Leaderboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.lbPool: asqlite.Pool = bot.lbPool
+        self.lbPool: asqlite.Pool = bot.lb_pool
         self.bot.loop.create_task(self.sql_setup())
         
     async def sql_setup(self):
@@ -21,13 +21,13 @@ class Leaderboard(commands.Cog):
                 await sql.commit()
             
             self.optOutList = []
-            rawOptOutList = await sql.fetchall(f"SELECT userID FROM optOut;")
+            raw_opt_out_list = await sql.fetchall(f"SELECT userID FROM optOut;")
 
-            for id in rawOptOutList:
+            for id in raw_opt_out_list:
                 self.optOutList.append(id[0])
 
     # Refresh opt out list function
-    async def refreshOptOutList(self):
+    async def refresh_opt_out_list(self):
         try:
             async with self.lbPool.acquire() as sql:
                 await sql.execute(f"DELETE FROM optOut;")
@@ -94,7 +94,7 @@ class Leaderboard(commands.Cog):
         pages = []
         
         i = 0
-        pageStr = ""
+        page_str = ""
         
         async with self.lbPool.acquire() as sql:
             if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(interaction.guild.id)}';") != None:
@@ -103,18 +103,18 @@ class Leaderboard(commands.Cog):
                     for val in vals:
                         i += 1
                         
-                        if pageStr == "":
-                            pageStr += f"{i}. {val[0]}: {val[1]}"
+                        if page_str == "":
+                            page_str += f"{i}. {val[0]}: {val[1]}"
                         else:
-                            pageStr += f"\n{i}. {val[0]}: {val[1]}"
+                            page_str += f"\n{i}. {val[0]}: {val[1]}"
 
                         # If there's 10 items in the current page, we split it into a new page
                         if i % 10 == 0:
-                            pages.append(pageStr)
-                            pageStr = ""
+                            pages.append(page_str)
+                            page_str = ""
 
-                    if pageStr != "":
-                        pages.append(pageStr)
+                    if page_str != "":
+                        pages.append(page_str)
                 else:
                     pages.append("No Data")
                 
@@ -259,7 +259,7 @@ class Leaderboard(commands.Cog):
 
     # Opt out command
     @lbGroup.command(name = "opt-out", description = "Opt out of the leaderboard globally as a user.")
-    async def optOut_lb(self, interaction: discord.Interaction):
+    async def opt_out_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
         async def delete_callback(interaction: discord.Interaction):
@@ -273,7 +273,7 @@ class Leaderboard(commands.Cog):
                 await interaction.edit_original_response(embed = embed)
             else:
                 self.optOutList.append(interaction.user.id)
-                status, error = await self.refreshOptOutList()
+                status, error = await self.refresh_opt_out_list()
 
                 async with self.lbPool.acquire() as sql:
                     for server in await sql.fetchall(f"SELECT name FROM sqlite_master WHERE type='table' AND NOT name='optOut';"):
@@ -297,7 +297,7 @@ class Leaderboard(commands.Cog):
     
     # Opt out command
     @lbGroup.command(name = "opt-in", description = "Opt back in to the leaderboard globally as a user.")
-    async def optIn_lb(self, interaction: discord.Interaction):
+    async def opt_in_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
         
         async def delete_callback(interaction: discord.Interaction):
@@ -311,7 +311,7 @@ class Leaderboard(commands.Cog):
                 await interaction.edit_original_response(embed = embed)
             else:
                 self.optOutList.remove(interaction.user.id)
-                status, error = await self.refreshOptOutList()
+                status, error = await self.refresh_opt_out_list()
 
                 if status == False:
                     raise error

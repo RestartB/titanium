@@ -72,7 +72,7 @@ if not os.path.exists(basedir):
 logging.info("[INIT] Path check complete.\n")
 
 # ------ Config File Reader ------
-def readconfigfile(path) -> tuple[dict, dict]:
+def read_config_file(path) -> tuple[dict, dict]:
     # Read options section of config file, add it to dict
     try:
         config.read(path)
@@ -105,7 +105,7 @@ class TitaniumBot(commands.Bot):
         logging.info("[INIT] Reading config files.")
 
         # Read config files
-        self.options, self.tokens = readconfigfile('config.cfg')
+        self.options, self.tokens = read_config_file('config.cfg')
 
         # Config File Vars
         try:
@@ -136,27 +136,27 @@ class TitaniumBot(commands.Bot):
         
         # Cache DB Pool
         open(os.path.join("content", "sql", "cache.db"), "a").close()
-        self.cachePool = await asqlite.create_pool(os.path.join("content", "sql", "cache.db"))
+        self.cache_pool = await asqlite.create_pool(os.path.join("content", "sql", "cache.db"))
         
         # Fireboard DB Pool
         open(os.path.join("content", "sql", "fireboard.db"), "a").close()
-        self.fireboardPool = await asqlite.create_pool(os.path.join("content", "sql", "fireboard.db"))
+        self.fireboard_pool = await asqlite.create_pool(os.path.join("content", "sql", "fireboard.db"))
         
         # Leaderboard DB Pool
         open(os.path.join("content", "sql", "lb.db"), "a").close()
-        self.lbPool = await asqlite.create_pool(os.path.join("content", "sql", "lb.db"))
+        self.lb_pool = await asqlite.create_pool(os.path.join("content", "sql", "lb.db"))
         
         # Edit History DB Pool
         open(os.path.join("content", "sql", "editHistory.db"), "a").close()
-        self.editPool = await asqlite.create_pool(os.path.join("content", "sql", "editHistory.db"))
+        self.edit_pool = await asqlite.create_pool(os.path.join("content", "sql", "editHistory.db"))
 
         # Economy Pool
         open(os.path.join("content", "sql", "economy.db"), "a").close()
-        self.economyPool = await asqlite.create_pool(os.path.join("content", "sql", "economy.db"))
+        self.economy_pool = await asqlite.create_pool(os.path.join("content", "sql", "economy.db"))
 
         # Tags Pool
         open(os.path.join("content", "sql", "tags.db"), "a").close()
-        self.tagsPool = await asqlite.create_pool(os.path.join("content", "sql", "tags.db"))
+        self.tags_pool = await asqlite.create_pool(os.path.join("content", "sql", "tags.db"))
 
         logging.info("[INIT] SQL pools created.\n")
         
@@ -190,9 +190,9 @@ class TitaniumBot(commands.Bot):
             logging.info("[INIT] Skipping private cogs.\n")
     
     async def close(self):
-        await self.cachePool.close()
-        await self.fireboardPool.close()
-        await self.lbPool.close()
+        await self.cache_pool.close()
+        await self.fireboard_pool.close()
+        await self.lb_pool.close()
         await super().close()
 
 bot = TitaniumBot(intents=intents, command_prefix='', help_command=None)

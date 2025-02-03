@@ -96,9 +96,9 @@ class Misc(commands.Cog):
 
         await interaction.followup.send(embed = embed, ephemeral=ephemeral)
 
-        userValue = int(dice.value)
+        user_value = int(dice.value)
         
-        value = random.randint(1, userValue)
+        value = random.randint(1, user_value)
         
         if wait == True:        
             await asyncio.sleep(3)

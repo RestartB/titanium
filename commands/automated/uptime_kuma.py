@@ -14,7 +14,7 @@ class UptimeKuma(commands.Cog):
             
             if self.uptimeKumaServer is not None and self.uptimeKumaServer != "":
                 logging.info(f"[KUMA] Starting Uptime Kuma pinger (server: {bot.options["uptime-kuma-push"]})...")
-                self.kumaPing.start()
+                self.kuma_ping.start()
             else:
                 logging.info("[KUMA] Disabling the Uptime Kuma pinger, no Uptime Kuma server was specified.")
                 self.uptimeKumaServer = None
@@ -24,11 +24,11 @@ class UptimeKuma(commands.Cog):
     
     def cog_unload(self):
         if self.uptimeKumaServer is not None:
-            self.kumaPing.cancel()
+            self.kuma_ping.cancel()
     
     # Uptime Kuma Ping
     @tasks.loop(seconds=10)
-    async def kumaPing(self):
+    async def kuma_ping(self):
         await self.bot.wait_until_ready()
         
         # Send info to Uptime Kuma server

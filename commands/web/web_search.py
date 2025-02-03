@@ -39,10 +39,10 @@ class WebSearch(commands.Cog):
                     item_list.append(item)
                 
                 class UrbanDictPageView(View):
-                    def __init__(self, pages, startPage):
+                    def __init__(self, pages, start_page):
                         super().__init__(timeout = 900)
                         
-                        self.page = startPage - 1
+                        self.page = start_page - 1
                         self.pages: list = pages
 
                         self.locked = False

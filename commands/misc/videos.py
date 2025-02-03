@@ -22,7 +22,7 @@ class Videos(commands.Cog):
     @videoGroup.command(name = "to-gif", description = "Convert a video to GIF up to 10 seconds long.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 30)
-    async def videoToGif(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
+    async def video_to_gif(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
         if file.content_type.split('/')[0] == "video": # Check if file is a video
@@ -43,6 +43,7 @@ class Videos(commands.Cog):
                 
                 try:
                     # Save file to /tmp
+                    # noinspection PyTypeChecker
                     await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
                     
                     # Send converting message
@@ -74,10 +75,10 @@ class Videos(commands.Cog):
                         embed = discord.Embed(title="Video Converted", description=f"Video converted to GIF.", color=Color.green())
                         embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
-                        fileProcessed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
+                        file_processed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
                         embed.set_image(url=f"attachment://{filename}_processed.gif")
                     
-                        await interaction.edit_original_response(embed=embed, attachments=[fileProcessed])
+                        await interaction.edit_original_response(embed=embed, attachments=[file_processed])
                     else:
                         raise Exception(f"ffmpeg failed with code {proc.returncode}:\n\n{stderr.decode()}")
                 finally:

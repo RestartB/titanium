@@ -36,34 +36,34 @@ class ServerUtils(commands.Cog):
     async def server_info(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        memberCount = 0
-        botCount = 0
+        member_count = 0
+        bot_count = 0
         
         for member in interaction.guild.members:
             if member.bot == True:
-                botCount += 1
+                bot_count += 1
             else:
-                memberCount += 1
+                member_count += 1
         
-        memberCount = f"{memberCount} ({round((memberCount / interaction.guild.member_count * 100), 1)}%)"
-        botCount = f"{botCount} ({round((botCount / interaction.guild.member_count * 100), 1)}%)"
+        member_count = f"{member_count} ({round((member_count / interaction.guild.member_count * 100), 1)}%)"
+        bot_count = f"{bot_count} ({round((bot_count / interaction.guild.member_count * 100), 1)}%)"
         
         embed = discord.Embed(title = f"{interaction.guild.name} - Info", color = Color.random())
         
         # Member counts
         embed.add_field(name = "Total Members", value = interaction.guild.member_count)
-        embed.add_field(name = "People", value = memberCount, inline = True)
-        embed.add_field(name = "Bots", value = botCount, inline = True)
+        embed.add_field(name = "People", value = member_count, inline = True)
+        embed.add_field(name = "Bots", value = bot_count, inline = True)
 
         # Channel counts
         embed.add_field(name = "Text Channels", value = len(interaction.guild.text_channels))
         embed.add_field(name = "Voice Channels", value = len(interaction.guild.voice_channels))
         embed.add_field(name = "Categories", value = len(interaction.guild.categories))
 
-        creationDate = interaction.guild.created_at
+        creation_date = interaction.guild.created_at
         
         # Other info
-        embed.add_field(name = "Creation Date", value = f"{creationDate.day}/{creationDate.month}/{creationDate.year}")
+        embed.add_field(name = "Creation Date", value = f"{creation_date.day}/{creation_date.month}/{creation_date.year}")
         
         # Handle when owner can't be found
         try:

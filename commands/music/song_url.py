@@ -27,7 +27,7 @@ class SongURL(commands.Cog):
         self.auth_manager = SpotifyClientCredentials(client_id = self.bot.tokens['spotify-api-id'], client_secret = self.bot.tokens['spotify-api-secret'])
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
 
-        self.cachePool: asqlite.Pool = bot.cachePool
+        self.cachePool: asqlite.Pool = bot.cache_pool
 
         self.cleaner = UrlCleaner()
         self.cleaner.ruler.update_rules()
@@ -45,7 +45,7 @@ class SongURL(commands.Cog):
             self.cache = await sql.fetchall("SELECT * FROM songlinkCache")
 
     # List refresh function
-    async def refreshCache(self):
+    async def refresh_cache(self):
         async with self.cachePool.acquire() as sql:
             self.cache = await sql.fetchall("SELECT * FROM songlinkCache")
     
@@ -60,12 +60,12 @@ class SongURL(commands.Cog):
     async def song_url(self, interaction: discord.Interaction, url: str, bypass_cache: bool = False, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        ogURL = url
+        og_url = url
         url = self.cleaner.clean(url)
 
-        async def songlinkRequest(userURL):
+        async def songlink_request(user_url):
             try:
-                processed_source = quote(userURL, safe='()*!\'')
+                processed_source = quote(user_url, safe='()*!\'')
                 request_url = f"https://api.song.link/v1-alpha.1/links?url={processed_source}&userCountry=GB"
                 
                 # Send request to song.link
@@ -127,10 +127,10 @@ class SongURL(commands.Cog):
             
             async with self.cachePool.acquire() as sql:
                 # Add to cache
-                await sql.execute(f"INSERT INTO songlinkCache (userURL, spotifyURL, platformRich, platformRaw, ttl) VALUES (?, ?, ?, ?, ?)", (userURL, url, platform, platform_api, ttl,))
+                await sql.execute(f"INSERT INTO songlinkCache (userURL, spotifyURL, platformRich, platformRaw, ttl) VALUES (?, ?, ?, ?, ?)", (user_url, url, platform, platform_api, ttl,))
                 await sql.commit()
 
-            await self.refreshCache()
+            await self.refresh_cache()
             
             return url, platform, platform_api
         
@@ -144,7 +144,7 @@ class SongURL(commands.Cog):
                         await sql.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
                         await sql.commit()
 
-                    await self.refreshCache()
+                    await self.refresh_cache()
                     
                     try:
                         embed = discord.Embed(title="Loading...",
@@ -155,7 +155,7 @@ class SongURL(commands.Cog):
 
                         await interaction.followup.send(embed = embed, ephemeral = ephemeral)
 
-                        url, platform, platform_api = await songlinkRequest(url)
+                        url, platform, platform_api = await songlink_request(url)
 
                         cached = False
                     except Exception:
@@ -176,7 +176,7 @@ class SongURL(commands.Cog):
                                 await sql.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
                                 await sql.commit()
 
-                            await self.refreshCache()
+                            await self.refresh_cache()
 
                             try:
                                 embed = discord.Embed(title="Loading...",
@@ -188,7 +188,7 @@ class SongURL(commands.Cog):
                                 await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
                                 url = self.cleaner.clean(url)
-                                url, platform, platform_api = await songlinkRequest(url)
+                                url, platform, platform_api = await songlink_request(url)
 
                                 cached = False
                             except Exception:
@@ -204,6 +204,7 @@ class SongURL(commands.Cog):
             # Expand spotify.link URL if present
             if "spotify.link" in url:
                 try:
+                    # noinspection HttpUrlsUsage
                     url = url.replace('www.', '').replace('http://', '').replace('https://', '').rstrip('/')
                     url = f"https://{url}"
                     
@@ -240,7 +241,7 @@ class SongURL(commands.Cog):
                 
                 # Add OG platform button when OG platform isn't Spotify
                 if platform_api != "spotify":
-                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=ogURL, add_button_text=platform, cached=cached, ephemeral=ephemeral)
+                    await elements.song(self=self, item=result, interaction=interaction, add_button_url=og_url, add_button_text=platform, cached=cached, ephemeral=ephemeral)
                 else:
                     await elements.song(self=self, item=result, interaction=interaction, cached=cached, ephemeral=ephemeral)
             # Artist URL
@@ -277,7 +278,7 @@ class SongURL(commands.Cog):
                 
                 # Add OG platform button when OG platform isn't Spotify
                 if platform_api != "spotify":
-                    await elements.album(self=self, item=result_info, interaction=interaction, add_button_url=ogURL, add_button_text=platform, cached=cached, ephemeral=ephemeral)
+                    await elements.album(self=self, item=result_info, interaction=interaction, add_button_url=og_url, add_button_text=platform, cached=cached, ephemeral=ephemeral)
                 else:
                     await elements.album(self=self, item=result_info, interaction=interaction, cached=cached, ephemeral=ephemeral)
             # Playlist URL
@@ -296,14 +297,14 @@ class SongURL(commands.Cog):
 
                 total_items = result_info['tracks']['total']
                 
-                amountSpotifyPages = total_items // 100
+                amount_spotify_pages = total_items // 100
                 if total_items % 100 != 0:
-                    amountSpotifyPages += 1
+                    amount_spotify_pages += 1
 
                 # Variables
                 i = 0
                 pages = []
-                pageStr = ""
+                page_str = ""
 
                 embed = discord.Embed(title = "Loading...", description = f"{self.bot.options['loading-emoji']} Getting images...", color = Color.orange())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
@@ -335,10 +336,10 @@ class SongURL(commands.Cog):
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
                 await interaction.edit_original_response(embed = embed)
                 
-                for current in range(amountSpotifyPages):
-                    resultCurrent = self.sp.playlist_items(url, market="GB", offset = (current * 100))
+                for current in range(amount_spotify_pages):
+                    result_current = self.sp.playlist_items(url, market="GB", offset = (current * 100))
                     # Work through all tracks in playlist, adding them to a page
-                    for playlist_item in resultCurrent['items']:
+                    for playlist_item in result_current['items']:
                         try:
                             i += 1
                             artist_string = ""
@@ -347,11 +348,11 @@ class SongURL(commands.Cog):
                             if playlist_item['track'] == None:
                                 # Item type is unavailable in the GB reigon
                                 # If there's nothing in the current page, make a new one
-                                if pageStr == "":
-                                    pageStr = f"{i}. *(Media Unavailable)*"
+                                if page_str == "":
+                                    page_str = f"{i}. *(Media Unavailable)*"
                                 # Else, add string to existing page
                                 else:
-                                    pageStr += f"\n{i}. *(Media Unavailable)*"
+                                    page_str += f"\n{i}. *(Media Unavailable)*"
                             elif playlist_item['track']['type'] == "track":
                                 # Item is a track
                                 # Work through all artists of item
@@ -365,42 +366,42 @@ class SongURL(commands.Cog):
                                         artist_string += f", {artist['name']}".replace("*", "-")
                                 
                                 # If there's nothing in the current page, make a new one
-                                if pageStr == "":
-                                    pageStr = f"{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
+                                if page_str == "":
+                                    page_str = f"{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
                                 # Else, add string to existing page
                                 else:
-                                    pageStr += f"\n{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
+                                    page_str += f"\n{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
                             elif playlist_item['track']['type'] == "episode":
                                 # Item is a podcast
-                                if pageStr == "":
-                                    pageStr = f"{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
+                                if page_str == "":
+                                    page_str = f"{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
                                 else:
-                                    pageStr += f"\n{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
+                                    page_str += f"\n{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
                             else:
                                 # Item type is unknown / unsupported
                                 # If there's nothing in the current page, make a new one
-                                if pageStr == "":
-                                    pageStr = f"{i}. *(Unknown Media Type)*"
+                                if page_str == "":
+                                    page_str = f"{i}. *(Unknown Media Type)*"
                                 # Else, add string to existing page
                                 else:
-                                    pageStr += f"\n{i}. *(Unknown Media Type)*"
+                                    page_str += f"\n{i}. *(Unknown Media Type)*"
                         except KeyError:
                             # Create new page if current page is empty
-                            if pageStr == "":
-                                pageStr = f"{i}. *(Media Unavailable)*"
+                            if page_str == "":
+                                page_str = f"{i}. *(Media Unavailable)*"
                             # Else, add string to existing page
                             else:
-                                pageStr += f"\n{i}. *(Media Unavailable)*"
+                                page_str += f"\n{i}. *(Media Unavailable)*"
 
                         # If there's 15 items in the current page, we split it into a new page
                         if i % 15 == 0:
-                            pages.append(pageStr)
-                            pageStr = ""
+                            pages.append(page_str)
+                            page_str = ""
 
-                # If there is still data in pageStr, add it to a new page
-                if pageStr != "":
-                    pages.append(pageStr)
-                    pageStr = ""
+                # If there is still data in page_str, add it to a new page
+                if page_str != "":
+                    pages.append(page_str)
+                    page_str = ""
 
                 # Define page view
                 class PlaylistPagesController(View):

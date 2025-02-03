@@ -264,10 +264,10 @@ class CogUtils(commands.Cog):
             if len(pages) == 1:
                 await interaction.followup.send(embed = embed)
             else:
-                viewInstance = ServersPageView(pages)
+                view_instance = ServersPageView(pages)
                 
-                webhook = await interaction.followup.send(embed = embed, view = viewInstance, wait=True)
-                viewInstance.msgID = webhook.id
+                webhook = await interaction.followup.send(embed = embed, view = view_instance, wait=True)
+                view_instance.msgID = webhook.id
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
             await interaction.followup.send(embed = embed)

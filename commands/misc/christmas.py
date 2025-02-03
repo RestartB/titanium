@@ -55,16 +55,16 @@ class Christmas(commands.Cog):
             app_commands.Choice(name="Bottom Middle", value="bottommiddle"),
             app_commands.Choice(name="Bottom Right", value="bottomright"),
             ])
-    async def christmasPFP(self, interaction: discord.Interaction, 
-                   user: discord.User, 
-                   hat: bool = True,
-                   snow: bool = True,
-                   hat_size: app_commands.Choice[int] = None,
-                   position: app_commands.Choice[str] = None,
-                   x_offset: app_commands.Range[int, -128, 128] = 0,
-                   y_offset: app_commands.Range[int, -128, 128] = 0, 
-                   rotation: app_commands.Range[int, -180, 180] = 0,
-                   ephemeral: bool = False):
+    async def christmas_pfp(self, interaction: discord.Interaction,
+                            user: discord.User,
+                            hat: bool = True,
+                            snow: bool = True,
+                            hat_size: app_commands.Choice[int] = None,
+                            position: app_commands.Choice[str] = None,
+                            x_offset: app_commands.Range[int, -128, 128] = 0,
+                            y_offset: app_commands.Range[int, -128, 128] = 0,
+                            rotation: app_commands.Range[int, -180, 180] = 0,
+                            ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
         try:
@@ -98,15 +98,15 @@ class Christmas(commands.Cog):
                 
                 # Christmas hat
                 if hat:
-                    with Image.open(os.path.join("content", "hat.png")) as hatImg:
+                    with Image.open(os.path.join("content", "hat.png")) as hat_img:
                         # Resize the hat to fit the head - maintain aspect ratio
-                        new_hat_width = hatImg.width // hat_size.value
-                        new_hat_height = hatImg.height // hat_size.value
-                        hatImg = hatImg.resize((new_hat_width, new_hat_height), Image.Resampling.LANCZOS)
+                        new_hat_width = hat_img.width // hat_size.value
+                        new_hat_height = hat_img.height // hat_size.value
+                        hat_img = hat_img.resize((new_hat_width, new_hat_height), Image.Resampling.LANCZOS)
 
                         # Rotate if needed
                         if rotation != 0:
-                            hatImg = hatImg.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+                            hat_img = hat_img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
 
                         # Calculate positions based on hat size
                         positions = {
@@ -130,7 +130,7 @@ class Christmas(commands.Cog):
                         final_x = base_x + x_offset
                         final_y = base_y + invert(y_offset)
                         
-                        img.paste(hatImg, (final_x, final_y), hatImg)
+                        img.paste(hat_img, (final_x, final_y), hat_img)
                 
                 # Snow overlay
                 if snow:
@@ -146,10 +146,10 @@ class Christmas(commands.Cog):
             embed.set_author(name=f"{user.display_name} (@{user.name})", icon_url=user.display_avatar.url)
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
-            fileProcessed = discord.File(fp=os.path.join("tmp", f"{filename}-processed.png"), filename=f"image.png")
+            file_processed = discord.File(fp=os.path.join("tmp", f"{filename}-processed.png"), filename=f"image.png")
             
             # Send Embed
-            msg = await interaction.followup.send(embed=embed, file=fileProcessed, ephemeral=ephemeral, wait=True)
+            msg = await interaction.followup.send(embed=embed, file=file_processed, ephemeral=ephemeral, wait=True)
 
             # Get image URL
             view = View()
@@ -197,16 +197,16 @@ class Christmas(commands.Cog):
             app_commands.Choice(name="Bottom Middle", value="bottommiddle"),
             app_commands.Choice(name="Bottom Right", value="bottomright"),
             ])
-    async def christmasImage(self, interaction: discord.Interaction, 
-                   file: discord.Attachment, 
-                   hat: bool = True,
-                   snow: bool = True,
-                   hat_width: app_commands.Range[int, 10, 1000] = 0,
-                   position: app_commands.Choice[str] = None,
-                   x_offset: int = 0,
-                   y_offset: int = 0, 
-                   rotation: app_commands.Range[int, -180, 180] = 0,
-                   ephemeral: bool = False):
+    async def christmas_image(self, interaction: discord.Interaction,
+                              file: discord.Attachment,
+                              hat: bool = True,
+                              snow: bool = True,
+                              hat_width: app_commands.Range[int, 10, 1000] = 0,
+                              position: app_commands.Choice[str] = None,
+                              x_offset: int = 0,
+                              y_offset: int = 0,
+                              rotation: app_commands.Range[int, -180, 180] = 0,
+                              ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
         
         try:
@@ -223,25 +223,26 @@ class Christmas(commands.Cog):
                         if not os.path.exists(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")):
                             break
 
-            # Get user PFP
+            # Get file
+            # noinspection PyTypeChecker
             await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
             
             with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as img:
                 # Christmas hat
                 if hat:
-                    with Image.open(os.path.join("content", "hat.png")) as hatImg:
+                    with Image.open(os.path.join("content", "hat.png")) as hat_img:
                         # Set width to half of image width if not specified
                         if hat_width == 0:
                             hat_width = img.width // 2
                         
                         # Resize to new size while maintianing aspect ratio
                         new_hat_width = hat_width
-                        new_hat_height = new_hat_width * hatImg.height // hatImg.width
-                        hatImg = hatImg.resize((new_hat_width, new_hat_height), Image.Resampling.LANCZOS)
+                        new_hat_height = new_hat_width * hat_img.height // hat_img.width
+                        hat_img = hat_img.resize((new_hat_width, new_hat_height), Image.Resampling.LANCZOS)
 
                         # Rotate if needed
                         if rotation != 0:
-                            hatImg = hatImg.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+                            hat_img = hat_img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
 
                         # Calculate positions based on hat size
                         positions = {
@@ -264,7 +265,7 @@ class Christmas(commands.Cog):
                         final_x = base_x + x_offset
                         final_y = base_y + invert(y_offset)
                         
-                        img.paste(hatImg, (final_x, final_y), hatImg)
+                        img.paste(hat_img, (final_x, final_y), hat_img)
                 
                 # Snow overlay
                 if snow:
@@ -288,10 +289,10 @@ class Christmas(commands.Cog):
             embed.set_image(url = f"attachment://image.{file.content_type.split('/')[-1]}")
             embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
 
-            fileProcessed = discord.File(fp=os.path.join("tmp", f"{filename}-processed.{file.content_type.split('/')[-1]}"), filename=f"image.{file.content_type.split('/')[-1]}")
+            file_processed = discord.File(fp=os.path.join("tmp", f"{filename}-processed.{file.content_type.split('/')[-1]}"), filename=f"image.{file.content_type.split('/')[-1]}")
             
             # Send Embed
-            msg = await interaction.followup.send(embed=embed, file=fileProcessed, ephemeral=ephemeral, wait=True)
+            msg = await interaction.followup.send(embed=embed, file=file_processed, ephemeral=ephemeral, wait=True)
 
             # Get image URL
             view = View()
