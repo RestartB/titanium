@@ -23,8 +23,8 @@ class Welcome(commands.Cog):
 
             view = View()
             view.add_item(discord.ui.Button(label="Website", style=discord.ButtonStyle.url, url="https://titaniumbot.me"))
-        view.add_item(discord.ui.Button(label="Privacy Policy", style=discord.ButtonStyle.url, url="https://github.com/RestartB/titanium/blob/main/Privacy.md"))
-        view.add_item(discord.ui.Button(label="GitHub", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
+            view.add_item(discord.ui.Button(label="Privacy Policy", style=discord.ButtonStyle.url, url="https://github.com/RestartB/titanium/blob/main/Privacy.md"))
+            view.add_item(discord.ui.Button(label="GitHub", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
             
             if guild.system_channel is not None:
                 if guild.system_channel.permissions_for(guild.me).send_messages:
