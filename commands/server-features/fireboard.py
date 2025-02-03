@@ -903,7 +903,7 @@ class Fireboard(commands.Cog):
 
             await interaction.followup.send(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
+            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.red())
 
             await interaction.followup.send(embed=embed, ephemeral=True)
                 
@@ -941,7 +941,7 @@ class Fireboard(commands.Cog):
                 
                 await interaction.edit_original_response(embed=embed)
         else:
-            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
+            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.red())
 
             await interaction.followup.send(embed=embed, ephemeral=False)
     
@@ -978,7 +978,7 @@ class Fireboard(commands.Cog):
             embed = discord.Embed(title="Channel Set", description=f"Fireboard channel has been set to **{channel.mention}.**", color=Color.green())
             await interaction.followup.send(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
+            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.red())
 
             await interaction.followup.send(embed=embed, ephemeral=True)
     
@@ -999,7 +999,7 @@ class Fireboard(commands.Cog):
             await self.refresh_fire_lists()
             await interaction.followup.send(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
+            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.red())
 
             await interaction.followup.send(embed=embed, ephemeral=True)
     
@@ -1020,7 +1020,7 @@ class Fireboard(commands.Cog):
             await self.refresh_fire_lists()
             await interaction.followup.send(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
+            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.red())
 
             await interaction.followup.send(embed=embed, ephemeral=True)
     
@@ -1049,7 +1049,7 @@ class Fireboard(commands.Cog):
                     embed = discord.Embed(title = "Set", description = f"Added {channel.mention} to the channel blacklist.")
                     await interaction.followup.send(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
+            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.red())
 
             await interaction.followup.send(embed=embed, ephemeral=True)
     
@@ -1078,7 +1078,7 @@ class Fireboard(commands.Cog):
                     embed = discord.Embed(title = "Set", description = f"Added {role.mention} to the role blacklist.")
                     await interaction.followup.send(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
+            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.red())
 
             await interaction.followup.send(embed=embed, ephemeral=True)
     
@@ -1167,7 +1167,7 @@ class Fireboard(commands.Cog):
                 embed = discord.Embed(title="Role Blacklist", description="No roles have been blacklisted.", color=Color.random())
                 await interaction.followup.send(embed=embed, view=view_instance, ephemeral=True)
         else:
-            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.green())
+            embed = discord.Embed(title = "Fireboard is not enabled.", color=Color.red())
 
             await interaction.followup.send(embed=embed, ephemeral=True)
 

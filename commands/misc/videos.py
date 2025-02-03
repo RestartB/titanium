@@ -28,7 +28,7 @@ class Videos(commands.Cog):
         if file.content_type.split('/')[0] == "video": # Check if file is a video
             if file.size < 20000000: # 20MB file limit
                 # Send resized image
-                embed = discord.Embed(title="Converting...", description=f"{self.bot.options['loading-emoji']} Downloading your video to convert...", color=Color.green())
+                embed = discord.Embed(title="Converting...", description=f"{self.bot.options['loading-emoji']} Downloading your video to convert...", color=Color.orange())
                 embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
                 await interaction.followup.send(embed=embed, ephemeral=ephemeral)
@@ -47,7 +47,7 @@ class Videos(commands.Cog):
                     await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
                     
                     # Send converting message
-                    embed = discord.Embed(title="Converting...", description=f"{self.bot.options['loading-emoji']} Converting your video...", color=Color.green())
+                    embed = discord.Embed(title="Converting...", description=f"{self.bot.options['loading-emoji']} Converting your video...", color=Color.orange())
                     embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
                     await interaction.edit_original_response(embed=embed)
