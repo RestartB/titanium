@@ -66,8 +66,8 @@ class Reviews(commands.Cog):
 
                     self.locked = False
 
-                    self.userID: int
-                    self.msgID: int
+                    self.user_id: int
+                    self.msg_id: int
 
                     for item in self.children:
                         if item.custom_id == "first" or item.custom_id == "prev":
@@ -79,14 +79,14 @@ class Reviews(commands.Cog):
                         for item in self.children:
                             item.disabled = True
                         
-                        msg = await interaction.channel.fetch_message(self.msgID)
+                        msg = await interaction.channel.fetch_message(self.msg_id)
                         await msg.edit(view = self)
                     except Exception:
                         pass
                 
                 # Page lock
                 async def interaction_check(self, interaction: discord.Interaction):
-                    if interaction.user.id != self.userID:
+                    if interaction.user.id != self.user_id:
                         if self.locked:
                             embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
                             await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -176,7 +176,7 @@ class Reviews(commands.Cog):
                 # Lock / unlock toggle
                 @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                 async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    if interaction.user.id == self.userID:
+                    if interaction.user.id == self.user_id:
                         self.locked = not self.locked
 
                         if self.locked:
@@ -302,8 +302,8 @@ class Reviews(commands.Cog):
                     
                     webhook = await interaction.followup.send(embed = embed, view = page_view_instance, ephemeral=ephemeral, wait=True)
 
-                    page_view_instance.userID = interaction.user.id
-                    page_view_instance.msgID = webhook.id
+                    page_view_instance.user_id = interaction.user.id
+                    page_view_instance.msg_id = webhook.id
             else:
                 embed = discord.Embed(title = "ReviewDB User Reviews", description="This user has no reviews!", color = Color.red())
                 embed.set_author(name=user.name, url=f"https://discord.com/users/{user.id}", icon_url=user.display_avatar.url)
@@ -393,8 +393,8 @@ class Reviews(commands.Cog):
                     self.page = 0
                     self.pages = pages
 
-                    self.userID: int
-                    self.msgID: int
+                    self.user_id: int
+                    self.msg_id: int
 
                     self.locked = False
 
@@ -408,13 +408,13 @@ class Reviews(commands.Cog):
                         for item in self.children:
                             item.disabled = True
 
-                        msg = await interaction.channel.fetch_message(self.msgID)
+                        msg = await interaction.channel.fetch_message(self.msg_id)
                         await msg.edit(view = self)
                     except Exception:
                         pass
 
                 async def interaction_check(self, interaction: discord.Interaction):
-                    if interaction.user.id != self.userID:
+                    if interaction.user.id != self.user_id:
                         if self.locked:
                             embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
                             await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -501,7 +501,7 @@ class Reviews(commands.Cog):
 
                 @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                 async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    if interaction.user.id == self.userID:
+                    if interaction.user.id == self.user_id:
                         self.locked = not self.locked
 
                         if self.locked:
@@ -624,8 +624,8 @@ class Reviews(commands.Cog):
 
                     webhook = await interaction.followup.send(embed = embed, view = page_view_instance, ephemeral=ephemeral, wait=True)
 
-                    page_view_instance.userID = interaction.user.id
-                    page_view_instance.msgID = webhook.id
+                    page_view_instance.user_id = interaction.user.id
+                    page_view_instance.msg_id = webhook.id
             else:
                 embed = discord.Embed(title = "ReviewDB Server Reviews", description="This server has no reviews!", color = Color.red())
                 embed.set_author(name=guild.name, icon_url=(guild.icon.url if guild.icon is not None else ""))

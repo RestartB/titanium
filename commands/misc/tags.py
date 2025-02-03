@@ -9,7 +9,7 @@ from thefuzz import process
 class Tags(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.tagsPool: asqlite.Pool = bot.tags_pool
+        self.tags_pool: asqlite.Pool = bot.tags_pool
         self.tags: dict = {}
         
         self.bot.loop.create_task(self.setup())
@@ -17,14 +17,14 @@ class Tags(commands.Cog):
     
     # Setup function
     async def setup(self):
-        async with self.tagsPool.acquire() as sql:
+        async with self.tags_pool.acquire() as sql:
             # Create table if it doesn't exist
             await sql.execute("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY, creatorID INTEGER, name TEXT, content TEXT)")
             await sql.commit()
 
     # List refresh function
     async def get_tag_lists(self):
-        async with self.tagsPool.acquire() as sql:
+        async with self.tags_pool.acquire() as sql:
             # Get all tags
             tags = await sql.fetchall("SELECT * FROM tags")
 
@@ -86,7 +86,7 @@ class Tags(commands.Cog):
                     self.page = 0
                     self.pages = pages
 
-                    self.msgID: int
+                    self.msg_id: int
 
                     for item in self.children:
                         if item.custom_id == "first" or item.custom_id == "prev":
@@ -98,7 +98,7 @@ class Tags(commands.Cog):
                         for item in self.children:
                             item.disabled = True
                         
-                        msg = await interaction.channel.fetch_message(self.msgID)
+                        msg = await interaction.channel.fetch_message(self.msg_id)
                         await msg.edit(view = self)
                     except Exception:
                         pass
@@ -183,7 +183,7 @@ class Tags(commands.Cog):
             else:
                 webhook = await interaction.followup.send(embed = embed, view = Leaderboard(pages), ephemeral=True, wait=True)
 
-                Leaderboard.msgID = webhook.id
+                Leaderboard.msg_id = webhook.id
     
     async def tag_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         if interaction.user.id not in self.tags or self.tags[interaction.user.id] == []:
@@ -242,7 +242,7 @@ class Tags(commands.Cog):
                 await interaction.followup.send(embed = embed, ephemeral=True)
             else:
                 if attachment is not None:
-                    async with self.tagsPool.acquire() as sql:
+                    async with self.tags_pool.acquire() as sql:
                         await sql.execute("INSERT INTO tags (creatorID, name, content) VALUES (?, ?, ?)", (interaction.user.id, name, attachment.url))
                     
                     if interaction.user.id not in self.tags:
@@ -250,7 +250,7 @@ class Tags(commands.Cog):
                     
                     self.tags[interaction.user.id][name] = attachment.url
                 else:
-                    async with self.tagsPool.acquire() as sql:
+                    async with self.tags_pool.acquire() as sql:
                         await sql.execute("INSERT INTO tags (creatorID, name, content) VALUES (?, ?, ?)", (interaction.user.id, name, content))
                     
                     if interaction.user.id not in self.tags:
@@ -282,7 +282,7 @@ class Tags(commands.Cog):
                 await interaction.followup.send(embed = embed, ephemeral=True)
             else:
                 if attachment is not None:
-                    async with self.tagsPool.acquire() as sql:
+                    async with self.tags_pool.acquire() as sql:
                         await sql.execute("UPDATE tags SET content = ? WHERE creatorID = ? AND name = ?", (attachment.url, interaction.user.id, tag,))
                     
                     if interaction.user.id not in self.tags:
@@ -290,7 +290,7 @@ class Tags(commands.Cog):
                     
                     self.tags[interaction.user.id][tag] = attachment.url
                 else:
-                    async with self.tagsPool.acquire() as sql:
+                    async with self.tags_pool.acquire() as sql:
                         await sql.execute("UPDATE tags SET content = ? WHERE creatorID = ? AND name = ?", (content, interaction.user.id, tag,))
                     
                     if interaction.user.id not in self.tags:
@@ -307,7 +307,7 @@ class Tags(commands.Cog):
                             embed = discord.Embed(title = "Error", description = "New tag name is already in use.", color = Color.red())
                             await interaction.followup.send(embed = embed, ephemeral=True)
                         else:
-                            async with self.tagsPool.acquire() as sql:
+                            async with self.tags_pool.acquire() as sql:
                                 await sql.execute("UPDATE tags SET name = ? WHERE creatorID = ? AND name = ?", (name, interaction.user.id, tag,))
                             
                             self.tags[interaction.user.id][name] = self.tags[interaction.user.id][tag]
@@ -329,7 +329,7 @@ class Tags(commands.Cog):
             embed = discord.Embed(title = "Error", description = "That tag doesn't exist.", color = Color.red())
             await interaction.followup.send(embed = embed, ephemeral=True)
         else:
-            async with self.tagsPool.acquire() as sql:
+            async with self.tags_pool.acquire() as sql:
                 await sql.execute("DELETE FROM tags WHERE creatorID = ? AND name = ?", (interaction.user.id, tag,))
             
             del self.tags[interaction.user.id][tag]

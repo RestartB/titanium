@@ -14,66 +14,66 @@ from discord.ui import View
 class Fireboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.fireboardPool: asqlite.Pool = bot.fireboard_pool
-        self.lockedMessages = []
+        self.fireboard_pool: asqlite.Pool = bot.fireboard_pool
+        self.locked_messages = []
         
         self.bot.loop.create_task(self.setup())
         self.bot.loop.create_task(self.refresh_fire_lists())
     
     # SQL Setup
     async def setup(self):
-        async with self.fireboardPool.acquire() as sql:
+        async with self.fireboard_pool.acquire() as sql:
             if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireMessages';") is None:
                 # Fire Messages - messages that are active on the fireboard
                 await sql.execute("CREATE TABLE fireMessages (serverID int, msgID int, boardMsgID int, reactAmount int)")
-            
+
             if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireSettings';") is None:
                 # Fire Settings - server properties for fireboard
                 await sql.execute("CREATE TABLE fireSettings (serverID int, reactAmount int, emoji text, channelID int, ignoreBots int)")
-            
+
             if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireChannelBlacklist';") is None:
                 # Fire Channel Blacklist - blacklisted channels
                 await sql.execute("CREATE TABLE fireChannelBlacklist (serverID int, channelID int)")
-            
+
             if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='fireRoleBlacklist';") is None:
                 # Fire Role Blacklist - blacklisted roles
                 await sql.execute("CREATE TABLE fireRoleBlacklist (serverID int, roleID int)")
-                
+
             await sql.commit()
-    
+
     # List refresh function
     async def refresh_fire_lists(self):
-        async with self.fireboardPool.acquire() as sql:
-            self.fireMessages = await sql.fetchall("SELECT * FROM fireMessages")
-            self.fireSettings = await sql.fetchall("SELECT * FROM fireSettings")
-            self.fireChannelBlacklist = await sql.fetchall("SELECT * FROM fireChannelBlacklist")
-            self.fireRoleBlacklist = await sql.fetchall("SELECT * FROM fireRoleBlacklist")
+        async with self.fireboard_pool.acquire() as sql:
+            self.fire_messages = await sql.fetchall("SELECT * FROM fireMessages")
+            self.fire_settings = await sql.fetchall("SELECT * FROM fireSettings")
+            self.fire_channel_blacklist = await sql.fetchall("SELECT * FROM fireChannelBlacklist")
+            self.fire_role_blacklist = await sql.fetchall("SELECT * FROM fireRoleBlacklist")
 
     # Listen for reactions
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot: discord.ext.commands.Bot
-        
+
         # Stop if this is a DM
         if payload.guild_id == None:
             return
-        
+
         queued = False
-        
+
         # Lock system
-        if payload.message_id in self.lockedMessages:
+        if payload.message_id in self.locked_messages:
             queued = True
 
-            while payload.message_id in self.lockedMessages:
+            while payload.message_id in self.locked_messages:
                 await asyncio.sleep(0.5)
 
-        self.lockedMessages.append(payload.message_id)
-        
+        self.locked_messages.append(payload.message_id)
+
         try:
             fetched = False
-            
+
             # Find server config
-            for server in self.fireSettings:
+            for server in self.fire_settings:
                 if server[0] == payload.guild_id:
                     react_minimum = server[1]
                     emoji = server[2]
@@ -85,19 +85,19 @@ class Fireboard(commands.Cog):
             # Stop if server has no config (fireboard isn't enabled)
             if not fetched:
                 return
-            
+
             # Stop if message is by Titanium
             if payload.message_author_id == self.bot.user.id:
                 return
-            
+
             # Stop if emoji doesn't match
             if str(payload.emoji) != emoji:
                 return
-            
+
             # --- Edit board message if it already exists ---
-            if payload.message_id in [message[1] for message in self.fireMessages]:
-                message = [message for message in self.fireMessages if message[1] == payload.message_id][0]
-                
+            if payload.message_id in [message[1] for message in self.fire_messages]:
+                message = [message for message in self.fire_messages if message[1] == payload.message_id][0]
+
                 # Only fetch updated reaction count if I have queued or reaction amount is undefined
                 if queued or message[3] is None:
                     # Fetch message and channel
@@ -106,19 +106,19 @@ class Fireboard(commands.Cog):
                         message = await msg_channel.fetch_message(payload.message_id)
                     except discord.errors.NotFound:
                         return
-                
+
                     # Stop if not enough reactions
                     for reaction in message.reactions:
                         if str(reaction.emoji) == emoji:
                             react_count = reaction.count
                             break
-                    
+
                     if react_count < react_minimum:
                         return
                 else:
                     react_count = None
-                
-                async with self.fireboardPool.acquire() as sql:
+
+                async with self.fireboard_pool.acquire() as sql:
                     # Set updated react count
                     if react_count is not None:
                         await sql.execute(f"UPDATE fireMessages SET reactionAmount = ? WHERE msgID = ?", (react_count, payload.message_id,))
@@ -128,7 +128,7 @@ class Fireboard(commands.Cog):
                         await self.refresh_fire_lists()
 
                 # Get message from message list
-                message = [message for message in self.fireMessages if message[1] == payload.message_id][0]
+                message = [message for message in self.fire_messages if message[1] == payload.message_id][0]
 
                 # Get board message
                 board_channel = await self.bot.fetch_channel(channel_id)
@@ -137,44 +137,44 @@ class Fireboard(commands.Cog):
                 await board_message.edit(content=f"**{message[3]} {emoji}** | <@{payload.message_author_id}> | <#{payload.channel_id}>", embeds=board_message.embeds)
 
                 return
-            
+
             # Stop if message is in a blacklisted channel
-            if payload.channel_id in [channel[1] for channel in self.fireChannelBlacklist]:
+            if payload.channel_id in [channel[1] for channel in self.fire_channel_blacklist]:
                 return
-            
+
             # Stop if message is by a blacklisted role
             guild = await self.bot.fetch_guild(payload.guild_id)
             member = await guild.fetch_member(payload.user_id)
 
-            if any(role[1] in [role.id for role in member.roles] for role in self.fireRoleBlacklist):
+            if any(role[1] in [role.id for role in member.roles] for role in self.fire_role_blacklist):
                 return
-            
+
             # Fetch message and channel
             try:
                 msg_channel = await self.bot.fetch_channel(payload.channel_id)
                 message = await msg_channel.fetch_message(payload.message_id)
             except discord.errors.NotFound:
                 return
-            
+
             # Stop if message is by a bot
             if ignore_bots and message.author.bot:
                 return
-            
+
             # Stop if message is in an NSFW channel
             if message.channel.nsfw:
                 return
-            
+
             # Stop if not enough reactions
             for reaction in message.reactions:
                 if str(reaction.emoji) == emoji:
                     react_count = reaction.count
                     break
-            
+
             if react_count < react_minimum:
                 return
 
             # --- Send message to fireboard ---
-            
+
             # Create embed
             embed = discord.Embed(description=message.content, color=Color.random())
             embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
@@ -190,7 +190,7 @@ class Fireboard(commands.Cog):
             if message.reference:
                 try:
                     reply_message = await msg_channel.fetch_message(message.reference.message_id)
-                    
+
                     reply_embed = discord.Embed(title="Replying To", description=reply_message.content, color=Color.random())
                     reply_embed.set_author(name=reply_message.author.name, icon_url=reply_message.author.display_avatar.url)
                     reply_embed.timestamp = reply_message.created_at
@@ -198,12 +198,12 @@ class Fireboard(commands.Cog):
                     embed_list.insert(0, reply_embed)
                 except discord.errors.NotFound:
                     pass
-            
+
             # Send message
             board_channel = await self.bot.fetch_channel(channel_id)
             board_message = await board_channel.send(content=f"**{react_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embed_list, view=view, files=[await attachment.to_file() for attachment in message.attachments])
 
-            async with self.fireboardPool.acquire() as sql:
+            async with self.fireboard_pool.acquire() as sql:
                 # Insert message to DB
                 await sql.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, reactionAmount) VALUES (?, ?, ?, ?)", (payload.guild_id, payload.message_id, board_message.id, react_count))
                 await sql.commit()
@@ -212,33 +212,33 @@ class Fireboard(commands.Cog):
         except Exception as e:
             raise e
         finally:
-            self.lockedMessages.remove(payload.message_id)
+            self.locked_messages.remove(payload.message_id)
 
     # Listen for reaction removal
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
         self.bot: discord.ext.commands.Bot
-        
+
         queued = False
 
         # Stop if this is a DM
         if payload.guild_id == None:
             return
-        
+
         # Lock system
-        if payload.message_id in self.lockedMessages:
+        if payload.message_id in self.locked_messages:
             queued = True
 
-            while payload.message_id in self.lockedMessages:
+            while payload.message_id in self.locked_messages:
                 await asyncio.sleep(0.5)
 
-        self.lockedMessages.append(payload.message_id)
-        
+        self.locked_messages.append(payload.message_id)
+
         try:
             fetched = False
-            
+
             # Find server config
-            for server in self.fireSettings:
+            for server in self.fire_settings:
                 if server[0] == payload.guild_id:
                     react_minimum = server[1]
                     emoji = server[2]
@@ -250,19 +250,19 @@ class Fireboard(commands.Cog):
             # Stop if server has no config (fireboard isn't enabled)
             if not fetched:
                 return
-            
+
             # Stop if message is by Titanium
             if payload.message_author_id == self.bot.user.id:
                 return
-            
+
             # Stop if emoji doesn't match
             if str(payload.emoji) != emoji:
                 return
-            
+
             # --- Edit board message if it already exists ---
-            if payload.message_id in [message[1] for message in self.fireMessages]:
-                prev_react_count = [message for message in self.fireMessages if message[1] == payload.message_id][0][3]
-                
+            if payload.message_id in [message[1] for message in self.fire_messages]:
+                prev_react_count = [message for message in self.fire_messages if message[1] == payload.message_id][0][3]
+
                 # Only fetch updated reaction count if I have queued
                 if queued or prev_react_count is None:
                     # Fetch message and channel
@@ -271,19 +271,19 @@ class Fireboard(commands.Cog):
                         message = await msg_channel.fetch_message(payload.message_id)
                     except discord.errors.NotFound:
                         return
-                
+
                     # Stop if not enough reactions
                     for reaction in message.reactions:
                         if str(reaction.emoji) == emoji:
                             react_count = reaction.count
                             break
-                    
+
                     if react_count < react_minimum:
                         return
                 else:
                     react_count = None
-                
-                async with self.fireboardPool.acquire() as sql:
+
+                async with self.fireboard_pool.acquire() as sql:
                     # Set updated react count
                     if react_count is not None:
                         await sql.execute(f"UPDATE fireMessages SET reactionAmount = ? WHERE msgID = ?", (react_count, payload.message_id,))
@@ -293,7 +293,7 @@ class Fireboard(commands.Cog):
                         await self.refresh_fire_lists()
 
                 # Get message from message list
-                message = [message for message in self.fireMessages if message[1] == payload.message_id][0]
+                message = [message for message in self.fire_messages if message[1] == payload.message_id][0]
 
                 # Get board message
                 board_channel = await self.bot.fetch_channel(channel_id)
@@ -302,32 +302,32 @@ class Fireboard(commands.Cog):
                 # Remove message if not enough reactions
                 if message[3] < react_minimum:
                     await board_message.delete()
-                    
-                    async with self.fireboardPool.acquire() as sql:
+
+                    async with self.fireboard_pool.acquire() as sql:
                         await sql.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
                         await sql.commit()
 
                     await self.refresh_fire_lists()
 
                     return
-                
+
                 # Workaround for lack of message author ID
                 content = board_message.content
                 content = content.replace(f"{prev_react_count} {emoji}", f"{message[3]} {emoji}")
-                
+
                 await board_message.edit(content=content)
 
                 return
-            
+
             # Stop if message is in a blacklisted channel
-            if payload.channel_id in [channel[1] for channel in self.fireChannelBlacklist]:
+            if payload.channel_id in [channel[1] for channel in self.fire_channel_blacklist]:
                 return
-            
+
             # Stop if message is by a blacklisted role
             guild = await self.bot.fetch_guild(payload.guild_id)
             member = await guild.fetch_member(payload.user_id)
 
-            if any(role[1] in [role.id for role in member.roles] for role in self.fireRoleBlacklist):
+            if any(role[1] in [role.id for role in member.roles] for role in self.fire_role_blacklist):
                 return
 
             # Fetch message and channel
@@ -336,15 +336,15 @@ class Fireboard(commands.Cog):
                 message = await msg_channel.fetch_message(payload.message_id)
             except discord.errors.NotFound:
                 return
-            
+
             # Stop if message is by a bot
             if ignore_bots and message.author.bot:
                 return
-            
+
             # Stop if message is in an NSFW channel
             if message.channel.nsfw:
                 return
-            
+
             # Get reaction count
             react_count = 0
 
@@ -352,13 +352,13 @@ class Fireboard(commands.Cog):
                 if str(reaction.emoji) == emoji:
                     react_count = reaction.count
                     break
-            
+
             # Stop if not enough reactions
             if react_count < react_minimum:
                 return
 
             # --- Send message to fireboard ---
-            
+
             # Create embed
             embed = discord.Embed(description=message.content, color=Color.random())
             embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
@@ -374,7 +374,7 @@ class Fireboard(commands.Cog):
             if message.reference:
                 try:
                     reply_message = await msg_channel.fetch_message(message.reference.message_id)
-                    
+
                     reply_embed = discord.Embed(title="Replying To", description=reply_message.content, color=Color.random())
                     reply_embed.set_author(name=reply_message.author.name, icon_url=reply_message.author.display_avatar.url)
                     reply_embed.timestamp = reply_message.created_at
@@ -382,12 +382,12 @@ class Fireboard(commands.Cog):
                     embed_list.insert(0, reply_embed)
                 except discord.errors.NotFound:
                     pass
-            
+
             # Send message
             board_channel = await self.bot.fetch_channel(channel_id)
             board_message = await board_channel.send(content=f"**{react_count} {emoji}** | {message.author.mention} | <#{payload.channel_id}>", embeds=embed_list, view=view, files=[await attachment.to_file() for attachment in message.attachments])
 
-            async with self.fireboardPool.acquire() as sql:
+            async with self.fireboard_pool.acquire() as sql:
                 # Insert message to DB
                 await sql.execute(f"INSERT INTO fireMessages (serverID, msgID, boardMsgID, reactionAmount) VALUES (?, ?, ?, ?)", (payload.guild_id, payload.message_id, board_message.id, react_count))
                 await sql.commit()
@@ -396,39 +396,39 @@ class Fireboard(commands.Cog):
         except Exception as e:
             raise e
         finally:
-            self.lockedMessages.remove(payload.message_id)
-    
+            self.locked_messages.remove(payload.message_id)
+
     # Listen for message reaction clear
     @commands.Cog.listener()
     async def on_raw_reaction_clear(self, payload: discord.RawReactionClearEvent):
         self.bot: discord.ext.commands.Bot
-        
+
         queued = False
 
         # Stop if this is a DM
         if payload.guild_id == None:
             return
-        
+
         # Lock system
-        if payload.message_id in self.lockedMessages:
+        if payload.message_id in self.locked_messages:
             queued = True
 
-            while payload.message_id in self.lockedMessages:
+            while payload.message_id in self.locked_messages:
                 await asyncio.sleep(0.5)
 
-        self.lockedMessages.append(payload.message_id)
-        
+        self.locked_messages.append(payload.message_id)
+
         try:
             # Only trigger if message is already in the fireboard DB
-            if payload.message_id in [message[1] for message in self.fireMessages]:
+            if payload.message_id in [message[1] for message in self.fire_messages]:
                 # Find server config
-                for server in self.fireSettings:
+                for server in self.fire_settings:
                     if server[0] == payload.guild_id:
                         react_minimum = server[1]
                         emoji = server[2]
                         channel_id = server[3]
                         ignore_bots = (True if int(server[4]) == 1 else False)
-                
+
                 # Get guild
                 try:
                     guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
@@ -442,9 +442,9 @@ class Fireboard(commands.Cog):
                 message: discord.Message = await channel.fetch_message(payload.message_id)
 
                 # See if board message is already present
-                for fireMessage in self.fireMessages:
-                    if fireMessage[1] == message.id:
-                        async with self.fireboardPool.acquire() as sql:
+                for fire_message in self.fire_messages:
+                    if fire_message[1] == message.id:
+                        async with self.fireboard_pool.acquire() as sql:
                             try:
                                 # Delete message
                                 try:
@@ -452,11 +452,11 @@ class Fireboard(commands.Cog):
                                 except discord.errors.NotFound:
                                     await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                                     await sql.commit()
-                                    self.lockedMessages.remove(payload.message_id)
-                                    
+                                    self.locked_messages.remove(payload.message_id)
+
                                     return
-                                
-                                board_message = await channel.fetch_message(fireMessage[2])
+
+                                board_message = await channel.fetch_message(fire_message[2])
                                 await board_message.delete()
 
                                 # Delete message from DB
@@ -479,38 +479,38 @@ class Fireboard(commands.Cog):
         except Exception as e:
             raise e
         finally:
-            self.lockedMessages.remove(payload.message_id)
-    
+            self.locked_messages.remove(payload.message_id)
+
     # Listen for specific emoji being cleared
     @commands.Cog.listener()
     async def on_raw_reaction_clear_emoji(self, payload: discord.RawReactionClearEmojiEvent):
         self.bot: discord.ext.commands.Bot
-        
+
         queued = False
 
         # Stop if this is a DM
         if payload.guild_id == None:
             return
-        
+
         # Lock system
-        if payload.message_id in self.lockedMessages:
+        if payload.message_id in self.locked_messages:
             queued = True
 
-            while payload.message_id in self.lockedMessages:
+            while payload.message_id in self.locked_messages:
                 await asyncio.sleep(0.5)
 
-        self.lockedMessages.append(payload.message_id)
-        
+        self.locked_messages.append(payload.message_id)
+
         try:
             # Only trigger if message is already in the fireboard DB
-            if payload.message_id in [message[1] for message in self.fireMessages]:
-                for server in self.fireSettings:
+            if payload.message_id in [message[1] for message in self.fire_messages]:
+                for server in self.fire_settings:
                     if server[0] == payload.guild_id:
                         react_minimum = server[1]
                         emoji = server[2]
                         channel_id = server[3]
                         ignore_bots = (True if int(server[4]) == 1 else False)
-                
+
                 # Only trigger if cleared emoji is our emoji
                 if str(payload.emoji) == emoji:
                     # Fetch server
@@ -523,9 +523,9 @@ class Fireboard(commands.Cog):
                     channel: discord.abc.GuildChannel = await guild.fetch_channel(payload.channel_id)
 
                     # See if board message is already present
-                    for fireMessage in self.fireMessages:
-                        if fireMessage[1] == payload.message_id:
-                            async with self.fireboardPool.acquire() as sql:
+                    for fire_message in self.fire_messages:
+                        if fire_message[1] == payload.message_id:
+                            async with self.fireboard_pool.acquire() as sql:
                                 try:
                                     # Fetch fireboard channel
                                     try:
@@ -533,11 +533,11 @@ class Fireboard(commands.Cog):
                                     except discord.errors.NotFound:
                                         await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                                         await sql.commit()
-                                        
+
                                         return
-                                    
+
                                     # Delete message
-                                    board_message = await channel.fetch_message(fireMessage[2])
+                                    board_message = await channel.fetch_message(fire_message[2])
                                     await board_message.delete()
 
                                     # Delete message from DB
@@ -560,39 +560,39 @@ class Fireboard(commands.Cog):
         except Exception as e:
             raise e
         finally:
-            self.lockedMessages.remove(payload.message_id)
-    
+            self.locked_messages.remove(payload.message_id)
+
     # Listen for message being deleted
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         self.bot: discord.ext.commands.Bot
-        
+
         queued = False
 
         # Stop if this is a DM
         if payload.guild_id == None:
             return
-        
+
         # Lock system
-        if payload.message_id in self.lockedMessages:
+        if payload.message_id in self.locked_messages:
             queued = True
 
-            while payload.message_id in self.lockedMessages:
+            while payload.message_id in self.locked_messages:
                 await asyncio.sleep(0.5)
 
-        self.lockedMessages.append(payload.message_id)
-        
+        self.locked_messages.append(payload.message_id)
+
         try:
             # Only trigger if message is already in the fireboard DB
-            if payload.message_id in [message[1] for message in self.fireMessages]:
+            if payload.message_id in [message[1] for message in self.fire_messages]:
                 # Fetch server config
-                for server in self.fireSettings:
+                for server in self.fire_settings:
                     if server[0] == payload.guild_id:
                         react_minimum = server[1]
                         emoji = server[2]
                         channel_id = server[3]
                         ignore_bots = (True if int(server[4]) == 1 else False)
-                
+
                 # Fetch server
                 try:
                     guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
@@ -603,9 +603,9 @@ class Fireboard(commands.Cog):
                 channel: discord.abc.GuildChannel = await guild.fetch_channel(payload.channel_id)
 
                 # See if board message is already present
-                for fireMessage in self.fireMessages:
-                    if fireMessage[1] == payload.message_id:
-                        async with self.fireboardPool.acquire() as sql:
+                for fire_message in self.fire_messages:
+                    if fire_message[1] == payload.message_id:
+                        async with self.fireboard_pool.acquire() as sql:
                             try:
                                 # Fetch fireboard channel
                                 try:
@@ -613,11 +613,11 @@ class Fireboard(commands.Cog):
                                 except discord.errors.NotFound:
                                     await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                                     await sql.commit()
-                                    
+
                                     return
-                                
+
                                 # Delete message
-                                board_message = await channel.fetch_message(fireMessage[2])
+                                board_message = await channel.fetch_message(fire_message[2])
                                 await board_message.delete()
 
                                 # Delete message from DB
@@ -640,51 +640,51 @@ class Fireboard(commands.Cog):
         except Exception as e:
             raise e
         finally:
-            self.lockedMessages.remove(payload.message_id)
-    
+            self.locked_messages.remove(payload.message_id)
+
     # Listen for message being edited
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         self.bot: discord.ext.commands.Bot
-        
+
         queued = False
 
         # Stop if this is a DM
         if payload.guild_id == None:
             return
-        
+
         # Lock system
-        if payload.message_id in self.lockedMessages:
+        if payload.message_id in self.locked_messages:
             queued = True
 
-            while payload.message_id in self.lockedMessages:
+            while payload.message_id in self.locked_messages:
                 await asyncio.sleep(0.5)
 
-        self.lockedMessages.append(payload.message_id)
+        self.locked_messages.append(payload.message_id)
 
         try:
             # Only trigger if message is already in the fireboard DB
-            if payload.message_id in [message[1] for message in self.fireMessages]:
+            if payload.message_id in [message[1] for message in self.fire_messages]:
                 # Fetch server config
-                for server in self.fireSettings:
+                for server in self.fire_settings:
                     if server[0] == payload.guild_id:
                         react_minimum = server[1]
                         emoji = server[2]
                         channel_id = server[3]
                         ignore_bots = (True if int(server[4]) == 1 else False)
-                
+
                 # Fetch server
                 try:
                     guild: discord.Guild = await self.bot.fetch_guild(payload.guild_id)
                 except discord.errors.NotFound:
                     return
-                
+
                 # Get message channel
                 channel: discord.abc.GuildChannel = await guild.fetch_channel(payload.channel_id)
 
                 # Get our message
                 message: discord.Message = await channel.fetch_message(payload.message_id)
-                
+
                 embed = discord.Embed(description=message.content, color=Color.random())
                 embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
                 embed.timestamp = message.created_at
@@ -694,12 +694,12 @@ class Fireboard(commands.Cog):
                 view.add_item(discord.ui.Button(label="Jump to Message", url = message.jump_url, style=discord.ButtonStyle.url))
 
                 embed_list = [embed]
-                
+
                 # Add reply embed
                 if message.reference:
                     try:
                         reply_message = await channel.fetch_message(message.reference.message_id)
-                        
+
                         reply_embed = discord.Embed(title="Replying To", description=reply_message.content, color=Color.random())
                         reply_embed.set_author(name=reply_message.author.name, icon_url=reply_message.author.display_avatar.url)
                         reply_embed.timestamp = reply_message.created_at
@@ -707,26 +707,26 @@ class Fireboard(commands.Cog):
                         embed_list.insert(0, reply_embed)
                     except discord.errors.NotFound:
                         pass
-                
+
                 try:
                     channel: discord.TextChannel = await guild.fetch_channel(channel_id)
                 except discord.errors.NotFound:
-                    async with self.fireboardPool.acquire() as sql:
+                    async with self.fireboard_pool.acquire() as sql:
                         await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (payload.guild_id,))
                         await sql.commit()
-                        
+
                     return
-                
+
                 # Find previous fireboard message
                 try:
-                    for fireMessage in self.fireMessages:
-                        if fireMessage[0] == payload.guild_id and fireMessage[1] == payload.message_id:
+                    for fire_message in self.fire_messages:
+                        if fire_message[0] == payload.guild_id and fire_message[1] == payload.message_id:
                             # Edit with updated embed - reaction amount stays the same
-                            board_message = await channel.fetch_message(fireMessage[2])
+                            board_message = await channel.fetch_message(fire_message[2])
 
                             await board_message.edit(embeds=embed_list, attachments=message.attachments)
                 except discord.errors.NotFound: # Message not found
-                    async with self.fireboardPool.acquire() as sql:
+                    async with self.fireboard_pool.acquire() as sql:
                         # Delete message from DB
                         await sql.execute(f"DELETE FROM fireMessages WHERE msgID = ?", (payload.message_id,))
                         await sql.commit()
@@ -739,17 +739,17 @@ class Fireboard(commands.Cog):
         except Exception as e:
             raise e
         finally:
-            self.lockedMessages.remove(payload.message_id)
-    
+            self.locked_messages.remove(payload.message_id)
+
     # Listen for fireboard channel delete
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
         # Only trigger if server has fireboard enabled
-        if channel.guild.id in [guild[0] for guild in self.fireSettings]:
-            for server in self.fireSettings:
+        if channel.guild.id in [guild[0] for guild in self.fire_settings]:
+            for server in self.fire_settings:
                 if server[0] == channel.guild.id:
                     if server[3] == channel.id:
-                        async with self.fireboardPool.acquire() as sql:
+                        async with self.fireboard_pool.acquire() as sql:
                             # Delete fireboard config
                             await sql.execute(f"DELETE FROM fireMessages WHERE serverID = ?", (channel.guild.id,))
                             await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (channel.guild.id,))
@@ -760,15 +760,15 @@ class Fireboard(commands.Cog):
                         return
         else:
             return
-    
+
     # Listen for server being left / deleted
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
         # Only trigger if server has fireboard enabled
-        if guild.id in [guild[0] for guild in self.fireSettings]:
-            for server in self.fireSettings:
+        if guild.id in [guild[0] for guild in self.fire_settings]:
+            for server in self.fire_settings:
                 if server[0] == guild.id:
-                    async with self.fireboardPool.acquire() as sql:
+                    async with self.fireboard_pool.acquire() as sql:
                         # Delete fireboard config
                         await sql.execute(f"DELETE FROM fireMessages WHERE serverID = ?", (guild.id,))
                         await sql.execute(f"DELETE FROM fireSettings WHERE serverID = ?", (guild.id,))
@@ -779,19 +779,19 @@ class Fireboard(commands.Cog):
                     return
         else:
             return
-    
+
     # Command group setup
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False)
     perms = discord.Permissions()
     fireGroup = app_commands.Group(name="fireboard", description="Control the fireboard.", allowed_contexts=context, default_permissions=perms)
-    
+
     # Fireboard enable command
     @fireGroup.command(name="enable", description="Enable the fireboard in the current channel.")
     async def enable_fireboard(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
         # Check fireboard status
-        if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
+        if interaction.guild.id in [guild[0] for guild in self.fire_settings]:
             embed = discord.Embed(title = "Fireboard is already enabled.", color=Color.green())
             await interaction.followup.send(embed=embed, ephemeral=True)
         else:
@@ -812,19 +812,19 @@ class Fireboard(commands.Cog):
                 await interaction.followup.send(embed=embed, ephemeral=True)
 
                 return
-            
-            async with self.fireboardPool.acquire() as sql:
+
+            async with self.fireboard_pool.acquire() as sql:
                 # Insert to DB, refresh lists
                 await sql.execute(f"INSERT INTO fireSettings (serverID, reactAmount, emoji, channelID, ignoreBots) VALUES (?, ?, ?, ?, ?)", (interaction.guild_id, react_minimum, emoji, channel_id, ignore_bots,))
                 await sql.commit()
 
             await self.refresh_fire_lists()
-            
+
             embed = discord.Embed(title = "Enabled", description="Fireboard has been enabled in the current channel.", color=Color.green())
             embed.add_field(name="Info", value=f"**Reaction Requirement:** `{react_minimum} reactions`\n**Fireboard Channel:** <#{channel_id}>\n**Emoji:** {emoji}\n**Ignore Bots:** `{ignore_bots}`")
 
             await interaction.followup.send(embed=embed, ephemeral=True)
-    
+
     class ConfirmDisableView(View):
         def __init__(self):
             super().__init__(timeout=60)
@@ -868,9 +868,9 @@ class Fireboard(commands.Cog):
     async def disable_fireboard(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         
-        if interaction.guild_id in [guild[0] for guild in self.fireSettings]:
+        if interaction.guild_id in [guild[0] for guild in self.fire_settings]:
             view = self.ConfirmDisableView()
-            view.pool = self.fireboardPool
+            view.pool = self.fireboard_pool
             view.cog = self
             
             embed = discord.Embed(
@@ -890,9 +890,9 @@ class Fireboard(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         # Check fireboard status
-        if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
+        if interaction.guild.id in [guild[0] for guild in self.fire_settings]:
             # Fetch server settings
-            for server in self.fireSettings:
+            for server in self.fire_settings:
                 if server[0] == interaction.guild_id:
                     react_minimum = server[1]
                     emoji = server[2]
@@ -913,7 +913,7 @@ class Fireboard(commands.Cog):
         await interaction.response.defer(ephemeral=False)
         
         # Check fireboard status
-        if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
+        if interaction.guild.id in [guild[0] for guild in self.fire_settings]:
             embed = discord.Embed(title = "Waiting for Reaction", description=f"{self.bot.options['loading-emoji']} React with this message with your target emoji to set the fireboard emoji.", color=Color.orange())
             
             msg = await interaction.followup.send(embed=embed, ephemeral=False)
@@ -927,7 +927,7 @@ class Fireboard(commands.Cog):
 
                 reaction: discord.Reaction = reaction
                 
-                async with self.fireboardPool.acquire() as sql:
+                async with self.fireboard_pool.acquire() as sql:
                     # Change emoji in DB, refresh lists
                     await sql.execute(f"UPDATE fireSettings SET emoji = ? WHERE serverID = ?", (str(reaction.emoji), interaction.guild_id,))
                     await sql.commit()
@@ -951,7 +951,7 @@ class Fireboard(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         
         # Check fireboard status
-        if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
+        if interaction.guild.id in [guild[0] for guild in self.fire_settings]:
             embed = discord.Embed(title = "Fireboard", description="This channel has been configured as the server fireboard.", color=Color.random())
             embed.set_footer(text = "Feel free to delete this message!")
 
@@ -968,7 +968,7 @@ class Fireboard(commands.Cog):
 
                 return
             
-            async with self.fireboardPool.acquire() as sql:
+            async with self.fireboard_pool.acquire() as sql:
                 # Update channel in DB, refresh lists
                 await sql.execute(f"UPDATE fireSettings SET channelID = ? WHERE serverID = ?", (channel.id, interaction.guild_id,))
                 await sql.commit()
@@ -988,10 +988,10 @@ class Fireboard(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         
         # Check fireboard status
-        if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
+        if interaction.guild.id in [guild[0] for guild in self.fire_settings]:
             embed = discord.Embed(title="Set", description=f"Reaction requirement has been set to **{amount} reactions.**", color=Color.green())
 
-            async with self.fireboardPool.acquire() as sql:
+            async with self.fireboard_pool.acquire() as sql:
                 # Update reaction requirement in DB, refresh lists
                 await sql.execute(f"UPDATE fireSettings SET reactAmount = ? WHERE serverID = ?", (amount, interaction.guild_id,))
                 await sql.commit()
@@ -1009,10 +1009,10 @@ class Fireboard(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         
         # Check fireboard status
-        if interaction.guild.id in [guild[0] for guild in self.fireSettings]:
+        if interaction.guild.id in [guild[0] for guild in self.fire_settings]:
             embed = discord.Embed(title="Set", description=f"Bot messages will **{"be ignored." if value else "not be ignored."}**", color=Color.green())
 
-            async with self.fireboardPool.acquire() as sql:
+            async with self.fireboard_pool.acquire() as sql:
                 # Update setting in DB, refresh lists
                 await sql.execute(f"UPDATE fireSettings SET ignoreBots = ? WHERE serverID = ?", (value, interaction.guild_id,))
                 await sql.commit()
@@ -1030,9 +1030,9 @@ class Fireboard(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         
         # Check fireboard status
-        if interaction.guild_id in [guild[0] for guild in self.fireSettings]:
-            async with self.fireboardPool.acquire() as sql:
-                if channel.id in [channelEntry[1] for channelEntry in self.fireChannelBlacklist]:
+        if interaction.guild_id in [guild[0] for guild in self.fire_settings]:
+            async with self.fireboard_pool.acquire() as sql:
+                if channel.id in [channelEntry[1] for channelEntry in self.fire_channel_blacklist]:
                     await sql.execute("DELETE FROM fireChannelBlacklist WHERE serverID = ? AND channelID = ?", (interaction.guild_id, channel.id,))
                     await sql.commit()
 
@@ -1059,9 +1059,9 @@ class Fireboard(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         
         # Check fireboard status
-        if interaction.guild_id in [guild[0] for guild in self.fireSettings]:
-            async with self.fireboardPool.acquire() as sql:
-                if role.id in [roleEntry[1] for roleEntry in self.fireRoleBlacklist]:
+        if interaction.guild_id in [guild[0] for guild in self.fire_settings]:
+            async with self.fireboard_pool.acquire() as sql:
+                if role.id in [roleEntry[1] for roleEntry in self.fire_role_blacklist]:
                     await sql.execute("DELETE FROM fireRoleBlacklist WHERE serverID = ? AND roleID = ?", (interaction.guild_id, role.id,))
                     await sql.commit()
 
@@ -1088,13 +1088,13 @@ class Fireboard(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         
         # Check fireboard status
-        if interaction.guild_id in [guild[0] for guild in self.fireSettings]:
+        if interaction.guild_id in [guild[0] for guild in self.fire_settings]:
             class BlacklistViewer(View):
                 def __init__(self):
                     super().__init__(timeout=240)
 
-                    self.fireChannelBlacklist: list
-                    self.fireRoleBlacklist: list
+                    self.fire_channel_blacklist: list
+                    self.fire_role_blacklist: list
                     self.interaction: discord.Interaction
                 
                 async def on_timeout(self) -> None:
@@ -1115,7 +1115,7 @@ class Fireboard(commands.Cog):
                     
                     my_roles = []
                     
-                    for role in self.fireRoleBlacklist:
+                    for role in self.fire_channel_blacklist:
                         if role[0] == interaction.guild_id:
                             my_roles.append(f"<@&{role[1]}>")
                     
@@ -1138,7 +1138,7 @@ class Fireboard(commands.Cog):
                     
                     my_channels = []
                     
-                    for channel in self.fireChannelBlacklist:
+                    for channel in self.fire_channel_blacklist:
                         if channel[0] == interaction.guild_id:
                             my_channels.append(f"<#{role[1]}>")
                     
@@ -1150,13 +1150,13 @@ class Fireboard(commands.Cog):
                         await interaction.edit_original_response(embed=embed, view=self)
             
             view_instance = BlacklistViewer()
-            view_instance.fireChannelBlacklist = self.fireChannelBlacklist
-            view_instance.fireRoleBlacklist = self.fireRoleBlacklist
+            view_instance.fire_channel_blacklist = self.fire_channel_blacklist
+            view_instance.fire_role_blacklist = self.fire_role_blacklist
             view_instance.interaction = interaction
             
             my_roles = []
             
-            for role in self.fireRoleBlacklist:
+            for role in self.fire_role_blacklist:
                 if role[0] == interaction.guild_id:
                     my_roles.append(f"<@&{role[1]}>")
             

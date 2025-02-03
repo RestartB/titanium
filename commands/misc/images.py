@@ -17,7 +17,7 @@ class Images(commands.Cog):
         self.bot: commands.Bot
 
         # Convert to GIF option
-        self.imgGifCTX = app_commands.ContextMenu(
+        self.img_gif_ctx = app_commands.ContextMenu(
             name="Convert to GIF",
             callback=self.gif_callback,
             allowed_contexts=discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
@@ -25,15 +25,15 @@ class Images(commands.Cog):
         )
 
         # Deepfry option
-        self.deepfryCTX = app_commands.ContextMenu(
+        self.deepfry_ctx = app_commands.ContextMenu(
             name="Deepfry Images",
             callback=self.deepfry_callback,
             allowed_contexts=discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
             allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True)
         )
 
-        self.bot.tree.add_command(self.imgGifCTX)
-        self.bot.tree.add_command(self.deepfryCTX)
+        self.bot.tree.add_command(self.img_gif_ctx)
+        self.bot.tree.add_command(self.deepfry_ctx)
 
     context = discord.app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
     installs = discord.app_commands.AppInstallationType(guild=True, user=True)

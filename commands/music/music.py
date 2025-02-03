@@ -101,7 +101,7 @@ class Music(commands.Cog):
                 def __init__(self, options: list):
                     super().__init__(timeout = 120) # 2 minute timeout
 
-                    self.msgID: int
+                    self.msg_id: int
                     
                     dropdown_instance = Dropdown(options)
                     self.add_item(dropdown_instance)
@@ -114,7 +114,7 @@ class Music(commands.Cog):
                         for item in self.children:
                             item.disabled = True
                         
-                        msg = await interaction.channel.fetch_message(self.msgID)
+                        msg = await interaction.channel.fetch_message(self.msg_id)
                         await msg.edit(view = self)
                     except Exception:
                         pass
@@ -183,7 +183,7 @@ class Music(commands.Cog):
 
                             # Pass through interaction to get original sender ID - used for lock button
                             pages_instance.response = await interaction.original_response()
-                            pages_instance.userID = interaction.user.id
+                            pages_instance.user_id = interaction.user.id
                     except AttributeError: # No lyrics
                         google_button = discord.ui.Button(label='Search on Google', style=ButtonStyle.url, url=f'https://www.google.com/search?q={quote_plus(song_list[list_place])}+{quote_plus(artist_list[list_place])}')
                         
@@ -204,8 +204,8 @@ class Music(commands.Cog):
                     self.pages: list = pages
                     self.list_place: int = list_place
 
-                    self.msgID: int
-                    self.userID: int
+                    self.msg_id: int
+                    self.user_id: int
 
                     self.locked = False
                     
@@ -223,14 +223,14 @@ class Music(commands.Cog):
                         for item in self.children:
                             item.disabled = True
                         
-                        msg = await interaction.channel.fetch_message(self.msgID)
+                        msg = await interaction.channel.fetch_message(self.msg_id)
                         await msg.edit(view = self)
                     except Exception:
                         pass
             
                 # Block others from controlling when lock is active
                 async def interaction_check(self, interaction: discord.Interaction):
-                    if interaction.user.id != self.userID:
+                    if interaction.user.id != self.user_id:
                         if self.locked:
                             embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
                             await interaction.response.send_message(embed = embed, ephemeral=True)
@@ -280,7 +280,7 @@ class Music(commands.Cog):
                 # Lock / unlock button
                 @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                 async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    if interaction.user.id == self.userID:
+                    if interaction.user.id == self.user_id:
                         self.locked = not self.locked
 
                         if self.locked:
@@ -337,7 +337,7 @@ class Music(commands.Cog):
             
             # Edit initial message to show dropdown
             webhook = await interaction.followup.send(embed=embed, view=song_select_view_instance, wait=True)
-            song_select_view_instance.msgID = webhook.id
+            song_select_view_instance.msg_id = webhook.id
 
 async def setup(bot):
     await bot.add_cog(Music(bot))

@@ -27,7 +27,7 @@ class SongURL(commands.Cog):
         self.auth_manager = SpotifyClientCredentials(client_id = self.bot.tokens['spotify-api-id'], client_secret = self.bot.tokens['spotify-api-secret'])
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
 
-        self.cachePool: asqlite.Pool = bot.cache_pool
+        self.cache_pool: asqlite.Pool = bot.cache_pool
 
         self.cleaner = UrlCleaner()
         self.cleaner.ruler.update_rules()
@@ -37,7 +37,7 @@ class SongURL(commands.Cog):
 
     # List refresh function
     async def setup(self):
-        async with self.cachePool.acquire() as sql:
+        async with self.cache_pool.acquire() as sql:
             # song.link Cache - store previous results
             await sql.execute("CREATE TABLE IF NOT EXISTS songlinkCache (userURL text, spotifyURL text, platformRich text, platformRaw text, ttl int)")
             await sql.commit()
@@ -46,7 +46,7 @@ class SongURL(commands.Cog):
 
     # List refresh function
     async def refresh_cache(self):
-        async with self.cachePool.acquire() as sql:
+        async with self.cache_pool.acquire() as sql:
             self.cache = await sql.fetchall("SELECT * FROM songlinkCache")
     
     # Song URL command
@@ -125,7 +125,7 @@ class SongURL(commands.Cog):
             # 90 day TTL
             ttl = int(datetime.datetime.now().timestamp()) + 7776000
             
-            async with self.cachePool.acquire() as sql:
+            async with self.cache_pool.acquire() as sql:
                 # Add to cache
                 await sql.execute(f"INSERT INTO songlinkCache (userURL, spotifyURL, platformRich, platformRaw, ttl) VALUES (?, ?, ?, ?, ?)", (user_url, url, platform, platform_api, ttl,))
                 await sql.commit()
@@ -139,7 +139,7 @@ class SongURL(commands.Cog):
             if not("spotify" in url):
                 # Check if URL is in cache
                 if (url not in [entry[0] for entry in self.cache]) or bypass_cache: # Not cached
-                    async with self.cachePool.acquire() as sql:
+                    async with self.cache_pool.acquire() as sql:
                         # Remove from DB
                         await sql.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
                         await sql.commit()
@@ -171,7 +171,7 @@ class SongURL(commands.Cog):
 
                             break
                         elif entry[0] == url:
-                            async with self.cachePool.acquire() as sql:
+                            async with self.cache_pool.acquire() as sql:
                                 # Remove from DB
                                 await sql.execute("DELETE FROM songlinkCache WHERE userURL = ?", (url,))
                                 await sql.commit()
@@ -413,8 +413,8 @@ class SongURL(commands.Cog):
 
                         self.locked = False
 
-                        self.userID: int
-                        self.msgID: int
+                        self.user_id: int
+                        self.msg_id: int
                         
                         spotify_button = discord.ui.Button(label=f'Show on Spotify', style=ButtonStyle.url, url=result_info["external_urls"]["spotify"])
                         self.add_item(spotify_button)
@@ -429,13 +429,13 @@ class SongURL(commands.Cog):
                             for item in self.children:
                                 item.disabled = True
                             
-                            msg = await interaction.channel.fetch_message(self.msgID)
+                            msg = await interaction.channel.fetch_message(self.msg_id)
                             await msg.edit(view = self)
                         except Exception:
                             pass
                     
                     async def interaction_check(self, interaction: discord.Interaction):
-                        if interaction.user.id != self.userID:
+                        if interaction.user.id != self.user_id:
                             if self.locked:
                                 embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
                                 await interaction.response.send_message(embed = embed, ephemeral=True)
@@ -486,7 +486,7 @@ class SongURL(commands.Cog):
 
                     @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                     async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if interaction.user.id == self.userID:
+                        if interaction.user.id == self.user_id:
                             self.locked = not self.locked
 
                             if self.locked:
@@ -558,8 +558,8 @@ class SongURL(commands.Cog):
                 else:
                     webhook = await interaction.edit_original_response(embed = embed, view = PlaylistPagesController(pages))
 
-                    PlaylistPagesController.msgID = webhook.id
-                    PlaylistPagesController.userID = interaction.user.id
+                    PlaylistPagesController.msg_id = webhook.id
+                    PlaylistPagesController.user_id = interaction.user.id
         except KeyError:
             embed = discord.Embed(title = "Error", description = "Couldn't find the song on Spotify or your selected streaming service.", color = Color.red())
             await interaction.edit_original_response(embed = embed)

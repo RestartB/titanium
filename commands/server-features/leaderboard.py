@@ -11,29 +11,29 @@ from discord.ui import View
 class Leaderboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.lbPool: asqlite.Pool = bot.lb_pool
+        self.lb_pool: asqlite.Pool = bot.lb_pool
         self.bot.loop.create_task(self.sql_setup())
         
     async def sql_setup(self):
-        async with self.lbPool.acquire() as sql:
+        async with self.lb_pool.acquire() as sql:
             if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='optOut';") is None:
                 await sql.execute("CREATE TABLE optOut (userID int)")
                 await sql.commit()
             
-            self.optOutList = []
+            self.opt_out_list = []
             raw_opt_out_list = await sql.fetchall(f"SELECT userID FROM optOut;")
 
             for id in raw_opt_out_list:
-                self.optOutList.append(id[0])
+                self.opt_out_list.append(id[0])
 
     # Refresh opt out list function
     async def refresh_opt_out_list(self):
         try:
-            async with self.lbPool.acquire() as sql:
+            async with self.lb_pool.acquire() as sql:
                 await sql.execute(f"DELETE FROM optOut;")
                 await sql.commit()
 
-                for id in self.optOutList:
+                for id in self.opt_out_list:
                     await sql.execute(f"INSERT INTO optOut (userID) VALUES (?)", (id,))
             
             return True, ""
@@ -51,8 +51,8 @@ class Leaderboard(commands.Cog):
             
             # Check if user is Bot
             if message.author.bot != True:
-                if not(message.author.id in self.optOutList):
-                    async with self.lbPool.acquire() as sql:
+                if not(message.author.id in self.opt_out_list):
+                    async with self.lb_pool.acquire() as sql:
                         # Check if server is in DB
                         if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(message.guild.id)}';") != None:
                             # Check if user is already on leaderboard
@@ -96,7 +96,7 @@ class Leaderboard(commands.Cog):
         i = 0
         page_str = ""
         
-        async with self.lbPool.acquire() as sql:
+        async with self.lb_pool.acquire() as sql:
             if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(interaction.guild.id)}';") != None:
                 vals = await sql.fetchall(f"SELECT userMention, {sort_type.value} FROM '{interaction.guild.id}' ORDER BY {sort_type.value} DESC")
                 if vals != []:
@@ -126,8 +126,8 @@ class Leaderboard(commands.Cog):
 
                         self.locked = False
 
-                        self.userID: int
-                        self.msgID: int
+                        self.user_id: int
+                        self.msg_id: int
 
                         for item in self.children:
                             if item.custom_id == "first" or item.custom_id == "prev":
@@ -139,13 +139,13 @@ class Leaderboard(commands.Cog):
                             for item in self.children:
                                 item.disabled = True
                             
-                            msg = await interaction.channel.fetch_message(self.msgID)
+                            msg = await interaction.channel.fetch_message(self.msg_id)
                             await msg.edit(view = self)
                         except Exception:
                             pass
                 
                     async def interaction_check(self, interaction: discord.Interaction):
-                        if interaction.user.id != self.userID:
+                        if interaction.user.id != self.user_id:
                             if self.locked:
                                 embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
                                 await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -192,7 +192,7 @@ class Leaderboard(commands.Cog):
                     
                     @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                     async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if interaction.user.id == self.userID:
+                        if interaction.user.id == self.user_id:
                             self.locked = not self.locked
 
                             if self.locked:
@@ -251,8 +251,8 @@ class Leaderboard(commands.Cog):
                 else:
                     webhook = await interaction.followup.send(embed = embed, view = Leaderboard(pages), ephemeral=ephemeral, wait=True)
 
-                    Leaderboard.userID = interaction.user.id
-                    Leaderboard.msgID = webhook.id
+                    Leaderboard.user_id = interaction.user.id
+                    Leaderboard.msg_id = webhook.id
             else:
                 embed = discord.Embed(title = "Not Enabled", description = "The message leaderboard is not enabled in this server. Ask an admin to enable it first.", color = Color.red())
                 await interaction.followup.send(embed = embed, ephemeral=ephemeral)
@@ -268,14 +268,14 @@ class Leaderboard(commands.Cog):
             embed = discord.Embed(title = "Opting out...", description=f"{self.bot.options['loading-emoji']} Please wait...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
-            if interaction.user.id in self.optOutList:
+            if interaction.user.id in self.opt_out_list:
                 embed = discord.Embed(title = "Failed", description = "You have already opted out.", color = Color.red())
                 await interaction.edit_original_response(embed = embed)
             else:
-                self.optOutList.append(interaction.user.id)
+                self.opt_out_list.append(interaction.user.id)
                 status, error = await self.refresh_opt_out_list()
 
-                async with self.lbPool.acquire() as sql:
+                async with self.lb_pool.acquire() as sql:
                     for server in await sql.fetchall(f"SELECT name FROM sqlite_master WHERE type='table' AND NOT name='optOut';"):
                         await sql.execute(f"DELETE FROM '{int(server[0])}' WHERE userMention = ?;", (interaction.user.mention))
                     
@@ -306,11 +306,11 @@ class Leaderboard(commands.Cog):
             embed = discord.Embed(title = "Opting in...", description=f"{self.bot.options['loading-emoji']} Please wait...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
-            if not(interaction.user.id in self.optOutList):
+            if not(interaction.user.id in self.opt_out_list):
                 embed = discord.Embed(title = "Failed", description = "You are already opted in.", color = Color.red())
                 await interaction.edit_original_response(embed = embed)
             else:
-                self.optOutList.remove(interaction.user.id)
+                self.opt_out_list.remove(interaction.user.id)
                 status, error = await self.refresh_opt_out_list()
 
                 if status == False:
@@ -359,7 +359,7 @@ class Leaderboard(commands.Cog):
         embed = discord.Embed(title = "Enabling...", description=f"{self.bot.options['loading-emoji']} Enabling the leaderboard...", color = Color.orange())
         await interaction.edit_original_response(embed = embed)
 
-        async with self.lbPool.acquire() as sql:
+        async with self.lb_pool.acquire() as sql:
             if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{str(interaction.guild.id)}';") != None:
                 embed = discord.Embed(title = "Success", description = "Already enabled for this server.", color = Color.green())
                 await interaction.edit_original_response(embed = embed)
@@ -383,7 +383,7 @@ class Leaderboard(commands.Cog):
             embed = discord.Embed(title = "Disabling...", description=f"{self.bot.options['loading-emoji']} Disabling the leaderboard...", color = Color.orange())
             await interaction.edit_original_response(embed = embed, view = None)
 
-            async with self.lbPool.acquire() as sql:
+            async with self.lb_pool.acquire() as sql:
                 if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';") == None:
                     embed = discord.Embed(title = "Failed", description = "Leaderboard is already disabled in this server.", color = Color.red())
                     await interaction.edit_original_response(embed = embed)
@@ -409,7 +409,7 @@ class Leaderboard(commands.Cog):
     async def reset_lb(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
 
-        async with self.lbPool.acquire() as sql:
+        async with self.lb_pool.acquire() as sql:
             if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';") == None:
                 embed = discord.Embed(title = "Disabled", description = "Leaderboard is disabled in this server.", color = Color.red())
                 await interaction.edit_original_response(embed = embed)
@@ -441,7 +441,7 @@ class Leaderboard(commands.Cog):
     async def reset_userlb(self, interaction: discord.Interaction, user: discord.User):
         await interaction.response.defer(ephemeral = True)
 
-        async with self.lbPool.acquire() as sql:
+        async with self.lb_pool.acquire() as sql:
             if await sql.fetchone(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{interaction.guild.id}';") == None:
                 embed = discord.Embed(title = "Disabled", description = "Leaderboard is disabled in this server.", color = Color.red())
                 await interaction.edit_original_response(embed = embed)

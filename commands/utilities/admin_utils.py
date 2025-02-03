@@ -169,7 +169,7 @@ class CogUtils(commands.Cog):
                     self.page = 0
                     self.pages = pages
 
-                    self.msgID: int
+                    self.msg_id: int
 
                     for item in self.children:
                         if item.custom_id == "first" or item.custom_id == "prev":
@@ -181,7 +181,7 @@ class CogUtils(commands.Cog):
                         for item in self.children:
                             item.disabled = True
                         
-                        msg = await interaction.channel.fetch_message(self.msgID)
+                        msg = await interaction.channel.fetch_message(self.msg_id)
                         await msg.edit(view = self)
                     except Exception:
                         pass
@@ -267,7 +267,7 @@ class CogUtils(commands.Cog):
                 view_instance = ServersPageView(pages)
                 
                 webhook = await interaction.followup.send(embed = embed, view = view_instance, wait=True)
-                view_instance.msgID = webhook.id
+                view_instance.msg_id = webhook.id
         else:
             embed = discord.Embed(title = "You do not have permission to run this command.", color = Color.red())
             await interaction.followup.send(embed = embed)

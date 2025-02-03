@@ -10,14 +10,14 @@ from discord.ui import View
 class EditHistory(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
-        self.editPool: asqlite.Pool = bot.edit_pool
-        self.enabledServers = []
+        self.edit_pool: asqlite.Pool = bot.edit_pool
+        self.enabled_servers = []
 
         # Sync server list
         self.bot.loop.create_task(self.sync_server_list())
     
         # Isolate option
-        self.editHistoryCTX = app_commands.ContextMenu(
+        self.edit_history_ctx = app_commands.ContextMenu(
             name="View Edit History",
             callback=self.edit_history_callback,
             allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False),
@@ -25,7 +25,7 @@ class EditHistory(commands.Cog):
         )
 
         # Isolate option
-        self.editHistoryPrivateCTX = app_commands.ContextMenu(
+        self.edit_history_private_ctx = app_commands.ContextMenu(
             name="View Edit History (Private)",
             callback=self.edit_history_callback_private,
             allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False),
@@ -33,28 +33,28 @@ class EditHistory(commands.Cog):
         )
 
         # Set context menu permissions
-        self.editHistoryCTX.default_permissions = discord.Permissions(manage_messages=True)
-        self.editHistoryPrivateCTX.default_permissions = discord.Permissions(manage_messages=True)
+        self.edit_history_ctx.default_permissions = discord.Permissions(manage_messages=True)
+        self.edit_history_private_ctx.default_permissions = discord.Permissions(manage_messages=True)
 
         # Add context menu items to tree
-        self.bot.tree.add_command(self.editHistoryCTX)
-        self.bot.tree.add_command(self.editHistoryPrivateCTX)
+        self.bot.tree.add_command(self.edit_history_ctx)
+        self.bot.tree.add_command(self.edit_history_private_ctx)
     
     # Synchronize server list
     async def sync_server_list(self):
-        async with self.editPool.acquire() as sql:
+        async with self.edit_pool.acquire() as sql:
             await sql.execute("CREATE TABLE IF NOT EXISTS settings (guildID int)")
             await sql.commit()
 
-            self.enabledServers = [server[0] for server in await sql.fetchall("SELECT * FROM settings")]
+            self.enabled_servers = [server[0] for server in await sql.fetchall("SELECT * FROM settings")]
     
     # Listen for message being edited
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         if payload.guild_id is not None:
-            if payload.guild_id in self.enabledServers:
+            if payload.guild_id in self.enabled_servers:
                 if payload.data["edited_timestamp"] is not None:
-                    async with self.editPool.acquire() as sql:
+                    async with self.edit_pool.acquire() as sql:
                         await sql.execute(f"CREATE TABLE IF NOT EXISTS '{payload.guild_id}-{payload.message_id}' (editID INTEGER PRIMARY KEY AUTOINCREMENT, timestamp int, content text)")
                         await sql.commit()
 
@@ -94,8 +94,8 @@ class EditHistory(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         if payload.guild_id is not None:
-            if payload.guild_id in self.enabledServers:
-                async with self.editPool.acquire() as sql:
+            if payload.guild_id in self.enabled_servers:
+                async with self.edit_pool.acquire() as sql:
                     await sql.execute(f"DROP TABLE IF EXISTS '{payload.guild_id}-{payload.message_id}'")
                     await sql.commit()
 
@@ -103,7 +103,7 @@ class EditHistory(commands.Cog):
     async def edit_history_callback(self, interaction: discord.Interaction, message: discord.Message):
         await interaction.response.defer()
 
-        if interaction.guild_id in self.enabledServers: # Edit history is enabled
+        if interaction.guild_id in self.enabled_servers: # Edit history is enabled
             # Hand off to history function with ephemeral disabled
             await self.edit_history(interaction, message, ephemeral=False)
         else:
@@ -114,7 +114,7 @@ class EditHistory(commands.Cog):
     async def edit_history_callback_private(self, interaction: discord.Interaction, message: discord.Message):
         await interaction.response.defer(ephemeral=True)
 
-        if interaction.guild_id in self.enabledServers: # Edit history is enabled
+        if interaction.guild_id in self.enabled_servers: # Edit history is enabled
             # Hand off to history function with ephemeral enabled
             await self.edit_history(interaction, message, ephemeral=True)
         else:
@@ -123,7 +123,7 @@ class EditHistory(commands.Cog):
     
     # Edit history function
     async def edit_history(self, interaction: discord.Interaction, message: discord.Message, ephemeral: bool=True):
-        async with self.editPool.acquire() as sql:
+        async with self.edit_pool.acquire() as sql:
             target = await sql.fetchall(f"SELECT * FROM '{interaction.guild_id}-{message.id}'")
             
             if target is not None:
@@ -148,8 +148,8 @@ class EditHistory(commands.Cog):
                         self.page = 0
                         self.pages: list = pages
 
-                        self.userID: int
-                        self.msgID: int
+                        self.user_id: int
+                        self.msg_id: int
 
                         self.locked = False
 
@@ -164,14 +164,14 @@ class EditHistory(commands.Cog):
                             for item in self.children:
                                 item.disabled = True
                             
-                            msg = await interaction.channel.fetch_message(self.msgID)
+                            msg = await interaction.channel.fetch_message(self.msg_id)
                             await msg.edit(view = self)
                         except Exception:
                             pass
                 
                     # Block others from controlling when lock is active
                     async def interaction_check(self, interaction: discord.Interaction):
-                        if interaction.user.id != self.userID:
+                        if interaction.user.id != self.user_id:
                             if self.locked:
                                 embed = discord.Embed(title = "Error", description = "This command is locked. Only the owner can control it.", color=Color.red())
                                 await interaction.response.send_message(embed = embed, ephemeral=True)
@@ -221,7 +221,7 @@ class EditHistory(commands.Cog):
                     # Lock / unlock button
                     @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
                     async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                        if interaction.user.id == self.userID:
+                        if interaction.user.id == self.user_id:
                             self.locked = not self.locked
 
                             if self.locked:
@@ -276,7 +276,7 @@ class EditHistory(commands.Cog):
                 
                 # Create view
                 view = EditPages(history_pages)
-                view.userID = interaction.user.id
+                view.user_id = interaction.user.id
 
                 # Send message
                 if len(history_pages) == 1:
@@ -289,7 +289,7 @@ class EditHistory(commands.Cog):
                     embed.set_footer(text = f"Page 1/{len(history_pages)}")
                     
                     webhook = await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral, wait=True)
-                    view.msgID = webhook.id
+                    view.msg_id = webhook.id
             else:
                 embed = discord.Embed(title="Edit History", description="No edit history found for this message.", color=Color.red())
                 await interaction.followup.send(embed=embed, ephemeral=ephemeral)
@@ -306,12 +306,12 @@ class EditHistory(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         # Check if the edit history is already enabled for this server
-        if interaction.guild_id in self.enabledServers: # Already enabled
+        if interaction.guild_id in self.enabled_servers: # Already enabled
             embed = discord.Embed(title="Edit History", description="Edit history is already enabled for this server.", color=Color.green())
             await interaction.followup.send(embed=embed)
         else: # Not enabled
             # Acquire a connection from the edit pool
-            async with self.editPool.acquire() as sql:
+            async with self.edit_pool.acquire() as sql:
                 # Insert the guild ID into the settings table to enable edit history
                 await sql.execute("INSERT INTO settings (guildID) VALUES (?)", (interaction.guild_id,))
 
@@ -327,7 +327,7 @@ class EditHistory(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         # Check if the edit history is enabled for this server
-        if interaction.guild_id in self.enabledServers: # Enabled
+        if interaction.guild_id in self.enabled_servers: # Enabled
             # Define a callback function to handle the deletion process
             async def delete_callback(interaction: discord.Interaction):
                 await interaction.response.defer(ephemeral=True)
@@ -336,7 +336,7 @@ class EditHistory(commands.Cog):
                 await interaction.edit_original_response(embed=embed, view=None)
 
                 # Acquire a connection from the edit pool
-                async with self.editPool.acquire() as sql:
+                async with self.edit_pool.acquire() as sql:
                     # Drop all tables related to the guild
                     for table in await sql.fetchall(f"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '{interaction.guild.id}-%';"):
                         await sql.execute(f"DROP TABLE '{table}'")

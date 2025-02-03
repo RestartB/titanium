@@ -45,7 +45,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
 
             self.bot = bot
             self.interaction: discord.Interaction
-            self.ogMsg: discord.WebhookMessage
+            self.og_msg: discord.WebhookMessage
             
             if not(add_button_url == None or add_button_text == None):
                 # Add additional button                
@@ -60,7 +60,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
 
         async def on_timeout(self) -> None:
             try:
-                await self.ogMsg.delete()
+                await self.og_msg.delete()
             except (discord.errors.NotFound, discord.HTTPException, discord.Forbidden):
                 pass
         
@@ -162,7 +162,7 @@ async def song(self, item: spotipy.Spotify.track, interaction: discord.Interacti
             og_msg = await interaction.followup.send(view=menu_instance, wait=True, ephemeral=ephemeral)
 
             menu_instance.interaction = interaction
-            menu_instance.ogMsg = og_msg
+            menu_instance.og_msg = og_msg
 
     view_instance = SpotifyEmbedView(self)
     
@@ -243,7 +243,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
 
             self.bot = bot
             self.interaction: discord.Interaction
-            self.ogMsg: discord.WebhookMessage
+            self.og_msg: discord.WebhookMessage
             
             if not(add_button_url == None or add_button_text == None):
                 # Add additional button                
@@ -255,7 +255,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
 
         async def on_timeout(self) -> None:
             try:
-                await self.ogMsg.delete()
+                await self.og_msg.delete()
             except (discord.errors.NotFound, discord.HTTPException, discord.Forbidden):
                 pass
         
@@ -302,7 +302,7 @@ async def artist(self, item: spotipy.Spotify.artist, top_tracks: spotipy.Spotify
             og_msg = await interaction.followup.send(view=menu_instance, wait=True, ephemeral=ephemeral)
 
             menu_instance.interaction = interaction
-            menu_instance.ogMsg = og_msg
+            menu_instance.og_msg = og_msg
 
     view_instance = SpotifyEmbedView(self)
     
@@ -386,7 +386,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
 
             self.bot = bot
             self.interaction: discord.Interaction
-            self.ogMsg: discord.WebhookMessage
+            self.og_msg: discord.WebhookMessage
             
             if not(add_button_url == None or add_button_text == None):
                 # Add additional button                
@@ -403,7 +403,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
 
         async def on_timeout(self) -> None:
             try:
-                await self.ogMsg.delete()
+                await self.og_msg.delete()
             except (discord.errors.NotFound, discord.HTTPException, discord.Forbidden):
                 pass
         
@@ -502,7 +502,7 @@ async def album(self, item: spotipy.Spotify.album, interaction: discord.Interact
             og_msg = await interaction.followup.send(view=menu_instance, wait=True, ephemeral=ephemeral)
 
             menu_instance.interaction = interaction
-            menu_instance.ogMsg = og_msg
+            menu_instance.og_msg = og_msg
 
     view_instance = SpotifyEmbedView(self)
     
