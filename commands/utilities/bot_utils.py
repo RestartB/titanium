@@ -78,8 +78,11 @@ class BotUtils(commands.Cog):
         
         view = View()
         view.add_item(discord.ui.Button(label="Website", style=discord.ButtonStyle.url, url="https://titaniumbot.me"))
+        view.add_item(discord.ui.Button(label="Source Code", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
         view.add_item(discord.ui.Button(label="Privacy Policy", style=discord.ButtonStyle.url, url="https://github.com/RestartB/titanium/blob/main/Privacy.md"))
-        view.add_item(discord.ui.Button(label="GitHub", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
+        view.add_item(discord.ui.Button(label="Support Server", style=discord.ButtonStyle.url, url="https://discord.gg/FKc8gZUmhM"))
+        view.add_item(discord.ui.Button(label="Bot Status", style=discord.ButtonStyle.url, url="https://status.titaniumbot.me/"))
+        
         
         await interaction.followup.send(embed = embed, ephemeral=ephemeral, view=view)
 

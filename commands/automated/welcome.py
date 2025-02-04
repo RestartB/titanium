@@ -14,7 +14,7 @@ class Welcome(commands.Cog):
         self.bot: commands.Bot
         
         try:
-            embed = discord.Embed(title = "Welcome to Titanium!", description = "Titanium is an open source, multi purpose Discord bot. To see all of my commands, type `/`, then look through the list.", color=Color.green())
+            embed = discord.Embed(title = "Welcome to Titanium!", description = "Titanium is your open source, multi purpose Discord bot. To see all of my commands, type `/`, then look through the list.", color=Color.green())
             embed.set_thumbnail(url=self.bot.user.display_avatar.url)
             embed.add_field(name = "Tips", value = """1. Use slash commands!
 2. Enable the leaderboard! It allows you to track how many messages, words and attachments are being sent.
@@ -23,8 +23,10 @@ class Welcome(commands.Cog):
 
             view = View()
             view.add_item(discord.ui.Button(label="Website", style=discord.ButtonStyle.url, url="https://titaniumbot.me"))
+            view.add_item(discord.ui.Button(label="Source Code", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
             view.add_item(discord.ui.Button(label="Privacy Policy", style=discord.ButtonStyle.url, url="https://github.com/RestartB/titanium/blob/main/Privacy.md"))
-            view.add_item(discord.ui.Button(label="GitHub", style=discord.ButtonStyle.url, url="https://github.com/restartb/titanium"))
+            view.add_item(discord.ui.Button(label="Support Server", style=discord.ButtonStyle.url, url="https://discord.gg/FKc8gZUmhM"))
+            view.add_item(discord.ui.Button(label="Bot Status", style=discord.ButtonStyle.url, url="https://status.titaniumbot.me/"))
             
             if guild.system_channel is not None:
                 if guild.system_channel.permissions_for(guild.me).send_messages:
