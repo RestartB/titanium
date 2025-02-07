@@ -83,7 +83,6 @@ class BotUtils(commands.Cog):
         view.add_item(discord.ui.Button(label="Support Server", style=discord.ButtonStyle.url, url="https://discord.gg/FKc8gZUmhM"))
         view.add_item(discord.ui.Button(label="Bot Status", style=discord.ButtonStyle.url, url="https://status.titaniumbot.me/"))
         
-        
         await interaction.followup.send(embed = embed, ephemeral=ephemeral, view=view)
 
     # Host Info command

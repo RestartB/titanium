@@ -24,21 +24,11 @@ class EditHistory(commands.Cog):
             allowed_installs = discord.app_commands.AppInstallationType(guild=True, user=False)
         )
 
-        # Isolate option
-        self.edit_history_private_ctx = app_commands.ContextMenu(
-            name="View Edit History (Private)",
-            callback=self.edit_history_callback_private,
-            allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=False, private_channel=False),
-            allowed_installs = discord.app_commands.AppInstallationType(guild=True, user=False)
-        )
-
         # Set context menu permissions
         self.edit_history_ctx.default_permissions = discord.Permissions(manage_messages=True)
-        self.edit_history_private_ctx.default_permissions = discord.Permissions(manage_messages=True)
 
         # Add context menu items to tree
         self.bot.tree.add_command(self.edit_history_ctx)
-        self.bot.tree.add_command(self.edit_history_private_ctx)
     
     # Synchronize server list
     async def sync_server_list(self):
@@ -101,21 +91,10 @@ class EditHistory(commands.Cog):
 
     # Edit history callback
     async def edit_history_callback(self, interaction: discord.Interaction, message: discord.Message):
-        await interaction.response.defer()
-
-        if interaction.guild_id in self.enabled_servers: # Edit history is enabled
-            # Hand off to history function with ephemeral disabled
-            await self.edit_history(interaction, message, ephemeral=False)
-        else:
-            embed = discord.Embed(title="Edit History", description="Edit history is not enabled for this server.", color=Color.red())
-            await interaction.followup.send(embed=embed)
-    
-    # Private edit history callback
-    async def edit_history_callback_private(self, interaction: discord.Interaction, message: discord.Message):
         await interaction.response.defer(ephemeral=True)
 
         if interaction.guild_id in self.enabled_servers: # Edit history is enabled
-            # Hand off to history function with ephemeral enabled
+            # Hand off to history function with ephemeral disabled
             await self.edit_history(interaction, message, ephemeral=True)
         else:
             embed = discord.Embed(title="Edit History", description="Edit history is not enabled for this server.", color=Color.red())

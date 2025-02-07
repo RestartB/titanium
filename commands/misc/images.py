@@ -133,10 +133,9 @@ class Images(commands.Cog):
     
     # Image to GIF command
     @imageGroup.command(name = "to-gif", description = "Convert an image to GIF.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
-    async def gif_image(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
-        await interaction.response.defer(ephemeral=ephemeral)
+    async def gif_image(self, interaction: discord.Interaction, file: discord.Attachment):
+        await interaction.response.defer()
         
         if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
             if file.size < 20000000: # 20MB file limit
@@ -163,7 +162,7 @@ class Images(commands.Cog):
                     file_processed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
                     embed.set_image(url=f"attachment://{filename}_processed.gif")
                     
-                    await interaction.followup.send(embed=embed, file=file_processed, ephemeral=ephemeral)
+                    await interaction.followup.send(embed=embed, file=file_processed)
 
                 # Delete temporary files
                 os.remove(os.path.join("tmp", f"{filename}_processed.gif"))
@@ -172,12 +171,17 @@ class Images(commands.Cog):
                 embed = discord.Embed(title="Error", description=f"Your file is too large. Please ensure it is smaller than 20MB.", color=Color.red())
                 embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
                 
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed)
+        elif file.content_type.split('/')[0] == "video": # If file is a video
+            embed = discord.Embed(title="Error", description=f"I think you attached a **video.** To convert a video to GIF, use the `/video to-gif` command.", color=Color.red())
+            embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
+            
+            await interaction.followup.send(embed=embed)
         else: # If file is not a static image
             embed = discord.Embed(title="Error", description=f"Your file is not a static image.", color=Color.red())
             embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
             
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed)
     
     # Image to GIF callback
     async def gif_callback(self, interaction: discord.Interaction, message: discord.Message) -> None:
@@ -242,7 +246,7 @@ class Images(commands.Cog):
                 os.remove(os.path.join("tmp", file.filename))
     
     # Image to GIF command
-    @imageGroup.command(name = "deepfry", description = "Deepfry an image..")
+    @imageGroup.command(name = "deepfry", description = "Deepfry an image.")
     @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 10)
     async def deepfry_image(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):

@@ -20,10 +20,9 @@ class Videos(commands.Cog):
     
     # Video to GIF command
     @videoGroup.command(name = "to-gif", description = "Convert a video to GIF up to 10 seconds long.")
-    @app_commands.describe(ephemeral = "Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.")
     @app_commands.checks.cooldown(1, 30)
-    async def video_to_gif(self, interaction: discord.Interaction, file: discord.Attachment, ephemeral: bool = False):
-        await interaction.response.defer(ephemeral=ephemeral)
+    async def video_to_gif(self, interaction: discord.Interaction, file: discord.Attachment):
+        await interaction.response.defer()
         
         if file.content_type.split('/')[0] == "video": # Check if file is a video
             if file.size < 20000000: # 20MB file limit
@@ -31,7 +30,7 @@ class Videos(commands.Cog):
                 embed = discord.Embed(title="Converting...", description=f"{self.bot.options['loading-emoji']} Downloading your video to convert...", color=Color.orange())
                 embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed)
                 
                 while True:
                     # Generate random filename
@@ -89,12 +88,17 @@ class Videos(commands.Cog):
                 embed = discord.Embed(title="Error", description=f"Your file is too large. Please ensure it is smaller than 20MB.", color=Color.red())
                 embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
                 
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed)
+        elif file.content_type.split('/')[0] == "image": # If file is an image
+            embed = discord.Embed(title="Error", description=f"I think you attached an **image.** To convert an image to GIF, use the `/image to-gif` command, or right click on a message, select apps, then click Convert to GIF.", color=Color.red())
+            embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
+            
+            await interaction.followup.send(embed=embed)
         else: # If file is not a video
             embed = discord.Embed(title="Error", description=f"Your file is not a video.", color=Color.red())
             embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
             
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Videos(bot))
