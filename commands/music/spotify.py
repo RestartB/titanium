@@ -258,20 +258,16 @@ class Spotify(commands.Cog):
                 if result["album"]["images"] != None:
                     image_url = result["album"]["images"][0]["url"]
 
-                    letters = string.ascii_lowercase
-                    filename = ''.join(random.choice(letters) for i in range(8))
-
+                    # Get image, store in memory
                     async with aiohttp.ClientSession() as session:
                         async with session.get(image_url) as request:
-                            file = open(f'{filename}.jpg', 'wb')
+                            image_data = BytesIO()
                             async for chunk in request.content.iter_chunked(10):
-                                file.write(chunk)
-                            file.close()
-                            
-                    color_thief = ColorThief(f'{filename}.jpg')
+                                image_data.write(chunk)
+                    
+                    # Get dominant colour for embed
+                    color_thief = ColorThief(image_data)
                     dominant_color = color_thief.get_color()
-
-                    os.remove(f'{filename}.jpg')
                     
                     if result["album"]["images"][0]['height'] == None or result["album"]["images"][0]['width'] == None:
                         embed = discord.Embed(title = f"{result['name']} ({artist_string}) - Album Art", description = "Viewing highest quality (Resolution unknown)", color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]))
@@ -294,24 +290,16 @@ class Spotify(commands.Cog):
                 
                 image_url = result["images"][0]["url"]
 
-                # Generate random filename
-                letters = string.ascii_lowercase
-                filename = ''.join(random.choice(letters) for i in range(8))
-
-                # Save image
+                # Get image, store in memory
                 async with aiohttp.ClientSession() as session:
                     async with session.get(image_url) as request:
-                        file = open(f'{filename}.jpg', 'wb')
+                        image_data = BytesIO()
                         async for chunk in request.content.iter_chunked(10):
-                            file.write(chunk)
-                        file.close()
-                        
+                            image_data.write(chunk)
+                
                 # Get dominant colour for embed
-                color_thief = ColorThief(f'{filename}.jpg')
+                color_thief = ColorThief(image_data)
                 dominant_color = color_thief.get_color()
-
-                # Remove file when done
-                os.remove(f'{filename}.jpg')
 
                 for artist in result['artists']:
                     if artist_string == "":
@@ -342,24 +330,16 @@ class Spotify(commands.Cog):
 
                 image_url = result["images"][0]["url"]
 
-                # Generate random filename
-                letters = string.ascii_lowercase
-                filename = ''.join(random.choice(letters) for i in range(8))
-
-                # Save image
+                # Get image, store in memory
                 async with aiohttp.ClientSession() as session:
                     async with session.get(image_url) as request:
-                        file = open(f'{filename}.jpg', 'wb')
+                        image_data = BytesIO()
                         async for chunk in request.content.iter_chunked(10):
-                            file.write(chunk)
-                        file.close()
-                        
+                            image_data.write(chunk)
+                
                 # Get dominant colour for embed
-                color_thief = ColorThief(f'{filename}.jpg')
+                color_thief = ColorThief(image_data)
                 dominant_color = color_thief.get_color()
-
-                # Remove file when done
-                os.remove(f'{filename}.jpg')
 
                 if result["images"] != None:
                     if result["images"][0]['height'] == None or result["images"][0]['width'] == None:

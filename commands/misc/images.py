@@ -1,8 +1,8 @@
 # pylint: disable=no-member
 
 import os
-import random
-import string
+from io import BytesIO
+import aiohttp
 
 import discord
 from discord import Color, app_commands
@@ -68,53 +68,39 @@ class Images(commands.Cog):
                         await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                         return
                     
-                    try:
-                        # Generate random filename
-                        letters = string.ascii_lowercase
-                        filename = ''.join(random.choice(letters) for i in range(8))
+                    # Get image, store in memory
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(file.url) as request:
+                            image_data = BytesIO()
+                            async for chunk in request.content.iter_chunked(10):
+                                image_data.write(chunk)
+                    
+                    # Open image
+                    with Image.open(image_data) as im:
+                        # Resize image
+                        resized_image = im.resize((int(target_x), int(target_y)))
                         
-                        # Save file to /tmp
-                        await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+                        resized_image_data = BytesIO()
                         
-                        # Open image
-                        with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as im:
-                            # Resize image
-                            resized_image = im.resize((int(target_x), int(target_y)))
-                            
-                            # Save resized image
-                            resized_image.save(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
-                            new_size = resized_image.size
-
-                            file_size = os.path.getsize(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
-                            
-                            if file_size > 20000000: # Check if image is too large
-                                embed = discord.Embed(title="Error", description=f"The result of this operation is too large. Please ensure it is smaller than 20MB. (current size: {file_size / 6})", color=Color.red())
-                                embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
-                                
-                                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-                                return
-                            
-                            # Send resized image
-                            embed = discord.Embed(title="Image Resized", description=f"Image resized to {new_size[0]}x{new_size[1]}.", color=Color.green())
+                        # Save resized image
+                        resized_image.save(resized_image_data)
+                        new_size = resized_image.size
+                        
+                        if new_size[0] > 10000 or new_size[1] > 10000: # Check if image is too large
+                            embed = discord.Embed(title="Error", description=f"The result of this operation is too large. Please ensure the result is smaller than 10000x10000. (current size: {new_size[0]}x{new_size[1]})", color=Color.red())
                             embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
-
-                            file_processed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"image.{file.content_type.split('/')[-1]}")
-                            embed.set_image(url=f"attachment://image.{file.content_type.split('/')[-1]}")
                             
-                            await interaction.followup.send(embed=embed, file=file_processed, ephemeral=ephemeral)
-
-                        # Delete temporary files
-                        os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
-                        os.remove(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
-                    except Exception as e:
-                        try:
-                            # Delete temporary files
-                            os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
-                            os.remove(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
-                        except Exception:
-                            pass
+                            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                            return
                         
-                        raise e
+                        # Send resized image
+                        embed = discord.Embed(title="Image Resized", description=f"Image resized to {new_size[0]}x{new_size[1]}.", color=Color.green())
+                        embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
+
+                        file_processed = discord.File(fp=resized_image_data, filename=f"image.{file.content_type.split('/')[-1]}")
+                        embed.set_image(url=f"attachment://image.{file.content_type.split('/')[-1]}")
+                        
+                        await interaction.followup.send(embed=embed, file=file_processed, ephemeral=ephemeral)
                 else: # Check if both scale and target_x or target_y are set
                     embed = discord.Embed(title="Error", description=f"Please provide a scale, target width or target height.", color=Color.red())
                     embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
@@ -139,34 +125,28 @@ class Images(commands.Cog):
         
         if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
             if file.size < 20000000: # 20MB file limit
-                while True:
-                    # Generate random filename
-                    letters = string.ascii_lowercase
-                    filename = ''.join(random.choice(letters) for i in range(8))
-
-                    if not os.path.exists(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")):
-                        break
-                
-                # Save file to /tmp
-                await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+                # Get image, store in memory
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(file.url) as request:
+                        image_data = BytesIO()
+                        async for chunk in request.content.iter_chunked(10):
+                            image_data.write(chunk)
                 
                 # Open image
-                with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as im:
+                with Image.open(image_data) as im:
+                    gif_data = BytesIO()
+
                     # Convert image to GIF
-                    im.save(os.path.join("tmp", f"{filename}_processed.gif"))
+                    im.save(gif_data, format="GIF")
 
                     # Send resized image
                     embed = discord.Embed(title="Image Converted", description=f"Image converted to GIF.", color=Color.green())
                     embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
-                    file_processed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
-                    embed.set_image(url=f"attachment://{filename}_processed.gif")
+                    file_processed = discord.File(fp=gif_data, filename=f"image.gif")
+                    embed.set_image(url=f"attachment://image.gif")
                     
                     await interaction.followup.send(embed=embed, file=file_processed)
-
-                # Delete temporary files
-                os.remove(os.path.join("tmp", f"{filename}_processed.gif"))
-                os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
             else: # If file is too large
                 embed = discord.Embed(title="Error", description=f"Your file is too large. Please ensure it is smaller than 20MB.", color=Color.red())
                 embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
@@ -201,27 +181,23 @@ class Images(commands.Cog):
                 try:
                     if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
                         if file.size < 20000000: # 20MB file limit
-                            while True:
-                                # Generate random filename
-                                letters = string.ascii_lowercase
-                                filename = ''.join(random.choice(letters) for i in range(8))
-
-                                if not os.path.exists(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")):
-                                    break
-                            
-                            # Save file to /tmp
-                            await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+                            # Get image, store in memory
+                            async with aiohttp.ClientSession() as session:
+                                async with session.get(file.url) as request:
+                                    image_data = BytesIO()
+                                    async for chunk in request.content.iter_chunked(10):
+                                        image_data.write(chunk)
                             
                             # Open image
-                            with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as im:
+                            with Image.open(image_data) as im:
+                                gif_data = BytesIO()
+                                
                                 # Convert image to GIF
-                                im.save(os.path.join("tmp", f"{filename}_processed.gif"))
+                                im.save(gif_data, format="GIF")
 
                                 # Add converted file to list
-                                converted_file = discord.File(fp=os.path.join("tmp", f"{filename}_processed.gif"), filename=f"{filename}_processed.gif")
+                                converted_file = discord.File(fp=gif_data, filename=f"image.gif")
                                 converted.append(converted_file)
-
-                            os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
                         else: # If file is too large
                             fails.append(f"**{file.filename}** - too large (limit: 20MB, actual: {file.size * 1000000}MB)")
                     else: # If file is not a static image
@@ -254,19 +230,15 @@ class Images(commands.Cog):
         
         if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
             if file.size < 20000000: # 20MB file limit
-                while True:
-                    # Generate random filename
-                    letters = string.ascii_lowercase
-                    filename = ''.join(random.choice(letters) for i in range(8))
-
-                    if not os.path.exists(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")):
-                        break
-                
-                # Save file to /tmp
-                await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+                # Get image, store in memory
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(file.url) as request:
+                        image_data = BytesIO()
+                        async for chunk in request.content.iter_chunked(10):
+                            image_data.write(chunk)
                 
                 # Open image
-                with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as img:
+                with Image.open(image_data) as img:
                     # Crediit: https://github.com/Ovyerus/deeppyer
                     # MIT Licence - https://github.com/Ovyerus/deeppyer/blob/master/LICENSE
                     
@@ -291,21 +263,19 @@ class Images(commands.Cog):
                     img = Image.blend(img, r, 0.75)
                     img = ImageEnhance.Sharpness(img).enhance(100.0)
                     
-                    # Save image
-                    img.save(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
-
-                    # Send resized image
-                    embed = discord.Embed(title="Done", description=f"Image deepfried.", color=Color.green())
-                    embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
-
-                    file_processed = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"{filename}_processed.{file.content_type.split('/')[-1]}")
-                    embed.set_image(url=f"attachment://{filename}_processed.{file.content_type.split('/')[-1]}")
+                    deepfried_data = BytesIO()
                     
-                    await interaction.followup.send(embed=embed, file=file_processed, ephemeral=ephemeral)
+                    # Save image
+                    img.save(deepfried_data)
 
-                # Delete temporary files
-                os.remove(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
-                os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+                # Send resized image
+                embed = discord.Embed(title="Done", description=f"Image deepfried.", color=Color.green())
+                embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
+
+                file_processed = discord.File(fp=deepfried_data, filename=f"image.{file.content_type.split('/')[-1]}")
+                embed.set_image(url=f"attachment://image.{file.content_type.split('/')[-1]}")
+                    
+                await interaction.followup.send(embed=embed, file=file_processed, ephemeral=ephemeral)
             else: # If file is too large
                 embed = discord.Embed(title="Error", description=f"Your file is too large. Please ensure it is smaller than 20MB.", color=Color.red())
                 embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
@@ -335,19 +305,15 @@ class Images(commands.Cog):
                 try:
                     if file.content_type.split('/')[0] == "image" and file.content_type.split('/')[1] != "gif" and file.content_type.split('/')[1] != "apng": # Check if file is a static image
                         if file.size < 20000000: # 20MB file limit
-                            while True:
-                                # Generate random filename
-                                letters = string.ascii_lowercase
-                                filename = ''.join(random.choice(letters) for i in range(8))
-
-                                if not os.path.exists(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")):
-                                    break
-                            
-                            # Save file to /tmp
-                            await file.save(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
+                            # Get image, store in memory
+                            async with aiohttp.ClientSession() as session:
+                                async with session.get(file.url) as request:
+                                    image_data = BytesIO()
+                                    async for chunk in request.content.iter_chunked(10):
+                                        image_data.write(chunk)
                             
                             # Open image
-                            with Image.open(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}")) as img:
+                            with Image.open(image_data) as img:
                                 # Crediit: https://github.com/Ovyerus/deeppyer
                                 # MIT Licence - https://github.com/Ovyerus/deeppyer/blob/master/LICENSE
                                 
@@ -373,13 +339,12 @@ class Images(commands.Cog):
                                 img = ImageEnhance.Sharpness(img).enhance(100.0)
                     
                                 # Save image
-                                img.save(os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"))
+                                deepfried_data = BytesIO()
+                                img.save(deepfried_data)
 
                                 # Add converted file to list
-                                converted_file = discord.File(fp=os.path.join("tmp", f"{filename}_processed.{file.content_type.split('/')[-1]}"), filename=f"{filename}_processed.{file.content_type.split('/')[-1]}")
+                                converted_file = discord.File(fp=deepfried_data, filename=f"image.{file.content_type.split('/')[-1]}")
                                 converted.append(converted_file)
-
-                            os.remove(os.path.join("tmp", f"{filename}.{file.content_type.split('/')[-1]}"))
                         else: # If file is too large
                             fails.append(f"**{file.filename}** - too large (limit: 20MB, actual: {file.size * 1000000}MB)")
                     else: # If file is not a static image

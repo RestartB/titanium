@@ -133,20 +133,17 @@ class NowPlaying(commands.Cog):
                     # Send Embed
                     await interaction.followup.send(embed=embed, view=view)
 
-                letters = string.ascii_lowercase
-                filename = ''.join(random.choice(letters) for i in range(8))
-
+                # Get image, store in memory
                 async with aiohttp.ClientSession() as session:
                     async with session.get(activity.large_image_url) as request:
-                        file = open(f'{filename}.jpg', 'wb')
+                        image_data = BytesIO()
                         async for chunk in request.content.iter_chunked(10):
-                            file.write(chunk)
-                        file.close()
-                        
-                color_thief = ColorThief(f'{filename}.jpg')
+                            image_data.write(chunk)
+                        image_data.seek(0)  # Reset buffer position to start
+                
+                # Get dominant colour for embed
+                color_thief = ColorThief(image_data)
                 dominant_color = color_thief.get_color()
-
-                os.remove(f'{filename}.jpg')
 
                 embed.color = Color.from_rgb(r=dominant_color[0], g=dominant_color[1], b=dominant_color[2])
 

@@ -1,8 +1,6 @@
 import datetime
 import logging
-import os
-import random
-import string
+from io import BytesIO
 from urllib.parse import quote
 
 import aiohttp
@@ -313,24 +311,16 @@ class SongURL(commands.Cog):
                 # Get image URL
                 image_url = result_info["images"][0]["url"]
 
-                # Generate random filename
-                letters = string.ascii_lowercase
-                filename = ''.join(random.choice(letters) for i in range(8))
-
-                # Save image
+                # Get image, store in memory
                 async with aiohttp.ClientSession() as session:
                     async with session.get(image_url) as request:
-                        file = open(f'{filename}.jpg', 'wb')
+                        image_data = BytesIO()
                         async for chunk in request.content.iter_chunked(10):
-                            file.write(chunk)
-                        file.close()
+                            image_data.write(chunk)
                 
                 # Get dominant colour for embed
-                color_thief = ColorThief(f'{filename}.jpg')
+                color_thief = ColorThief(image_data)
                 dominant_color = color_thief.get_color()
-
-                # Remove file when done
-                os.remove(f'{filename}.jpg')
 
                 embed = discord.Embed(title = "Loading...", description = f"{self.bot.options['loading-emoji']} Parsing info...", color = Color.orange())
                 embed.set_footer(text = f"@{interaction.user.name}", icon_url = interaction.user.display_avatar.url)
