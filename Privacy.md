@@ -1,5 +1,5 @@
 # Titanium Privacy Policy
-*v1.1.1, updated 20/01/25 (DD/MM/YY)*\
+*v1.2, updated 10/02/25 (DD/MM/YY)*\
 This document explains how Titanium treats your data. **Please note that this Privacy Policy only applies to the official main Titanium bot instance. When using other Titanium instances, please refer to their own Privacy Policies.**
 
 ## Definitions
@@ -76,7 +76,9 @@ When you use Titanium's Song URL feature, Titanium will store some anonymous inf
 > [!NOTE]
 >Each cache entry will expire after 30 days.
 ### **Image Features**
-When using Titanium's image processing features, the image will be temporarily downloaded to our server so it can be processed. Once the file has been processed, the original copy and processed copy will be deleted from our server.
+When using Titanium's image processing features, the original image and processed image will be temporarily stored in RAM. Once processing is complete, the files will be removed from the memory. We are unable to capture this data while the bot is running.
+### **Video Features**
+When using Titanium's video processing features, the video will be temporarily downloaded to our server so it can be processed. Once the file has been processed, the original copy and processed copy will be deleted from our server.
 
 ## Data Retention
 Unless otherwise specified in feature-specific sections, we retain data only for as long as necessary to provide our bot's services. When data is no longer needed, it is deleted from our server.
