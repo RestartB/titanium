@@ -21,7 +21,7 @@ jobs:
     - name: Format code with Ruff
       run: |
         uvx ruff format
-    - name: Check code with Ruff
+    - name: Check code with Ruff, attempt fixes
       run: |
-        uvx ruff check with Ruff
+        uvx ruff check --fix
     
