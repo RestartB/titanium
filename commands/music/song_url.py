@@ -542,8 +542,11 @@ class SongURL(commands.Cog):
                 async with aiohttp.ClientSession() as session:
                     async with session.get(image_url) as request:
                         image_data = BytesIO()
+                        
                         async for chunk in request.content.iter_chunked(10):
                             image_data.write(chunk)
+                        
+                        image_data.seek(0)  # Reset buffer position to start
 
                 # Get dominant colour for embed
                 color_thief = ColorThief(image_data)

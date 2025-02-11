@@ -122,8 +122,11 @@ class Images(commands.Cog):
                     async with aiohttp.ClientSession() as session:
                         async with session.get(file.url) as request:
                             image_data = BytesIO()
+                            
                             async for chunk in request.content.iter_chunked(10):
                                 image_data.write(chunk)
+                            
+                            image_data.seek(0)
 
                     # Open image
                     with Image.open(image_data) as im:
@@ -134,6 +137,8 @@ class Images(commands.Cog):
 
                         # Save resized image
                         resized_image.save(resized_image_data)
+                        resized_image_data.seek(0)
+                        
                         new_size = resized_image.size
 
                         if (
@@ -167,10 +172,10 @@ class Images(commands.Cog):
 
                         file_processed = discord.File(
                             fp=resized_image_data,
-                            filename=f"image.{file.content_type.split('/')[-1]}",
+                            filename="image.png",
                         )
                         embed.set_image(
-                            url=f"attachment://image.{file.content_type.split('/')[-1]}"
+                            url="attachment://image.png"
                         )
 
                         await interaction.followup.send(
@@ -231,8 +236,11 @@ class Images(commands.Cog):
                 async with aiohttp.ClientSession() as session:
                     async with session.get(file.url) as request:
                         image_data = BytesIO()
+                        
                         async for chunk in request.content.iter_chunked(10):
                             image_data.write(chunk)
+                        
+                        image_data.seek(0)
 
                 # Open image
                 with Image.open(image_data) as im:
@@ -240,6 +248,7 @@ class Images(commands.Cog):
 
                     # Convert image to GIF
                     im.save(gif_data, format="GIF")
+                    gif_data.seek(0)
 
                     # Send resized image
                     embed = discord.Embed(
@@ -325,8 +334,11 @@ class Images(commands.Cog):
                             async with aiohttp.ClientSession() as session:
                                 async with session.get(file.url) as request:
                                     image_data = BytesIO()
+                                    
                                     async for chunk in request.content.iter_chunked(10):
                                         image_data.write(chunk)
+                                    
+                                    image_data.seek(0)
 
                             # Open image
                             with Image.open(image_data) as im:
@@ -334,6 +346,7 @@ class Images(commands.Cog):
 
                                 # Convert image to GIF
                                 im.save(gif_data, format="GIF")
+                                gif_data.seek(0)
 
                                 # Add converted file to list
                                 converted_file = discord.File(
@@ -394,8 +407,11 @@ class Images(commands.Cog):
                 async with aiohttp.ClientSession() as session:
                     async with session.get(file.url) as request:
                         image_data = BytesIO()
+                        
                         async for chunk in request.content.iter_chunked(10):
                             image_data.write(chunk)
+                        
+                        image_data.seek(0)
 
                 # Open image
                 with Image.open(image_data) as img:
@@ -432,7 +448,8 @@ class Images(commands.Cog):
                     deepfried_data = BytesIO()
 
                     # Save image
-                    img.save(deepfried_data)
+                    img.save(deepfried_data, format="PNG")
+                    deepfried_data.seek(0)
 
                 # Send resized image
                 embed = discord.Embed(
@@ -445,10 +462,10 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=deepfried_data,
-                    filename=f"image.{file.content_type.split('/')[-1]}",
+                    filename="image.png",
                 )
                 embed.set_image(
-                    url=f"attachment://image.{file.content_type.split('/')[-1]}"
+                    url="attachment://image.png"
                 )
 
                 await interaction.followup.send(
@@ -511,8 +528,11 @@ class Images(commands.Cog):
                             async with aiohttp.ClientSession() as session:
                                 async with session.get(file.url) as request:
                                     image_data = BytesIO()
+                                    
                                     async for chunk in request.content.iter_chunked(10):
                                         image_data.write(chunk)
+                                    
+                                    image_data.seek(0)
 
                             # Open image
                             with Image.open(image_data) as img:
@@ -551,14 +571,16 @@ class Images(commands.Cog):
                                 img = Image.blend(img, r, 0.75)
                                 img = ImageEnhance.Sharpness(img).enhance(100.0)
 
-                                # Save image
                                 deepfried_data = BytesIO()
-                                img.save(deepfried_data)
+                                
+                                # Save image
+                                img.save(deepfried_data, format="PNG")
+                                deepfried_data.seek(0)
 
                                 # Add converted file to list
                                 converted_file = discord.File(
                                     fp=deepfried_data,
-                                    filename=f"image.{file.content_type.split('/')[-1]}",
+                                    filename=f"image.png",
                                 )
                                 converted.append(converted_file)
                         else:  # If file is too large
