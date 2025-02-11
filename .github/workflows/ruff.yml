@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+          persist-credentials: false
+          fetch-depth: 0
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
@@ -24,7 +27,14 @@ jobs:
     - name: Check code with Ruff, attempt fixes
       run: |
         uvx ruff check --fix
-    - name: Push changes if any
+    - name: Commit fixes
       run: |
-        git diff --exit-code || git commit -am "refactor: apply ruff fixes" && git push
-    
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git commit -a -m "ci: apply ruff fixes"
+    - name: Push fixes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
+  
