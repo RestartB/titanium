@@ -24,4 +24,7 @@ jobs:
     - name: Check code with Ruff, attempt fixes
       run: |
         uvx ruff check --fix
+    - name: Push changes if any
+      run: |
+        git diff --exit-code || git commit -am "refactor: apply ruff fixes" && git push
     
