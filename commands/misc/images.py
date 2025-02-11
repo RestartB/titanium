@@ -122,10 +122,10 @@ class Images(commands.Cog):
                     async with aiohttp.ClientSession() as session:
                         async with session.get(file.url) as request:
                             image_data = BytesIO()
-                            
+
                             async for chunk in request.content.iter_chunked(10):
                                 image_data.write(chunk)
-                            
+
                             image_data.seek(0)
 
                     # Open image
@@ -138,7 +138,7 @@ class Images(commands.Cog):
                         # Save resized image
                         resized_image.save(resized_image_data)
                         resized_image_data.seek(0)
-                        
+
                         new_size = resized_image.size
 
                         if (
@@ -174,9 +174,7 @@ class Images(commands.Cog):
                             fp=resized_image_data,
                             filename="image.png",
                         )
-                        embed.set_image(
-                            url="attachment://image.png"
-                        )
+                        embed.set_image(url="attachment://image.png")
 
                         await interaction.followup.send(
                             embed=embed, file=file_processed, ephemeral=ephemeral
@@ -236,10 +234,10 @@ class Images(commands.Cog):
                 async with aiohttp.ClientSession() as session:
                     async with session.get(file.url) as request:
                         image_data = BytesIO()
-                        
+
                         async for chunk in request.content.iter_chunked(10):
                             image_data.write(chunk)
-                        
+
                         image_data.seek(0)
 
                 # Open image
@@ -334,10 +332,10 @@ class Images(commands.Cog):
                             async with aiohttp.ClientSession() as session:
                                 async with session.get(file.url) as request:
                                     image_data = BytesIO()
-                                    
+
                                     async for chunk in request.content.iter_chunked(10):
                                         image_data.write(chunk)
-                                    
+
                                     image_data.seek(0)
 
                             # Open image
@@ -407,10 +405,10 @@ class Images(commands.Cog):
                 async with aiohttp.ClientSession() as session:
                     async with session.get(file.url) as request:
                         image_data = BytesIO()
-                        
+
                         async for chunk in request.content.iter_chunked(10):
                             image_data.write(chunk)
-                        
+
                         image_data.seek(0)
 
                 # Open image
@@ -464,9 +462,7 @@ class Images(commands.Cog):
                     fp=deepfried_data,
                     filename="image.png",
                 )
-                embed.set_image(
-                    url="attachment://image.png"
-                )
+                embed.set_image(url="attachment://image.png")
 
                 await interaction.followup.send(
                     embed=embed, file=file_processed, ephemeral=ephemeral
@@ -528,10 +524,10 @@ class Images(commands.Cog):
                             async with aiohttp.ClientSession() as session:
                                 async with session.get(file.url) as request:
                                     image_data = BytesIO()
-                                    
+
                                     async for chunk in request.content.iter_chunked(10):
                                         image_data.write(chunk)
-                                    
+
                                     image_data.seek(0)
 
                             # Open image
@@ -572,7 +568,7 @@ class Images(commands.Cog):
                                 img = ImageEnhance.Sharpness(img).enhance(100.0)
 
                                 deepfried_data = BytesIO()
-                                
+
                                 # Save image
                                 img.save(deepfried_data, format="PNG")
                                 deepfried_data.seek(0)
