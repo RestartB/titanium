@@ -576,7 +576,7 @@ class Images(commands.Cog):
                                 # Add converted file to list
                                 converted_file = discord.File(
                                     fp=deepfried_data,
-                                    filename=f"image.png",
+                                    filename="image.png",
                                 )
                                 converted.append(converted_file)
                         else:  # If file is too large
