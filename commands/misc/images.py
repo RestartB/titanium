@@ -1,6 +1,5 @@
 # pylint: disable=no-member
 
-import os
 from io import BytesIO
 import aiohttp
 
@@ -377,10 +376,6 @@ class Images(commands.Cog):
             else:
                 await interaction.followup.send(files=converted)
 
-            # Remove temporary files
-            for file in converted:
-                os.remove(os.path.join("tmp", file.filename))
-
     # Image to GIF command
     @imageGroup.command(name="deepfry", description="Deepfry an image.")
     @app_commands.describe(
@@ -617,10 +612,6 @@ class Images(commands.Cog):
                     )
 
                     await interaction.followup.send(embed=embed)
-
-            # Remove temporary files
-            for file in converted:
-                os.remove(os.path.join("tmp", file.filename))
 
 
 async def setup(bot):
