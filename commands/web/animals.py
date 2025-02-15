@@ -157,7 +157,7 @@ class Animals(commands.Cog):
 
         embed = discord.Embed(
             title=embed_title,
-            description=f"Source: [sandcat.link]({request_data["url"]})",
+            description=f"Source: [sandcat.link]({request_data['url']})",
             color=Color.random(),
         )
         embed.set_image(url=request_data["url"])

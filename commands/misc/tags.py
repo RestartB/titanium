@@ -12,7 +12,11 @@ class TagCreateModal(discord.ui.Modal, title="Create Tag"):
         super().__init__(timeout=10)
 
     name = discord.ui.TextInput(
-        label="Name", placeholder="The name of your new tag.", style=discord.TextStyle.short, required=True, max_length=100
+        label="Name",
+        placeholder="The name of your new tag.",
+        style=discord.TextStyle.short,
+        required=True,
+        max_length=100,
     )
     content = discord.ui.TextInput(
         label="Content",
@@ -26,6 +30,7 @@ class TagCreateModal(discord.ui.Modal, title="Create Tag"):
 
         self.stop()
         return
+
 
 # Tag Edit Form
 class TagEditModal(discord.ui.Modal, title="Edit Selected Tag"):
@@ -33,7 +38,11 @@ class TagEditModal(discord.ui.Modal, title="Edit Selected Tag"):
         super().__init__(timeout=10)
 
     name = discord.ui.TextInput(
-        label="New Name", placeholder="If you do not want to set a new name, leave this blank.", style=discord.TextStyle.short, required=False, max_length=100
+        label="New Name",
+        placeholder="If you do not want to set a new name, leave this blank.",
+        style=discord.TextStyle.short,
+        required=False,
+        max_length=100,
     )
     content = discord.ui.TextInput(
         label="Content",
@@ -47,6 +56,7 @@ class TagEditModal(discord.ui.Modal, title="Edit Selected Tag"):
 
         self.stop()
         return
+
 
 class Tags(commands.Cog):
     def __init__(self, bot):
@@ -354,7 +364,9 @@ class Tags(commands.Cog):
                 self.tags[interaction.user.id].keys()
             ):
                 embed = discord.Embed(
-                    title="Error", description="That tag already exists.", color=Color.red()
+                    title="Error",
+                    description="That tag already exists.",
+                    color=Color.red(),
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
             else:
@@ -415,7 +427,7 @@ class Tags(commands.Cog):
             embed = discord.Embed(
                 title="Error", description="That tag doesn't exist.", color=Color.red()
             )
-            
+
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
         else:
@@ -424,14 +436,14 @@ class Tags(commands.Cog):
             await tagModal.wait()
 
             name = tagModal.name.value.lower()
-            
+
             if name == "" and tagModal.content.value == "" and attachment is None:
                 embed = discord.Embed(
                     title="Error",
                     description="You must provide a new name, new content or a new attachment.",
                     color=Color.red(),
                 )
-                
+
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
             else:
@@ -443,7 +455,7 @@ class Tags(commands.Cog):
                             description="New tag name is too long.",
                             color=Color.red(),
                         )
-                        
+
                         await interaction.followup.send(embed=embed, ephemeral=True)
                         return
                     else:
@@ -453,12 +465,12 @@ class Tags(commands.Cog):
                                 description="New tag name is already in use.",
                                 color=Color.red(),
                             )
-                            
+
                             await interaction.followup.send(embed=embed, ephemeral=True)
                             return
-                
+
                 # Update Attachment / Content
-                if attachment is not None: # Attachment
+                if attachment is not None:  # Attachment
                     async with self.tags_pool.acquire() as sql:
                         await sql.execute(
                             "UPDATE tags SET content = ? WHERE creatorID = ? AND name = ?",
@@ -473,7 +485,7 @@ class Tags(commands.Cog):
                         self.tags[interaction.user.id] = {}
 
                     self.tags[interaction.user.id][tag] = attachment.url
-                else: # Content
+                else:  # Content
                     async with self.tags_pool.acquire() as sql:
                         await sql.execute(
                             "UPDATE tags SET content = ? WHERE creatorID = ? AND name = ?",
@@ -505,7 +517,7 @@ class Tags(commands.Cog):
                         interaction.user.id
                     ][tag]
                     del self.tags[interaction.user.id][tag]
-                
+
                 embed = discord.Embed(
                     title="Success", description="Tag updated.", color=Color.green()
                 )
