@@ -13,7 +13,7 @@ class ViewTimeout(commands.Cog):
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
         # Wait a second to give a chance to other commands
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
 
         try:
             # If this succeeds, no one has responded, it's probably timed out

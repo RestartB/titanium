@@ -134,7 +134,7 @@ class Animals(commands.Cog):
         ):
             # Fetch image
             async with aiohttp.ClientSession() as session:
-                async with session.get("https://ees4.dev/betterapi") as request:
+                async with session.get("https://sandcat.link/api/json/") as request:
                     if request.status == 429:
                         embed = discord.Embed(
                             title="The service has been rate limited. Try again later.",
@@ -157,7 +157,7 @@ class Animals(commands.Cog):
 
         embed = discord.Embed(
             title=embed_title,
-            description="Source: https://ees4.dev/",
+            description=f"Source: [sandcat.link]({request_data["url"]})",
             color=Color.random(),
         )
         embed.set_image(url=request_data["url"])
