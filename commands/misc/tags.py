@@ -9,7 +9,7 @@ from thefuzz import process
 # Tag Create Form
 class TagCreateModal(discord.ui.Modal, title="Create Tag"):
     def __init__(self):
-        super().__init__(timeout=10)
+        super().__init__(timeout=600)
 
     name = discord.ui.TextInput(
         label="Name",
@@ -35,7 +35,7 @@ class TagCreateModal(discord.ui.Modal, title="Create Tag"):
 # Tag Edit Form
 class TagEditModal(discord.ui.Modal, title="Edit Selected Tag"):
     def __init__(self):
-        super().__init__(timeout=10)
+        super().__init__(timeout=600)
 
     name = discord.ui.TextInput(
         label="New Name",
