@@ -3,7 +3,7 @@ name = "titanium"
 version = "0.1.0"
 description = "Titanium Discord Bot"
 readme = "README.md"
-requires-python = "~=3.12"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "aiohttp>=3.11.11",
     "asqlite>=2.0.0",
