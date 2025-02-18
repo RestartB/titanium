@@ -27,12 +27,18 @@ jobs:
     - name: Check code with Ruff, attempt fixes
       run: |
         uvx ruff check --fix
+    - name: Check for changes
+      id: git-check
+      run: |
+        git diff --exit-code || echo "has_changes=true" >> $GITHUB_OUTPUT
     - name: Commit fixes
+      if: steps.git-check.outputs.has_changes == 'true'
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git commit -a -m "ci: apply ruff fixes"
     - name: Push fixes
+      if: steps.git-check.outputs.has_changes == 'true'
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
