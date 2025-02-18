@@ -399,7 +399,9 @@ class Reviews(commands.Cog):
                 description="This command can only be used in a server.",
                 color=Color.red(),
             )
+
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
 
         review_list = []
 
@@ -420,8 +422,8 @@ class Reviews(commands.Cog):
                     description="ReviewDB has encountered an error. Titanium will not continue. Please try again later.",
                     color=Color.red(),
                 )
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
             else:
                 if review_response["hasNextPage"]:

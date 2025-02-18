@@ -42,285 +42,89 @@ class WebSearch(commands.Cog):
 
         embed_list = []
 
-        try:
-            query = query.replace(" ", "%20")
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    f"https://api.urbandictionary.com/v0/define?term={query}"
-                ) as request:
-                    request_data = await request.json()
+        query = query.replace(" ", "%20")
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"https://api.urbandictionary.com/v0/define?term={query}"
+            ) as request:
+                request_data = await request.json()
 
-            item_list = []
+        item_list = []
 
-            if len(request_data["list"]) != 0:
-                page = max(1, min(len(request_data["list"]), page))
+        if len(request_data["list"]) != 0:
+            page = max(1, min(len(request_data["list"]), page))
 
-                for item in request_data["list"]:
-                    item_list.append(item)
+            for item in request_data["list"]:
+                item_list.append(item)
 
-                class UrbanDictPageView(View):
-                    def __init__(self, pages, start_page):
-                        super().__init__(timeout=900)
+            class UrbanDictPageView(View):
+                def __init__(self, pages, start_page):
+                    super().__init__(timeout=900)
 
-                        self.page = start_page - 1
-                        self.pages: list = pages
+                    self.page = start_page - 1
+                    self.pages: list = pages
 
-                        self.locked = False
+                    self.locked = False
 
-                        self.user_id: int
-                        self.msg_id: int
+                    self.user_id: int
+                    self.msg_id: int
 
-                        if page == 1:
-                            for item in self.children:
-                                if (
-                                    item.custom_id == "first"
-                                    or item.custom_id == "prev"
-                                ):
-                                    item.disabled = True
-                        elif page + 1 >= len(item_list):
-                            for item in self.children:
-                                if item.custom_id == "next" or item.custom_id == "last":
-                                    item.disabled = True
-
-                    # Timeout
-                    async def on_timeout(self) -> None:
-                        try:
-                            for item in self.children:
-                                item.disabled = True
-
-                            msg = await interaction.channel.fetch_message(self.msg_id)
-                            await msg.edit(view=self)
-                        except Exception:
-                            pass
-
-                    async def interaction_check(self, interaction: discord.Interaction):
-                        if interaction.user.id != self.user_id:
-                            if self.locked:
-                                embed = discord.Embed(
-                                    title="Error",
-                                    description="This command is locked. Only the owner can control it.",
-                                    color=Color.red(),
-                                )
-                                await interaction.response.send_message(
-                                    embed=embed, ephemeral=True
-                                )
-                            else:
-                                return True
-                        else:
-                            return True
-
-                    @discord.ui.button(
-                        emoji="⏮️", style=ButtonStyle.red, custom_id="first"
-                    )
-                    async def first_button(
-                        self,
-                        interaction: discord.Interaction,
-                        button: discord.ui.Button,
-                    ):
-                        embed_list.pop()
-
-                        self.page = 0
-
+                    if page == 1:
                         for item in self.children:
-                            item.disabled = False
-
                             if item.custom_id == "first" or item.custom_id == "prev":
                                 item.disabled = True
+                    elif page + 1 >= len(item_list):
+                        for item in self.children:
+                            if item.custom_id == "next" or item.custom_id == "last":
+                                item.disabled = True
 
-                        embed = discord.Embed(
-                            title=f"{self.pages[self.page]['word']}",
-                            description=f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||",
-                            url=self.pages[self.page]["permalink"],
-                            color=Color.random(),
-                        )
-                        embed.set_author(
-                            name="Urban Dictionary",
-                            icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro",
-                        )
+                # Timeout
+                async def on_timeout(self) -> None:
+                    try:
+                        for item in self.children:
+                            item.disabled = True
 
-                        embed.set_footer(
-                            text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
-                            icon_url=interaction.user.display_avatar.url,
-                        )
-                        embed_list.append(embed)
+                        msg = await interaction.channel.fetch_message(self.msg_id)
+                        await msg.edit(view=self)
+                    except Exception:
+                        pass
 
-                        await interaction.response.edit_message(
-                            embeds=embed_list, view=self
-                        )
-
-                    @discord.ui.button(
-                        emoji="⏪", style=ButtonStyle.gray, custom_id="prev"
-                    )
-                    async def prev_button(
-                        self,
-                        interaction: discord.Interaction,
-                        button: discord.ui.Button,
-                    ):
-                        embed_list.pop()
-
-                        if self.page - 1 == 0:
-                            self.page -= 1
-
-                            for item in self.children:
-                                item.disabled = False
-
-                                if (
-                                    item.custom_id == "first"
-                                    or item.custom_id == "prev"
-                                ):
-                                    item.disabled = True
-                        else:
-                            self.page -= 1
-
-                            for item in self.children:
-                                item.disabled = False
-
-                        embed = discord.Embed(
-                            title=f"{self.pages[self.page]['word']}",
-                            description=f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||",
-                            url=self.pages[self.page]["permalink"],
-                            color=Color.random(),
-                        )
-                        embed.set_author(
-                            name="Urban Dictionary",
-                            icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro",
-                        )
-
-                        embed.set_footer(
-                            text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
-                            icon_url=interaction.user.display_avatar.url,
-                        )
-                        embed_list.append(embed)
-
-                        await interaction.response.edit_message(
-                            embeds=embed_list, view=self
-                        )
-
-                    @discord.ui.button(
-                        emoji="🔓", style=ButtonStyle.green, custom_id="lock"
-                    )
-                    async def lock_button(
-                        self,
-                        interaction: discord.Interaction,
-                        button: discord.ui.Button,
-                    ):
-                        if interaction.user.id == self.user_id:
-                            self.locked = not self.locked
-
-                            if self.locked:
-                                button.emoji = "🔒"
-                                button.style = ButtonStyle.red
-                            else:
-                                button.emoji = "🔓"
-                                button.style = ButtonStyle.green
-
-                            await interaction.response.edit_message(view=self)
-                        else:
+                async def interaction_check(self, interaction: discord.Interaction):
+                    if interaction.user.id != self.user_id:
+                        if self.locked:
                             embed = discord.Embed(
                                 title="Error",
-                                description="Only the command runner can toggle the page controls lock.",
+                                description="This command is locked. Only the owner can control it.",
                                 color=Color.red(),
                             )
                             await interaction.response.send_message(
                                 embed=embed, ephemeral=True
                             )
-
-                    @discord.ui.button(
-                        emoji="⏩", style=ButtonStyle.gray, custom_id="next"
-                    )
-                    async def next_button(
-                        self,
-                        interaction: discord.Interaction,
-                        button: discord.ui.Button,
-                    ):
-                        embed_list.pop()
-
-                        if (self.page + 1) == (len(self.pages) - 1):
-                            self.page += 1
-
-                            for item in self.children:
-                                item.disabled = False
-
-                                if item.custom_id == "next" or item.custom_id == "last":
-                                    item.disabled = True
                         else:
-                            self.page += 1
+                            return True
+                    else:
+                        return True
 
-                            for item in self.children:
-                                item.disabled = False
+                @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
+                async def first_button(
+                    self,
+                    interaction: discord.Interaction,
+                    button: discord.ui.Button,
+                ):
+                    embed_list.pop()
 
-                        embed = discord.Embed(
-                            title=f"{self.pages[self.page]['word']}",
-                            description=f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||",
-                            url=self.pages[self.page]["permalink"],
-                            color=Color.random(),
-                        )
-                        embed.set_author(
-                            name="Urban Dictionary",
-                            icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro",
-                        )
+                    self.page = 0
 
-                        embed.set_footer(
-                            text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
-                            icon_url=interaction.user.display_avatar.url,
-                        )
-                        embed_list.append(embed)
+                    for item in self.children:
+                        item.disabled = False
 
-                        await interaction.response.edit_message(
-                            embeds=embed_list, view=self
-                        )
+                        if item.custom_id == "first" or item.custom_id == "prev":
+                            item.disabled = True
 
-                    @discord.ui.button(
-                        emoji="⏭️", style=ButtonStyle.green, custom_id="last"
-                    )
-                    async def last_button(
-                        self,
-                        interaction: discord.Interaction,
-                        button: discord.ui.Button,
-                    ):
-                        embed_list.pop()
-
-                        self.page = len(self.pages) - 1
-
-                        for item in self.children:
-                            item.disabled = False
-
-                            if item.custom_id == "next" or item.custom_id == "last":
-                                item.disabled = True
-
-                        embed = discord.Embed(
-                            title=f"{self.pages[self.page]['word']}",
-                            description=f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||",
-                            url=self.pages[self.page]["permalink"],
-                            color=Color.random(),
-                        )
-                        embed.set_author(
-                            name="Urban Dictionary",
-                            icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro",
-                        )
-
-                        embed.set_footer(
-                            text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
-                            icon_url=interaction.user.display_avatar.url,
-                        )
-                        embed_list.append(embed)
-
-                        await interaction.response.edit_message(
-                            embeds=embed_list, view=self
-                        )
-
-                embed = discord.Embed(
-                    title="Content Warning",
-                    description="Urban Dictionary has very little moderation and content may be inappropriate! View at your own risk.",
-                    color=Color.orange(),
-                )
-                embed_list.append(embed)
-
-                try:
                     embed = discord.Embed(
-                        title=f"{item_list[page - 1]['word']}",
-                        description=f"**Author: {item_list[page - 1]['author']}**\n\n||{(item_list[page - 1]['definition'].replace('[', '')).replace(']', '')}||",
-                        url=item_list[page - 1]["permalink"],
+                        title=f"{self.pages[self.page]['word']}",
+                        description=f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||",
+                        url=self.pages[self.page]["permalink"],
                         color=Color.random(),
                     )
                     embed.set_author(
@@ -329,71 +133,225 @@ class WebSearch(commands.Cog):
                     )
 
                     embed.set_footer(
-                        text=f"@{interaction.user.name} - Page {page}/{len(item_list)}",
+                        text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
                         icon_url=interaction.user.display_avatar.url,
                     )
                     embed_list.append(embed)
-                except IndexError:
-                    embed = discord.Embed(
-                        title="Error",
-                        description=f"**Page {page}** does not exist! Try another page.",
-                        color=Color.red(),
+
+                    await interaction.response.edit_message(
+                        embeds=embed_list, view=self
                     )
+
+                @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
+                async def prev_button(
+                    self,
+                    interaction: discord.Interaction,
+                    button: discord.ui.Button,
+                ):
+                    embed_list.pop()
+
+                    if self.page - 1 == 0:
+                        self.page -= 1
+
+                        for item in self.children:
+                            item.disabled = False
+
+                            if item.custom_id == "first" or item.custom_id == "prev":
+                                item.disabled = True
+                    else:
+                        self.page -= 1
+
+                        for item in self.children:
+                            item.disabled = False
+
+                    embed = discord.Embed(
+                        title=f"{self.pages[self.page]['word']}",
+                        description=f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||",
+                        url=self.pages[self.page]["permalink"],
+                        color=Color.random(),
+                    )
+                    embed.set_author(
+                        name="Urban Dictionary",
+                        icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro",
+                    )
+
                     embed.set_footer(
-                        text=f"@{interaction.user.name} - Page 1/{len(item_list)}",
+                        text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
                         icon_url=interaction.user.display_avatar.url,
                     )
+                    embed_list.append(embed)
 
-                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-                    return
-
-                if len(item_list) == 1:
-                    await interaction.followup.send(
-                        embeds=embed_list, ephemeral=ephemeral
-                    )
-                else:
-                    webhook = await interaction.followup.send(
-                        embeds=embed_list,
-                        view=UrbanDictPageView(item_list, page),
-                        ephemeral=ephemeral,
-                        wait=True,
+                    await interaction.response.edit_message(
+                        embeds=embed_list, view=self
                     )
 
-                    UrbanDictPageView.user_id = interaction.user.id
-                    UrbanDictPageView.msg_id = webhook.id
-            else:
-                embed = discord.Embed(title="No results found.", color=Color.red())
-                embed.set_footer(
-                    text=f"@{interaction.user.name}",
-                    icon_url=interaction.user.display_avatar.url,
+                @discord.ui.button(
+                    emoji="🔓", style=ButtonStyle.green, custom_id="lock"
+                )
+                async def lock_button(
+                    self,
+                    interaction: discord.Interaction,
+                    button: discord.ui.Button,
+                ):
+                    if interaction.user.id == self.user_id:
+                        self.locked = not self.locked
+
+                        if self.locked:
+                            button.emoji = "🔒"
+                            button.style = ButtonStyle.red
+                        else:
+                            button.emoji = "🔓"
+                            button.style = ButtonStyle.green
+
+                        await interaction.response.edit_message(view=self)
+                    else:
+                        embed = discord.Embed(
+                            title="Error",
+                            description="Only the command runner can toggle the page controls lock.",
+                            color=Color.red(),
+                        )
+                        await interaction.response.send_message(
+                            embed=embed, ephemeral=True
+                        )
+
+                @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
+                async def next_button(
+                    self,
+                    interaction: discord.Interaction,
+                    button: discord.ui.Button,
+                ):
+                    embed_list.pop()
+
+                    if (self.page + 1) == (len(self.pages) - 1):
+                        self.page += 1
+
+                        for item in self.children:
+                            item.disabled = False
+
+                            if item.custom_id == "next" or item.custom_id == "last":
+                                item.disabled = True
+                    else:
+                        self.page += 1
+
+                        for item in self.children:
+                            item.disabled = False
+
+                    embed = discord.Embed(
+                        title=f"{self.pages[self.page]['word']}",
+                        description=f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||",
+                        url=self.pages[self.page]["permalink"],
+                        color=Color.random(),
+                    )
+                    embed.set_author(
+                        name="Urban Dictionary",
+                        icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro",
+                    )
+
+                    embed.set_footer(
+                        text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
+                        icon_url=interaction.user.display_avatar.url,
+                    )
+                    embed_list.append(embed)
+
+                    await interaction.response.edit_message(
+                        embeds=embed_list, view=self
+                    )
+
+                @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
+                async def last_button(
+                    self,
+                    interaction: discord.Interaction,
+                    button: discord.ui.Button,
+                ):
+                    embed_list.pop()
+
+                    self.page = len(self.pages) - 1
+
+                    for item in self.children:
+                        item.disabled = False
+
+                        if item.custom_id == "next" or item.custom_id == "last":
+                            item.disabled = True
+
+                    embed = discord.Embed(
+                        title=f"{self.pages[self.page]['word']}",
+                        description=f"**Author: {self.pages[self.page]['author']}**\n\n||{(self.pages[self.page]['definition'].replace('[', '')).replace(']', '')}||",
+                        url=self.pages[self.page]["permalink"],
+                        color=Color.random(),
+                    )
+                    embed.set_author(
+                        name="Urban Dictionary",
+                        icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro",
+                    )
+
+                    embed.set_footer(
+                        text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
+                        icon_url=interaction.user.display_avatar.url,
+                    )
+                    embed_list.append(embed)
+
+                    await interaction.response.edit_message(
+                        embeds=embed_list, view=self
+                    )
+
+            embed = discord.Embed(
+                title="Content Warning",
+                description="Urban Dictionary has very little moderation and content may be inappropriate! View at your own risk.",
+                color=Color.orange(),
+            )
+            embed_list.append(embed)
+
+            try:
+                embed = discord.Embed(
+                    title=f"{item_list[page - 1]['word']}",
+                    description=f"**Author: {item_list[page - 1]['author']}**\n\n||{(item_list[page - 1]['definition'].replace('[', '')).replace(']', '')}||",
+                    url=item_list[page - 1]["permalink"],
+                    color=Color.random(),
+                )
+                embed.set_author(
+                    name="Urban Dictionary",
+                    icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro",
                 )
 
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-        except discord.errors.HTTPException as e:
-            if "automod" in str(e).lower():
+                embed.set_footer(
+                    text=f"@{interaction.user.name} - Page {page}/{len(item_list)}",
+                    icon_url=interaction.user.display_avatar.url,
+                )
+                embed_list.append(embed)
+            except IndexError:
                 embed = discord.Embed(
                     title="Error",
-                    description="Message has been blocked by server AutoMod policies. Server admins may have been notified.",
+                    description=f"**Page {page}** does not exist! Try another page.",
                     color=Color.red(),
                 )
                 embed.set_footer(
-                    text=f"@{interaction.user.name}",
+                    text=f"@{interaction.user.name} - Page 1/{len(item_list)}",
                     icon_url=interaction.user.display_avatar.url,
                 )
 
                 await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                return
+
+            if len(item_list) == 1:
+                await interaction.followup.send(embeds=embed_list, ephemeral=ephemeral)
             else:
-                embed = discord.Embed(
-                    title="Error",
-                    description="Couldn't send the message.",
-                    color=Color.red(),
-                )
-                embed.set_footer(
-                    text=f"@{interaction.user.name}",
-                    icon_url=interaction.user.display_avatar.url,
+                webhook = await interaction.followup.send(
+                    embeds=embed_list,
+                    view=UrbanDictPageView(item_list, page),
+                    ephemeral=ephemeral,
+                    wait=True,
                 )
 
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                UrbanDictPageView.user_id = interaction.user.id
+                UrbanDictPageView.msg_id = webhook.id
+        else:
+            embed = discord.Embed(title="No results found.", color=Color.red())
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Wikipedia command
     @searchGroup.command(
@@ -466,29 +424,6 @@ class WebSearch(commands.Cog):
             )
 
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-        except discord.errors.HTTPException as e:
-            if "automod" in str(e).lower():
-                embed = discord.Embed(
-                    title="Error",
-                    description="Message has been blocked by server AutoMod policies.",
-                    color=Color.red(),
-                )
-                embed.set_footer(
-                    text=f"@{interaction.user.name}",
-                    icon_url=interaction.user.display_avatar.url,
-                )
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-            else:
-                embed = discord.Embed(
-                    title="Error",
-                    description="Couldn't send the message. AutoMod may have been triggered.",
-                    color=Color.red(),
-                )
-                embed.set_footer(
-                    text=f"@{interaction.user.name}",
-                    icon_url=interaction.user.display_avatar.url,
-                )
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot):

@@ -1,14 +1,13 @@
+from io import BytesIO
 from urllib.parse import quote_plus
 
-from io import BytesIO
 import aiohttp
 import discord
 import spotipy
 from colorthief import ColorThief
 from discord import Color
 from discord.ui import View
-
-from utils.escape_markdown import escape_markdown as escape
+from discord.utils import escape_markdown
 
 
 # Song parse function
@@ -44,7 +43,7 @@ async def song(
     # Set up new embed
     embed = discord.Embed(
         title=f"{item['name']}{f' {self.bot.options["explicit-emoji"]}' if explicit else ''}",
-        description=f"on **[{await escape(item['album']['name'])}](<{item['album']['external_urls']['spotify']}>) • {item['album']['release_date'].split('-', 1)[0]}**",
+        description=f"on **[{escape_markdown(item['album']['name'])}](<{item['album']['external_urls']['spotify']}>) • {item['album']['release_date'].split('-', 1)[0]}**",
         color=Color.from_rgb(r=255, g=255, b=255),
     )
 
@@ -332,25 +331,21 @@ async def artist(
         artist_string = ""
         for artist in top_tracks["tracks"][i]["artists"]:
             if artist_string == "":
-                artist_string = await escape(artist["name"])
+                artist_string = await escape_markdown(artist["name"])
             else:
-                artist_string += f", {await escape(artist['name'])}"
+                artist_string += f", {await escape_markdown(artist['name'])}"
 
         # Hide artist string from song listing if there is only one artist
         if len(top_tracks["tracks"][i]["artists"]) == 1:
             if topsong_string == "":
-                topsong_string = (
-                    f"{i + 1}. **{await escape(top_tracks['tracks'][i]['name'])}**"
-                )
+                topsong_string = f"{i + 1}. **{await escape_markdown(top_tracks['tracks'][i]['name'])}**"
             else:
-                topsong_string += (
-                    f"\n{i + 1}. **{await escape(top_tracks['tracks'][i]['name'])}**"
-                )
+                topsong_string += f"\n{i + 1}. **{await escape_markdown(top_tracks['tracks'][i]['name'])}**"
         else:
             if topsong_string == "":
-                topsong_string = f"{i + 1}. **{await escape(top_tracks['tracks'][i]['name'])}** - {artist_string}"
+                topsong_string = f"{i + 1}. **{await escape_markdown(top_tracks['tracks'][i]['name'])}** - {artist_string}"
             else:
-                topsong_string += f"\n{i + 1}. **{await escape(top_tracks['tracks'][i]['name'])}** - {artist_string}"
+                topsong_string += f"\n{i + 1}. **{await escape_markdown(top_tracks['tracks'][i]['name'])}** - {artist_string}"
 
     embed.add_field(name="Top Songs", value=topsong_string, inline=False)
 
@@ -514,24 +509,22 @@ async def album(
         artist_string = ""
         for artist in item["tracks"]["items"][i]["artists"]:
             if artist_string == "":
-                artist_string = await escape(artist["name"])
+                artist_string = await escape_markdown(artist["name"])
             else:
-                artist_string += ", " + await escape(artist["name"])
+                artist_string += ", " + await escape_markdown(artist["name"])
 
         # Hide artist string from song listing if there is only one artist
         if len(item["tracks"]["items"][i]["artists"]) == 1:
-            songlist_string += (
-                f"\n{i + 1}. **{await escape(item['tracks']['items'][i]['name'])}**"
-            )
+            songlist_string += f"\n{i + 1}. **{await escape_markdown(item['tracks']['items'][i]['name'])}**"
         else:
-            songlist_string += f"\n{i + 1}. **{await escape(item['tracks']['items'][i]['name'])}** - {artist_string}"
+            songlist_string += f"\n{i + 1}. **{await escape_markdown(item['tracks']['items'][i]['name'])}** - {artist_string}"
 
     artist_string = ""
     for artist in item["artists"]:
         if artist_string == "":
-            artist_string = await escape(artist["name"])
+            artist_string = await escape_markdown(artist["name"])
         else:
-            artist_string = artist_string + ", " + await escape(artist["name"])
+            artist_string = artist_string + ", " + await escape_markdown(artist["name"])
 
     embed = discord.Embed(
         title=f"{item['name']}",

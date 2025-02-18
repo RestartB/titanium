@@ -1,17 +1,17 @@
 import logging
+from io import BytesIO
 
 import aiohttp
 import discord
 import spotipy
-from io import BytesIO
 from colorthief import ColorThief
 from discord import Color, app_commands
 from discord.ext import commands
 from discord.ui import Select, View
+from discord.utils import escape_markdown
 from spotipy.oauth2 import SpotifyClientCredentials
 
 import utils.spotify_elements as elements
-from utils.escape_markdown import escape_markdown as escape
 
 
 class Spotify(commands.Cog):
@@ -230,9 +230,11 @@ class Spotify(commands.Cog):
                     artist_string = ""
                     for artist in item["artists"]:
                         if artist_string == "":
-                            artist_string = await escape(artist["name"])
+                            artist_string = await escape_markdown(artist["name"])
                         else:
-                            artist_string += f", {await escape(artist['name'])}"
+                            artist_string += (
+                                f", {await escape_markdown(artist['name'])}"
+                            )
 
                     if len(item["name"]) > 100:
                         title = item["name"][:97] + "..."

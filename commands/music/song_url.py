@@ -11,12 +11,12 @@ from colorthief import ColorThief
 from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import View
+from discord.utils import escape_markdown
 from spotipy.oauth2 import SpotifyClientCredentials
 from url_cleaner import UrlCleaner
 
 import utils.songlink_exceptions as songlink_exceptions
 import utils.spotify_elements as elements
-from utils.escape_markdown import escape_markdown as escape
 
 
 class SongURL(commands.Cog):
@@ -598,16 +598,16 @@ class SongURL(commands.Cog):
 
                                 # If there's nothing in the current page, make a new one
                                 if page_str == "":
-                                    page_str = f"{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
+                                    page_str = f"{i}. **{await escape_markdown(playlist_item['track']['name'])}** - {artist_string}"
                                 # Else, add string to existing page
                                 else:
-                                    page_str += f"\n{i}. **{await escape(playlist_item['track']['name'])}** - {artist_string}"
+                                    page_str += f"\n{i}. **{await escape_markdown(playlist_item['track']['name'])}** - {artist_string}"
                             elif playlist_item["track"]["type"] == "episode":
                                 # Item is a podcast
                                 if page_str == "":
-                                    page_str = f"{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
+                                    page_str = f"{i}. **{await escape_markdown(playlist_item['track']['album']['name'])}** - {await escape_markdown(playlist_item['track']['name'])} (Podcast)"
                                 else:
-                                    page_str += f"\n{i}. **{await escape(playlist_item['track']['album']['name'])}** - {await escape(playlist_item['track']['name'])} (Podcast)"
+                                    page_str += f"\n{i}. **{await escape_markdown(playlist_item['track']['album']['name'])}** - {await escape_markdown(playlist_item['track']['name'])} (Podcast)"
                             else:
                                 # Item type is unknown / unsupported
                                 # If there's nothing in the current page, make a new one
