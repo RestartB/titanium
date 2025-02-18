@@ -19,14 +19,16 @@ class StatusUpdate(commands.Cog):
         await self.bot.wait_until_ready()
 
         try:
-            # Count members
-            members = sum(guild.member_count for guild in self.bot.guilds)
+            app_data: discord.AppInfo = await self.bot.application_info()
+            user_installs = app_data.approximate_user_install_count
 
             # Update status
             await self.bot.change_presence(
                 activity=discord.Activity(
-                    type=discord.ActivityType.listening,
-                    name=f"{members} users in {len(self.bot.guilds)} servers - / to see commands",
+                    status=discord.Status.online,
+                    type=discord.ActivityType.custom,
+                    name="custom",
+                    state=f"{user_installs} users, {len(self.bot.guilds)} servers - use /",
                 )
             )
         except Exception:
