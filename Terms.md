@@ -1,8 +1,8 @@
 # Titanium Terms of Use
-*v1.0, updated 19/02/25 (DD/MM/YY)*\
+*v1.1, updated 19/02/25 (DD/MM/YY)*\
 This document contains the terms of service that you agree to when using Titanium's services. **Please note that this Terms of Use policy only applies to the official main Titanium bot instance. When using other Titanium instances, please refer to their own policies.**
 
-**Alongside this Terms of Use policy, there is also a [Privacy Policy](https://github.com/RestartB/titanium/blob/main/Privacy.md) for the main Titanium instance. Please read it and ensure you agree to it.**
+**Alongside this Terms of Use policy, there is also a [Privacy Policy](Privacy.md) for the main Titanium instance. Please read it and ensure you agree to it.**
 
 ## Definitions
 - *"bot"* - an app developed for Discord.
@@ -21,6 +21,20 @@ You must abide by the following guidelines when using Titanium's services:
 - you must not **attempt to harm or overload any Titanium services.**
 
 If any of these rules are violated, **your Titanium services may be terminated.** Please see the [service termination section](#service-termination) below for more info.
+
+## Licence
+By using Titanium, you also agree to the GNU Affero General Public License.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+For more info, please see the [licence file.](LICENCE)
 
 ## Features
 We are developing Titanium to add new features and remove bugs all the time. Because of this, new features may be added and some features may be removed. By using Titanium, you acknowledge this fact and that we are not responsible for any lost data or systems.
