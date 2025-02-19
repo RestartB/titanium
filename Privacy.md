@@ -16,16 +16,6 @@ When using certain Titanium features, we may need to collect and process some da
 - Message Info *(incl. IDs)*
 
 This information is not collected to be stored, unless explicitly specified for one of the following features:
-### **Edit History Feature**
-When the edit history feature is enabled, the following information will be collected and stored:
-- Guild ID
-- Original Message content *(if message has been edited and feature is enabled)*
-- Content of each edit *(if message has been edited and feature is enabled)*
-
-> [!NOTE]
-> This data is deleted if the bot leaves the guild or if a guild admin disables the feature.
-
-These edits can only be viewed by guild members that have permission to use the feature. This permission can be granted by the guild owner. This permission is granted from within Discord's command settings. Please contact the guild's owner to find out if the feature is enabled and who has access to it. When the edit feature is disabled in the guild, this feature will not collect any information.
 ### **Fireboard Feature**
 When the fireboard feature is enabled, Titanium will need to collect and store the following information:
 - Guild ID

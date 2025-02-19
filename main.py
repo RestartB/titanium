@@ -166,12 +166,6 @@ class TitaniumBot(commands.Bot):
             os.path.join("content", "sql", "lb.db")
         )
 
-        # Edit History DB Pool
-        open(os.path.join("content", "sql", "editHistory.db"), "a").close()
-        self.edit_pool = await asqlite.create_pool(
-            os.path.join("content", "sql", "editHistory.db")
-        )
-
         # Economy Pool
         open(os.path.join("content", "sql", "economy.db"), "a").close()
         self.economy_pool = await asqlite.create_pool(
