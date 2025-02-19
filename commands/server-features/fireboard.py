@@ -31,7 +31,7 @@ class Fireboard(commands.Cog):
             ):
                 # Fire Messages - messages that are active on the fireboard
                 await sql.execute(
-                    "CREATE TABLE fireMessages (serverID int, msgID int, boardMsgID int, reactAmount int)"
+                    "CREATE TABLE fireMessages (serverID int, msgID int, boardMsgID int, reactionAmount int)"
                 )
 
             if (
@@ -42,7 +42,7 @@ class Fireboard(commands.Cog):
             ):
                 # Fire Settings - server properties for fireboard
                 await sql.execute(
-                    "CREATE TABLE fireSettings (serverID int, reactAmount int, emoji text, channelID int, ignoreBots int)"
+                    "CREATE TABLE fireSettings (serverID int, reactionAmount int, emoji text, channelID int, ignoreBots int)"
                 )
 
             if (
@@ -1049,7 +1049,7 @@ class Fireboard(commands.Cog):
             async with self.fireboard_pool.acquire() as sql:
                 # Insert to DB, refresh lists
                 await sql.execute(
-                    "INSERT INTO fireSettings (serverID, reactAmount, emoji, channelID, ignoreBots) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO fireSettings (serverID, reactionAmount, emoji, channelID, ignoreBots) VALUES (?, ?, ?, ?, ?)",
                     (
                         interaction.guild_id,
                         react_minimum,
@@ -1337,7 +1337,7 @@ class Fireboard(commands.Cog):
             async with self.fireboard_pool.acquire() as sql:
                 # Update reaction requirement in DB, refresh lists
                 await sql.execute(
-                    "UPDATE fireSettings SET reactAmount = ? WHERE serverID = ?",
+                    "UPDATE fireSettings SET reactionAmount = ? WHERE serverID = ?",
                     (
                         amount,
                         interaction.guild_id,
