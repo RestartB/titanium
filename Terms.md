@@ -1,5 +1,5 @@
 # Titanium Terms of Use
-*v1.1, updated 19/02/25 (DD/MM/YY)*\
+*v1.1.1, updated 19/02/25 (DD/MM/YY)*\
 This document contains the terms of service that you agree to when using Titanium's services. **Please note that this Terms of Use policy only applies to the official main Titanium bot instance. When using other Titanium instances, please refer to their own policies.**
 
 **Alongside this Terms of Use policy, there is also a [Privacy Policy](Privacy.md) for the main Titanium instance. Please read it and ensure you agree to it.**
@@ -34,7 +34,7 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more info, please see the [licence file.](LICENCE)
+For more info, please see the [licence file.](LICENSE)
 
 ## Features
 We are developing Titanium to add new features and remove bugs all the time. Because of this, new features may be added and some features may be removed. By using Titanium, you acknowledge this fact and that we are not responsible for any lost data or systems.
