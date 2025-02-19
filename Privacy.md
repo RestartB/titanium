@@ -1,5 +1,5 @@
 # Titanium Privacy Policy
-*v1.2, updated 10/02/25 (DD/MM/YY)*\
+*v1.3, updated 19/02/25 (DD/MM/YY)*\
 This document explains how Titanium treats your data. **Please note that this Privacy Policy only applies to the official main Titanium bot instance. When using other Titanium instances, please refer to their own Privacy Policies.**
 
 ## Definitions
@@ -127,9 +127,6 @@ We ensure that we do not collect any information that may impact you if a data b
 We may make changes to this policy over time. If a major change is made to the privacy policy, you will be notified when you next run a command with the bot. We will also make an announcement over public channels.
 
 ## Contact Us
-If you wish to contact us about a privacy related concern (policy enquiry, data access request, etc.), please use the following email address:
-`privacy@titaniumbot.me`
+If you wish to contact us about a privacy related concern (policy enquiry, data access request, etc.), please join the [support Discord server](https://discord.gg/FKc8gZUmhM), then create a ticket.
 
 We will attempt to get back to you ASAP regarding your concern.
-
-**Only use this email for privacy related concerns and enquiries. Non privacy related emails will be ignored.**

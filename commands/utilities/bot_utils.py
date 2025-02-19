@@ -143,16 +143,16 @@ class BotUtils(commands.Cog):
         )
         view.add_item(
             discord.ui.Button(
-                label="Support Server",
+                label="Terms of Service",
                 style=discord.ButtonStyle.url,
-                url="https://discord.gg/FKc8gZUmhM",
+                url="https://github.com/RestartB/titanium/blob/main/Terms.md",
             )
         )
         view.add_item(
             discord.ui.Button(
-                label="Bot Status",
+                label="Support Server",
                 style=discord.ButtonStyle.url,
-                url="https://status.titaniumbot.me/",
+                url="https://discord.gg/FKc8gZUmhM",
             )
         )
 
