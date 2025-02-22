@@ -1,10 +1,10 @@
 # Titanium
 Welcome to Titanium, the multipurpose, open source Discord bot.
 
-[Add Titanium Now!](https://titaniumbot.me/invite) ([Privacy Policy](/Privacy.md))
+[Add Titanium Now!](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](/Privacy.md) and [Terms of Use policy](/Terms.md))
 
 ## Contributions Welcome!
-Have an improvement you want to make? Developed a new cog that you want to be in the main bot? Contributions are welcome! Make a pull request and I'll take a look. :3
+Have an improvement you want to make? Developed a new cog that you want to be in the main bot? Contributions are welcome! Make a pull request and I'll take a look. When contributing, please ensure that you use Ruff to check and format your code. This ensures that all of Titanium's code stays a consistent style. To do this with the uv package manager, run `uvx ruff format` and `uvx ruff check --fix`.
 
 ### Licence
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -68,68 +68,24 @@ If an error occurs, please create a GitHub issue and I will take a look.
 
 ### Generating a Bot Invite
 To invite your instance of Titanium to your server, an invite is required. You can use the following template to make a bot invite URL:\
-`https://discord.com/oauth2/authorize?client_id=(YOUR CLIENT ID)&permissions=1689814080810048`\
-You will need your Discord Client ID to make this URL. You can get this from the General Information page of your Application you generated earlier in Discord Developer Portal.
+`https://discord.com/oauth2/authorize?client_id=(YOUR CLIENT ID)`\
+After you have done this, you will need to go to the [Discord Developer Portal](https://discord.dev/) and complete the following steps:
+1. select your bot from the list of apps
+2. go to the Installation tab
+3. tick `Guild Install` and `User Install`
+4. select `Discord Provided Link` for the install link
+5. in Default Install Settings, select the following options:
+**User Install**
+*Scopes*
+applications.commands
 
-## Included Commands
-Titanium comes with some included commands. Below is a list of what commands are in each cog file:
+**Guild Install**
+*Scopes*
+applications.commands, bot
 
-> [!NOTE]
-> This list was last updated 21/08/2024 and is now considered outdated. Please check the command list by looking in the files themselves, or from the command list within Discord.
-
-- **Admin Commands** *(admin_utils.py)*
-  - **admin load:** load a cog.
-  - **admin unload:** unload a cog.
-  - **admin reload:** reload a cog.
-  - **admin sync:** sync the command tree.
-  - **admin clear-console:** clear the console.
-  - **admin send-message:** send a message as the bot.
-  - **admin server-list:** see a list of all the servers the bot is in.
-- **Animal Commands** *(animals.py)*
-  - **animals cat:** see a random image of a cat.
-  - **animals dog:** see a random image of a dog.
-  - **animals sand-cat:** get a random sand cat.
-- **Bot Utility Commands** *(bot_utils.py)*
-  - **bot ping:** see the bot's latency.
-  - **bot info:** view info about the bot.
-  - **bot host-info:** see information about the bot's hosting server.
-- **Leaderboard Commands** *(leaderboard.py)*
-  - **leaderboard view:** see the server leaderboard.
-  - **leaderboard privacy:** see the server leaderboard.
-  - **lb-control enable:** enable the server leaderboard.
-  - **lb-control disable:** disable the server leaderboard.
-  - **lb-control reset:** reset the server leaderboard.
-  - **lb-control reset-user:** reset a user on the server leaderboard.
-- **Misc Commands** *(misc.py)*
-  - **fun 8ball:** consult the mystical 8-ball for an answer to a question.
-  - **fun random-num:** get a random number.
-  - **fun dice:** roll a dice.
-  - **fun github-roast:** get a GitHub profile roast from https://github-roast.pages.dev/.
-  - **first-message:** get the first message in a channel.
-  - **pfp:** get the PFP of a user.
-- **Music Commands** *(music.py)*
-  - **lyrics:** get the lyrics to a song.
-- **Review Commands** *(reviews.py)*
-  - **reviews:** see a user's ReviewDB reviews.
-- **Bot Utility Commands** *(server_utils.py)*
-  - **server icon:** get the current server's icon.
-  - **server info:** get info about the current server.
-  - **server boosts:** get info about the current server.
-- **Song URL Command** *(song-url.py)*
-  - **song-url:** get info about a music streaming service URL. Powered by https://song.link.
-- **Spotify Commands** *(spotify.py)*
-  - **spotify search:** search Spotify for a song, artist or album.
-  - **spotify image:** get album art for a Spotify song, album or playlist URL.
-- **Web Search Commands** *(web_search.py)*
-  - **urban-dictionary:** search Urban Dictionary. Results are mainly unmoderated and may be inappropriate.
-  - **wikipedia:** search Wikipedia for an answer.
-
-## Included Cogs
-Titanium also includes some non-command cogs, which are also stored in the command folder. The list is below:
-- **status_update.py**
-  - Stores the autoupdater for the bot's activity status.
-- **welcome.py**
-  - Stores the automatic welcome message for when the bot joins a server.
+*Permissions*
+Add Reactions, Attach Files, Embed Links, Manage Messages, Manage Webhooks, Read Message History, Send Messages, Send Messages in Threads, Use Embedded Activities, Use External Emojis, Use External Stickers, Use Slash Commands, View Audit Log, View Channels
+6. remember to save your changes when you're done!
 
 ## Intents
 Titanium uses several privileged intents. If your bot instance is verified (required for 100+ servers), you **MUST** get approval from Discord before you can use them.
