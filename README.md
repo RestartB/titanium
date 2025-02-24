@@ -1,5 +1,5 @@
 # Titanium
-Welcome to Titanium, the multipurpose, open source Discord bot.
+Welcome to Titanium's main code repo! Titanium is your multipurpose, open source Discord bot.
 
 [Add Titanium Now!](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](/Privacy.md) and [Terms of Use policy](/Terms.md))
 
@@ -28,7 +28,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 ## Quick Start
 You can quickly start using Titanium with the following link to add the main Titanium instance:\
-[Add Titanium](https://titaniumbot.me/invite) ([Privacy Policy](/Privacy.md))
+[Add Titanium](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](/Privacy.md) and [Terms of Use policy](/Terms.md))
 
 If you would like to self-host your own instance of Titanium instead, please read the section below.
 
@@ -70,22 +70,24 @@ If an error occurs, please create a GitHub issue and I will take a look.
 To invite your instance of Titanium to your server, an invite is required. You can use the following template to make a bot invite URL:\
 `https://discord.com/oauth2/authorize?client_id=(YOUR CLIENT ID)`\
 After you have done this, you will need to go to the [Discord Developer Portal](https://discord.dev/) and complete the following steps:
-1. select your bot from the list of apps
-2. go to the Installation tab
-3. tick `Guild Install` and `User Install`
-4. select `Discord Provided Link` for the install link
-5. in Default Install Settings, select the following options:
-**User Install**
-*Scopes*
+1. Select your bot from the list of apps.
+2. Go to the Installation tab.
+3. Tick `Guild Install` and `User Install`.
+4. Select `Discord Provided Link` for the install link.
+5. In Default Install Settings, select the following options:\
+**User Install**\
+*Scopes*\
 applications.commands
-
-**Guild Install**
-*Scopes*
-applications.commands, bot
-
-*Permissions*
-Add Reactions, Attach Files, Embed Links, Manage Messages, Manage Webhooks, Read Message History, Send Messages, Send Messages in Threads, Use Embedded Activities, Use External Emojis, Use External Stickers, Use Slash Commands, View Audit Log, View Channels
-6. remember to save your changes when you're done!
+\
+\
+**Guild Install**\
+*Scopes*\
+`applications.commands, bot`
+\
+\
+*Permissions*\
+`Add Reactions, Attach Files, Embed Links, Manage Messages, Manage Webhooks, Read Message History, Send Messages, Send Messages in Threads, Use Embedded Activities, Use External Emojis, Use External Stickers, Use Slash Commands, View Audit Log, View Channels`
+7. Remember to save your changes when you're done!
 
 ## Intents
 Titanium uses several privileged intents. If your bot instance is verified (required for 100+ servers), you **MUST** get approval from Discord before you can use them.
