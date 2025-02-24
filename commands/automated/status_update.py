@@ -1,6 +1,3 @@
-import logging
-import traceback
-
 import discord
 from discord.ext import commands, tasks
 
@@ -18,23 +15,22 @@ class StatusUpdate(commands.Cog):
     async def status_update(self):
         await self.bot.wait_until_ready()
 
-        try:
-            app_data: discord.AppInfo = await self.bot.application_info()
-            user_installs = app_data.approximate_user_install_count
+        # Count members
+        server_members = sum(guild.member_count for guild in self.bot.guilds)
 
-            # Update status
-            await self.bot.change_presence(
-                activity=discord.Activity(
-                    status=discord.Status.online,
-                    type=discord.ActivityType.custom,
-                    name="custom",
-                    state=f"{user_installs} users, {len(self.bot.guilds)} servers - use /",
-                )
+        # Get user install count
+        app_data: discord.AppInfo = await self.bot.application_info()
+        user_installs = app_data.approximate_user_install_count
+
+        # Update status
+        await self.bot.change_presence(
+            activity=discord.Activity(
+                status=discord.Status.online,
+                type=discord.ActivityType.custom,
+                name="custom",
+                state=f"{user_installs} users, {len(self.bot.guilds)} servers with {server_members} members - use /",
             )
-        except Exception:
-            logging.error(
-                f"Failed to update status:\n\n```python\n{traceback.format_exc()}```"
-            )
+        )
 
 
 async def setup(bot):
