@@ -893,12 +893,13 @@ class SongURL(commands.Cog):
                     await interaction.edit_original_response(embed=embed, view=view)
                 # Else, make embed with page buttons
                 else:
+                    playlist_pages_controller = PlaylistPagesController(pages)
                     webhook = await interaction.edit_original_response(
-                        embed=embed, view=PlaylistPagesController(pages)
+                        embed=embed, view=playlist_pages_controller
                     )
 
-                    PlaylistPagesController.msg_id = webhook.id
-                    PlaylistPagesController.user_id = interaction.user.id
+                    playlist_pages_controller.msg_id = webhook.id
+                    playlist_pages_controller.user_id = interaction.user.id
         except KeyError:
             embed = discord.Embed(
                 title="Error",
