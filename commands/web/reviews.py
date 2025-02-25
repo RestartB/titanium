@@ -73,7 +73,7 @@ class Reviews(commands.Cog):
 
         embed.set_author(
             name=guild.name,
-            icon_url=guild.icon.url,
+            icon_url=(guild.icon.url if guild.icon is not None),
         )
 
         embed.set_footer(
@@ -665,7 +665,7 @@ class Reviews(commands.Cog):
             )
             embed.set_author(
                 name=guild.name,
-                icon_url=guild.icon.url,
+                icon_url=(guild.icon.url if guild.icon is not None),
             )
 
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
