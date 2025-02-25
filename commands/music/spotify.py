@@ -230,10 +230,10 @@ class Spotify(commands.Cog):
                     artist_string = ""
                     for artist in item["artists"]:
                         if artist_string == "":
-                            artist_string = await escape_markdown(artist["name"])
+                            artist_string = escape_markdown(artist["name"])
                         else:
                             artist_string += (
-                                f", {await escape_markdown(artist['name'])}"
+                                f", {escape_markdown(artist['name'])}"
                             )
 
                     if len(item["name"]) > 100:

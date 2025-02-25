@@ -598,16 +598,16 @@ class SongURL(commands.Cog):
 
                                 # If there's nothing in the current page, make a new one
                                 if page_str == "":
-                                    page_str = f"{i}. **{await escape_markdown(playlist_item['track']['name'])}** - {artist_string}"
+                                    page_str = f"{i}. **{escape_markdown(playlist_item['track']['name'])}** - {artist_string}"
                                 # Else, add string to existing page
                                 else:
-                                    page_str += f"\n{i}. **{await escape_markdown(playlist_item['track']['name'])}** - {artist_string}"
+                                    page_str += f"\n{i}. **{escape_markdown(playlist_item['track']['name'])}** - {artist_string}"
                             elif playlist_item["track"]["type"] == "episode":
                                 # Item is a podcast
                                 if page_str == "":
-                                    page_str = f"{i}. **{await escape_markdown(playlist_item['track']['album']['name'])}** - {await escape_markdown(playlist_item['track']['name'])} (Podcast)"
+                                    page_str = f"{i}. **{escape_markdown(playlist_item['track']['album']['name'])}** - {escape_markdown(playlist_item['track']['name'])} (Podcast)"
                                 else:
-                                    page_str += f"\n{i}. **{await escape_markdown(playlist_item['track']['album']['name'])}** - {await escape_markdown(playlist_item['track']['name'])} (Podcast)"
+                                    page_str += f"\n{i}. **{escape_markdown(playlist_item['track']['album']['name'])}** - {escape_markdown(playlist_item['track']['name'])} (Podcast)"
                             else:
                                 # Item type is unknown / unsupported
                                 # If there's nothing in the current page, make a new one
