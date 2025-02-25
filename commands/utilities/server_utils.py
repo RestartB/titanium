@@ -31,7 +31,11 @@ class ServerUtils(commands.Cog):
             embed = discord.Embed(
                 title=f"Server Icon - {interaction.guild.name}", color=Color.random()
             )
-            (embed.set_image(url=interaction.guild.icon.url) if interaction.guild.icon is not None else None)
+            (
+                embed.set_image(url=interaction.guild.icon.url)
+                if interaction.guild.icon is not None
+                else None
+            )
             embed.set_footer(
                 text=f"@{interaction.user.name} - right click or long press to save image",
                 icon_url=interaction.user.display_avatar.url,
@@ -116,7 +120,11 @@ class ServerUtils(commands.Cog):
 
         # Handle no icon
         try:
-            (embed.set_thumbnail(url=interaction.guild.icon.url) if interaction.guild.icon is not None else None)
+            (
+                embed.set_thumbnail(url=interaction.guild.icon.url)
+                if interaction.guild.icon is not None
+                else None
+            )
         except AttributeError:
             pass
 
