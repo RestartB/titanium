@@ -338,9 +338,13 @@ async def artist(
         # Hide artist string from song listing if there is only one artist
         if len(top_tracks["tracks"][i]["artists"]) == 1:
             if topsong_string == "":
-                topsong_string = f"{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}**"
+                topsong_string = (
+                    f"{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}**"
+                )
             else:
-                topsong_string += f"\n{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}**"
+                topsong_string += (
+                    f"\n{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}**"
+                )
         else:
             if topsong_string == "":
                 topsong_string = f"{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}** - {artist_string}"
@@ -515,7 +519,9 @@ async def album(
 
         # Hide artist string from song listing if there is only one artist
         if len(item["tracks"]["items"][i]["artists"]) == 1:
-            songlist_string += f"\n{i + 1}. **{escape_markdown(item['tracks']['items'][i]['name'])}**"
+            songlist_string += (
+                f"\n{i + 1}. **{escape_markdown(item['tracks']['items'][i]['name'])}**"
+            )
         else:
             songlist_string += f"\n{i + 1}. **{escape_markdown(item['tracks']['items'][i]['name'])}** - {artist_string}"
 

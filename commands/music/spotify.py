@@ -232,9 +232,7 @@ class Spotify(commands.Cog):
                         if artist_string == "":
                             artist_string = escape_markdown(artist["name"])
                         else:
-                            artist_string += (
-                                f", {escape_markdown(artist['name'])}"
-                            )
+                            artist_string += f", {escape_markdown(artist['name'])}"
 
                     if len(item["name"]) > 100:
                         title = item["name"][:97] + "..."
