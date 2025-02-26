@@ -18,7 +18,7 @@ class ViewTimeout(commands.Cog):
         try:
             # If this succeeds, no one has responded, it's probably timed out
             await interaction.response.defer(ephemeral=True)
-        except discord.errors.InteractionResponded:
+        except (discord.errors.InteractionResponded, discord.errors.HTTPException, discord.errors.NotFound):
             return
 
         try:
