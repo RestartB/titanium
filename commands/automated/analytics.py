@@ -47,6 +47,9 @@ class Analytics(commands.Cog):
 
 async def setup(bot: "TitaniumBot") -> None:
     # Only load if webhook URL is present
-    if bot.tokens["analytics-webhook"] is not None:
-        if bot.tokens["analytics-webhook"] != "":
-            await bot.add_cog(Analytics(bot))
+    try:
+        if bot.options["analytics-webhook"] is not None:
+            if bot.options["analytics-webhook"] != "":
+                await bot.add_cog(Analytics(bot))
+    except KeyError:
+        pass
