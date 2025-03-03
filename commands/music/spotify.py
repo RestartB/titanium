@@ -607,6 +607,12 @@ class Spotify(commands.Cog):
 
 
 async def setup(bot):
-    if bot.tokens["spotify-api-id"] is not None and bot.tokens["spotify-api-secret"] is not None:
-        if bot.tokens["spotify-api-id"] != "" and bot.tokens["spotify-api-secret"] != "":
+    if (
+        bot.tokens["spotify-api-id"] is not None
+        and bot.tokens["spotify-api-secret"] is not None
+    ):
+        if (
+            bot.tokens["spotify-api-id"] != ""
+            and bot.tokens["spotify-api-secret"] != ""
+        ):
             await bot.add_cog(Spotify(bot))
