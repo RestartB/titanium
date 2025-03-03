@@ -66,7 +66,7 @@ class ServerUtils(commands.Cog):
         bot_count = f"{bot_count} ({round((bot_count / interaction.guild.member_count * 100), 1)}%)"
 
         embed = discord.Embed(
-            title=f"Server Info",
+            title="Server Info",
             color=Color.random(),
         )
 
