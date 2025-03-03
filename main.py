@@ -39,7 +39,7 @@ discordLogger.setLevel(logging.INFO)
 handler = logging.handlers.RotatingFileHandler(
     filename="logs/titanium.log",
     encoding="utf-8",
-    maxBytes=20 * 1024 * 1024,  # 32 MiB
+    maxBytes=20 * 1024 * 1024,  # 20 MiB
     backupCount=5,  # Rotate through 5 files
 )
 
@@ -144,7 +144,7 @@ class TitaniumBot(commands.Bot):
             logging.critical("[INIT] Bad value in config file! Exiting.")
             logging.critical(error)
 
-            exit()
+            exit(1)
 
         logging.info("[INIT] Creating SQL pools...")
 
@@ -272,17 +272,6 @@ async def on_app_command_error(
                     icon_url=interaction.user.display_avatar.url,
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
-            else:
-                embed = discord.Embed(
-                    title="Error",
-                    description="Couldn't send the message. AutoMod may have been triggered.",
-                    color=Color.red(),
-                )
-                embed.set_footer(
-                    text=f"@{interaction.user.name}",
-                    icon_url=interaction.user.display_avatar.url,
-                )
-                await interaction.followup.send(embed=embed, ephemeral=True)
         else:
             logging.error("*** Unexpected error occurred. ***")
             logging.error(f"{traceback.format_exc()}\n")
@@ -390,6 +379,6 @@ try:
     bot.run(bot_token, log_handler=None)
 except discord.errors.PrivilegedIntentsRequired:
     logging.critical(
-        "[FATAL] Bot is missing the Message Content and/or Server Members intent! Please enable it in the Discord Developers web portal. Exiting..."
+        "[FATAL] Bot is missing a Privileged Intent! Please ensure they are enabled in the Discord Developers web portal. Exiting..."
     )
-    exit()
+    exit(1)
