@@ -1,5 +1,5 @@
 # Titanium Privacy Policy
-*v1.3, updated 19/02/25 (DD/MM/YY)*\
+*v1.4, updated 03/03/25 (DD/MM/YY)*\
 This document explains how Titanium treats your data. **Please note that this Privacy Policy only applies to the official main Titanium bot instance. When using other Titanium instances, please refer to their own Privacy Policies.**
 
 ## Definitions
@@ -43,7 +43,7 @@ When the guild leaderboard feature is enabled, Titanium will need to collect and
 - The amount of words you have sent
 - The amount of attachments you have sent
 
-To collect this information, Titanium will need to temporarily store the content of messages in RAM. Once the length of the message has been processed, it will be discarded. The content of the message will not be permanently saved in any place, and can not be collected while the processing is taking in place.
+To collect this information, Titanium will need to temporarily store the content of messages in memory. Once the length of the message has been processed, it will be discarded. The content of the message will not be permanently saved in any place, and can not be collected or seen while it is being processed.
 
 > [!NOTE]
 > This data is deleted if the bot leaves the guild or if a guild admin disables the feature.
@@ -66,7 +66,7 @@ When you use Titanium's Song URL feature, Titanium will store some anonymous inf
 > [!NOTE]
 >Each cache entry will expire after 30 days.
 ### **Image Features**
-When using Titanium's image processing features, the original image and processed image will be temporarily stored in RAM. Once processing is complete, the files will be removed from the memory. We are unable to capture this data while the bot is running.
+When using Titanium's image processing features, the original image and processed image will be temporarily stored in memory. Once processing is complete, the files will be removed from the memory. The images will not be permanently saved in any place, and can not be collected or seen while they are being processed.
 ### **Video Features**
 When using Titanium's video processing features, the video will be temporarily downloaded to our server so it can be processed. Once the file has been processed, the original copy and processed copy will be deleted from our server.
 
@@ -74,13 +74,12 @@ When using Titanium's video processing features, the video will be temporarily d
 Unless otherwise specified in feature-specific sections, we retain data only for as long as necessary to provide our bot's services. When data is no longer needed, it is deleted from our server.
 
 ## Bot Usage Collection
-When you run a Titanium command or use a Titanium context menu item, we collect the following information:
-- Command / context menu item used
-- Time the command / context menu item was ran at
-- Guild the command / context menu item was ran in *(not collected if the bot is not in the guild)*
-- User that ran the command / context menu item
+When you run a Titanium command, we collect the following information:
+- Command used
+- Time the command was ran at
+- User that ran the command
 
-We do not collect any arguments that you provide (URLs, attachments, etc).
+We do not collect any arguments that you provide (URLs, attachments, etc). We are currently working on a way to opt out of this usage collection and will have more information to share about this at a later time.
 
 ## Error Collection
 If an error occurs while you are using Titanium, we collect the following information to fix issues and improve the bot experience:
@@ -91,13 +90,21 @@ If an error occurs while you are using Titanium, we collect the following inform
 - Guild the command / context menu item was ran in *(not collected if the bot is not in the guild)*
 - User that ran the command / context menu item
 
-We are currently working on a way to opt out of this error collection and will have more information to share about this at a later time.
+This info will not be shared outside of the dev team. We are currently working on a way to opt out of this error collection and will have more information to share about this at a later time.
 
 ## Processing Location
 Titanium is hosted in the United Kingdom. By using Titanium, you agree to your data being processed according to this privacy policy, and local laws / regulations in the United Kingdom.
 
 ## Third Party Data Sharing
-We do not share any data with third parties, apart from Discord for core functionality of the bot or when required by law. Discord may collect some data during regular usage of their service, such as commands ran, message content and attachments sent. Please refer to their [privacy policy](https://discord.com/privacy) for more information.
+We do not share any data with third parties, apart from where it is required for core functionality of the bot or when required by law. Discord may collect some data during regular usage of their service, such as commands ran, message content and attachments sent. Please refer to their [privacy policy](https://discord.com/privacy) for more information.
+
+The full list of third party services that Titanium uses is provided here for your convenience, accurate at the time of publishing:
+- Discord
+- Spotify
+- Urban Dictionary
+- Wikipedia
+- Odesli / song.link
+- The Cat API
 
 ## Your Rights
 You have the right to:

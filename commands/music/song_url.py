@@ -911,6 +911,16 @@ class SongURL(commands.Cog):
 
 
 async def setup(bot):
-    # Only load if Spotify API key is present
-    if bot.tokens["spotify-api-id"] != "" and bot.tokens["spotify-api-secret"] != "":
-        await bot.add_cog(SongURL(bot))
+    # Only load if Spotify API keys are present
+    try:
+        if (
+            bot.tokens["spotify-api-id"] is not None
+            and bot.tokens["spotify-api-secret"] is not None
+        ):
+            if (
+                bot.tokens["spotify-api-id"] != ""
+                and bot.tokens["spotify-api-secret"] != ""
+            ):
+                await bot.add_cog(SongURL(bot))
+    except KeyError:
+        pass

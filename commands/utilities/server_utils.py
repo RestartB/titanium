@@ -27,15 +27,11 @@ class ServerUtils(commands.Cog):
         await interaction.response.defer(ephemeral=ephemeral)
 
         # Handle no icon
-        try:
+        if interaction.guild.icon is not None:
             embed = discord.Embed(
                 title=f"Server Icon - {interaction.guild.name}", color=Color.random()
             )
-            (
-                embed.set_image(url=interaction.guild.icon.url)
-                if interaction.guild.icon is not None
-                else None
-            )
+            embed.set_image(url=interaction.guild.icon.url)
             embed.set_footer(
                 text=f"@{interaction.user.name} - right click or long press to save image",
                 icon_url=interaction.user.display_avatar.url,
@@ -43,8 +39,8 @@ class ServerUtils(commands.Cog):
 
             # Send Embed
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-        except AttributeError:
-            embed = discord.Embed(title="Server has no icon!", color=Color.red())
+        else:
+            embed = discord.Embed(title="Server has no icon!", color=Color.random())
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Server Info command
@@ -70,7 +66,17 @@ class ServerUtils(commands.Cog):
         bot_count = f"{bot_count} ({round((bot_count / interaction.guild.member_count * 100), 1)}%)"
 
         embed = discord.Embed(
-            title=f"{interaction.guild.name} - Info", color=Color.random()
+            title="Server Info",
+            color=Color.random(),
+        )
+
+        embed.set_author(
+            name=interaction.guild.name,
+            icon_url=(
+                interaction.guild.icon.url
+                if interaction.guild.icon is not None
+                else None
+            ),
         )
 
         # Member counts
