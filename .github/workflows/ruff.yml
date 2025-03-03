@@ -21,12 +21,12 @@ jobs:
     - name: Install UV
       run: |
         pip install uv
-    - name: Format code with Ruff
-      run: |
-        uvx ruff format
     - name: Check code with Ruff, attempt fixes
       run: |
         uvx ruff check --fix
+    - name: Format code with Ruff
+      run: |
+        uvx ruff format
     - name: Check for changes
       id: git-check
       run: |
