@@ -12,9 +12,13 @@ class Insult(commands.Cog):
     # Insult Command
     @app_commands.command(name="insult", description="Insult a user of your selection.")
     @app_commands.checks.cooldown(1, 10)
-    @app_commands.describe(user = "The user to insult.")
-    @app_commands.describe(ping = "Optional: whether to ping the user or not. Defaults to true.")
-    async def insult(self, interaction: discord.Interaction, user: discord.User, ping: bool = True):
+    @app_commands.describe(user="The user to insult.")
+    @app_commands.describe(
+        ping="Optional: whether to ping the user or not. Defaults to true."
+    )
+    async def insult(
+        self, interaction: discord.Interaction, user: discord.User, ping: bool = True
+    ):
         await interaction.response.defer()
 
         # First parts of insult
@@ -125,7 +129,9 @@ class Insult(commands.Cog):
             text=f"@{interaction.user.name}",
             icon_url=interaction.user.display_avatar.url,
         )
-        await interaction.followup.send(content=(user.mention if ping else ""), embed=embed)
+        await interaction.followup.send(
+            content=(user.mention if ping else ""), embed=embed
+        )
 
 
 async def setup(bot):

@@ -376,7 +376,7 @@ class Images(commands.Cog):
             else:
                 await interaction.followup.send(files=converted)
 
-    # Image to GIF command
+    # Deepfry image command
     @imageGroup.command(name="deepfry", description="Deepfry an image.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."

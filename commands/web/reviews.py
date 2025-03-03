@@ -29,7 +29,7 @@ class Reviews(commands.Cog):
         review_count: int,
     ) -> discord.Embed:
         embed = discord.Embed(
-            title="ReviewDB Review",
+            title="ReviewDB User Reviews",
             description=f"There {'are' if review_count > 1 else 'is'} **{review_count} review{'s' if review_count > 1 else ''}** for this user.",
             color=Color.random(),
         )
