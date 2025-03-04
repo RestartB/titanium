@@ -401,6 +401,7 @@ class SongURL(commands.Cog):
                         add_button_text=platform,
                         cached=cached,
                         ephemeral=ephemeral,
+                        responded=not (cached),
                     )
                 else:
                     await elements.song(
@@ -478,6 +479,7 @@ class SongURL(commands.Cog):
                         add_button_text=platform,
                         cached=cached,
                         ephemeral=ephemeral,
+                        responded=not (cached),
                     )
                 else:
                     await elements.album(

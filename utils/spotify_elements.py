@@ -3,29 +3,162 @@ from urllib.parse import quote_plus
 
 import aiohttp
 import discord
-import spotipy
 from colorthief import ColorThief
-from discord import Color
+from discord import ButtonStyle, Color
 from discord.ui import View
 from discord.utils import escape_markdown
 
+from utils.truncate import truncate
 
-# Song parse function
+
+# --- Song Classes and Functions ---
+
+
+class SongView(View):
+    def __init__(
+        self,
+        item: dict,
+        colours: list,
+        add_button_url: str = None,
+        add_button_text: str = None,
+    ):
+        super().__init__(timeout=259200)  # 3 days
+
+        self.item = item
+        self.colours = colours
+        self.add_button_url = add_button_url
+        self.add_button_text = add_button_text
+
+        # Add Open in Spotify button
+        spotify_button = discord.ui.Button(
+            label="Play on Spotify",
+            style=discord.ButtonStyle.url,
+            url=item["external_urls"]["spotify"],
+        )
+        self.add_item(spotify_button)
+
+    @discord.ui.button(label="Menu", style=discord.ButtonStyle.gray)
+    async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
+
+        view = SongMenuView(
+            item=self.item,
+            colours=self.colours,
+            add_button_url=self.add_button_url,
+            add_button_text=self.add_button_text,
+        )
+
+        view.message = await interaction.followup.send(
+            view=view, ephemeral=True, wait=True
+        )
+
+
+class SongMenuView(View):
+    def __init__(
+        self,
+        item: dict,
+        colours: list,
+        add_button_url: str = None,
+        add_button_text: str = None,
+    ):
+        super().__init__()
+
+        self.item = item
+        self.colours = colours
+        self.message: discord.WebhookMessage
+
+        # Add additional button if provided
+        if not (add_button_url is None or add_button_text is None):
+            add_button = discord.ui.Button(
+                label=add_button_text,
+                style=discord.ButtonStyle.url,
+                url=add_button_url,
+                row=0,
+            )
+
+            self.add_item(add_button)
+
+        # Add song.link button
+        songlink_button = discord.ui.Button(
+            label="Other Streaming Services",
+            style=discord.ButtonStyle.url,
+            url=f"https://song.link/{item['external_urls']['spotify']}",
+            row=0,
+        )
+
+        self.add_item(songlink_button)
+
+        # Add Search on Google button
+        google_button = discord.ui.Button(
+            label="Search on Google",
+            style=discord.ButtonStyle.url,
+            url=f"https://www.google.com/search?q={quote_plus(item['name'])}",
+            row=0,
+        )
+
+        self.add_item(google_button)
+
+    async def on_timeout(self):
+        await self.message.delete()
+
+    @discord.ui.button(label="Album Art", style=discord.ButtonStyle.gray)
+    async def art(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
+
+        if self.item["album"]["images"] is not None:
+            if (
+                self.item["album"]["images"][0]["height"] is None
+                or self.item["album"]["images"][0]["width"] is None
+            ):
+                description = "Viewing highest quality (Resolution unknown)"
+            else:
+                description = f"Viewing highest quality ({self.item['album']['images'][0]['width']}x{self.item['album']['images'][0]['height']})"
+
+            embed = discord.Embed(
+                title=f"{self.item['name']} - Album Art",
+                description=description,
+                color=Color.from_rgb(
+                    r=self.colours[0], g=self.colours[1], b=self.colours[2]
+                ),
+            )
+
+            embed.set_image(url=self.item["album"]["images"][0]["url"])
+
+            view = View()
+            view.add_item(
+                discord.ui.Button(
+                    label="Open in Browser",
+                    style=discord.ButtonStyle.url,
+                    url=self.item["album"]["images"][0]["url"],
+                )
+            )
+
+            await interaction.edit_original_response(embed=embed, view=view)
+        else:
+            embed = discord.Embed(title="No album art available.", color=Color.red())
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+            await interaction.edit_original_response(embed=embed)
+
+        self.stop()
+
+
+# Song element function
 async def song(
     self,
-    item: spotipy.Spotify.track,
+    item: dict,
     interaction: discord.Interaction,
     add_button_url: str = None,
     add_button_text: str = None,
     cached: bool = False,
     ephemeral: bool = False,
-    msg_id: int = None,
+    responded: bool = False,
 ):
     """
     Handle Spotify song embeds.
     """
-
-    image_url = item["album"]["images"][0]["url"]
 
     artist_img = self.sp.artist(item["artists"][0]["external_urls"]["spotify"])[
         "images"
@@ -44,7 +177,6 @@ async def song(
     embed = discord.Embed(
         title=f"{item['name']}{f' {self.bot.options["explicit-emoji"]}' if explicit else ''}",
         description=f"on **[{escape_markdown(item['album']['name'])}](<{item['album']['external_urls']['spotify']}>) • {item['album']['release_date'].split('-', 1)[0]}**",
-        color=Color.from_rgb(r=255, g=255, b=255),
     )
 
     embed.set_thumbnail(url=item["album"]["images"][0]["url"])
@@ -54,232 +186,13 @@ async def song(
         icon_url=artist_img,
     )
     embed.set_footer(
-        text=f"Getting colour information...{' • Cached Result' if cached else ''}"
+        text=f"@{interaction.user.name}{' • Cached Result' if cached else ''}",
+        icon_url=interaction.user.display_avatar.url,
     )
-
-    class SpotifyButtonsMenu(View):
-        def __init__(self, bot):
-            super().__init__(timeout=30)
-
-            self.bot = bot
-            self.interaction: discord.Interaction
-            self.og_msg: discord.WebhookMessage
-
-            if not (add_button_url is None or add_button_text is None):
-                # Add additional button
-                add_button = discord.ui.Button(
-                    label=add_button_text,
-                    style=discord.ButtonStyle.url,
-                    url=add_button_url,
-                    row=0,
-                )
-                self.add_item(add_button)
-
-            songlink_button = discord.ui.Button(
-                label="Other Streaming Services",
-                style=discord.ButtonStyle.url,
-                url=f"https://song.link/{item['external_urls']['spotify']}",
-                row=0,
-            )
-            self.add_item(songlink_button)
-
-            google_button = discord.ui.Button(
-                label="Search on Google",
-                style=discord.ButtonStyle.url,
-                url=f"https://www.google.com/search?q={quote_plus(item['name'])}+{quote_plus(artist_string)}",
-                row=0,
-            )
-            self.add_item(google_button)
-
-        async def on_timeout(self) -> None:
-            try:
-                await self.og_msg.delete()
-            except (discord.errors.NotFound, discord.HTTPException, discord.Forbidden):
-                pass
-
-        async def interaction_check(self, interaction: discord.Interaction):
-            if interaction.user.id != self.interaction.user.id:
-                embed = discord.Embed(
-                    title="Error",
-                    description="You can only control a menu that you have requested.",
-                    color=Color.red(),
-                )
-                await interaction.response.send_message(
-                    embed=embed, delete_after=5, ephemeral=True
-                )
-            else:
-                return True
-
-        @discord.ui.button(label="Album Art", style=discord.ButtonStyle.gray, row=1)
-        async def art(
-            self, interaction: discord.Interaction, button: discord.ui.Button
-        ):
-            await interaction.response.defer(ephemeral=ephemeral)
-
-            if item["album"]["images"] is not None:
-                image_url = item["album"]["images"][0]["url"]
-
-                if (
-                    item["album"]["images"][0]["height"] is None
-                    or item["album"]["images"][0]["width"] is None
-                ):
-                    embed = discord.Embed(
-                        title=f"{item['name']} ({artist_string}) - Album Art",
-                        description="Viewing highest quality (Resolution unknown)",
-                        color=Color.from_rgb(r=255, g=255, b=255),
-                    )
-                    embed.set_footer(text="Getting colour information...")
-                else:
-                    embed = discord.Embed(
-                        title=f"{item['name']} ({artist_string}) - Album Art",
-                        description=f"Viewing highest quality ({item['album']['images'][0]['width']}x{item['album']['images'][0]['height']})",
-                        color=Color.from_rgb(r=255, g=255, b=255),
-                    )
-                    embed.set_footer(text="Getting colour information...")
-
-                embed.set_image(url=item["album"]["images"][0]["url"])
-
-                view = View()
-                view.add_item(
-                    discord.ui.Button(
-                        label="Download",
-                        style=discord.ButtonStyle.url,
-                        url=item["album"]["images"][0]["url"],
-                    )
-                )
-
-                await interaction.edit_original_response(embed=embed, view=view)
-
-                # Get image, store in memory
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
-                        image_data = BytesIO()
-
-                        async for chunk in request.content.iter_chunked(10):
-                            image_data.write(chunk)
-
-                        image_data.seek(0)  # Reset buffer position to start
-
-                # Get dominant colour for embed
-                color_thief = ColorThief(image_data)
-                dominant_color = color_thief.get_color()
-
-                if (
-                    item["album"]["images"][0]["height"] is None
-                    or item["album"]["images"][0]["width"] is None
-                ):
-                    embed = discord.Embed(
-                        title=f"{item['name']} ({artist_string}) - Album Art",
-                        description="Viewing highest quality (Resolution unknown)",
-                        color=Color.from_rgb(
-                            r=dominant_color[0],
-                            g=dominant_color[1],
-                            b=dominant_color[2],
-                        ),
-                    )
-                    embed.set_footer(
-                        text=f"@{interaction.user.name}",
-                        icon_url=interaction.user.display_avatar.url,
-                    )
-                else:
-                    embed = discord.Embed(
-                        title=f"{item['name']} ({artist_string}) - Album Art",
-                        description=f"Viewing highest quality ({item['album']['images'][0]['width']}x{item['album']['images'][0]['height']})",
-                        color=Color.from_rgb(
-                            r=dominant_color[0],
-                            g=dominant_color[1],
-                            b=dominant_color[2],
-                        ),
-                    )
-                    embed.set_footer(
-                        text=f"@{interaction.user.name}",
-                        icon_url=interaction.user.display_avatar.url,
-                    )
-
-                embed.set_image(url=item["album"]["images"][0]["url"])
-                await interaction.edit_original_response(embed=embed)
-            else:
-                embed = discord.Embed(
-                    title="No album art available.", color=Color.red()
-                )
-                embed.set_footer(
-                    text=f"@{interaction.user.name}",
-                    icon_url=interaction.user.display_avatar.url,
-                )
-                await interaction.edit_original_response(embed=embed)
-
-            self.stop()
-
-        @discord.ui.button(label="Close", style=discord.ButtonStyle.red, row=1)
-        async def delete(
-            self, interaction: discord.Interaction, button: discord.ui.Button
-        ):
-            await interaction.response.defer(ephemeral=ephemeral)
-
-            await interaction.delete_original_response()
-
-    class SpotifyEmbedView(View):
-        def __init__(self, bot):
-            super().__init__(timeout=None)
-
-            self.bot = bot.bot
-            self.msg_id: int
-
-            seconds, item["duration_ms"] = divmod(item["duration_ms"], 1000)
-            minutes, seconds = divmod(seconds, 60)
-
-            # Add Open in Spotify button
-            spotify_button = discord.ui.Button(
-                label=f"Play on Spotify ({int(minutes):02d}:{int(seconds):02d})",
-                style=discord.ButtonStyle.url,
-                url=item["external_urls"]["spotify"],
-                row=0,
-            )
-            self.add_item(spotify_button)
-
-        # Timeout
-        async def on_timeout(self) -> None:
-            try:
-                for item in self.children:
-                    item.disabled = True
-
-                msg = await interaction.channel.fetch_message(self.msg_id)
-                await msg.edit(view=self)
-            except Exception:
-                pass
-
-        @discord.ui.button(label="Menu", style=discord.ButtonStyle.gray, row=0)
-        async def menu(
-            self, interaction: discord.Interaction, button: discord.ui.Button
-        ):
-            await interaction.response.defer(ephemeral=ephemeral)
-
-            menu_instance = SpotifyButtonsMenu(self.bot)
-            og_msg = await interaction.followup.send(
-                view=menu_instance, wait=True, ephemeral=ephemeral
-            )
-
-            menu_instance.interaction = interaction
-            menu_instance.og_msg = og_msg
-
-    view_instance = SpotifyEmbedView(self)
-
-    try:
-        # Detect if embed already exists
-        (await interaction.original_response()).embeds[0]
-        await interaction.edit_original_response(embed=embed, view=view_instance)
-
-        view_instance.msg_id = msg_id
-    except IndexError:
-        # Send new embed
-        webhook = await interaction.followup.send(
-            embed=embed, view=view_instance, ephemeral=ephemeral, wait=True
-        )
-        view_instance.msg_id = webhook.id
 
     # Get image, store in memory
     async with aiohttp.ClientSession() as session:
-        async with session.get(image_url) as request:
+        async with session.get(item["album"]["images"][0]["url"]) as request:
             image_data = BytesIO()
 
             async for chunk in request.content.iter_chunked(10):
@@ -289,42 +202,149 @@ async def song(
 
     # Get dominant colour for embed
     color_thief = ColorThief(image_data)
-    dominant_color = color_thief.get_color()
+    colours = color_thief.get_color()
 
-    embed.set_footer(
-        text=f"@{interaction.user.name}{' • Cached Result' if cached else ''}",
-        icon_url=interaction.user.display_avatar.url,
+    embed.color = Color.from_rgb(r=colours[0], g=colours[1], b=colours[2])
+
+    view = SongView(
+        item=item,
+        colours=colours,
+        add_button_url=add_button_url,
+        add_button_text=add_button_text,
     )
-    embed.color = Color.from_rgb(
-        r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]
-    )
 
-    await interaction.edit_original_response(embed=embed)
+    if responded:
+        await interaction.edit_original_response(embed=embed, view=view)
+    else:
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
 
-# Artist parse function
+# --- Artist Classes and Functions ---
+
+
+class ArtistView(View):
+    def __init__(
+        self,
+        item: dict,
+        colours: list,
+        op_id: int,
+    ):
+        super().__init__(timeout=259200)  # 3 days
+
+        self.item = item
+        self.colours = colours
+        self.op_id = op_id
+
+        # Add Open in Spotify button
+        spotify_button = discord.ui.Button(
+            label="Play on Spotify",
+            style=discord.ButtonStyle.url,
+            url=item["external_urls"]["spotify"],
+        )
+        self.add_item(spotify_button)
+
+    @discord.ui.button(label="Menu", style=discord.ButtonStyle.gray)
+    async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
+
+        view = ArtistMenuView(
+            item=self.item,
+            colours=self.colours,
+        )
+
+        view.message = await interaction.followup.send(
+            view=view, ephemeral=True, wait=True
+        )
+
+
+class ArtistMenuView(View):
+    def __init__(
+        self,
+        item: dict,
+        colours: list,
+    ):
+        super().__init__()
+
+        self.item = item
+        self.colours = colours
+        self.message: discord.WebhookMessage
+
+        # Add Search on Google button
+        google_button = discord.ui.Button(
+            label="Search on Google",
+            style=discord.ButtonStyle.url,
+            url=f"https://www.google.com/search?q={quote_plus(item['name'])}",
+        )
+        self.add_item(google_button)
+
+    async def on_timeout(self):
+        await self.message.delete()
+
+    @discord.ui.button(label="Icon", style=discord.ButtonStyle.gray)
+    async def art(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
+
+        if self.item["images"] is not None:
+            if (
+                self.item["images"][0]["height"] is None
+                or self.item["images"][0]["width"] is None
+            ):
+                description = "Viewing highest quality (Resolution unknown)"
+            else:
+                description = f"Viewing highest quality ({self.item['images'][0]['width']}x{self.item['images'][0]['height']})"
+
+            embed = discord.Embed(
+                title=f"{self.item['name']} - Icon",
+                description=description,
+                color=Color.from_rgb(
+                    r=self.colours[0], g=self.colours[1], b=self.colours[2]
+                ),
+            )
+
+            embed.set_image(url=self.item["images"][0]["url"])
+
+            view = View()
+            view.add_item(
+                discord.ui.Button(
+                    label="Open in Browser",
+                    style=discord.ButtonStyle.url,
+                    url=self.item["images"][0]["url"],
+                )
+            )
+
+            await interaction.edit_original_response(embed=embed, view=view)
+        else:
+            embed = discord.Embed(title="No icon available.", color=Color.red())
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+            await interaction.edit_original_response(embed=embed)
+
+        self.stop()
+
+
+# Artist element function
 async def artist(
     self,
-    item: spotipy.Spotify.artist,
-    top_tracks: spotipy.Spotify.artist_top_tracks,
+    item: dict,
+    top_tracks: dict,
     interaction: discord.Interaction,
-    add_button_url: str = None,
-    add_button_text: str = None,
     ephemeral: bool = False,
-    msg_id: int = None,
+    responded: bool = False,
 ):
     """
     Handle Spotify artist embeds.
     """
 
-    image_url = item["images"][0]["url"]
+    embed = discord.Embed(title=f"{item['name']}")
 
-    embed = discord.Embed(
-        title=f"{item['name']}", color=Color.from_rgb(r=255, g=255, b=255)
-    )
     embed.add_field(name="Followers", value=f"{item['followers']['total']:,}")
     embed.set_thumbnail(url=item["images"][0]["url"])
-    embed.set_footer(text="Getting colour information...")
+
+    embed.set_footer(
+        text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
+    )
 
     topsong_string = ""
     for i in range(0, 5):
@@ -353,119 +373,9 @@ async def artist(
 
     embed.add_field(name="Top Songs", value=topsong_string, inline=False)
 
-    class SpotifyButtonsMenu(View):
-        def __init__(self, bot):
-            super().__init__(timeout=30)
-
-            self.bot = bot
-            self.interaction: discord.Interaction
-            self.og_msg: discord.WebhookMessage
-
-            if not (add_button_url is None or add_button_text is None):
-                # Add additional button
-                add_button = discord.ui.Button(
-                    label=add_button_text,
-                    style=discord.ButtonStyle.url,
-                    url=add_button_url,
-                    row=0,
-                )
-                self.add_item(add_button)
-
-            google_button = discord.ui.Button(
-                label="Search on Google",
-                style=discord.ButtonStyle.url,
-                url=f"https://www.google.com/search?q={quote_plus(item['name'])}+{quote_plus(artist_string)}",
-                row=0,
-            )
-            self.add_item(google_button)
-
-        async def on_timeout(self) -> None:
-            try:
-                await self.og_msg.delete()
-            except (discord.errors.NotFound, discord.HTTPException, discord.Forbidden):
-                pass
-
-        async def interaction_check(self, interaction: discord.Interaction):
-            if interaction.user.id != self.interaction.user.id:
-                embed = discord.Embed(
-                    title="Error",
-                    description="You can only control a menu that you have requested.",
-                    color=Color.red(),
-                )
-                await interaction.response.send_message(
-                    embed=embed, delete_after=5, ephemeral=True
-                )
-            else:
-                return True
-
-        @discord.ui.button(label="Close", style=discord.ButtonStyle.red, row=1)
-        async def delete(
-            self, interaction: discord.Interaction, button: discord.ui.Button
-        ):
-            await interaction.response.defer(ephemeral=ephemeral)
-
-            await interaction.delete_original_response()
-
-    class SpotifyEmbedView(View):
-        def __init__(self, bot):
-            super().__init__(timeout=None)
-
-            self.bot = bot.bot
-            self.msg_id: int
-
-            # Add Open in Spotify button
-            spotify_button = discord.ui.Button(
-                label="Show on Spotify",
-                style=discord.ButtonStyle.url,
-                url=item["external_urls"]["spotify"],
-                row=0,
-            )
-            self.add_item(spotify_button)
-
-        # Timeout
-        async def on_timeout(self) -> None:
-            try:
-                for item in self.children:
-                    item.disabled = True
-
-                msg = await interaction.channel.fetch_message(self.msg_id)
-                await msg.edit(view=self)
-            except Exception:
-                pass
-
-        @discord.ui.button(label="Menu", style=discord.ButtonStyle.gray, row=0)
-        async def menu(
-            self, interaction: discord.Interaction, button: discord.ui.Button
-        ):
-            await interaction.response.defer(ephemeral=ephemeral)
-
-            menu_instance = SpotifyButtonsMenu(self.bot)
-            og_msg = await interaction.followup.send(
-                view=menu_instance, wait=True, ephemeral=ephemeral
-            )
-
-            menu_instance.interaction = interaction
-            menu_instance.og_msg = og_msg
-
-    view_instance = SpotifyEmbedView(self)
-
-    try:
-        # Detect if embed already exists
-        (await interaction.original_response()).embeds[0]
-        await interaction.edit_original_response(embed=embed, view=view_instance)
-
-        view_instance.msg_id = msg_id
-    except IndexError:
-        # Send new embed
-        webhook = await interaction.followup.send(
-            embed=embed, view=view_instance, ephemeral=ephemeral, wait=True
-        )
-
-        view_instance.msg_id = webhook.id
-
     # Get image, store in memory
     async with aiohttp.ClientSession() as session:
-        async with session.get(image_url) as request:
+        async with session.get(item["images"][0]["url"]) as request:
             image_data = BytesIO()
 
             async for chunk in request.content.iter_chunked(10):
@@ -475,302 +385,447 @@ async def artist(
 
     # Get dominant colour for embed
     color_thief = ColorThief(image_data)
-    dominant_color = color_thief.get_color()
+    colours = color_thief.get_color()
 
-    embed.set_footer(
-        text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
+    embed.color = Color.from_rgb(r=colours[0], g=colours[1], b=colours[2])
+
+    view = ArtistView(
+        item=item,
+        colours=colours,
+        op_id=interaction.user.id,
     )
-    embed.color = Color.from_rgb(
-        r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]
-    )
 
-    await interaction.edit_original_response(embed=embed)
+    if responded:
+        await interaction.edit_original_response(embed=embed, view=view)
+    else:
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
 
-# Album parse function
+# --- Album Classes and Functions ---
+
+
+class AlbumViewPages(View):
+    def __init__(
+        self,
+        item: dict,
+        artists: str,
+        artist_img: str,
+        cached: bool,
+        pages: list,
+        colours: list,
+        op_id: int,
+        add_button_url: str = None,
+        add_button_text: str = None,
+    ):
+        super().__init__(timeout=259200)  # 3 days
+
+        self.item = item
+        self.artists = artists
+        self.artist_img = artist_img
+        self.cached = cached
+        self.pages = pages
+        self.colours = colours
+        self.op_id = op_id
+        self.add_button_url = add_button_url
+        self.add_button_text = add_button_text
+
+        self.page = 0
+        self.locked = False
+
+        if len(self.pages) > 1:
+            # Hide first and prev buttons when starting
+            for child in self.children:
+                if child.custom_id == "first" or child.custom_id == "prev":
+                    child.disabled = True
+        else:
+            for child in self.children:
+                if (
+                    child.custom_id == "first"
+                    or child.custom_id == "prev"
+                    or child.custom_id == "lock"
+                    or child.custom_id == "next"
+                    or child.custom_id == "last"
+                ):
+                    self.remove_item(child)
+
+        # Add Open in Spotify button
+        spotify_button = discord.ui.Button(
+            label="Play on Spotify",
+            style=discord.ButtonStyle.url,
+            url=item["external_urls"]["spotify"],
+            row=1,
+        )
+        self.add_item(spotify_button)
+
+    # Page lock
+    async def interaction_check(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        if interaction.user.id != self.op_id:
+            if self.locked:
+                embed = discord.Embed(
+                    title="Locked",
+                    description="The page is locked. Only the owner can control it.",
+                    color=Color.red(),
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            else:
+                return True
+        else:
+            return True
+
+    # First page
+    @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first", row=0)
+    async def first_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        self.page = 0
+
+        for child in self.children:
+            child.disabled = False
+
+            if child.custom_id == "first" or child.custom_id == "prev":
+                child.disabled = True
+
+        # Create embed
+        embed = discord.Embed(
+            title=self.item["name"],
+            description=self.pages[self.page],
+            color=Color.from_rgb(self.colours[0], self.colours[1], self.colours[2]),
+        )
+
+        embed.set_footer(
+            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+
+        embed.set_author(
+            name=self.artists,
+            url=self.item["artists"][0]["external_urls"]["spotify"],
+            icon_url=self.artist_img,
+        )
+
+        embed.set_thumbnail(url=self.item["images"][0]["url"])
+
+        await interaction.edit_original_response(embed=embed, view=self)
+
+    # Previous page
+    @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev", row=0)
+    async def prev_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        if self.page - 1 == 0:
+            self.page -= 1
+
+            for child in self.children:
+                child.disabled = False
+
+                if child.custom_id == "first" or child.custom_id == "prev":
+                    child.disabled = True
+        else:
+            self.page -= 1
+
+            for child in self.children:
+                child.disabled = False
+
+        # Create embed
+        embed = discord.Embed(
+            title=self.item["name"],
+            description=self.pages[self.page],
+            color=Color.from_rgb(self.colours[0], self.colours[1], self.colours[2]),
+        )
+
+        embed.set_footer(
+            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+
+        embed.set_author(
+            name=self.artists,
+            url=self.item["artists"][0]["external_urls"]["spotify"],
+            icon_url=self.artist_img,
+        )
+
+        embed.set_thumbnail(url=self.item["images"][0]["url"])
+
+        await interaction.edit_original_response(embed=embed, view=self)
+
+    # Lock / unlock toggle
+    @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock", row=0)
+    async def lock_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        if interaction.user.id == self.user_id:
+            self.locked = not self.locked
+
+            if self.locked:
+                button.emoji = "🔒"
+                button.style = ButtonStyle.red
+            else:
+                button.emoji = "🔓"
+                button.style = ButtonStyle.green
+
+            await interaction.response.edit_message(view=self)
+        else:
+            embed = discord.Embed(
+                title="Error",
+                description="Only the command runner can toggle the page controls lock.",
+                color=Color.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    # Next page
+    @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next", row=0)
+    async def next_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        if (self.page + 1) == (len(self.pages) - 1):
+            self.page += 1
+
+            for child in self.children:
+                child.disabled = False
+
+                if child.custom_id == "next" or child.custom_id == "last":
+                    child.disabled = True
+        else:
+            self.page += 1
+
+            for child in self.children:
+                child.disabled = False
+
+        # Create embed
+        embed = discord.Embed(
+            title=self.item["name"],
+            description=self.pages[self.page],
+            color=Color.from_rgb(self.colours[0], self.colours[1], self.colours[2]),
+        )
+
+        embed.set_footer(
+            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+
+        embed.set_author(
+            name=self.artists,
+            url=self.item["artists"][0]["external_urls"]["spotify"],
+            icon_url=self.artist_img,
+        )
+
+        embed.set_thumbnail(url=self.item["images"][0]["url"])
+
+        await interaction.edit_original_response(embed=embed, view=self)
+
+    # Last page button
+    @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last", row=0)
+    async def last_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        self.page = len(self.pages) - 1
+
+        for child in self.children:
+            child.disabled = False
+
+            if child.custom_id == "next" or child.custom_id == "last":
+                child.disabled = True
+
+        # Create embed
+        embed = discord.Embed(
+            title=self.item["name"],
+            description=self.pages[self.page],
+            color=Color.from_rgb(self.colours[0], self.colours[1], self.colours[2]),
+        )
+
+        embed.set_footer(
+            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+
+        embed.set_author(
+            name=self.artists,
+            url=self.item["artists"][0]["external_urls"]["spotify"],
+            icon_url=self.artist_img,
+        )
+
+        embed.set_thumbnail(url=self.item["images"][0]["url"])
+
+        await interaction.edit_original_response(embed=embed, view=self)
+
+    @discord.ui.button(label="Menu", style=discord.ButtonStyle.gray, row=1)
+    async def menu(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = AlbumMenuView(
+            item=self.item,
+            artists=self.artists,
+            artist_img=self.artist_img,
+            colours=self.colours,
+            add_button_url=self.add_button_url,
+            add_button_text=self.add_button_text,
+        )
+
+        view.message = await interaction.followup.send(
+            view=view, ephemeral=True, wait=True
+        )
+
+
+class AlbumMenuView(View):
+    def __init__(
+        self,
+        item: dict,
+        artists: str,
+        artist_img: str,
+        colours: list,
+        add_button_url: str = None,
+        add_button_text: str = None,
+    ):
+        super().__init__()
+
+        self.item = item
+        self.artists = artists
+        self.artist_img = artist_img
+        self.colours = colours
+        self.message: discord.WebhookMessage
+
+        self.page = 0
+        self.locked = False
+
+        if not (add_button_url is None or add_button_text is None):
+            # Add additional button
+            add_button = discord.ui.Button(
+                label=add_button_text,
+                style=discord.ButtonStyle.url,
+                url=add_button_url,
+                row=0,
+            )
+            self.add_item(add_button)
+
+        # Add song.link button
+        songlink_button = discord.ui.Button(
+            label="Other Streaming Services",
+            style=discord.ButtonStyle.url,
+            url=f"https://song.link/{item['external_urls']['spotify']}",
+            row=0,
+        )
+        self.add_item(songlink_button)
+
+        # Add Search on Google button
+        google_button = discord.ui.Button(
+            label="Search on Google",
+            style=discord.ButtonStyle.url,
+            url=f"https://www.google.com/search?q={quote_plus(item['name'])}+{quote_plus(artists)}",
+            row=0,
+        )
+        self.add_item(google_button)
+
+    async def on_timeout(self):
+        await self.message.delete()
+
+    @discord.ui.button(label="Album Art", style=discord.ButtonStyle.gray, row=1)
+    async def art(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
+
+        if self.item["images"] is not None:
+            if (
+                self.item["images"][0]["height"] is None
+                or self.item["images"][0]["width"] is None
+            ):
+                description = "Viewing highest quality (Resolution unknown)"
+            else:
+                description = f"Viewing highest quality ({self.item['images'][0]['width']}x{self.item['images'][0]['height']})"
+
+            embed = discord.Embed(
+                title=f"{self.item['name']} - Album Art",
+                description=description,
+                color=Color.from_rgb(
+                    r=self.colours[0], g=self.colours[1], b=self.colours[2]
+                ),
+            )
+
+            embed.set_author(
+                name=self.artists,
+                url=self.item["artists"][0]["external_urls"]["spotify"],
+                icon_url=self.artist_img,
+            )
+
+            embed.set_image(url=self.item["images"][0]["url"])
+
+            view = View()
+            view.add_item(
+                discord.ui.Button(
+                    label="Open in Browser",
+                    style=discord.ButtonStyle.url,
+                    url=self.item["images"][0]["url"],
+                )
+            )
+
+            await interaction.edit_original_response(embed=embed, view=view)
+        else:
+            embed = discord.Embed(title="No album art available.", color=Color.red())
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+            await interaction.edit_original_response(embed=embed)
+
+        self.stop()
+
+
+# Album element function
 async def album(
     self,
-    item: spotipy.Spotify.album,
+    item: dict,
     interaction: discord.Interaction,
     add_button_url: str = None,
     add_button_text: str = None,
     cached: bool = False,
     ephemeral: bool = False,
-    msg_id: int = None,
+    responded: bool = False,
 ):
     """
     Handle Spotify album embeds.
     """
 
-    image_url = item["images"][0]["url"]
     artist_img = self.sp.artist(item["artists"][0]["external_urls"]["spotify"])[
         "images"
     ][0]["url"]
 
-    songlist_string = f"*Released **{item['release_date']}***\n"
+    pages = []
+    page = [f"*Released **{item['release_date']}***\n"]
 
-    for i in range(len(item["tracks"]["items"])):
-        artist_string = ""
-        for artist in item["tracks"]["items"][i]["artists"]:
-            if artist_string == "":
-                artist_string = escape_markdown(artist["name"])
-            else:
-                artist_string += ", " + escape_markdown(artist["name"])
-
-        # Hide artist string from song listing if there is only one artist
-        if len(item["tracks"]["items"][i]["artists"]) == 1:
-            songlist_string += (
-                f"\n{i + 1}. **{escape_markdown(item['tracks']['items'][i]['name'])}**"
-            )
-        else:
-            songlist_string += f"\n{i + 1}. **{escape_markdown(item['tracks']['items'][i]['name'])}** - {artist_string}"
-
-    artist_string = ""
+    # Generate artist list
+    artists_list = []
     for artist in item["artists"]:
-        if artist_string == "":
-            artist_string = escape_markdown(artist["name"])
+        artists_list.append(escape_markdown(artist["name"]))
+
+    artists = truncate(", ".join(artists_list), 256)
+
+    # Generate pages with 15 items
+    for i, track in enumerate(item["tracks"]["items"]):
+        # Generate track artist list
+        track_artists_list = []
+        for artist in track["artists"]:
+            track_artists_list.append(escape_markdown(artist["name"]))
+
+        # Only show artists if they are not the same as the album artist
+        if track_artists_list == artists_list:
+            page.append(f"{i + 1}. **{truncate(track['name'], 200)}**")
         else:
-            artist_string = artist_string + ", " + escape_markdown(artist["name"])
+            track_artists = truncate(", ".join(track_artists_list))
 
-    embed = discord.Embed(
-        title=f"{item['name']}",
-        description=songlist_string,
-        color=Color.from_rgb(r=255, g=255, b=255),
-    )
-    embed.set_footer(
-        text=f"Getting colour information...{' • Cached Result' if cached else ''}"
-    )
-
-    embed.set_thumbnail(url=item["images"][0]["url"])
-    embed.set_author(
-        name=artist_string,
-        url=item["artists"][0]["external_urls"]["spotify"],
-        icon_url=artist_img,
-    )
-
-    class SpotifyButtonsMenu(View):
-        def __init__(self, bot):
-            super().__init__(timeout=30)
-
-            self.bot = bot
-            self.interaction: discord.Interaction
-            self.og_msg: discord.WebhookMessage
-
-            if not (add_button_url is None or add_button_text is None):
-                # Add additional button
-                add_button = discord.ui.Button(
-                    label=add_button_text,
-                    style=discord.ButtonStyle.url,
-                    url=add_button_url,
-                    row=0,
-                )
-                self.add_item(add_button)
-
-            # Add song.link button
-            songlink_button = discord.ui.Button(
-                label="Other Streaming Services",
-                style=discord.ButtonStyle.url,
-                url=f"https://song.link/{item['external_urls']['spotify']}",
-                row=0,
-            )
-            self.add_item(songlink_button)
-
-            # Add Search on Google button
-            google_button = discord.ui.Button(
-                label="Search on Google",
-                style=discord.ButtonStyle.url,
-                url=f"https://www.google.com/search?q={quote_plus(item['name'])}+{quote_plus(artist_string)}",
-                row=0,
-            )
-            self.add_item(google_button)
-
-        async def on_timeout(self) -> None:
-            try:
-                await self.og_msg.delete()
-            except (discord.errors.NotFound, discord.HTTPException, discord.Forbidden):
-                pass
-
-        async def interaction_check(self, interaction: discord.Interaction):
-            if interaction.user.id != self.interaction.user.id:
-                embed = discord.Embed(
-                    title="Error",
-                    description="You can only control a menu that you have requested.",
-                    color=Color.red(),
-                )
-                await interaction.response.send_message(
-                    embed=embed, delete_after=5, ephemeral=True
-                )
-            else:
-                return True
-
-        @discord.ui.button(label="Album Art", style=discord.ButtonStyle.gray, row=1)
-        async def art(
-            self, interaction: discord.Interaction, button: discord.ui.Button
-        ):
-            await interaction.response.defer(ephemeral=ephemeral)
-
-            if item["images"] is not None:
-                image_url = item["images"][0]["url"]
-
-                if (
-                    item["images"][0]["height"] is None
-                    or item["images"][0]["width"] is None
-                ):
-                    embed = discord.Embed(
-                        title=f"{item['name']} ({artist_string}) - Album Art",
-                        description="Viewing highest quality (Resolution unknown)",
-                        color=Color.from_rgb(r=255, g=255, b=255),
-                    )
-                    embed.set_footer(text="Getting colour information...")
-                else:
-                    embed = discord.Embed(
-                        title=f"{item['name']} ({artist_string}) - Album Art",
-                        description=f"Viewing highest quality ({item['images'][0]['width']}x{item['images'][0]['height']})",
-                        color=Color.from_rgb(r=255, g=255, b=255),
-                    )
-                    embed.set_footer(text="Getting colour information...")
-
-                embed.set_image(url=item["images"][0]["url"])
-
-                view = View()
-                view.add_item(
-                    discord.ui.Button(
-                        label="Download",
-                        style=discord.ButtonStyle.url,
-                        url=item["images"][0]["url"],
-                    )
-                )
-
-                await interaction.edit_original_response(embed=embed, view=view)
-
-                # Get image, store in memory
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
-                        image_data = BytesIO()
-
-                        async for chunk in request.content.iter_chunked(10):
-                            image_data.write(chunk)
-
-                        image_data.seek(0)  # Reset buffer position to start
-
-                # Get dominant colour for embed
-                color_thief = ColorThief(image_data)
-                dominant_color = color_thief.get_color()
-
-                if (
-                    item["images"][0]["height"] is None
-                    or item["images"][0]["width"] is None
-                ):
-                    embed = discord.Embed(
-                        title=f"{item['name']} ({artist_string}) - Album Art",
-                        description="Viewing highest quality (Resolution unknown)",
-                        color=Color.from_rgb(
-                            r=dominant_color[0],
-                            g=dominant_color[1],
-                            b=dominant_color[2],
-                        ),
-                    )
-                    embed.set_footer(
-                        text=f"@{interaction.user.name}",
-                        icon_url=interaction.user.display_avatar.url,
-                    )
-                else:
-                    embed = discord.Embed(
-                        title=f"{item['name']} ({artist_string}) - Album Art",
-                        description=f"Viewing highest quality ({item['images'][0]['width']}x{item['images'][0]['height']})",
-                        color=Color.from_rgb(
-                            r=dominant_color[0],
-                            g=dominant_color[1],
-                            b=dominant_color[2],
-                        ),
-                    )
-                    embed.set_footer(
-                        text=f"@{interaction.user.name}",
-                        icon_url=interaction.user.display_avatar.url,
-                    )
-
-                embed.set_image(url=item["images"][0]["url"])
-                await interaction.edit_original_response(embed=embed)
-            else:
-                embed = discord.Embed(
-                    title="No album art available.", color=Color.red()
-                )
-                embed.set_footer(
-                    text=f"@{interaction.user.name}",
-                    icon_url=interaction.user.display_avatar.url,
-                )
-                await interaction.edit_original_response(embed=embed)
-
-            self.stop()
-
-        @discord.ui.button(label="Close", style=discord.ButtonStyle.red, row=1)
-        async def delete(
-            self, interaction: discord.Interaction, button: discord.ui.Button
-        ):
-            await interaction.response.defer(ephemeral=ephemeral)
-
-            await interaction.delete_original_response()
-
-    class SpotifyEmbedView(View):
-        def __init__(self, bot):
-            super().__init__(timeout=None)
-
-            self.bot = bot.bot
-            self.msg_id: int
-
-            # Add Open in Spotify button
-            spotify_button = discord.ui.Button(
-                label="Play on Spotify",
-                style=discord.ButtonStyle.url,
-                url=item["external_urls"]["spotify"],
-                row=0,
-            )
-            self.add_item(spotify_button)
-
-        # Timeout
-        async def on_timeout(self) -> None:
-            try:
-                for item in self.children:
-                    item.disabled = True
-
-                msg = await interaction.channel.fetch_message(self.msg_id)
-                await msg.edit(view=self)
-            except Exception:
-                pass
-
-        @discord.ui.button(label="Menu", style=discord.ButtonStyle.gray, row=0)
-        async def menu(
-            self, interaction: discord.Interaction, button: discord.ui.Button
-        ):
-            await interaction.response.defer(ephemeral=ephemeral)
-
-            menu_instance = SpotifyButtonsMenu(self.bot)
-            og_msg = await interaction.followup.send(
-                view=menu_instance, wait=True, ephemeral=ephemeral
+            page.append(
+                f"{i + 1}. **{truncate(escape_markdown(item['tracks']['items'][i]['name']))}** - {track_artists}"
             )
 
-            menu_instance.interaction = interaction
-            menu_instance.og_msg = og_msg
+        # Make new page if current page is full
+        if len(page) == 16:
+            pages.append("\n".join(page))
+            page = [f"*Released **{item['release_date']}***\n"]
 
-    view_instance = SpotifyEmbedView(self)
-
-    try:
-        # Detect if embed already exists
-        (await interaction.original_response()).embeds[0]
-        await interaction.edit_original_response(embed=embed, view=view_instance)
-
-        view_instance.msg_id = msg_id
-    except IndexError:
-        # Send new embed
-        webhook = await interaction.followup.send(
-            embed=embed, view=view_instance, ephemeral=ephemeral, wait=True
-        )
-
-        view_instance.msg_id = webhook.id
+    # Catch if page is not empty
+    if page != []:
+        pages.append("\n".join(page))
 
     # Get image, store in memory
     async with aiohttp.ClientSession() as session:
-        async with session.get(image_url) as request:
+        async with session.get(item["images"][0]["url"]) as request:
             image_data = BytesIO()
 
             async for chunk in request.content.iter_chunked(10):
@@ -780,14 +835,41 @@ async def album(
 
     # Get dominant colour for embed
     color_thief = ColorThief(image_data)
-    dominant_color = color_thief.get_color()
+    colours = color_thief.get_color()
+
+    # Create embed
+    embed = discord.Embed(
+        title=item["name"],
+        description=pages[0],
+        color=Color.from_rgb(r=colours[0], g=colours[1], b=colours[2]),
+    )
 
     embed.set_footer(
-        text=f"@{interaction.user.name}{' • Cached Result' if cached else ''}",
+        text=f"{'Controlling: ' if len(pages) > 1 else ''}@{interaction.user.name} - Page 1/{len(pages)}{' • Cached Link' if cached else ''}",
         icon_url=interaction.user.display_avatar.url,
     )
-    embed.color = Color.from_rgb(
-        r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]
+
+    embed.set_author(
+        name=artists,
+        url=item["artists"][0]["external_urls"]["spotify"],
+        icon_url=artist_img,
     )
 
-    await interaction.edit_original_response(embed=embed)
+    embed.set_thumbnail(url=item["images"][0]["url"])
+
+    view = AlbumViewPages(
+        item=item,
+        artists=artists,
+        artist_img=artist_img,
+        cached=cached,
+        pages=pages,
+        colours=colours,
+        op_id=interaction.user.id,
+        add_button_url=add_button_url,
+        add_button_text=add_button_text,
+    )
+
+    if responded:
+        await interaction.edit_original_response(embed=embed, view=view)
+    else:
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)

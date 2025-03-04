@@ -73,7 +73,7 @@ class Spotify(commands.Cog):
                     description="No results were found.",
                     color=Color.red(),
                 )
-                await interaction.followup.send(embed=embed)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             else:
                 # Sort through request data
                 i = 0
@@ -136,7 +136,7 @@ class Spotify(commands.Cog):
                         item=item,
                         interaction=interaction,
                         ephemeral=ephemeral,
-                        msg_id=webhook.id,
+                        responded=True,
                     )
 
             # Set up list with provided values
@@ -145,7 +145,7 @@ class Spotify(commands.Cog):
             view.add_item(select)
 
             # Edit initial message to show dropdown
-            webhook = await interaction.followup.send(embed=embed, view=view, wait=True)
+            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
         elif search_type.value == "artist":
             # Search Spotify
             result = self.sp.search(search, type="artist", limit=5)
@@ -157,7 +157,7 @@ class Spotify(commands.Cog):
                     description="No results were found.",
                     color=Color.red(),
                 )
-                await interaction.followup.send(embed=embed)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             else:
                 # Sort through request data
                 i = 0
@@ -199,7 +199,7 @@ class Spotify(commands.Cog):
                         top_tracks=result_top_tracks,
                         interaction=interaction,
                         ephemeral=ephemeral,
-                        msg_id=webhook.id,
+                        responded=True,
                     )
 
                 # Set up list with provided values
@@ -208,8 +208,8 @@ class Spotify(commands.Cog):
                 view.add_item(select)
 
                 # Edit initial message to show dropdown
-                webhook = await interaction.followup.send(
-                    embed=embed, view=view, wait=True
+                await interaction.followup.send(
+                    embed=embed, view=view, ephemeral=ephemeral
                 )
         elif search_type.value == "album":
             # Search Spotify
@@ -277,7 +277,7 @@ class Spotify(commands.Cog):
                         item=result_info,
                         interaction=interaction,
                         ephemeral=ephemeral,
-                        msg_id=webhook.id,
+                        responded=True,
                     )
 
                 # Set up list with provided values
@@ -286,8 +286,8 @@ class Spotify(commands.Cog):
                 view.add_item(select)
 
                 # Edit initial message to show dropdown
-                webhook = await interaction.followup.send(
-                    embed=embed, view=view, wait=True
+                await interaction.followup.send(
+                    embed=embed, view=view, ephemeral=ephemeral
                 )
 
     # Spotify Image command
