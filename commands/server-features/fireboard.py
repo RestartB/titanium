@@ -1067,9 +1067,10 @@ class Fireboard(commands.Cog):
 
                     try:
                         board_message = await channel.fetch_message(message[2])
-                        reference = board_message.to_reference(type=discord.MessageReferenceType.forward)
 
-                        await interaction.followup.send(reference=reference, ephemeral=ephemeral)
+                        view = View().from_message(board_message)
+
+                        await interaction.followup.send(embeds=board_message.embeds, view=view, ephemeral=ephemeral)
 
                         return
                     except discord.errors.NotFound:
