@@ -1000,11 +1000,13 @@ class Fireboard(commands.Cog):
     context = discord.app_commands.AppCommandContext(
         guild=True, dm_channel=False, private_channel=False
     )
+    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
     perms = discord.Permissions()
     fireGroup = app_commands.Group(
         name="fireboard",
         description="Fireboard related commands.",
         allowed_contexts=context,
+        allowed_installs=installs,
         default_permissions=perms,
     )
 
@@ -1093,11 +1095,13 @@ class Fireboard(commands.Cog):
     context = discord.app_commands.AppCommandContext(
         guild=True, dm_channel=False, private_channel=False
     )
+    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
     perms = discord.Permissions()
     fireSetupGroup = app_commands.Group(
         name="fireboard-setup",
         description="Control the fireboard.",
         allowed_contexts=context,
+        allowed_installs=installs,
         default_permissions=perms,
     )
 
