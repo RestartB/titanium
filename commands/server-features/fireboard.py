@@ -68,7 +68,7 @@ class Fireboard(commands.Cog):
                 )
 
             await sql.commit()
-        
+
         await self.refresh_fire_lists()
 
     # List refresh function
@@ -1015,16 +1015,18 @@ class Fireboard(commands.Cog):
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    async def random_fireboard(self, interaction: discord.Interaction, ephemeral: bool = False):
+    async def random_fireboard(
+        self, interaction: discord.Interaction, ephemeral: bool = False
+    ):
         await interaction.response.defer(ephemeral=ephemeral)
 
         channel_id = None
-        
+
         # Find server config
         for server in self.fire_settings:
             if server[0] == interaction.guild_id:
                 channel_id = server[3]
-        
+
         if channel_id is None:
             embed = discord.Embed(
                 title="Error",
@@ -1047,10 +1049,12 @@ class Fireboard(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
             return
-        
+
         # Fetch messages
         async with self.fireboard_pool.acquire() as sql:
-            messages = await sql.fetchall("SELECT * FROM fireMessages WHERE serverID = ?", (interaction.guild_id,))
+            messages = await sql.fetchall(
+                "SELECT * FROM fireMessages WHERE serverID = ?", (interaction.guild_id,)
+            )
 
             if not messages:
                 embed = discord.Embed(
@@ -1070,19 +1074,21 @@ class Fireboard(commands.Cog):
 
                         view = View().from_message(board_message)
 
-                        await interaction.followup.send(embeds=board_message.embeds, view=view, ephemeral=ephemeral)
+                        await interaction.followup.send(
+                            embeds=board_message.embeds, view=view, ephemeral=ephemeral
+                        )
 
                         return
                     except discord.errors.NotFound:
                         messages.remove(message)
-                
+
                 embed = discord.Embed(
                     title="Error",
                     description="No messages found in the fireboard.",
                     color=Color.red(),
                 )
                 await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-    
+
     # Command group setup
     context = discord.app_commands.AppCommandContext(
         guild=True, dm_channel=False, private_channel=False
@@ -1362,7 +1368,7 @@ class Fireboard(commands.Cog):
 
             try:
                 await channel.send(embed=embed)
-            except discord.errors.NotFound as e:
+            except discord.errors.NotFound:
                 embed = discord.Embed(
                     title="Error",
                     description="Looks like I can't find that channel. Check permissions and try again.",

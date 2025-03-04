@@ -74,7 +74,7 @@ class Tags(commands.Cog):
                 "CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY, creatorID INTEGER, name TEXT, content TEXT)"
             )
             await sql.commit()
-        
+
         await self.get_tag_lists()
 
     # List refresh function
