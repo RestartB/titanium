@@ -1,6 +1,7 @@
 # pylint: disable=possibly-used-before-assignment
 
 import asyncio
+import random
 
 import asqlite
 import discord
@@ -18,7 +19,6 @@ class Fireboard(commands.Cog):
         self.locked_messages = []
 
         self.bot.loop.create_task(self.setup())
-        self.bot.loop.create_task(self.refresh_fire_lists())
 
     # SQL Setup
     async def setup(self):
@@ -68,6 +68,8 @@ class Fireboard(commands.Cog):
                 )
 
             await sql.commit()
+        
+        await self.refresh_fire_lists()
 
     # List refresh function
     async def refresh_fire_lists(self):
@@ -1001,13 +1003,99 @@ class Fireboard(commands.Cog):
     perms = discord.Permissions()
     fireGroup = app_commands.Group(
         name="fireboard",
+        description="Fireboard related commands.",
+        allowed_contexts=context,
+        default_permissions=perms,
+    )
+
+    # Random fireboard message command
+    @fireGroup.command(
+        name="random", description="Get a random message from the fireboard."
+    )
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def random_fireboard(self, interaction: discord.Interaction, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
+
+        channel_id = None
+        
+        # Find server config
+        for server in self.fire_settings:
+            if server[0] == interaction.guild_id:
+                channel_id = server[3]
+        
+        if channel_id is None:
+            embed = discord.Embed(
+                title="Error",
+                description="Fireboard is not enabled in this server.",
+                color=Color.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+            return
+
+        # Fetch channel
+        try:
+            channel = await interaction.guild.fetch_channel(channel_id)
+        except discord.errors.NotFound:
+            embed = discord.Embed(
+                title="Error",
+                description="Can't find the fireboard channel. Please contact a server admin.",
+                color=Color.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+            return
+        
+        # Fetch messages
+        async with self.fireboard_pool.acquire() as sql:
+            messages = await sql.fetchall("SELECT * FROM fireMessages WHERE serverID = ?", (interaction.guild_id,))
+
+            if not messages:
+                embed = discord.Embed(
+                    title="Error",
+                    description="No messages found in the fireboard.",
+                    color=Color.red(),
+                )
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+                return
+            else:
+                while messages != []:
+                    message = random.choice(messages)
+
+                    try:
+                        board_message = await channel.fetch_message(message[2])
+                        reference = board_message.to_reference(type=discord.MessageReferenceType.forward)
+
+                        await interaction.followup.send(reference=reference, ephemeral=ephemeral)
+
+                        return
+                    except discord.errors.NotFound:
+                        messages.remove(message)
+                
+                embed = discord.Embed(
+                    title="Error",
+                    description="No messages found in the fireboard.",
+                    color=Color.red(),
+                )
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+    
+    # Command group setup
+    context = discord.app_commands.AppCommandContext(
+        guild=True, dm_channel=False, private_channel=False
+    )
+    perms = discord.Permissions()
+    fireSetupGroup = app_commands.Group(
+        name="fireboard-setup",
         description="Control the fireboard.",
         allowed_contexts=context,
         default_permissions=perms,
     )
 
     # Fireboard enable command
-    @fireGroup.command(
+    @fireSetupGroup.command(
         name="enable", description="Enable the fireboard in the current channel."
     )
     async def enable_fireboard(self, interaction: discord.Interaction):
@@ -1141,7 +1229,7 @@ class Fireboard(commands.Cog):
             await self.message.edit(embed=embed, view=self)
 
     # Fireboard disable command
-    @fireGroup.command(name="disable", description="Disable the server fireboard.")
+    @fireSetupGroup.command(name="disable", description="Disable the server fireboard.")
     async def disable_fireboard(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
@@ -1166,7 +1254,7 @@ class Fireboard(commands.Cog):
             )
 
     # Fireboard server info command
-    @fireGroup.command(
+    @fireSetupGroup.command(
         name="info", description="View fireboard config for this server."
     )
     async def fireboard_info(self, interaction: discord.Interaction):
@@ -1195,7 +1283,7 @@ class Fireboard(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
 
     # Fireboard set emoji command
-    @fireGroup.command(name="emoji", description="Set a custom fireboard emoji.")
+    @fireSetupGroup.command(name="emoji", description="Set a custom fireboard emoji.")
     async def fireboard_emoji(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=False)
 
@@ -1253,7 +1341,7 @@ class Fireboard(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=False)
 
     # Fireboard set channel command
-    @fireGroup.command(
+    @fireSetupGroup.command(
         name="channel",
         description="Set the channel for fireboard messages to be sent in.",
     )
@@ -1279,7 +1367,7 @@ class Fireboard(commands.Cog):
                     description="Looks like I can't find that channel. Check permissions and try again.",
                     color=Color.random(),
                 )
-                await interaction.followup.send(embed=embed, content=e, ephemeral=True)
+                await interaction.followup.send(embed=embed, ephemeral=True)
 
                 return
             except discord.errors.Forbidden as e:
@@ -1317,7 +1405,7 @@ class Fireboard(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
 
     # Fireboard set requirement command
-    @fireGroup.command(
+    @fireSetupGroup.command(
         name="requirement",
         description="Set required reaction amount for message to be posted on the fireboard.",
     )
@@ -1353,7 +1441,7 @@ class Fireboard(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
 
     # Fireboard ignore bots command
-    @fireGroup.command(
+    @fireSetupGroup.command(
         name="ignore-bots",
         description="Whether bot messages are ignored in the fireboard. Defaults to true.",
     )
@@ -1389,7 +1477,7 @@ class Fireboard(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
 
     # Fireboard role blacklist
-    @fireGroup.command(
+    @fireSetupGroup.command(
         name="channel-blacklist",
         description="Toggle the blacklist for a channel. NSFW channels are always blacklisted.",
     )
@@ -1443,7 +1531,7 @@ class Fireboard(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
 
     # Fireboard role blacklist
-    @fireGroup.command(
+    @fireSetupGroup.command(
         name="role-blacklist", description="Toggle the blacklist for a role."
     )
     async def fireboard_role_blacklist(
@@ -1494,7 +1582,7 @@ class Fireboard(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
 
     # Fireboard role blacklist
-    @fireGroup.command(
+    @fireSetupGroup.command(
         name="blacklists", description="View this server's role and channel blacklists."
     )
     async def fireboard_blacklists(self, interaction: discord.Interaction):

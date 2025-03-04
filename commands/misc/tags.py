@@ -65,7 +65,6 @@ class Tags(commands.Cog):
         self.tags: dict = {}
 
         self.bot.loop.create_task(self.setup())
-        self.bot.loop.create_task(self.get_tag_lists())
 
     # Setup function
     async def setup(self):
@@ -75,6 +74,8 @@ class Tags(commands.Cog):
                 "CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY, creatorID INTEGER, name TEXT, content TEXT)"
             )
             await sql.commit()
+        
+        await self.get_tag_lists()
 
     # List refresh function
     async def get_tag_lists(self):

@@ -358,13 +358,21 @@ class Misc(commands.Cog):
             async for msg in channel.history(limit=1, oldest_first=True):
                 embed = discord.Embed(
                     title=f"#{channel.name} - First Message",
-                    description=f"{msg.content}",
+                    description=f"{msg.content if msg.content else 'No content.'}",
                     color=Color.random(),
+                    timestamp=msg.created_at,
                 )
                 embed.set_footer(
-                    text=f"{msg.author.name} - {(msg.created_at).hour}:{(msg.created_at).minute} {(msg.created_at).day}/{(msg.created_at).month}/{(msg.created_at).year} UTC",
-                    icon_url=msg.author.avatar.url,
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
                 )
+
+                if msg.author is not None and not msg.is_system():
+                    embed.set_author(
+                        name=msg.author.display_name,
+                        icon_url=msg.author.display_avatar.url,
+                    )
+
                 view = View()
                 view.add_item(
                     discord.ui.Button(
@@ -373,6 +381,7 @@ class Misc(commands.Cog):
                         label="Jump to Message",
                     )
                 )
+
                 await interaction.followup.send(
                     embed=embed, view=view, ephemeral=ephemeral
                 )

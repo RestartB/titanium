@@ -11,6 +11,7 @@ import os
 import traceback
 from glob import glob
 
+from utils.truncate import truncate
 import aiohttp
 import asqlite
 import discord
@@ -309,7 +310,7 @@ async def on_app_command_error(
                     logging.info("Sending error to webhook.")
                     embed = discord.Embed(
                         title="Error",
-                        description=f"""```python\n{traceback.format_exc()}```""",
+                        description=f"```python\n{truncate(traceback.format_exc(), 4096, '```')}{'```' if len(traceback.format_exc()) > 4096 else ''}",
                         color=Color.red(),
                     )
 
