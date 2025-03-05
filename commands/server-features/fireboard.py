@@ -1001,13 +1001,11 @@ class Fireboard(commands.Cog):
         guild=True, dm_channel=False, private_channel=False
     )
     installs = discord.app_commands.AppInstallationType(guild=True, user=False)
-    perms = discord.Permissions()
     fireGroup = app_commands.Group(
         name="fireboard",
         description="Fireboard related commands.",
         allowed_contexts=context,
         allowed_installs=installs,
-        default_permissions=perms,
     )
 
     # Random fireboard message command
