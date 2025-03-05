@@ -1073,9 +1073,18 @@ class Fireboard(commands.Cog):
                         board_message = await channel.fetch_message(message[2])
 
                         view = View().from_message(board_message)
+                        files = [
+                            await attachment.to_file()
+                            for attachment in board_message.attachments
+                        ]
 
                         await interaction.followup.send(
-                            embeds=board_message.embeds, view=view, ephemeral=ephemeral
+                            content=board_message.content,
+                            embeds=board_message.embeds,
+                            view=view,
+                            ephemeral=ephemeral,
+                            files=files,
+                            allowed_mentions=discord.AllowedMentions.none(),
                         )
 
                         return
