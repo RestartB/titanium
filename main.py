@@ -179,6 +179,13 @@ class TitaniumBot(commands.Bot):
             os.path.join("content", "sql", "tags.db")
         )
 
+        async with self.tags_pool.acquire() as sql:
+            # Create table if it doesn't exist
+            await sql.execute(
+                "CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY, creatorID INTEGER, name TEXT, content TEXT)"
+            )
+            await sql.commit()
+
         logging.info("[INIT] SQL pools created.\n")
 
         logging.info("[INIT] Loading cogs...")

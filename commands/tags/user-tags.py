@@ -58,24 +58,13 @@ class TagEditModal(discord.ui.Modal, title="Edit Selected Tag"):
         return
 
 
-class Tags(commands.Cog):
+class UserTags(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.tags_pool: asqlite.Pool = bot.tags_pool
         self.tags: dict = {}
 
-        self.bot.loop.create_task(self.setup())
-
-    # Setup function
-    async def setup(self):
-        async with self.tags_pool.acquire() as sql:
-            # Create table if it doesn't exist
-            await sql.execute(
-                "CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY, creatorID INTEGER, name TEXT, content TEXT)"
-            )
-            await sql.commit()
-
-        await self.get_tag_lists()
+        self.bot.loop.create_task(self.get_tag_lists())
 
     # List refresh function
     async def get_tag_lists(self):
@@ -89,13 +78,64 @@ class Tags(commands.Cog):
 
                 self.tags[tag[1]][tag[2]] = tag[3]
 
+    async def user_tag_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        if interaction.user.id not in self.tags or self.tags[interaction.user.id] == []:
+            return []
+        else:
+            if current == "":
+                # Sort by name alphabetically, show first 25
+                sorted = list(self.tags[interaction.user.id].keys())[:25]
+
+                return [
+                    app_commands.Choice(name=value, value=value) for value in sorted
+                ]
+            else:
+                matches = process.extract(
+                    current.lower(),
+                    list(self.tags[interaction.user.id].keys()),
+                    limit=10,
+                )
+
+                return [
+                    app_commands.Choice(name=match[0], value=match[0])
+                    for match in matches
+                    if match[1] >= 60
+                ]
+
+    # User Tags Use command
+    @app_commands.command(name="user-tag", description="Use a user tag.")
+    @app_commands.autocomplete(tag=user_tag_autocomplete)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def user_tags_use(
+        self, interaction: discord.Interaction, tag: str, ephemeral: bool = False
+    ):
+        await interaction.response.defer(ephemeral=ephemeral)
+
+        tag = tag.lower()
+
+        # Check if tag name is in list
+        if interaction.user.id in self.tags and tag not in list(
+            self.tags[interaction.user.id].keys()
+        ):
+            embed = discord.Embed(
+                title="Error", description="That tag doesn't exist.", color=Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+        else:
+            await interaction.followup.send(
+                self.tags[interaction.user.id][tag], ephemeral=ephemeral
+            )
+
     context = discord.app_commands.AppCommandContext(
         guild=True, dm_channel=True, private_channel=True
     )
     installs = discord.app_commands.AppInstallationType(guild=True, user=True)
     tagsGroup = app_commands.Group(
-        name="tags",
-        description="Create quick responses with tags.",
+        name="user-tags",
+        description="User Tags - manage your own tags.",
         allowed_contexts=context,
         allowed_installs=installs,
     )
@@ -293,55 +333,6 @@ class Tags(commands.Cog):
 
                 Leaderboard.msg_id = webhook.id
 
-    async def tag_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> list[app_commands.Choice[str]]:
-        if interaction.user.id not in self.tags or self.tags[interaction.user.id] == []:
-            return []
-        else:
-            if current == "":
-                # Sort by name alphabetically, show first 25
-                sorted = list(self.tags[interaction.user.id].keys())[:25]
-
-                return [
-                    app_commands.Choice(name=value, value=value) for value in sorted
-                ]
-            else:
-                matches = process.extract(
-                    current.lower(),
-                    list(self.tags[interaction.user.id].keys()),
-                    limit=10,
-                )
-
-                return [
-                    app_commands.Choice(name=match[0], value=match[0])
-                    for match in matches
-                    if match[1] >= 60
-                ]
-
-    # Tags Use command
-    @tagsGroup.command(name="use", description="Use a tag.")
-    @app_commands.autocomplete(tag=tag_autocomplete)
-    async def tags_use(
-        self, interaction: discord.Interaction, tag: str, ephemeral: bool = False
-    ):
-        await interaction.response.defer(ephemeral=ephemeral)
-
-        tag = tag.lower()
-
-        # Check if tag name is in list
-        if interaction.user.id in self.tags and tag not in list(
-            self.tags[interaction.user.id].keys()
-        ):
-            embed = discord.Embed(
-                title="Error", description="That tag doesn't exist.", color=Color.red()
-            )
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-        else:
-            await interaction.followup.send(
-                self.tags[interaction.user.id][tag], ephemeral=ephemeral
-            )
-
     # Tags Create command
     @tagsGroup.command(name="create", description="Create a new tag.")
     @app_commands.describe(
@@ -413,7 +404,7 @@ class Tags(commands.Cog):
     @app_commands.describe(
         attachment="Optional: quickly add an attachment to the tag. Overrides content."
     )
-    @app_commands.autocomplete(tag=tag_autocomplete)
+    @app_commands.autocomplete(tag=user_tag_autocomplete)
     async def tags_edit(
         self,
         interaction: discord.Interaction,
@@ -527,7 +518,7 @@ class Tags(commands.Cog):
     # Tags Delete command
     @tagsGroup.command(name="delete", description="Delete a tag.")
     @app_commands.describe(tag="The tag to delete.")
-    @app_commands.autocomplete(tag=tag_autocomplete)
+    @app_commands.autocomplete(tag=user_tag_autocomplete)
     async def tags_delete(self, interaction: discord.Interaction, tag: str):
         await interaction.response.defer(ephemeral=True)
 
@@ -559,4 +550,4 @@ class Tags(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(Tags(bot))
+    await bot.add_cog(UserTags(bot))
