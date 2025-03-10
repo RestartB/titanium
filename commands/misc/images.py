@@ -171,9 +171,9 @@ class Images(commands.Cog):
 
                         file_processed = discord.File(
                             fp=resized_image_data,
-                            filename="image.png",
+                            filename="titanium_image.png",
                         )
-                        embed.set_image(url="attachment://image.png")
+                        embed.set_image(url="attachment://titanium_image.png")
 
                         await interaction.followup.send(
                             embed=embed, file=file_processed, ephemeral=ephemeral
@@ -258,8 +258,10 @@ class Images(commands.Cog):
                         icon_url=interaction.user.display_avatar.url,
                     )
 
-                    file_processed = discord.File(fp=gif_data, filename="image.gif")
-                    embed.set_image(url="attachment://image.gif")
+                    file_processed = discord.File(
+                        fp=gif_data, filename="titanium_image.gif"
+                    )
+                    embed.set_image(url="attachment://titanium_image.gif")
 
                     await interaction.followup.send(embed=embed, file=file_processed)
             else:  # If file is too large
@@ -275,9 +277,25 @@ class Images(commands.Cog):
 
                 await interaction.followup.send(embed=embed)
         elif file.content_type.split("/")[0] == "video":  # If file is a video
+            commands = await self.bot.tree.fetch_commands()
+
+            for command in commands:
+                if command.name == "video":
+                    try:
+                        if (
+                            command.options[0].type
+                            == discord.AppCommandOptionType.subcommand
+                        ):
+                            for option in command.options:
+                                if option.name == "to-gif":
+                                    mention = option.mention
+                                    break
+                    except IndexError:
+                        pass
+
             embed = discord.Embed(
                 title="Error",
-                description="I think you attached a **video.** To convert a video to GIF, use the `/video to-gif` command.",
+                description=f"I think you attached a **video.** To convert a video to GIF, use the {mention} command.",
                 color=Color.red(),
             )
             embed.set_footer(
@@ -347,7 +365,7 @@ class Images(commands.Cog):
 
                                 # Add converted file to list
                                 converted_file = discord.File(
-                                    fp=gif_data, filename="image.gif"
+                                    fp=gif_data, filename="titanium_image.gif"
                                 )
                                 converted.append(converted_file)
                         else:  # If file is too large
@@ -455,9 +473,9 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=deepfried_data,
-                    filename="image.png",
+                    filename="titanium_image.png",
                 )
-                embed.set_image(url="attachment://image.png")
+                embed.set_image(url="attachment://titanium_image.png")
 
                 await interaction.followup.send(
                     embed=embed, file=file_processed, ephemeral=ephemeral
@@ -571,7 +589,7 @@ class Images(commands.Cog):
                                 # Add converted file to list
                                 converted_file = discord.File(
                                     fp=deepfried_data,
-                                    filename="image.png",
+                                    filename="titanium_image.png",
                                 )
                                 converted.append(converted_file)
                         else:  # If file is too large

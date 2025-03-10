@@ -206,7 +206,10 @@ class Misc(commands.Cog):
         await interaction.edit_original_response(embed=embed)
 
     # Insult Command
-    @funGroup.command(name="insult", description="Insult a user of your selection.")
+    @funGroup.command(
+        name="insult",
+        description="Generate a savage insult for the user of your selection.",
+    )
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(user="The user to insult.")
     @app_commands.describe(
@@ -238,8 +241,6 @@ class Misc(commands.Cog):
             "head-aching",
             "Migraine-making",
             "soulsucking",
-            "convexly formed",
-            "concavely skulled",
             "ever-spiralling",
             "constant-chatting",
             "jibber-jabbering",

@@ -5,13 +5,18 @@ import random
 import string
 import asyncio
 
+from typing import TYPE_CHECKING
+
 import discord
 from discord import Color, app_commands
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    from main import TitaniumBot
+
 
 class Videos(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
     context = discord.app_commands.AppCommandContext(
@@ -159,9 +164,25 @@ class Videos(commands.Cog):
 
                 await interaction.followup.send(embed=embed)
         elif file.content_type.split("/")[0] == "image":  # If file is an image
+            commands = await self.bot.tree.fetch_commands()
+
+            for command in commands:
+                if command.name == "image":
+                    try:
+                        if (
+                            command.options[0].type
+                            == discord.AppCommandOptionType.subcommand
+                        ):
+                            for option in command.options:
+                                if option.name == "to-gif":
+                                    mention = option.mention
+                                    break
+                    except IndexError:
+                        pass
+
             embed = discord.Embed(
                 title="Error",
-                description="I think you attached an **image.** To convert an image to GIF, use the `/image to-gif` command, or right click on a message, select apps, then click Convert to GIF.",
+                description=f"I think you attached an **image.** To convert an image to GIF, use the {mention} command, or right click on a message, select apps, then click **Convert to GIF.**",
                 color=Color.red(),
             )
             embed.set_footer(
