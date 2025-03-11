@@ -28,19 +28,78 @@ class ServerUtils(commands.Cog):
 
         # Handle no icon
         if interaction.guild.icon is not None:
-            embed = discord.Embed(
-                title=f"Server Icon - {interaction.guild.name}", color=Color.random()
-            )
+            embed = discord.Embed(title="Server Icon", color=Color.random())
             embed.set_image(url=interaction.guild.icon.url)
             embed.set_footer(
-                text=f"@{interaction.user.name} - right click or long press to save image",
+                text=f"@{interaction.user.name}",
                 icon_url=interaction.user.display_avatar.url,
+            )
+            embed.set_author(
+                name=interaction.guild.name,
+                icon_url=(
+                    interaction.guild.icon.url
+                    if interaction.guild.icon is not None
+                    else None
+                ),
+            )
+
+            view = View()
+            view.add_item(
+                discord.ui.Button(
+                    label="Open in Browser",
+                    style=discord.ButtonStyle.url,
+                    url=interaction.guild.icon.url,
+                    row=0,
+                )
             )
 
             # Send Embed
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
         else:
             embed = discord.Embed(title="Server has no icon!", color=Color.random())
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+    # Server Banner command
+    @serverGroup.command(name="banner", description="Show the server's banner.")
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def server_banner(
+        self, interaction: discord.Interaction, ephemeral: bool = False
+    ):
+        await interaction.response.defer(ephemeral=ephemeral)
+
+        # Handle no banner
+        if interaction.guild.banner is not None:
+            embed = discord.Embed(title="Server Banner", color=Color.random())
+            embed.set_image(url=interaction.guild.banner.url)
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+            embed.set_author(
+                name=interaction.guild.name,
+                icon_url=(
+                    interaction.guild.icon.url
+                    if interaction.guild.icon is not None
+                    else None
+                ),
+            )
+
+            view = View()
+            view.add_item(
+                discord.ui.Button(
+                    label="Open in Browser",
+                    style=discord.ButtonStyle.url,
+                    url=interaction.guild.banner.url,
+                    row=0,
+                )
+            )
+
+            # Send Embed
+            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+        else:
+            embed = discord.Embed(title="Server has no banner!", color=Color.random())
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Server Info command
@@ -52,18 +111,6 @@ class ServerUtils(commands.Cog):
         self, interaction: discord.Interaction, ephemeral: bool = False
     ):
         await interaction.response.defer(ephemeral=ephemeral)
-
-        member_count = 0
-        bot_count = 0
-
-        for member in interaction.guild.members:
-            if member.bot:
-                bot_count += 1
-            else:
-                member_count += 1
-
-        member_count = f"{member_count} ({round((member_count / interaction.guild.member_count * 100), 1)}%)"
-        bot_count = f"{bot_count} ({round((bot_count / interaction.guild.member_count * 100), 1)}%)"
 
         embed = discord.Embed(
             title="Server Info",
@@ -79,10 +126,20 @@ class ServerUtils(commands.Cog):
             ),
         )
 
-        # Member counts
+        # Member count
         embed.add_field(name="Total Members", value=interaction.guild.member_count)
-        embed.add_field(name="People", value=member_count, inline=True)
-        embed.add_field(name="Bots", value=bot_count, inline=True)
+
+        # Creation date
+        embed.add_field(
+            name="Creation Date",
+            value=f"<t:{int(interaction.guild.created_at.timestamp())}:d>",
+        )
+
+        # Owner
+        try:
+            embed.add_field(name="Owner", value=interaction.guild.owner.mention)
+        except AttributeError:
+            embed.add_field(name="Owner", value="Unknown")
 
         # Channel counts
         embed.add_field(
@@ -92,20 +149,6 @@ class ServerUtils(commands.Cog):
             name="Voice Channels", value=len(interaction.guild.voice_channels)
         )
         embed.add_field(name="Categories", value=len(interaction.guild.categories))
-
-        creation_date = interaction.guild.created_at
-
-        # Other info
-        embed.add_field(
-            name="Creation Date",
-            value=f"{creation_date.day}/{creation_date.month}/{creation_date.year}",
-        )
-
-        # Handle when owner can't be found
-        try:
-            embed.add_field(name="Owner", value=interaction.guild.owner.mention)
-        except AttributeError:
-            embed.add_field(name="Owner", value="Unknown")
 
         embed.add_field(name="Server ID", value=interaction.guild.id)
 
@@ -144,7 +187,7 @@ class ServerUtils(commands.Cog):
 
     # Server Info command
     @serverGroup.command(
-        name="boosts", description="Beta: get info about this server's boost stats."
+        name="boosts", description="Get info about this server's boosts."
     )
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
@@ -154,18 +197,24 @@ class ServerUtils(commands.Cog):
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        embed = discord.Embed(
-            title=f"{interaction.guild.name} - Info", color=Color.random()
+        embed = discord.Embed(title="Server Boosts", color=Color.random())
+
+        embed.set_author(
+            name=interaction.guild.name,
+            icon_url=(
+                interaction.guild.icon.url
+                if interaction.guild.icon is not None
+                else None
+            ),
         )
 
-        # Member counts
+        # Boost counts
         embed.add_field(
             name="Total Boosts", value=interaction.guild.premium_subscription_count
         )
         embed.add_field(
             name="Level", value=f"Level {interaction.guild.premium_tier}", inline=True
         )
-        # embed.add_field(name = "Boosts Needed for Next Level", value = memberCount, inline = True)
 
         embed.set_footer(
             text=f"@{interaction.user.name}",
