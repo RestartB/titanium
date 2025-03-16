@@ -139,7 +139,9 @@ class Images(commands.Cog):
                         # Save resized image
                         resized_image.save(
                             resized_image_data,
-                            format=os.path.splitext(file.filename)[1][1:],
+                            format=os.path.splitext(file.filename)[1][1:]
+                            .upper()
+                            .replace("JPG", "JPEG"),
                         )
                         resized_image_data.seek(0)
 
@@ -178,9 +180,7 @@ class Images(commands.Cog):
                             fp=resized_image_data,
                             filename=f"titanium_image.{os.path.splitext(file.filename)[1][1:]}",
                         )
-                        embed.set_image(
-                            url=f"attachment://titanium_image.{os.path.splitext(file.filename)[1][1:]}"
-                        )
+                        embed.set_image(url=f"attachment://{file_processed.filename}")
 
                         await interaction.followup.send(
                             embed=embed, file=file_processed, ephemeral=ephemeral
@@ -524,7 +524,7 @@ class Images(commands.Cog):
                     fp=deepfried_data,
                     filename="titanium_image.png",
                 )
-                embed.set_image(url="attachment://titanium_image.png")
+                embed.set_image(url=f"attachment://{file_processed.filename}")
 
                 await interaction.followup.send(
                     embed=embed, file=file_processed, ephemeral=ephemeral
