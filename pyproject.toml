@@ -9,6 +9,7 @@ dependencies = [
     "asqlite>=2.0.0",
     "colorthief>=0.2.1",
     "discord-py>=2.5.0",
+    "pillow-avif-plugin>=1.5.0",
     "pillow>=11.0.0",
     "psutil>=6.1.1",
     "py-cpuinfo>=9.0.0",

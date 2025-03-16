@@ -1,10 +1,8 @@
 # pylint: disable=no-member
 
-import os
-import random
-import string
 import asyncio
-
+import os
+import tempfile
 from typing import TYPE_CHECKING
 
 import discord
@@ -31,17 +29,44 @@ class Videos(commands.Cog):
     )
 
     # Video to GIF command
-    @videoGroup.command(
-        name="to-gif", description="Convert a video to GIF up to 10 seconds long."
+    @videoGroup.command(name="to-gif", description="Convert a video to WEBP or GIF.")
+    @app_commands.choices(
+        mode=[
+            app_commands.Choice(
+                name="High FPS (.webp, 10 seconds max, unlimited FPS) (recommended)",
+                value="fps",
+            ),
+            app_commands.Choice(
+                name="Length (.webp, 30 seconds max, 20FPS max)", value="length"
+            ),
+            app_commands.Choice(
+                name="Compatibility (.gif, 10 seconds max, 10FPS max) (not recommended)",
+                value="compatibility",
+            ),
+        ]
+    )
+    @app_commands.describe(file="The file to convert.")
+    @app_commands.describe(
+        mode="Optional: the mode to use when converting. Defaults to high FPS."
     )
     @app_commands.checks.cooldown(1, 30)
     async def video_to_gif(
-        self, interaction: discord.Interaction, file: discord.Attachment
+        self,
+        interaction: discord.Interaction,
+        file: discord.Attachment,
+        mode: app_commands.Choice[str] = None,
     ):
         await interaction.response.defer()
 
+        # If mode is None, create a default Choice object
+        if mode is None:
+            mode = app_commands.Choice(
+                name="High FPS (.webp, 10 seconds max, unlimited FPS) (recommended)",
+                value="fps",
+            )
+
         if file.content_type.split("/")[0] == "video":  # Check if file is a video
-            if file.size < 20000000:  # 20MB file limit
+            if file.size < 50000000:  # 20MB file limit
                 # Send resized image
                 embed = discord.Embed(
                     title="Converting...",
@@ -55,26 +80,12 @@ class Videos(commands.Cog):
 
                 await interaction.followup.send(embed=embed)
 
-                while True:
-                    # Generate random filename
-                    letters = string.ascii_lowercase
-                    filename = "".join(random.choice(letters) for i in range(8))
-
-                    if not os.path.exists(
-                        os.path.join(
-                            "tmp", f"{filename}.{file.content_type.split('/')[-1]}"
-                        )
-                    ):
-                        break
-
-                try:
+                with tempfile.NamedTemporaryFile(
+                    "wb", suffix=os.path.splitext(file.filename)[1], dir="tmp"
+                ) as tmp_input:
                     # Save file to /tmp
                     # noinspection PyTypeChecker
-                    await file.save(
-                        os.path.join(
-                            "tmp", f"{filename}.{file.content_type.split('/')[-1]}"
-                        )
-                    )
+                    await file.save(tmp_input.file)
 
                     # Send converting message
                     embed = discord.Embed(
@@ -89,72 +100,96 @@ class Videos(commands.Cog):
 
                     await interaction.edit_original_response(embed=embed)
 
-                    # Save file to /tmp
-                    input_path = os.path.join(
-                        os.getcwd(),
-                        "tmp",
-                        f"{filename}.{file.content_type.split('/')[-1]}",
-                    )
-                    output_path = os.path.join(
-                        os.getcwd(), "tmp", f"{filename}_processed.gif"
-                    )
+                    with tempfile.NamedTemporaryFile(
+                        "wb",
+                        suffix=(".gif" if mode.value == "compatibility" else ".webp"),
+                        dir="tmp",
+                    ) as tmp_output:
+                        if mode.value == "compatibility":
+                            # Run ffmpeg to convert to GIF, cap length at 10s
+                            proc = await asyncio.create_subprocess_exec(
+                                "ffmpeg",
+                                "-t",
+                                "10",
+                                "-i",
+                                tmp_input.name,
+                                "-vf",
+                                "fps=10,scale=400:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
+                                "-loop",
+                                "0",
+                                "-y",
+                                tmp_output.name,
+                                stdout=asyncio.subprocess.PIPE,
+                                stderr=asyncio.subprocess.PIPE,
+                            )
+                        else:
+                            # Run ffmpeg to convert to WEBP
+                            proc = await asyncio.create_subprocess_exec(
+                                "ffmpeg",
+                                "-t",
+                                "10" if mode.value == "fps" else "30",
+                                "-i",
+                                tmp_input.name,
+                                "-vcodec",
+                                "libwebp",
+                                "-vf",
+                                f"{'fps=20,' if mode.value == 'length' else ''}scale=400:-1:flags=lanczos",
+                                "-lossless",
+                                "1",
+                                "-loop",
+                                "0",
+                                "-preset",
+                                "default",
+                                "-an",
+                                "-y",
+                                tmp_output.name,
+                                stdout=asyncio.subprocess.PIPE,
+                                stderr=asyncio.subprocess.PIPE,
+                            )
 
-                    # Run ffmpeg to convert to GIF, cap length at 10s
-                    proc = await asyncio.create_subprocess_exec(
-                        "ffmpeg",
-                        "-t",
-                        "10",
-                        "-i",
-                        input_path,
-                        "-vf",
-                        "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
-                        "-loop",
-                        "0",
-                        output_path,
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE,
-                    )
+                        # Wait for ffmpeg to finish
+                        stdout, stderr = await proc.communicate()
 
-                    # Wait for ffmpeg to finish
-                    stdout, stderr = await proc.communicate()
+                        if proc.returncode == 0:
+                            # Send resized image
+                            embed = discord.Embed(
+                                title="Converting...",
+                                description=f"{self.bot.options['loading-emoji']} Sending the converted file...",
+                                color=Color.orange(),
+                            )
+                            embed.set_footer(
+                                text=f"@{interaction.user.name}",
+                                icon_url=interaction.user.display_avatar.url,
+                            )
 
-                    if proc.returncode == 0:
-                        # Send resized image
-                        embed = discord.Embed(
-                            title="Video Converted",
-                            description="Video converted to GIF.",
-                            color=Color.green(),
-                        )
-                        embed.set_footer(
-                            text=f"@{interaction.user.name}",
-                            icon_url=interaction.user.display_avatar.url,
-                        )
+                            await interaction.edit_original_response(embed=embed)
 
-                        file_processed = discord.File(
-                            fp=os.path.join("tmp", f"{filename}_processed.gif"),
-                            filename=f"{filename}_processed.gif",
-                        )
-                        embed.set_image(url=f"attachment://{filename}_processed.gif")
+                            # Send resized image
+                            embed = discord.Embed(
+                                title="Video Converted",
+                                color=Color.green(),
+                            )
+                            embed.set_footer(
+                                text=f"@{interaction.user.name}",
+                                icon_url=interaction.user.display_avatar.url,
+                            )
 
-                        await interaction.edit_original_response(
-                            embed=embed, attachments=[file_processed]
-                        )
-                    else:
-                        raise Exception(
-                            f"ffmpeg failed with code {proc.returncode}:\n\n{stderr.decode()}"
-                        )
-                finally:
-                    # Delete temporary files
-                    os.remove(os.path.join("tmp", f"{filename}_processed.gif"))
-                    os.remove(
-                        os.path.join(
-                            "tmp", f"{filename}.{file.content_type.split('/')[-1]}"
-                        )
-                    )
+                            file_processed = discord.File(
+                                fp=tmp_output.name,
+                                filename=f"titanium_image.{'gif' if mode.value == 'compatibility' else 'webp'}",
+                            )
+
+                            await interaction.edit_original_response(
+                                embed=embed, attachments=[file_processed]
+                            )
+                        else:
+                            raise Exception(
+                                f"ffmpeg failed with code {proc.returncode}:\n\n{stderr.decode()}"
+                            )
             else:  # If file is too large
                 embed = discord.Embed(
                     title="Error",
-                    description="Your file is too large. Please ensure it is smaller than 20MB.",
+                    description="Your file is too large. Please ensure it is smaller than 50MB.",
                     color=Color.red(),
                 )
                 embed.set_footer(

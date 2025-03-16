@@ -1,9 +1,11 @@
-# pylint: disable=no-member
+# ruff: noqa: F401
 
+import os
 from io import BytesIO
-import aiohttp
 
+import aiohttp
 import discord
+import pillow_avif
 from discord import Color, app_commands
 from discord.ext import commands
 from PIL import Image, ImageEnhance, ImageOps
@@ -135,7 +137,10 @@ class Images(commands.Cog):
                         resized_image_data = BytesIO()
 
                         # Save resized image
-                        resized_image.save(resized_image_data)
+                        resized_image.save(
+                            resized_image_data,
+                            format=os.path.splitext(file.filename)[1][1:],
+                        )
                         resized_image_data.seek(0)
 
                         new_size = resized_image.size
@@ -171,9 +176,11 @@ class Images(commands.Cog):
 
                         file_processed = discord.File(
                             fp=resized_image_data,
-                            filename="titanium_image.png",
+                            filename=f"titanium_image.{os.path.splitext(file.filename)[1][1:]}",
                         )
-                        embed.set_image(url="attachment://titanium_image.png")
+                        embed.set_image(
+                            url=f"attachment://titanium_image.{os.path.splitext(file.filename)[1][1:]}"
+                        )
 
                         await interaction.followup.send(
                             embed=embed, file=file_processed, ephemeral=ephemeral
@@ -218,10 +225,31 @@ class Images(commands.Cog):
     # Image to GIF command
     @imageGroup.command(name="to-gif", description="Convert an image to GIF.")
     @app_commands.checks.cooldown(1, 10)
+    @app_commands.choices(
+        mode=[
+            app_commands.Choice(
+                name="Quality (.avif, 16 million colours) (recommended)",
+                value="quality",
+            ),
+            app_commands.Choice(
+                name="Compatibility (.gif, limited colours) (not recommended)",
+                value="compatibility",
+            ),
+        ]
+    )
     async def gif_image(
-        self, interaction: discord.Interaction, file: discord.Attachment
+        self,
+        interaction: discord.Interaction,
+        file: discord.Attachment,
+        mode: app_commands.Choice[str] = None,
     ):
         await interaction.response.defer()
+
+        if mode is None:
+            mode = app_commands.Choice(
+                name="Quality (.avif, 16 million colours) (recommended)",
+                value="quality",
+            )
 
         if (
             file.content_type.split("/")[0] == "image"
@@ -239,31 +267,43 @@ class Images(commands.Cog):
 
                         image_data.seek(0)
 
+                output_data = BytesIO()
+
                 # Open image
                 with Image.open(image_data) as im:
-                    gif_data = BytesIO()
+                    if mode.value == "quality":
+                        with Image.open(image_data) as im2:
+                            # Convert image to GIF
+                            im.save(
+                                output_data,
+                                format="AVIF",
+                                append_images=[im2],
+                                save_all=True,
+                                duration=500,
+                                loop=0,
+                            )
+                    else:
+                        # Convert image to GIF
+                        im.save(output_data, format="GIF")
 
-                    # Convert image to GIF
-                    im.save(gif_data, format="GIF")
-                    gif_data.seek(0)
+                output_data.seek(0)
 
-                    # Send resized image
-                    embed = discord.Embed(
-                        title="Image Converted",
-                        description="Image converted to GIF.",
-                        color=Color.green(),
-                    )
-                    embed.set_footer(
-                        text=f"@{interaction.user.name}",
-                        icon_url=interaction.user.display_avatar.url,
-                    )
+                # Send resized image
+                embed = discord.Embed(
+                    title="Image Converted",
+                    color=Color.green(),
+                )
+                embed.set_footer(
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
+                )
 
-                    file_processed = discord.File(
-                        fp=gif_data, filename="titanium_image.gif"
-                    )
-                    embed.set_image(url="attachment://titanium_image.gif")
+                file_processed = discord.File(
+                    fp=output_data,
+                    filename=f"titanium_image.{'avif' if mode.value == 'quality' else 'gif'}",
+                )
 
-                    await interaction.followup.send(embed=embed, file=file_processed)
+                await interaction.followup.send(embed=embed, file=file_processed)
             else:  # If file is too large
                 embed = discord.Embed(
                     title="Error",
@@ -357,15 +397,24 @@ class Images(commands.Cog):
 
                             # Open image
                             with Image.open(image_data) as im:
-                                gif_data = BytesIO()
-
-                                # Convert image to GIF
-                                im.save(gif_data, format="GIF")
-                                gif_data.seek(0)
+                                output_data = BytesIO()
+                                
+                                with Image.open(image_data) as im2:
+                                    # Convert image to GIF
+                                    im.save(
+                                        output_data,
+                                        format="AVIF",
+                                        append_images=[im2],
+                                        save_all=True,
+                                        duration=500,
+                                        loop=0,
+                                    )
+                                
+                                output_data.seek(0)
 
                                 # Add converted file to list
                                 converted_file = discord.File(
-                                    fp=gif_data, filename="titanium_image.gif"
+                                    fp=output_data, filename="titanium_image.avif"
                                 )
                                 converted.append(converted_file)
                         else:  # If file is too large
