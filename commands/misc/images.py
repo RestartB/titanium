@@ -398,7 +398,7 @@ class Images(commands.Cog):
                             # Open image
                             with Image.open(image_data) as im:
                                 output_data = BytesIO()
-                                
+
                                 with Image.open(image_data) as im2:
                                     # Convert image to GIF
                                     im.save(
@@ -409,7 +409,7 @@ class Images(commands.Cog):
                                         duration=500,
                                         loop=0,
                                     )
-                                
+
                                 output_data.seek(0)
 
                                 # Add converted file to list
