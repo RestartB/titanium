@@ -28,9 +28,7 @@ class StripTracking(commands.Cog):
 
         url = self.cleaner.clean(url)
 
-        embed = discord.Embed(
-            title="URL: Tracking Stripped", description=url
-        )
+        embed = discord.Embed(title="URL: Tracking Stripped", description=url)
         embed.set_footer(
             text=f"@{interaction.user.name}",
             icon_url=interaction.user.display_avatar.url,

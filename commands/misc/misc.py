@@ -117,9 +117,7 @@ class Misc(commands.Cog):
         name="github-roast",
         description="Generate a random GitHub account roast. - https://github-roast.pages.dev",
     )
-    @app_commands.describe(
-        username="The GitHub account to roast."
-    )
+    @app_commands.describe(username="The GitHub account to roast.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false."
     )
