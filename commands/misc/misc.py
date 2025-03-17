@@ -118,6 +118,9 @@ class Misc(commands.Cog):
         description="Generate a random GitHub account roast. - https://github-roast.pages.dev",
     )
     @app_commands.describe(
+        username="The GitHub account to roast."
+    )
+    @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false."
     )
     async def gh_roast(
@@ -360,7 +363,6 @@ class Misc(commands.Cog):
                 embed = discord.Embed(
                     title=f"#{channel.name} - First Message",
                     description=f"{msg.content if msg.content else 'No content.'}",
-                    color=Color.random(),
                     timestamp=msg.created_at,
                 )
                 embed.set_footer(

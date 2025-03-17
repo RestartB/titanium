@@ -121,7 +121,6 @@ class NowPlaying(commands.Cog):
                     embed = discord.Embed(
                         title=f"{activity.details}",
                         description=activity.state,
-                        color=Color.random(),
                     )
                     embed.set_author(
                         name=f"{activity_type}{(' to ' if activity_type == 'Listening' else ' - ') if activity.small_image_text is not None else ''}{activity.small_image_text}",
@@ -164,7 +163,6 @@ class NowPlaying(commands.Cog):
                     embed = discord.Embed(
                         title=f"{activity_type}{(' to' if activity_type == 'Listening' else '')}",
                         description=activity.name,
-                        color=Color.random(),
                     )
 
                     embed.set_author(

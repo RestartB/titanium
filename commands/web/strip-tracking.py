@@ -1,5 +1,5 @@
 import discord
-from discord import Color, app_commands
+from discord import app_commands
 from discord.ext import commands
 from url_cleaner import UrlCleaner
 
@@ -29,7 +29,7 @@ class StripTracking(commands.Cog):
         url = self.cleaner.clean(url)
 
         embed = discord.Embed(
-            title="URL: Tracking Stripped", description=url, color=Color.random()
+            title="URL: Tracking Stripped", description=url
         )
         embed.set_footer(
             text=f"@{interaction.user.name}",

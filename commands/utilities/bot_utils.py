@@ -35,7 +35,7 @@ class BotUtils(commands.Cog):
     async def ping(self, interaction: discord.Interaction, ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        embed = discord.Embed(title="Pong!", color=Color.random())
+        embed = discord.Embed(title="Pong!")
         embed.add_field(name="Latency", value=f"{round(self.bot.latency * 1000, 2)}ms")
 
         await interaction.followup.send(embed=embed, ephemeral=ephemeral)
@@ -168,18 +168,7 @@ class BotUtils(commands.Cog):
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        embed = discord.Embed(
-            title="Loading...",
-            description=f"{self.bot.options['loading-emoji']} Getting info...",
-            color=Color.random(),
-        )
-        embed.set_footer(
-            text=f"@{interaction.user.name}",
-            icon_url=interaction.user.display_avatar.url,
-        )
-        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-
-        embed = discord.Embed(title="Host Info", color=Color.random())
+        embed = discord.Embed(title="Host Info")
 
         sec = timedelta(seconds=int(time.monotonic()))
         d = datetime.datetime(1, 1, 1) + sec
@@ -203,7 +192,7 @@ class BotUtils(commands.Cog):
             icon_url=interaction.user.display_avatar.url,
         )
 
-        await interaction.edit_original_response(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot):

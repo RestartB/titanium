@@ -1,6 +1,6 @@
 import discord
 import discord.ext
-from discord import Color, app_commands
+from discord import app_commands
 from discord.ext import commands
 from discord.ui import View
 
@@ -16,92 +16,6 @@ class ServerUtils(commands.Cog):
         name="server", description="Server related commands.", allowed_contexts=context
     )
 
-    # Server Icon command
-    @serverGroup.command(name="icon", description="Show the server's icon.")
-    @app_commands.describe(
-        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
-    )
-    async def server_icon(
-        self, interaction: discord.Interaction, ephemeral: bool = False
-    ):
-        await interaction.response.defer(ephemeral=ephemeral)
-
-        # Handle no icon
-        if interaction.guild.icon is not None:
-            embed = discord.Embed(title="Server Icon", color=Color.random())
-            embed.set_image(url=interaction.guild.icon.url)
-            embed.set_footer(
-                text=f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
-            )
-            embed.set_author(
-                name=interaction.guild.name,
-                icon_url=(
-                    interaction.guild.icon.url
-                    if interaction.guild.icon is not None
-                    else None
-                ),
-            )
-
-            view = View()
-            view.add_item(
-                discord.ui.Button(
-                    label="Open in Browser",
-                    style=discord.ButtonStyle.url,
-                    url=interaction.guild.icon.url,
-                    row=0,
-                )
-            )
-
-            # Send Embed
-            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
-        else:
-            embed = discord.Embed(title="Server has no icon!", color=Color.random())
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-
-    # Server Banner command
-    @serverGroup.command(name="banner", description="Show the server's banner.")
-    @app_commands.describe(
-        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
-    )
-    async def server_banner(
-        self, interaction: discord.Interaction, ephemeral: bool = False
-    ):
-        await interaction.response.defer(ephemeral=ephemeral)
-
-        # Handle no banner
-        if interaction.guild.banner is not None:
-            embed = discord.Embed(title="Server Banner", color=Color.random())
-            embed.set_image(url=interaction.guild.banner.url)
-            embed.set_footer(
-                text=f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
-            )
-            embed.set_author(
-                name=interaction.guild.name,
-                icon_url=(
-                    interaction.guild.icon.url
-                    if interaction.guild.icon is not None
-                    else None
-                ),
-            )
-
-            view = View()
-            view.add_item(
-                discord.ui.Button(
-                    label="Open in Browser",
-                    style=discord.ButtonStyle.url,
-                    url=interaction.guild.banner.url,
-                    row=0,
-                )
-            )
-
-            # Send Embed
-            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
-        else:
-            embed = discord.Embed(title="Server has no banner!", color=Color.random())
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-
     # Server Info command
     @serverGroup.command(name="info", description="Get info about the server.")
     @app_commands.describe(
@@ -114,7 +28,6 @@ class ServerUtils(commands.Cog):
 
         embed = discord.Embed(
             title="Server Info",
-            color=Color.random(),
         )
 
         embed.set_author(
@@ -197,7 +110,7 @@ class ServerUtils(commands.Cog):
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        embed = discord.Embed(title="Server Boosts", color=Color.random())
+        embed = discord.Embed(title="Server Boosts")
 
         embed.set_author(
             name=interaction.guild.name,
@@ -223,6 +136,119 @@ class ServerUtils(commands.Cog):
 
         # Send Embed
         await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+    # Server Icon command
+    @serverGroup.command(name="icon", description="Show the server's icon.")
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def server_icon(
+        self, interaction: discord.Interaction, ephemeral: bool = False
+    ):
+        await interaction.response.defer(ephemeral=ephemeral)
+
+        # Handle no icon
+        if interaction.guild.icon is not None:
+            embed = discord.Embed(title="Server Icon")
+            embed.set_image(url=interaction.guild.icon.url)
+
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+            embed.set_author(
+                name=interaction.guild.name,
+                icon_url=(
+                    interaction.guild.icon.url
+                    if interaction.guild.icon is not None
+                    else None
+                ),
+            )
+
+            view = View()
+            view.add_item(
+                discord.ui.Button(
+                    label="Open in Browser",
+                    style=discord.ButtonStyle.url,
+                    url=interaction.guild.icon.url,
+                    row=0,
+                )
+            )
+
+            # Send Embed
+            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+        else:
+            embed = discord.Embed(
+                title="Server Icon", description="This server does not have an icon."
+            )
+
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+            embed.set_author(
+                name=interaction.guild.name,
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+    # Server Banner command
+    @serverGroup.command(name="banner", description="Show the server's banner.")
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def server_banner(
+        self, interaction: discord.Interaction, ephemeral: bool = False
+    ):
+        await interaction.response.defer(ephemeral=ephemeral)
+
+        # Handle no banner
+        if interaction.guild.banner is not None:
+            embed = discord.Embed(title="Server Banner")
+            embed.set_image(url=interaction.guild.banner.url)
+
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+            embed.set_author(
+                name=interaction.guild.name,
+                icon_url=(
+                    interaction.guild.icon.url
+                    if interaction.guild.icon is not None
+                    else None
+                ),
+            )
+
+            view = View()
+            view.add_item(
+                discord.ui.Button(
+                    label="Open in Browser",
+                    style=discord.ButtonStyle.url,
+                    url=interaction.guild.banner.url,
+                    row=0,
+                )
+            )
+
+            # Send Embed
+            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+        else:
+            embed = discord.Embed(
+                title="Server Banner", description="This server does not have a banner."
+            )
+
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+            embed.set_author(
+                name=interaction.guild.name,
+                icon_url=interaction.guild.icon.url
+                if interaction.guild.icon is not None
+                else None,
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot):

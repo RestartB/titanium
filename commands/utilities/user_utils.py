@@ -1,6 +1,6 @@
 import discord
 import discord.ext
-from discord import Color, app_commands
+from discord import app_commands
 from discord.ext import commands
 from discord.ui import View
 
@@ -45,9 +45,7 @@ class UserUtils(commands.Cog):
 
         embed = discord.Embed(
             title="User Info",
-            color=(
-                user.accent_color if user.accent_color is not None else Color.random()
-            ),
+            color=(user.accent_color if user.accent_color is not None else None),
         )
         embed.set_author(
             name=f"{member.display_name} (@{member.name})",
@@ -141,11 +139,11 @@ class UserUtils(commands.Cog):
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
+        user = await interaction.client.fetch_user(user.id)
+
         embed = discord.Embed(
             title="PFP",
-            color=(
-                user.accent_color if user.accent_color is not None else Color.random()
-            ),
+            color=user.accent_color,
         )
 
         embed.set_image(url=user.display_avatar.url)
@@ -187,13 +185,12 @@ class UserUtils(commands.Cog):
         await interaction.response.defer(ephemeral=ephemeral)
 
         user = await interaction.client.fetch_user(user.id)
+
         if user.banner is None:
             embed = discord.Embed(
                 title="Banner",
                 description="This user does not have a banner.",
-                color=(
-                    user.accent_color if user.accent_color is not None else Color.red()
-                ),
+                color=user.accent_color,
             )
 
             embed.set_author(
@@ -210,11 +207,7 @@ class UserUtils(commands.Cog):
         else:
             embed = discord.Embed(
                 title="Banner",
-                color=(
-                    user.accent_color
-                    if user.accent_color is not None
-                    else Color.random()
-                ),
+                color=user.accent_color,
             )
 
             embed.set_image(url=user.banner.url)
