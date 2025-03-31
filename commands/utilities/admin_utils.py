@@ -240,7 +240,7 @@ class CogUtils(commands.Cog):
         )
 
         await interaction.followup.send(embed=embed, ephemeral=True)
-    
+
     # Clear status command
     @adminGroup.command(
         name="clear-status", description="Admin Only: clear the bot's status."
