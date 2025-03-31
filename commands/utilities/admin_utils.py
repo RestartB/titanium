@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 import traceback
+from typing import TYPE_CHECKING
 
 import discord
 import discord.ext
@@ -12,6 +13,9 @@ from discord.ext import commands
 from discord.ui import View
 
 import utils.return_ctrlguild as ctrl
+
+if TYPE_CHECKING:
+    from commands.automated.status_update import StatusUpdate
 
 
 class CogUtils(commands.Cog):
@@ -132,6 +136,142 @@ class CogUtils(commands.Cog):
         )
         await interaction.edit_original_response(embed=embed)
 
+    # Enable auto status command
+    @adminGroup.command(
+        name="auto-status-enable", description="Admin Only: enable auto status."
+    )
+    async def enable_autostatus(self, interaction: discord.Interaction):
+        # Stop auto status task
+        status_cog: "StatusUpdate" = self.bot.get_cog("StatusUpdate")
+
+        if status_cog is not None:
+            if not status_cog.status_update.is_running():
+                status_cog.status_update.start()
+
+                embed = discord.Embed(
+                    title="Success!",
+                    description="Auto status was enabled.",
+                    color=Color.green(),
+                )
+            else:
+                embed = discord.Embed(
+                    title="Already Started",
+                    description="Auto status is already running.",
+                    color=Color.red(),
+                )
+        else:
+            embed = discord.Embed(
+                title="Error",
+                description="Auto status cog does not exist.",
+                color=Color.red(),
+            )
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+    # Disable auto status command
+    @adminGroup.command(
+        name="auto-status-disable", description="Admin Only: disable auto status."
+    )
+    async def disable_autostatus(self, interaction: discord.Interaction):
+        # Stop auto status task
+        status_cog: "StatusUpdate" = self.bot.get_cog("StatusUpdate")
+
+        if status_cog is not None:
+            if status_cog.status_update.is_running():
+                status_cog.status_update.cancel()
+
+                # Update status
+                await self.bot.change_presence(
+                    activity=discord.Activity(
+                        status=discord.Status.online,
+                    )
+                )
+
+                embed = discord.Embed(
+                    title="Success!",
+                    description="Auto status was disabled and cleared.",
+                    color=Color.green(),
+                )
+            else:
+                embed = discord.Embed(
+                    title="Already Stopped",
+                    description="Auto status is already stopped.",
+                    color=Color.red(),
+                )
+        else:
+            embed = discord.Embed(
+                title="Error",
+                description="Auto status cog does not exist.",
+                color=Color.red(),
+            )
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+    # Set custom status command
+    @adminGroup.command(
+        name="custom-status", description="Admin Only: set a custom status."
+    )
+    async def set_custom_status(self, interaction: discord.Interaction, status: str):
+        # Get auto status cog
+        status_cog: "StatusUpdate" = self.bot.get_cog("StatusUpdate")
+
+        running = False
+
+        # Stop task if running
+        if status_cog is not None:
+            if status_cog.status_update.is_running():
+                running = True
+                status_cog.status_update.cancel()
+
+        # Update status
+        await self.bot.change_presence(
+            activity=discord.Activity(
+                status=discord.Status.online,
+                type=discord.ActivityType.custom,
+                name="custom",
+                state=status,
+            )
+        )
+
+        embed = discord.Embed(
+            title="Success!",
+            description=f"Custom status set to `{status}`.{' Disabled auto status.' if running else ''}",
+            color=Color.green(),
+        )
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
+    
+    # Clear status command
+    @adminGroup.command(
+        name="clear-status", description="Admin Only: clear the bot's status."
+    )
+    async def clear_status(self, interaction: discord.Interaction):
+        # Get auto status cog
+        status_cog: "StatusUpdate" = self.bot.get_cog("StatusUpdate")
+
+        running = False
+
+        # Stop task if running
+        if status_cog is not None:
+            if status_cog.status_update.is_running():
+                running = True
+                status_cog.status_update.cancel()
+
+        # Update status
+        await self.bot.change_presence(
+            activity=discord.Activity(
+                status=discord.Status.online,
+            )
+        )
+
+        embed = discord.Embed(
+            title="Success!",
+            description=f"Cleared status.{' Disabled auto status.' if running else ''}",
+            color=Color.green(),
+        )
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
     # Clear Console command
     @adminGroup.command(
         name="clear-console", description="Admin Only: clear the console."
@@ -151,28 +291,21 @@ class CogUtils(commands.Cog):
     async def send_message(
         self, interaction: discord.Interaction, message: str, channel_id: str
     ):
-        if interaction.user.id in self.bot.options["owner-ids"]:
-            channel = self.bot.get_channel(int(channel_id))
+        channel = self.bot.get_channel(int(channel_id))
 
-            embed = discord.Embed(
-                title="Message from Bot Admin",
-                description=message,
-                color=Color.random(),
-            )
-            embed.timestamp = datetime.datetime.now()
+        embed = discord.Embed(
+            title="Message from Bot Admin",
+            description=message,
+            color=Color.random(),
+        )
+        embed.timestamp = datetime.datetime.now()
 
-            await channel.send(embed=embed)
+        await channel.send(embed=embed)
 
-            await interaction.followup.send(
-                f"Message sent to channel ID {channel_id}.\n\nContent: {message}",
-                ephemeral=True,
-            )
-        else:
-            embed = discord.Embed(
-                title="You do not have permission to run this command.",
-                color=Color.red(),
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.followup.send(
+            f"Message sent to channel ID {channel_id}.\n\nContent: {message}",
+            ephemeral=True,
+        )
 
     # Server List command
     @adminGroup.command(
@@ -341,6 +474,7 @@ class CogUtils(commands.Cog):
         await asyncio.sleep(3)
         raise Exception
 
+    # Defer Test command
     @adminGroup.command(name="defer-test", description="Admin Only: test defer.")
     async def defer_test(self, interaction: discord.Interaction, seconds: int):
         await asyncio.sleep(seconds)
