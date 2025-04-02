@@ -18,10 +18,10 @@ dependencies = [
     "thefuzz>=0.22.1",
     "url-cleaner>=0.1.5",
     "wikipedia>=1.4.0",
+    "flask[async]>=3.1.0",
 ]
 
 [dependency-groups]
 dev = [
-    "isort>=6.0.1",
     "ruff>=0.9.9",
 ]

@@ -116,18 +116,26 @@ class UserTags(commands.Cog):
 
         tag = tag.lower()
 
-        # Check if tag name is in list
-        if interaction.user.id in self.tags and tag not in list(
-            self.tags[interaction.user.id].keys()
-        ):
+        try:
+            # Check if tag name is in list
+            if tag not in list(self.tags[interaction.user.id].keys()):
+                embed = discord.Embed(
+                    title="Error",
+                    description="That tag doesn't exist.",
+                    color=Color.red(),
+                )
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            else:
+                await interaction.followup.send(
+                    self.tags[interaction.user.id][tag],
+                    ephemeral=ephemeral,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+        except KeyError:
             embed = discord.Embed(
                 title="Error", description="That tag doesn't exist.", color=Color.red()
             )
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-        else:
-            await interaction.followup.send(
-                self.tags[interaction.user.id][tag], ephemeral=ephemeral
-            )
 
     context = discord.app_commands.AppCommandContext(
         guild=True, dm_channel=True, private_channel=True

@@ -117,6 +117,8 @@ class ServerTags(commands.Cog):
 
     # Server Tags Use command
     @app_commands.command(name="server-tag", description="Use a server tag.")
+    @app_commands.allowed_installs(guilds=True, users=False)
+    @app_commands.allowed_contexts(guild=True, dm_channel=False, private_channel=False)
     @app_commands.autocomplete(tag=server_tag_autocomplete)
     async def server_tags_use(
         self, interaction: discord.Interaction, tag: str, ephemeral: bool = False
@@ -135,18 +137,28 @@ class ServerTags(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
-        # Check if tag name is in list
-        if interaction.guild_id in self.tags and tag not in list(
-            self.tags[interaction.guild_id].keys()
-        ):
+        try:
+            # Check if tag name is in list
+            if tag not in list(self.tags[interaction.guild_id].keys()):
+                embed = discord.Embed(
+                    title="Error",
+                    description="That tag doesn't exist.",
+                    color=Color.red(),
+                )
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            else:
+                await interaction.followup.send(
+                    self.tags[interaction.guild_id][tag],
+                    ephemeral=ephemeral,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+        except KeyError:
             embed = discord.Embed(
-                title="Error", description="That tag doesn't exist.", color=Color.red()
+                title="Error",
+                description="That tag doesn't exist.",
+                color=Color.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-        else:
-            await interaction.followup.send(
-                self.tags[interaction.guild_id][tag], ephemeral=ephemeral
-            )
 
     context = discord.app_commands.AppCommandContext(
         guild=True, dm_channel=False, private_channel=False
