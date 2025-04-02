@@ -81,28 +81,31 @@ class UserTags(commands.Cog):
     async def user_tag_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
-        if interaction.user.id not in self.tags or self.tags[interaction.user.id] == []:
-            return []
-        else:
-            if current == "":
-                # Sort by name alphabetically, show first 25
-                sorted = list(self.tags[interaction.user.id].keys())[:25]
-
-                return [
-                    app_commands.Choice(name=value, value=value) for value in sorted
-                ]
+        try:
+            if self.tags[interaction.user.id] == []:
+                return []
             else:
-                matches = process.extract(
-                    current.lower(),
-                    list(self.tags[interaction.user.id].keys()),
-                    limit=10,
-                )
+                if current == "":
+                    # Sort by name alphabetically, show first 25
+                    sorted = list(self.tags[interaction.user.id].keys())[:25]
 
-                return [
-                    app_commands.Choice(name=match[0], value=match[0])
-                    for match in matches
-                    if match[1] >= 60
-                ]
+                    return [
+                        app_commands.Choice(name=value, value=value) for value in sorted
+                    ]
+                else:
+                    matches = process.extract(
+                        current.lower(),
+                        list(self.tags[interaction.user.id].keys()),
+                        limit=10,
+                    )
+
+                    return [
+                        app_commands.Choice(name=match[0], value=match[0])
+                        for match in matches
+                        if match[1] >= 60
+                    ]
+        except KeyError:
+            return []
 
     # User Tags Use command
     @app_commands.command(name="user-tag", description="Use a user tag.")

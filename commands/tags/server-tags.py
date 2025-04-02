@@ -89,31 +89,32 @@ class ServerTags(commands.Cog):
                 ),
             ]
         else:
-            if (
-                interaction.guild_id not in self.tags
-                or self.tags[interaction.guild_id] == []
-            ):
-                return []
-            else:
-                if current == "":
-                    # Sort by name alphabetically, show first 25
-                    sorted = list(self.tags[interaction.guild_id].keys())[:25]
-
-                    return [
-                        app_commands.Choice(name=value, value=value) for value in sorted
-                    ]
+            try:
+                if self.tags[interaction.guild_id] == []:
+                    return []
                 else:
-                    matches = process.extract(
-                        current.lower(),
-                        list(self.tags[interaction.guild_id].keys()),
-                        limit=10,
-                    )
+                    if current == "":
+                        # Sort by name alphabetically, show first 25
+                        sorted = list(self.tags[interaction.guild_id].keys())[:25]
 
-                    return [
-                        app_commands.Choice(name=match[0], value=match[0])
-                        for match in matches
-                        if match[1] >= 60
-                    ]
+                        return [
+                            app_commands.Choice(name=value, value=value)
+                            for value in sorted
+                        ]
+                    else:
+                        matches = process.extract(
+                            current.lower(),
+                            list(self.tags[interaction.guild_id].keys()),
+                            limit=10,
+                        )
+
+                        return [
+                            app_commands.Choice(name=match[0], value=match[0])
+                            for match in matches
+                            if match[1] >= 60
+                        ]
+            except KeyError:
+                return []
 
     # Server Tags Use command
     @app_commands.command(name="server-tag", description="Use a server tag.")
