@@ -118,7 +118,7 @@ class ServerTags(commands.Cog):
     # Server Tags Use command
     @app_commands.command(name="server-tag", description="Use a server tag.")
     @app_commands.allowed_installs(guilds=True, users=False)
-    @app_commands.allowed_contexts(guild=True, dm_channel=False, private_channel=False)
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @app_commands.autocomplete(tag=server_tag_autocomplete)
     async def server_tags_use(
         self, interaction: discord.Interaction, tag: str, ephemeral: bool = False
