@@ -748,7 +748,9 @@ class Images(commands.Cog):
                                     im.size, Image.Resampling.LANCZOS
                                 )
 
-                                output_image.paste(bubble_border, (0, -1), bubble_border)
+                                output_image.paste(
+                                    bubble_border, (0, -1), bubble_border
+                                )
 
                             output_image.save(output_data, format="PNG")
                         else:
