@@ -1,14 +1,12 @@
-# ruff: noqa: F401
-
 import os
 from io import BytesIO
 
 import aiohttp
 import discord
-import pillow_avif
+import pillow_avif  # noqa: F401
 from discord import Color, app_commands
 from discord.ext import commands
-from PIL import Image, ImageEnhance, ImageOps
+from PIL import Image, ImageEnhance, ImageOps, ImageChops
 
 
 # noinspection PyTypeChecker
@@ -679,6 +677,158 @@ class Images(commands.Cog):
                     )
 
                     await interaction.followup.send(embed=embed)
+
+    # Image to GIF command
+    @imageGroup.command(
+        name="speechbubble", description="Add a speech bubble overlay to an image."
+    )
+    @app_commands.checks.cooldown(1, 10)
+    @app_commands.choices(
+        colour=[
+            app_commands.Choice(
+                name="White",
+                value="white",
+            ),
+            app_commands.Choice(
+                name="Black",
+                value="black",
+            ),
+            app_commands.Choice(
+                name="Transparent",
+                value="transparent",
+            ),
+        ]
+    )
+    async def speech_bubble(
+        self,
+        interaction: discord.Interaction,
+        file: discord.Attachment,
+        colour: app_commands.Choice[str],
+    ):
+        await interaction.response.defer()
+
+        if (
+            file.content_type.split("/")[0] == "image"
+            and file.content_type.split("/")[1] != "gif"
+            and file.content_type.split("/")[1] != "apng"
+        ):  # Check if file is a static image
+            if file.size < 20000000:  # 20MB file limit
+                # Get image, store in memory
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(file.url) as request:
+                        image_data = BytesIO()
+
+                        async for chunk in request.content.iter_chunked(10):
+                            image_data.write(chunk)
+
+                        image_data.seek(0)
+
+                output_data = BytesIO()
+
+                # Open image
+                with Image.open(image_data) as im:
+                    im = im.convert("RGBA")
+
+                    # Open speech bubble image
+                    with Image.open(os.path.join("content", "speech.png")) as bubble:
+                        bubble = bubble.convert("RGBA")
+                        bubble = bubble.resize(im.size, Image.Resampling.LANCZOS)
+
+                        if colour.value == "white":
+                            bubble = ImageOps.invert(bubble)
+
+                        if colour.value == "transparent":
+                            output_image = ImageChops.subtract_modulo(im, bubble)
+
+                            with Image.open(
+                                os.path.join("content", "speech_border.png")
+                            ) as bubble_border:
+                                bubble_border = bubble_border.convert("RGBA")
+                                bubble_border = bubble_border.resize(
+                                    im.size, Image.Resampling.LANCZOS
+                                )
+
+                                output_image.paste(bubble_border, (0, -1), bubble_border)
+
+                            output_image.save(output_data, format="PNG")
+                        else:
+                            with Image.new("RGBA", im.size) as output_image:
+                                output_image.paste(im, (0, 0))
+                                output_image.paste(bubble, (0, 0), bubble)
+
+                                # Convert image to GIF
+                                output_image.save(output_data, format="PNG")
+
+                output_data.seek(0)
+
+                # Send resized image
+                embed = discord.Embed(
+                    title="Image Converted",
+                    color=Color.green(),
+                )
+                embed.set_footer(
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
+                )
+
+                file_processed = discord.File(
+                    fp=output_data,
+                    filename="titanium_image.png",
+                )
+
+                await interaction.followup.send(embed=embed, file=file_processed)
+            else:  # If file is too large
+                embed = discord.Embed(
+                    title="Error",
+                    description="Your file is too large. Please ensure it is smaller than 20MB.",
+                    color=Color.red(),
+                )
+                embed.set_footer(
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
+                )
+
+                await interaction.followup.send(embed=embed)
+        elif file.content_type.split("/")[0] == "video":  # If file is a video
+            commands = await self.bot.tree.fetch_commands()
+
+            for command in commands:
+                if command.name == "video":
+                    try:
+                        if (
+                            command.options[0].type
+                            == discord.AppCommandOptionType.subcommand
+                        ):
+                            for option in command.options:
+                                if option.name == "to-gif":
+                                    mention = option.mention
+                                    break
+                    except IndexError:
+                        pass
+
+            embed = discord.Embed(
+                title="Error",
+                description=f"I think you attached a **video.** To convert a video to GIF, use the {mention} command.",
+                color=Color.red(),
+            )
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+
+            await interaction.followup.send(embed=embed)
+        else:  # If file is not a static image
+            embed = discord.Embed(
+                title="Error",
+                description="Your file is not a static image.",
+                color=Color.red(),
+            )
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+
+            await interaction.followup.send(embed=embed)
 
 
 async def setup(bot):
