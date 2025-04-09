@@ -166,7 +166,7 @@ class Images(commands.Cog):
                         # Send resized image
                         embed = discord.Embed(
                             title="Image Resized",
-                            description=f"Image resized to {new_size[0]}x{new_size[1]}.",
+                            description=f"**New Size: **`{new_size[0]}x{new_size[1]}`\n**Format: **`.{os.path.splitext(file.filename)[1][1:]}`",
                             color=Color.green(),
                         )
                         embed.set_footer(
@@ -223,6 +223,10 @@ class Images(commands.Cog):
     # Image to GIF command
     @imageGroup.command(name="to-gif", description="Convert an image to GIF.")
     @app_commands.checks.cooldown(1, 10)
+    @app_commands.describe(
+        file="The static image to convert.",
+        mode="The mode to use when generating the image.",
+    )
     @app_commands.choices(
         mode=[
             app_commands.Choice(
@@ -280,15 +284,18 @@ class Images(commands.Cog):
                                 duration=500,
                                 loop=0,
                             )
+                            output_size = im.size
                     else:
                         # Convert image to GIF
                         im.save(output_data, format="GIF")
+                        output_size = im.size
 
                 output_data.seek(0)
 
                 # Send resized image
                 embed = discord.Embed(
                     title="Image Converted",
+                    description=f"**Size: **`{output_size[0]}x{output_size[1]}`\n**Format: **`.{'avif' if mode.value == 'quality' else 'gif'}`",
                     color=Color.green(),
                 )
                 embed.set_footer(
@@ -507,11 +514,15 @@ class Images(commands.Cog):
 
                     # Save image
                     img.save(deepfried_data, format="PNG")
-                    deepfried_data.seek(0)
+                    output_size = img.size
+
+                deepfried_data.seek(0)
 
                 # Send resized image
                 embed = discord.Embed(
-                    title="Done", description="Image deepfried.", color=Color.green()
+                    title="Image Deepfried",
+                    description=f"**Size: **`{output_size[0]}x{output_size[1]}`\n**Format: **`.png`",
+                    color=Color.green(),
                 )
                 embed.set_footer(
                     text=f"@{interaction.user.name}",
@@ -683,6 +694,11 @@ class Images(commands.Cog):
         name="speechbubble", description="Add a speech bubble overlay to an image."
     )
     @app_commands.checks.cooldown(1, 10)
+    @app_commands.describe(
+        file="The static image to use.",
+        colour="The colour of the speech bubble.",
+        format="The format of the output image.",
+    )
     @app_commands.choices(
         colour=[
             app_commands.Choice(
@@ -697,13 +713,28 @@ class Images(commands.Cog):
                 name="Transparent",
                 value="transparent",
             ),
-        ]
+        ],
+        format=[
+            app_commands.Choice(
+                name=".png (can't be favourited, very good quality)",
+                value="PNG",
+            ),
+            app_commands.Choice(
+                name=".gif (can be favourited, lower quality, best compatibility)",
+                value="GIF",
+            ),
+            app_commands.Choice(
+                name=".avif (can be favourited, very good quality, less compatibility)",
+                value="AVIF",
+            ),
+        ],
     )
     async def speech_bubble(
         self,
         interaction: discord.Interaction,
         file: discord.Attachment,
         colour: app_commands.Choice[str],
+        format: app_commands.Choice[str],
     ):
         await interaction.response.defer()
 
@@ -734,15 +765,17 @@ class Images(commands.Cog):
                         bubble = bubble.convert("RGBA")
                         bubble = bubble.resize(im.size, Image.Resampling.LANCZOS)
 
-                        if colour.value == "white":
+                        if colour.value == "white":  # Invert if white selected
                             bubble = ImageOps.invert(bubble)
 
                         if colour.value == "transparent":
+                            # Subtract bubble shape from image
                             output_image = ImageChops.subtract_modulo(im, bubble)
 
                             with Image.open(
                                 os.path.join("content", "speech_border.png")
                             ) as bubble_border:
+                                # Add speech bubble border
                                 bubble_border = bubble_border.convert("RGBA")
                                 bubble_border = bubble_border.resize(
                                     im.size, Image.Resampling.LANCZOS
@@ -752,20 +785,49 @@ class Images(commands.Cog):
                                     bubble_border, (0, -1), bubble_border
                                 )
 
-                            output_image.save(output_data, format="PNG")
+                            if format.value == "AVIF":
+                                # Save image to AVIF
+                                output_image.save(
+                                    output_data,
+                                    format="AVIF",
+                                    append_images=[output_image],
+                                    save_all=True,
+                                    duration=500,
+                                    loop=0,
+                                )
+                                output_size = output_image.size
+                            else:
+                                # Save image
+                                output_image.save(output_data, format=format.value)
+                                output_size = output_image.size
                         else:
                             with Image.new("RGBA", im.size) as output_image:
+                                # Add speech bubble
                                 output_image.paste(im, (0, 0))
                                 output_image.paste(bubble, (0, 0), bubble)
 
-                                # Convert image to GIF
-                                output_image.save(output_data, format="PNG")
+                                if format.value == "AVIF":
+                                    # Save image to AVIF
+                                    output_image.save(
+                                        output_data,
+                                        format="AVIF",
+                                        append_images=[output_image],
+                                        save_all=True,
+                                        duration=500,
+                                        loop=0,
+                                    )
+                                    output_size = output_image.size
+                                else:
+                                    # Save image
+                                    output_image.save(output_data, format=format.value)
+                                    output_size = output_image.size
 
                 output_data.seek(0)
 
                 # Send resized image
                 embed = discord.Embed(
-                    title="Image Converted",
+                    title="Image Generated",
+                    description=f"**Size: **`{output_size[0]}x{output_size[1]}`\n**Format: **`.{format.value.lower()}`",
                     color=Color.green(),
                 )
                 embed.set_footer(
@@ -775,7 +837,7 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=output_data,
-                    filename="titanium_image.png",
+                    filename=f"titanium_image.{format.value.lower()}",
                 )
 
                 await interaction.followup.send(embed=embed, file=file_processed)
@@ -791,34 +853,6 @@ class Images(commands.Cog):
                 )
 
                 await interaction.followup.send(embed=embed)
-        elif file.content_type.split("/")[0] == "video":  # If file is a video
-            commands = await self.bot.tree.fetch_commands()
-
-            for command in commands:
-                if command.name == "video":
-                    try:
-                        if (
-                            command.options[0].type
-                            == discord.AppCommandOptionType.subcommand
-                        ):
-                            for option in command.options:
-                                if option.name == "to-gif":
-                                    mention = option.mention
-                                    break
-                    except IndexError:
-                        pass
-
-            embed = discord.Embed(
-                title="Error",
-                description=f"I think you attached a **video.** To convert a video to GIF, use the {mention} command.",
-                color=Color.red(),
-            )
-            embed.set_footer(
-                text=f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
-            )
-
-            await interaction.followup.send(embed=embed)
         else:  # If file is not a static image
             embed = discord.Embed(
                 title="Error",

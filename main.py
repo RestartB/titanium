@@ -17,6 +17,7 @@ import asqlite
 import discord
 from discord import Color
 from discord.ext import commands
+import random
 
 # Current Running Path
 path = os.getcwd()
@@ -281,7 +282,13 @@ async def on_app_command_error(
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
         else:
+            # Generate error ID
+            error_id = "-".join(
+                "".join(str(random.randint(0, 9)) for _ in range(4)) for _ in range(4)
+            )
+            
             logging.error("*** Unexpected error occurred. ***")
+            logging.error("Error ID: " + error_id)
             logging.error(f"{traceback.format_exc()}\n")
 
             if bot.options["error-webhook"] == "":
@@ -303,9 +310,16 @@ async def on_app_command_error(
 
                 embed = discord.Embed(
                     title="Unexpected Error",
-                    description="An unexpected error has occurred. Try again later. Info has been sent to the bot owner.",
+                    description="An unexpected error has occurred. Try again later. If you ask for help, please provide the error ID displayed below.",
                     color=Color.red(),
                 )
+
+                embed.add_field(
+                    name="Error ID",
+                    value=f"`{error_id}`",
+                    inline=False,
+                )
+
                 embed.set_footer(
                     text=f"@{interaction.user.name}",
                     icon_url=interaction.user.display_avatar.url,
@@ -324,6 +338,7 @@ async def on_app_command_error(
                     embed.timestamp = datetime.datetime.now()
                     embed.set_author(name=str(bot.user))
 
+                    embed.add_field(name="Error ID", value=f"`{error_id}`")
                     embed.add_field(name="User", value=f"{interaction.user.mention}")
                     embed.add_field(name="Channel", value=interaction.channel.jump_url)
                     embed.add_field(
