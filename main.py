@@ -286,7 +286,7 @@ async def on_app_command_error(
             error_id = "-".join(
                 "".join(str(random.randint(0, 9)) for _ in range(4)) for _ in range(4)
             )
-            
+
             logging.error("*** Unexpected error occurred. ***")
             logging.error("Error ID: " + error_id)
             logging.error(f"{traceback.format_exc()}\n")
