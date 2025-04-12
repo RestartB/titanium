@@ -1,5 +1,5 @@
 # Titanium Privacy Policy
-*v1.4, updated 03/03/25 (DD/MM/YY)*\
+*v1.5, updated 12/04/25 (DD/MM/YY)*\
 This document explains how Titanium treats your data. **Please note that this Privacy Policy only applies to the official main Titanium bot instance. When using other Titanium instances, please refer to their own Privacy Policies.**
 
 ## Definitions
@@ -74,7 +74,7 @@ When using Titanium's video processing features, the video will be temporarily d
 Unless otherwise specified in feature-specific sections, we retain data only for as long as necessary to provide our bot's services. When data is no longer needed, it is deleted from our server.
 
 ## Bot Usage Collection
-When you run a Titanium command, we collect the following information:
+When you run a Titanium slash command, use a Titanium context menu item or load results from autocorrect in Titanium slash commands, we collect the following information:
 - Command used
 - Time the command was ran at
 - User that ran the command
