@@ -56,16 +56,11 @@ class Images(commands.Cog):
     # Image Resize command
     @imageGroup.command(name="resize", description="Resize an image.")
     @app_commands.describe(
-        target_x="Set a target width for the image. Defaults to the original length."
-    )
-    @app_commands.describe(
-        target_y="Set a target height for the image. Defaults to the original length."
-    )
-    @app_commands.describe(
-        scale="Scale the resolution by a certain amount. Overrides target_x and target_y if set."
-    )
-    @app_commands.describe(
-        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+        target_x="Set a target width for the image. Defaults to the original length.",
+        target_y="Set a target height for the image. Defaults to the original length.",
+        scale="Scale the resolution by a certain amount. Overrides target_x and target_y if set.",
+        spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.checks.cooldown(1, 20)
     async def resize_image(
@@ -75,6 +70,7 @@ class Images(commands.Cog):
         scale: float = None,
         target_x: int = None,
         target_y: int = None,
+        spoiler: bool = False,
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
@@ -174,9 +170,17 @@ class Images(commands.Cog):
                             icon_url=interaction.user.display_avatar.url,
                         )
 
+                        if ephemeral:
+                            embed.add_field(
+                                name="Alert",
+                                value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
+                                inline=False,
+                            )
+
                         file_processed = discord.File(
                             fp=resized_image_data,
                             filename=f"titanium_image.{os.path.splitext(file.filename)[1][1:]}",
+                            spoiler=spoiler,
                         )
                         embed.set_image(url=f"attachment://{file_processed.filename}")
 
@@ -226,6 +230,8 @@ class Images(commands.Cog):
     @app_commands.describe(
         file="The static image to convert.",
         mode="The mode to use when generating the image.",
+        spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.choices(
         mode=[
@@ -244,8 +250,10 @@ class Images(commands.Cog):
         interaction: discord.Interaction,
         file: discord.Attachment,
         mode: app_commands.Choice[str] = None,
+        spoiler: bool = False,
+        ephemeral: bool = False,
     ):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=ephemeral)
 
         if mode is None:
             mode = app_commands.Choice(
@@ -303,12 +311,22 @@ class Images(commands.Cog):
                     icon_url=interaction.user.display_avatar.url,
                 )
 
+                if ephemeral:
+                    embed.add_field(
+                        name="Alert",
+                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
+                        inline=False,
+                    )
+
                 file_processed = discord.File(
                     fp=output_data,
                     filename=f"titanium_image.{'avif' if mode.value == 'quality' else 'gif'}",
+                    spoiler=spoiler,
                 )
 
-                await interaction.followup.send(embed=embed, file=file_processed)
+                await interaction.followup.send(
+                    embed=embed, file=file_processed, ephemeral=ephemeral
+                )
             else:  # If file is too large
                 embed = discord.Embed(
                     title="Error",
@@ -320,7 +338,7 @@ class Images(commands.Cog):
                     icon_url=interaction.user.display_avatar.url,
                 )
 
-                await interaction.followup.send(embed=embed)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         elif file.content_type.split("/")[0] == "video":  # If file is a video
             commands = await self.bot.tree.fetch_commands()
 
@@ -348,7 +366,7 @@ class Images(commands.Cog):
                 icon_url=interaction.user.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         else:  # If file is not a static image
             embed = discord.Embed(
                 title="Error",
@@ -360,7 +378,7 @@ class Images(commands.Cog):
                 icon_url=interaction.user.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Image to GIF callback
     async def gif_callback(
@@ -451,13 +469,16 @@ class Images(commands.Cog):
     # Deepfry image command
     @imageGroup.command(name="deepfry", description="Deepfry an image.")
     @app_commands.describe(
-        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+        file="The static image to deepfry.",
+        spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.checks.cooldown(1, 10)
     async def deepfry_image(
         self,
         interaction: discord.Interaction,
         file: discord.Attachment,
+        spoiler: bool = False,
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
@@ -529,9 +550,17 @@ class Images(commands.Cog):
                     icon_url=interaction.user.display_avatar.url,
                 )
 
+                if ephemeral:
+                    embed.add_field(
+                        name="Alert",
+                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
+                        inline=False,
+                    )
+
                 file_processed = discord.File(
                     fp=deepfried_data,
                     filename="titanium_image.png",
+                    spoiler=spoiler,
                 )
                 embed.set_image(url=f"attachment://{file_processed.filename}")
 
@@ -697,7 +726,10 @@ class Images(commands.Cog):
     @app_commands.describe(
         file="The static image to use.",
         colour="The colour of the speech bubble.",
+        direction="The direction of the speech bubble.",
         format="The format of the output image.",
+        spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.choices(
         colour=[
@@ -712,6 +744,16 @@ class Images(commands.Cog):
             app_commands.Choice(
                 name="Transparent",
                 value="transparent",
+            ),
+        ],
+        direction=[
+            app_commands.Choice(
+                name="Left",
+                value="left",
+            ),
+            app_commands.Choice(
+                name="Right",
+                value="right",
             ),
         ],
         format=[
@@ -734,9 +776,12 @@ class Images(commands.Cog):
         interaction: discord.Interaction,
         file: discord.Attachment,
         colour: app_commands.Choice[str],
+        direction: app_commands.Choice[str],
         format: app_commands.Choice[str],
+        spoiler: bool = False,
+        ephemeral: bool = False,
     ):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=ephemeral)
 
         if (
             file.content_type.split("/")[0] == "image"
@@ -765,8 +810,17 @@ class Images(commands.Cog):
                         bubble = bubble.convert("RGBA")
                         bubble = bubble.resize(im.size, Image.Resampling.LANCZOS)
 
-                        if colour.value == "white":  # Invert if white selected
+                        if (
+                            direction.value == "left"
+                        ):  # Flip bubble image if left selected
+                            bubble = bubble.transpose(Image.FLIP_LEFT_RIGHT)
+
+                        if colour.value == "black":  # Invert if black selected
+                            bubble_a = bubble.getchannel("A")
+                            bubble = bubble.convert("RGB")  # Convert to RGB for invert
+
                             bubble = ImageOps.invert(bubble)
+                            bubble.putalpha(bubble_a)
 
                         if colour.value == "transparent":
                             # Subtract bubble shape from image
@@ -780,6 +834,11 @@ class Images(commands.Cog):
                                 bubble_border = bubble_border.resize(
                                     im.size, Image.Resampling.LANCZOS
                                 )
+
+                                if direction.value == "left":
+                                    bubble_border = bubble_border.transpose(
+                                        Image.FLIP_LEFT_RIGHT
+                                    )
 
                                 output_image.paste(
                                     bubble_border, (0, -1), bubble_border
@@ -804,7 +863,9 @@ class Images(commands.Cog):
                             with Image.new("RGBA", im.size) as output_image:
                                 # Add speech bubble
                                 output_image.paste(im, (0, 0))
-                                output_image.paste(bubble, (0, 0), bubble)
+                                output_image.paste(
+                                    bubble, (0, 0), bubble.getchannel("A")
+                                )
 
                                 if format.value == "AVIF":
                                     # Save image to AVIF
@@ -835,12 +896,22 @@ class Images(commands.Cog):
                     icon_url=interaction.user.display_avatar.url,
                 )
 
+                if ephemeral:
+                    embed.add_field(
+                        name="Alert",
+                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
+                        inline=False,
+                    )
+
                 file_processed = discord.File(
                     fp=output_data,
                     filename=f"titanium_image.{format.value.lower()}",
+                    spoiler=spoiler,
                 )
 
-                await interaction.followup.send(embed=embed, file=file_processed)
+                await interaction.followup.send(
+                    embed=embed, file=file_processed, ephemeral=ephemeral
+                )
             else:  # If file is too large
                 embed = discord.Embed(
                     title="Error",
@@ -852,7 +923,7 @@ class Images(commands.Cog):
                     icon_url=interaction.user.display_avatar.url,
                 )
 
-                await interaction.followup.send(embed=embed)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         else:  # If file is not a static image
             embed = discord.Embed(
                 title="Error",
@@ -864,7 +935,7 @@ class Images(commands.Cog):
                 icon_url=interaction.user.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot):
