@@ -1,5 +1,5 @@
 # Titanium Terms of Use
-*v1.1.1, updated 19/02/25 (DD/MM/YY)*\
+*v1.1.2, updated 15/04/25 (DD/MM/YY)*\
 This document contains the terms of service that you agree to when using Titanium's services. **Please note that this Terms of Use policy only applies to the official main Titanium bot instance. When using other Titanium instances, please refer to their own policies.**
 
 **Alongside this Terms of Use policy, there is also a [Privacy Policy](Privacy.md) for the main Titanium instance. Please read it and ensure you agree to it.**
@@ -37,10 +37,10 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 For more info, please see the [licence file.](LICENSE)
 
 ## Features
-We are developing Titanium to add new features and remove bugs all the time. Because of this, new features may be added and some features may be removed. By using Titanium, you acknowledge this fact and that we are not responsible for any lost data or systems.
+We are developing Titanium to add new features and remove bugs all the time. Because of this, new features may be added and some features may be removed. By using Titanium, you acknowledge this fact and that we are not responsible for any lost data or features.
 
 ## Outages
-Titanium may experience temporary outages in service, whether this is due to maintenance, feature rollouts or other issues. By using Titanium, you acknowledge this fact and that we are not responsible for any lost time due to an outage.
+Titanium may experience temporary outages in service, whether this is due to maintenance, feature rollouts or other issues. By using Titanium, you acknowledge this fact and that we are not responsible for any lost time or data due to an outage.
 
 ## Third Party Services
 Titanium relies on several third party services. By using features that rely on these services, you agree to their policies. Below is a list of these services, provided for your convenience, accurate as of the release date of this policy:
