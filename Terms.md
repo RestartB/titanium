@@ -20,7 +20,7 @@ You must abide by the following guidelines when using Titanium's services:
 - you must not **attempt to bypass any limits put in place by us (e.g. cooldowns, tag limits).**
 - you must not **attempt to harm or overload any Titanium services.**
 
-If any of these rules are violated, **your Titanium services may be terminated.** Please see the [service termination section](#service-termination) below for more info.
+If any of these rules are violated, **your access to Titanium services may be terminated.** Please see the [service termination section](#service-termination) below for more info.
 
 ## Licence
 By using Titanium, you also agree to the GNU Affero General Public License.
@@ -54,7 +54,7 @@ Titanium relies on several third party services. By using features that rely on 
 ## Service Termination
 By using Titanium, you agree that we have the right to terminate your service at any time, with or without notice, for any reason. When this happens, you will not be allowed to run any commands with Titanium, use Titanium context menu items, or interact with Titanium in any other way. We will do this one of two ways:
 - **Per User Termination:** if one user is violating the terms of service, we will blacklist the user from accessing Titanium's services.
-- **Server Termination:** if an entire service is violating the terms of service, we will blacklist the entire server from being able to use Titanium's services. The bot will be kicked from the server and will automatically leave if someone attempts to add it back.
+- **Server Termination:** if an entire Discord server is violating the terms of service, we will blacklist the server from being able to use Titanium's services. The bot will be kicked from the server and will automatically leave if someone attempts to add it back.
 
 ## Policy Updates
 We may make changes to this policy over time. If a major change is made to the Terms of Service policy, we will make an announcement over public channels.
