@@ -762,11 +762,11 @@ class Images(commands.Cog):
                 value="PNG",
             ),
             app_commands.Choice(
-                name=".gif (can be favourited, lower quality, best compatibility)",
+                name=".gif (can be favourited, bad quality, best compatibility)",
                 value="GIF",
             ),
             app_commands.Choice(
-                name=".avif (can be favourited, very good quality, less compatibility)",
+                name=".avif (can be favourited, very good quality)",
                 value="AVIF",
             ),
         ],

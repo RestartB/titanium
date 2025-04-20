@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.11, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -334,6 +335,15 @@ wheels = [
 ]
 
 [[package]]
+name = "emoji"
+version = "2.14.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/7d/01cddcbb6f5cc0ba72e00ddf9b1fa206c802d557fd0a20b18e130edf1336/emoji-2.14.1.tar.gz", hash = "sha256:f8c50043d79a2c1410ebfae833ae1868d5941a67a6cd4d18377e2eb0bd79346b", size = 597182 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/91/db/a0335710caaa6d0aebdaa65ad4df789c15d89b7babd9a30277838a7d9aac/emoji-2.14.1-py3-none-any.whl", hash = "sha256:35a8a486c1460addb1499e3bf7929d3889b2e2841a57401903699fef595e942b", size = 590617 },
+]
+
+[[package]]
 name = "flask"
 version = "3.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -634,6 +644,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pilmoji"
+version = "2.0.5"
+source = { git = "https://github.com/jay3332/pilmoji#6ff436fe0a28362bd1d411863347face33e3b6ac" }
+dependencies = [
+    { name = "emoji" },
+    { name = "pillow" },
+]
+
+[[package]]
 name = "propcache"
 version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -907,6 +926,7 @@ dependencies = [
     { name = "flask", extra = ["async"] },
     { name = "pillow" },
     { name = "pillow-avif-plugin" },
+    { name = "pilmoji" },
     { name = "psutil" },
     { name = "py-cpuinfo" },
     { name = "pygit2" },
@@ -930,6 +950,7 @@ requires-dist = [
     { name = "flask", extras = ["async"], specifier = ">=3.1.0" },
     { name = "pillow", specifier = ">=11.0.0" },
     { name = "pillow-avif-plugin", specifier = ">=1.5.0" },
+    { name = "pilmoji", git = "https://github.com/jay3332/pilmoji" },
     { name = "psutil", specifier = ">=6.1.1" },
     { name = "py-cpuinfo", specifier = ">=9.0.0" },
     { name = "pygit2", specifier = ">=1.16.0" },
