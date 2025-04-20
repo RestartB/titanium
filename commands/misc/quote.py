@@ -22,6 +22,7 @@ async def create_quote_image(
     light_mode: bool = False,
     bw_mode: bool = False,
     custom_quote: bool = False,
+    custom_quote_user: discord.User = None,
 ) -> BytesIO:
     # Get PFP, store in memory
     async with aiohttp.ClientSession() as session:
@@ -43,6 +44,7 @@ async def create_quote_image(
         light_mode,
         bw_mode,
         custom_quote,
+        custom_quote_user,
     )
 
 
@@ -55,6 +57,7 @@ def _create_quote_image_sync(
     light_mode: bool = False,
     bw_mode: bool = False,
     custom_quote: bool = False,
+    custom_quote_user: discord.User = None,
 ) -> BytesIO:
     image_data = BytesIO()
 
@@ -145,7 +148,7 @@ def _create_quote_image_sync(
             )
 
             # Author text
-            text = f"- {user.display_name}"
+            text = f"- @{user.name}"
 
             # Set bold Figtree font
             displayname_font = ImageFont.truetype(
@@ -174,7 +177,7 @@ def _create_quote_image_sync(
         text = (
             "https://titaniumbot.me"
             if not custom_quote
-            else "Custom Quote - https://titaniumbot.me"
+            else f"Custom Quote by @{custom_quote_user.name}\nhttps://titaniumbot.me"
         )
 
         # Set bold Figtree font
@@ -187,12 +190,16 @@ def _create_quote_image_sync(
             text=text, xy=(0, 0), font=footer_font, align="center"
         )
         footer_width = footer_box[2] - footer_box[0]
+        footer_height = footer_box[3] - footer_box[1]
+
         footer_x = ((600 - footer_width) // 2) + 600
+
+        print(footer_height)
 
         # Draw bottom text
         draw.text(
             text=text,
-            xy=(footer_x, 550),
+            xy=(footer_x, (527 if custom_quote else 550)),
             fill=("red" if custom_quote else ("black" if light_mode else "white")),
             font=footer_font,
             align="center",
@@ -227,6 +234,7 @@ class QuoteView(View):
         light_mode: bool = False,
         bw_mode: bool = False,
         custom_quote: bool = False,
+        custom_quote_user_id: int = None,
     ):
         super().__init__(timeout=259200)  # 3 days
 
@@ -237,6 +245,7 @@ class QuoteView(View):
         self.light_mode = light_mode
         self.bw_mode = bw_mode
         self.custom_quote = custom_quote
+        self.custom_quote_user_id = custom_quote_user_id
 
         for child in self.children:
             if child.custom_id == "theme":
@@ -263,7 +272,7 @@ class QuoteView(View):
 
         if user is None:
             user = interaction.client.get_user(self.user_id)
-
+            
             if user is None:
                 embed = discord.Embed(
                     title="Error",
@@ -276,6 +285,20 @@ class QuoteView(View):
                     ephemeral=True,
                 )
                 return
+        
+        custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
+        if custom_quote_user is None:
+            embed = discord.Embed(
+                title="Error",
+                description="Couldn't find the user. Please try again later.",
+                color=discord.Color.red(),
+            )
+
+            await interaction.followup.send(
+                embed=embed,
+                ephemeral=True,
+            )
+            return
 
         image_data = await create_quote_image(
             user=user,
@@ -284,6 +307,7 @@ class QuoteView(View):
             light_mode=not self.light_mode,
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
+            custom_quote_user=custom_quote_user,
         )
 
         file = discord.File(
@@ -299,6 +323,7 @@ class QuoteView(View):
             light_mode=not self.light_mode,
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
+            custom_quote_user_id=self.custom_quote_user_id,
         )
 
         if not self.custom_quote:
@@ -348,6 +373,20 @@ class QuoteView(View):
                 )
                 return
 
+        custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
+        if custom_quote_user is None:
+            embed = discord.Embed(
+                title="Error",
+                description="Couldn't find the user. Please try again later.",
+                color=discord.Color.red(),
+            )
+
+            await interaction.followup.send(
+                embed=embed,
+                ephemeral=True,
+            )
+            return
+        
         image_data = await create_quote_image(
             user=user,
             content=self.content,
@@ -355,6 +394,7 @@ class QuoteView(View):
             light_mode=self.light_mode,
             bw_mode=not self.bw_mode,
             custom_quote=self.custom_quote,
+            custom_quote_user=custom_quote_user,
         )
 
         file = discord.File(
@@ -370,6 +410,7 @@ class QuoteView(View):
             light_mode=self.light_mode,
             bw_mode=not self.bw_mode,
             custom_quote=self.custom_quote,
+            custom_quote_user_id=self.custom_quote_user_id,
         )
 
         if not self.custom_quote:
@@ -421,6 +462,20 @@ class QuoteView(View):
                 )
                 return
 
+        custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
+        if custom_quote_user is None:
+            embed = discord.Embed(
+                title="Error",
+                description="Couldn't find the user. Please try again later.",
+                color=discord.Color.red(),
+            )
+
+            await interaction.followup.send(
+                embed=embed,
+                ephemeral=True,
+            )
+            return
+        
         image_data = await create_quote_image(
             user=user,
             content=self.content,
@@ -428,6 +483,7 @@ class QuoteView(View):
             light_mode=self.light_mode,
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
+            custom_quote_user=custom_quote_user,
         )
 
         file = discord.File(
@@ -443,6 +499,7 @@ class QuoteView(View):
             light_mode=self.light_mode,
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
+            custom_quote_user_id=self.custom_quote_user_id,
         )
 
         if not self.custom_quote:
@@ -522,6 +579,19 @@ class Quotes(commands.Cog):
         self, interaction: discord.Interaction, message: discord.Message
     ):
         await interaction.response.defer()
+
+        if message.clean_content == "":
+            embed = discord.Embed(
+                title="Error",
+                description="Nothing to quote, this message is empty.",
+                color=discord.Color.red(),
+            )
+
+            await interaction.followup.send(
+                embed=embed,
+            )
+
+            return
 
         image_data = await create_quote_image(
             user=message.author,
@@ -604,6 +674,7 @@ class Quotes(commands.Cog):
             light_mode=light_mode,
             bw_mode=bw_mode,
             custom_quote=True,
+            custom_quote_user=interaction.user
         )
 
         file = discord.File(
@@ -618,6 +689,7 @@ class Quotes(commands.Cog):
             light_mode=light_mode,
             bw_mode=bw_mode,
             custom_quote=True,
+            custom_quote_user_id=interaction.user.id
         )
 
         await interaction.followup.send(file=file, view=view)
