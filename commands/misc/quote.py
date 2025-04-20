@@ -2,7 +2,7 @@ import asyncio
 import os
 import re
 from io import BytesIO
-from textwrap import shorten, wrap
+from textwrap import wrap
 
 import aiohttp
 import discord
@@ -91,17 +91,25 @@ def _create_quote_image_sync(
         for e in emojis:
             raw = raw.replace(e, placeholder, 1)
 
-        # Calculate optimal font size and wrapping based on message length
-        if len(raw) < 120:  # Large text
+        # Calculate optimal font size
+        if len(raw) < 120:
             font_size = 40
-
-            # Shorten and wrap text
-            wrapped = wrap(shorten(raw, 120, placeholder="..."), 20)
-        else:  # Smaller text
+            max_chars, wrap_width = 120, 20
+        else:
             font_size = 35
+            max_chars, wrap_width = 150, 25
 
-            # Shorten and wrap text
-            wrapped = wrap(shorten(raw, 180, placeholder="..."), 30)
+        # Truncate, preserving newlines
+        if len(raw) > max_chars:
+            raw = raw[: max_chars - 3] + "..."
+
+        # Wrap each line individually to keep user line breaks
+        wrapped = []
+        for para in raw.split("\n"):
+            if para == "":
+                wrapped.append("")  # Preserve blank lines
+            else:
+                wrapped.extend(wrap(para, wrap_width))
 
         # Go through each line, replace placeholder with emoji
         processed_lines = []
@@ -189,12 +197,9 @@ def _create_quote_image_sync(
         footer_box = draw.textbbox(
             text=text, xy=(0, 0), font=footer_font, align="center"
         )
+
         footer_width = footer_box[2] - footer_box[0]
-        footer_height = footer_box[3] - footer_box[1]
-
         footer_x = ((600 - footer_width) // 2) + 600
-
-        print(footer_height)
 
         # Draw bottom text
         draw.text(
@@ -272,7 +277,7 @@ class QuoteView(View):
 
         if user is None:
             user = interaction.client.get_user(self.user_id)
-            
+
             if user is None:
                 embed = discord.Embed(
                     title="Error",
@@ -285,7 +290,7 @@ class QuoteView(View):
                     ephemeral=True,
                 )
                 return
-        
+
         custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
         if custom_quote_user is None:
             embed = discord.Embed(
@@ -386,7 +391,7 @@ class QuoteView(View):
                 ephemeral=True,
             )
             return
-        
+
         image_data = await create_quote_image(
             user=user,
             content=self.content,
@@ -475,7 +480,7 @@ class QuoteView(View):
                 ephemeral=True,
             )
             return
-        
+
         image_data = await create_quote_image(
             user=user,
             content=self.content,
@@ -674,7 +679,7 @@ class Quotes(commands.Cog):
             light_mode=light_mode,
             bw_mode=bw_mode,
             custom_quote=True,
-            custom_quote_user=interaction.user
+            custom_quote_user=interaction.user,
         )
 
         file = discord.File(
@@ -689,7 +694,7 @@ class Quotes(commands.Cog):
             light_mode=light_mode,
             bw_mode=bw_mode,
             custom_quote=True,
-            custom_quote_user_id=interaction.user.id
+            custom_quote_user_id=interaction.user.id,
         )
 
         await interaction.followup.send(file=file, view=view)
