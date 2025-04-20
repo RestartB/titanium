@@ -272,7 +272,7 @@ class QuoteView(View):
 
         if user is None:
             user = interaction.client.get_user(self.user_id)
-            
+
             if user is None:
                 embed = discord.Embed(
                     title="Error",
@@ -285,7 +285,7 @@ class QuoteView(View):
                     ephemeral=True,
                 )
                 return
-        
+
         custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
         if custom_quote_user is None:
             embed = discord.Embed(
@@ -386,7 +386,7 @@ class QuoteView(View):
                 ephemeral=True,
             )
             return
-        
+
         image_data = await create_quote_image(
             user=user,
             content=self.content,
@@ -475,7 +475,7 @@ class QuoteView(View):
                 ephemeral=True,
             )
             return
-        
+
         image_data = await create_quote_image(
             user=user,
             content=self.content,
@@ -674,7 +674,7 @@ class Quotes(commands.Cog):
             light_mode=light_mode,
             bw_mode=bw_mode,
             custom_quote=True,
-            custom_quote_user=interaction.user
+            custom_quote_user=interaction.user,
         )
 
         file = discord.File(
@@ -689,7 +689,7 @@ class Quotes(commands.Cog):
             light_mode=light_mode,
             bw_mode=bw_mode,
             custom_quote=True,
-            custom_quote_user_id=interaction.user.id
+            custom_quote_user_id=interaction.user.id,
         )
 
         await interaction.followup.send(file=file, view=view)
