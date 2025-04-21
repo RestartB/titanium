@@ -837,7 +837,9 @@ class Images(commands.Cog):
 
                                 # Make border white
                                 bubble_border_a = bubble_border.getchannel("A")
-                                bubble_border = bubble_border.convert("RGB")  # Convert to RGB for invert
+                                bubble_border = bubble_border.convert(
+                                    "RGB"
+                                )  # Convert to RGB for invert
 
                                 bubble_border = ImageOps.invert(bubble_border)
                                 bubble_border.putalpha(bubble_border_a)
@@ -847,9 +849,7 @@ class Images(commands.Cog):
                                         Image.FLIP_LEFT_RIGHT
                                     )
 
-                                output_image.paste(
-                                    bubble_border, (0, 0), bubble_border
-                                )
+                                output_image.paste(bubble_border, (0, 0), bubble_border)
 
                             if format.value == "AVIF":
                                 # Save image to AVIF
