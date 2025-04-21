@@ -272,27 +272,10 @@ class QuoteView(View):
     async def theme(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
 
-        # Try to get member if available
-        user = interaction.guild.get_member(self.user_id)
-
-        if user is None:
-            user = interaction.client.get_user(self.user_id)
-
-            if user is None:
-                embed = discord.Embed(
-                    title="Error",
-                    description="Couldn't find the user. Please try again later.",
-                    color=discord.Color.red(),
-                )
-
-                await interaction.followup.send(
-                    embed=embed,
-                    ephemeral=True,
-                )
-                return
-
-        custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
-        if custom_quote_user is None:
+        try:
+            # Try to get member if available
+            user = await interaction.client.fetch_user(self.user_id)
+        except discord.NotFound:
             embed = discord.Embed(
                 title="Error",
                 description="Couldn't find the user. Please try again later.",
@@ -304,6 +287,25 @@ class QuoteView(View):
                 ephemeral=True,
             )
             return
+
+        if self.custom_quote:
+            try:
+                # Try to get member if available
+                custom_quote_user = await interaction.client.fetch_user(self.user_id)
+            except discord.NotFound:
+                embed = discord.Embed(
+                    title="Error",
+                    description="Couldn't find the custom quote creator. Please try again later.",
+                    color=discord.Color.red(),
+                )
+
+                await interaction.followup.send(
+                    embed=embed,
+                    ephemeral=True,
+                )
+                return
+        else:
+            custom_quote_user = None
 
         image_data = await create_quote_image(
             user=user,
@@ -359,27 +361,10 @@ class QuoteView(View):
     async def bw(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
 
-        # Try to get member if available
-        user = interaction.guild.get_member(self.user_id)
-
-        if user is None:
-            user = interaction.client.get_user(self.user_id)
-
-            if user is None:
-                embed = discord.Embed(
-                    title="Error",
-                    description="Couldn't find the user. Please try again later.",
-                    color=discord.Color.red(),
-                )
-
-                await interaction.followup.send(
-                    embed=embed,
-                    ephemeral=True,
-                )
-                return
-
-        custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
-        if custom_quote_user is None:
+        try:
+            # Try to get member if available
+            user = await interaction.client.fetch_user(self.user_id)
+        except discord.NotFound:
             embed = discord.Embed(
                 title="Error",
                 description="Couldn't find the user. Please try again later.",
@@ -391,6 +376,25 @@ class QuoteView(View):
                 ephemeral=True,
             )
             return
+
+        if self.custom_quote:
+            try:
+                # Try to get member if available
+                custom_quote_user = await interaction.client.fetch_user(self.user_id)
+            except discord.NotFound:
+                embed = discord.Embed(
+                    title="Error",
+                    description="Couldn't find the custom quote creator. Please try again later.",
+                    color=discord.Color.red(),
+                )
+
+                await interaction.followup.send(
+                    embed=embed,
+                    ephemeral=True,
+                )
+                return
+        else:
+            custom_quote_user = None
 
         image_data = await create_quote_image(
             user=user,
@@ -448,27 +452,10 @@ class QuoteView(View):
     async def reload(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
 
-        # Try to get member if available
-        user = interaction.guild.get_member(self.user_id)
-
-        if user is None:
-            user = interaction.client.get_user(self.user_id)
-
-            if user is None:
-                embed = discord.Embed(
-                    title="Error",
-                    description="Couldn't find the user. Please try again later.",
-                    color=discord.Color.red(),
-                )
-
-                await interaction.followup.send(
-                    embed=embed,
-                    ephemeral=True,
-                )
-                return
-
-        custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
-        if custom_quote_user is None:
+        try:
+            # Try to get member if available
+            user = await interaction.client.fetch_user(self.user_id)
+        except discord.NotFound:
             embed = discord.Embed(
                 title="Error",
                 description="Couldn't find the user. Please try again later.",
@@ -480,6 +467,25 @@ class QuoteView(View):
                 ephemeral=True,
             )
             return
+
+        if self.custom_quote:
+            try:
+                # Try to get member if available
+                custom_quote_user = await interaction.client.fetch_user(self.user_id)
+            except discord.NotFound:
+                embed = discord.Embed(
+                    title="Error",
+                    description="Couldn't find the custom quote creator. Please try again later.",
+                    color=discord.Color.red(),
+                )
+
+                await interaction.followup.send(
+                    embed=embed,
+                    ephemeral=True,
+                )
+                return
+        else:
+            custom_quote_user = None
 
         image_data = await create_quote_image(
             user=user,
@@ -660,7 +666,7 @@ class Quotes(commands.Cog):
     async def custom_quote(
         self,
         interaction: discord.Interaction,
-        user: discord.Member,
+        user: discord.User,
         content: str,
         format: app_commands.Choice[str] = "",
         light_mode: bool = False,
