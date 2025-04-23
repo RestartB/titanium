@@ -956,21 +956,21 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiohttp", specifier = ">=3.11.11" },
-    { name = "asqlite", specifier = ">=2.0.0" },
-    { name = "colorthief", specifier = ">=0.2.1" },
-    { name = "discord-py", specifier = ">=2.5.0" },
-    { name = "flask", extras = ["async"], specifier = ">=3.1.0" },
-    { name = "pillow", specifier = ">=11.0.0" },
-    { name = "pillow-avif-plugin", specifier = ">=1.5.0" },
+    { name = "aiohttp", specifier = "==3.11.18" },
+    { name = "asqlite", specifier = "==2.0.0" },
+    { name = "colorthief", specifier = "==0.2.1" },
+    { name = "discord-py", specifier = "==2.5.2" },
+    { name = "flask", extras = ["async"], specifier = "==3.1.0" },
+    { name = "pillow", specifier = "==11.2.1" },
+    { name = "pillow-avif-plugin", specifier = "==1.5.1" },
     { name = "pilmoji", git = "https://github.com/jay3332/pilmoji" },
-    { name = "psutil", specifier = ">=6.1.1" },
-    { name = "py-cpuinfo", specifier = ">=9.0.0" },
-    { name = "pygit2", specifier = ">=1.16.0" },
-    { name = "spotipy", specifier = ">=2.24.0" },
-    { name = "thefuzz", specifier = ">=0.22.1" },
-    { name = "url-cleaner", specifier = ">=0.1.5" },
-    { name = "wikipedia", specifier = ">=1.4.0" },
+    { name = "psutil", specifier = "==7.0.0" },
+    { name = "py-cpuinfo", specifier = "==9.0.0" },
+    { name = "pygit2", specifier = "==1.17.0" },
+    { name = "spotipy", specifier = "==2.25.1" },
+    { name = "thefuzz", specifier = "==0.22.1" },
+    { name = "url-cleaner", specifier = "==0.1.5" },
+    { name = "wikipedia", specifier = "==1.4.0" },
 ]
 
 [package.metadata.requires-dev]
