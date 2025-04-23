@@ -10,7 +10,6 @@ from discord.utils import escape_markdown
 
 from utils.truncate import truncate
 
-
 # --- Song Classes and Functions ---
 
 

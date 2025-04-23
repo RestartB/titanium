@@ -4,7 +4,7 @@ Welcome to Titanium's main code repo! Titanium is your multipurpose, open source
 [Add Titanium Now!](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](/Privacy.md) and [Terms of Use policy](/Terms.md))
 
 ## Contributions Welcome!
-Have an improvement you want to make? Developed a new cog that you want to be in the main bot? Contributions are welcome! Make a pull request and I'll take a look. When contributing, please ensure that you use Ruff to check and format your code. This ensures that all of Titanium's code stays a consistent style. To do this with the uv package manager, run `uvx ruff format` and `uvx ruff check --fix`.
+Contributions to Titanium are welcome! To contribute, make a pull request and I'll take a look. When contributing, please ensure that you use Ruff to check and format your code. This ensures that all of Titanium's code stays in a consistent style. To do this with the uv package manager, run `uvx ruff check --fix` and `uvx ruff format`.
 
 ### Licence
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.

@@ -1,9 +1,9 @@
+from io import BytesIO
 from urllib.parse import quote_plus
 
 import aiohttp
 import discord
 import spotipy
-from io import BytesIO
 from colorthief import ColorThief
 from discord import Color, app_commands
 from discord.ext import commands

@@ -6,7 +6,7 @@ import discord
 import pillow_avif  # noqa: F401
 from discord import Color, app_commands
 from discord.ext import commands
-from PIL import Image, ImageEnhance, ImageOps, ImageChops
+from PIL import Image, ImageChops, ImageEnhance, ImageOps
 
 
 # noinspection PyTypeChecker

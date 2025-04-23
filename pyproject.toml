@@ -29,3 +29,6 @@ dev = [
 
 [tool.uv.sources]
 pilmoji = { git = "https://github.com/jay3332/pilmoji" }
+
+[tool.ruff.lint]
+extend-select = ["I"]

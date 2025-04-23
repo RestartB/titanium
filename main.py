@@ -8,16 +8,17 @@ import datetime
 import logging
 import logging.handlers
 import os
+import random
 import traceback
 from glob import glob
 
-from utils.truncate import truncate
 import aiohttp
 import asqlite
 import discord
 from discord import Color
 from discord.ext import commands
-import random
+
+from utils.truncate import truncate
 
 # Current Running Path
 path = os.getcwd()
