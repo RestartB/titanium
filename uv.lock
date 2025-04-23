@@ -893,16 +893,16 @@ wheels = [
 
 [[package]]
 name = "spotipy"
-version = "2.24.0"
+version = "2.25.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "redis" },
     { name = "requests" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/10/145a649207a9d4067846045cca71262b8ea2140d1df3fa78581fbf1b9ec0/spotipy-2.24.0.tar.gz", hash = "sha256:396af81e642086551af157270cdfe742c1739405871ba9dac1fa651b8649ef0d", size = 41708 }
+sdist = { url = "https://files.pythonhosted.org/packages/18/22/d900e55cfdd489ecdacf560aea4618848893fcbab4433bf62d0d731fa030/spotipy-2.25.1.tar.gz", hash = "sha256:607d3c43722b7e217a7e6c82f17258b798b92a512017d60c06323d62ae814cd7", size = 44432 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ea/35/304e456a471128aa4a776243558f43aee3444731ef8fc9bc8c351fddfdd8/spotipy-2.24.0-py3-none-any.whl", hash = "sha256:c5aa7338c624a05a8a80dcf9c6761ded3d6bc2bc5df5f22d9398a895b11bd2ae", size = 30160 },
+    { url = "https://files.pythonhosted.org/packages/bd/3b/dde90e39c456f0d72397afd49d433f95c6a2fdbdcd829bcfc38cdbf6949a/spotipy-2.25.1-py3-none-any.whl", hash = "sha256:18f47d9a0594ced8001b3baa5a4160ea6dcf570abbdad371971f475a81892844", size = 31331 },
 ]
 
 [[package]]
