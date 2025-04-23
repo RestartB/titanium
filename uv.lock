@@ -1,5 +1,4 @@
 version = 1
-revision = 1
 requires-python = ">=3.11, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -659,7 +658,7 @@ wheels = [
 [[package]]
 name = "pilmoji"
 version = "2.0.5"
-source = { git = "https://github.com/jay3332/pilmoji#6ff436fe0a28362bd1d411863347face33e3b6ac" }
+source = { git = "https://github.com/RestartB/pilmoji#aceba30018952481af648f2b9810e71528f39a2a" }
 dependencies = [
     { name = "emoji" },
     { name = "pillow" },
@@ -963,7 +962,7 @@ requires-dist = [
     { name = "flask", extras = ["async"], specifier = "==3.1.0" },
     { name = "pillow", specifier = "==11.2.1" },
     { name = "pillow-avif-plugin", specifier = "==1.5.1" },
-    { name = "pilmoji", git = "https://github.com/jay3332/pilmoji" },
+    { name = "pilmoji", git = "https://github.com/RestartB/pilmoji" },
     { name = "psutil", specifier = "==7.0.0" },
     { name = "py-cpuinfo", specifier = "==9.0.0" },
     { name = "pygit2", specifier = "==1.17.0" },
