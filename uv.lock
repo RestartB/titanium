@@ -326,15 +326,15 @@ wheels = [
 
 [[package]]
 name = "discord-py"
-version = "2.5.0"
+version = "2.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "audioop-lts", marker = "python_full_version >= '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/59/7e/a778257411e86d834c94ea6d67abacca8f0efac62996882898d55e475748/discord_py-2.5.0.tar.gz", hash = "sha256:f6827909b87ea89bdb2cc49d475cb1fada2e73235a3e4568fc8b113660340c73", size = 1054589 }
+sdist = { url = "https://files.pythonhosted.org/packages/7f/dd/5817c7af5e614e45cdf38cbf6c3f4597590c442822a648121a34dee7fa0f/discord_py-2.5.2.tar.gz", hash = "sha256:01cd362023bfea1a4a1d43f5280b5ef00cad2c7eba80098909f98bf28e578524", size = 1054879 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8a/d5/2f54c110f6707bf563957349f8ca9cdf883f420699cd61ec8b48018754bb/discord.py-2.5.0-py3-none-any.whl", hash = "sha256:8e1e3b3ff5a112a4ab3a615059a285238eea34edff6de8737db6e1f72ea05195", size = 1154805 },
+    { url = "https://files.pythonhosted.org/packages/57/a8/dc908a0fe4cd7e3950c9fa6906f7bf2e5d92d36b432f84897185e1b77138/discord_py-2.5.2-py3-none-any.whl", hash = "sha256:81f23a17c50509ffebe0668441cb80c139e74da5115305f70e27ce821361295a", size = 1155105 },
 ]
 
 [[package]]
