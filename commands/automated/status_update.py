@@ -34,7 +34,7 @@ class StatusUpdate(commands.Cog):
 
         # Count members
         server_members: int = sum(
-            guild.approximate_member_count for guild in self.bot.guilds
+            guild.member_count for guild in self.bot.guilds
         )
 
         # Get app data
