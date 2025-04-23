@@ -33,9 +33,7 @@ class StatusUpdate(commands.Cog):
         await self.bot.wait_until_ready()
 
         # Count members
-        server_members: int = sum(
-            guild.member_count for guild in self.bot.guilds
-        )
+        server_members: int = sum(guild.member_count for guild in self.bot.guilds)
 
         # Get app data
         app_data: discord.AppInfo = await self.bot.application_info()
