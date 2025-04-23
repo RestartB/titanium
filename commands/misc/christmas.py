@@ -1,11 +1,8 @@
-# pylint: disable=no-member
-
 import os
 from io import BytesIO
 
 import aiohttp
 import discord
-import discord.ext
 from discord import Color, app_commands
 from discord.ext import commands
 from discord.ui import View
