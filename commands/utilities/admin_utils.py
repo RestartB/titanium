@@ -141,13 +141,21 @@ class CogUtils(commands.Cog):
         name="auto-status-enable", description="Admin Only: enable auto status."
     )
     async def enable_autostatus(self, interaction: discord.Interaction):
-        # Stop auto status task
+        # Start auto status task
         status_cog: "StatusUpdate" = self.bot.get_cog("StatusUpdate")
 
         if status_cog is not None:
+            started = False
+
+            if not status_cog.info_update.is_running():
+                started = True
+                status_cog.info_update.start()
+            
             if not status_cog.status_update.is_running():
+                started = True
                 status_cog.status_update.start()
 
+            if started:
                 embed = discord.Embed(
                     title="Success!",
                     description="Auto status was enabled.",
@@ -177,9 +185,10 @@ class CogUtils(commands.Cog):
         status_cog: "StatusUpdate" = self.bot.get_cog("StatusUpdate")
 
         if status_cog is not None:
-            if status_cog.status_update.is_running():
+            if status_cog.status_update.is_running() or status_cog.info_update.is_running():
                 status_cog.status_update.cancel()
-
+                status_cog.info_update.cancel()
+                
                 # Update status
                 await self.bot.change_presence(
                     activity=discord.Activity(
@@ -219,9 +228,11 @@ class CogUtils(commands.Cog):
 
         # Stop task if running
         if status_cog is not None:
-            if status_cog.status_update.is_running():
+            if status_cog.status_update.is_running() or status_cog.info_update.is_running():
                 running = True
+                
                 status_cog.status_update.cancel()
+                status_cog.info_update.cancel()
 
         # Update status
         await self.bot.change_presence(
@@ -253,9 +264,11 @@ class CogUtils(commands.Cog):
 
         # Stop task if running
         if status_cog is not None:
-            if status_cog.status_update.is_running():
+            if status_cog.status_update.is_running() or status_cog.info_update.is_running():
                 running = True
+                
                 status_cog.status_update.cancel()
+                status_cog.info_update.cancel()
 
         # Update status
         await self.bot.change_presence(

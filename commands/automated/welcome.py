@@ -1,16 +1,21 @@
+from typing import TYPE_CHECKING
+
 import discord
 from discord import Color
 from discord.ext import commands
 from discord.ui import View
 
+if TYPE_CHECKING:
+    from main import TitaniumBot
+
 
 class Welcome(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
     # Status Update
     @commands.Cog.listener()
-    async def on_guild_join(self, guild: discord.Guild):
+    async def on_guild_join(self, guild: discord.Guild) -> None:
         self.bot: commands.Bot
 
         try:
@@ -83,5 +88,5 @@ class Welcome(commands.Cog):
             pass
 
 
-async def setup(bot):
+async def setup(bot: "TitaniumBot") -> None:
     await bot.add_cog(Welcome(bot))

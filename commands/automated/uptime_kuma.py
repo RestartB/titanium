@@ -1,12 +1,16 @@
 import logging
 import traceback
+from typing import TYPE_CHECKING
 
 import aiohttp
 from discord.ext import commands, tasks
 
+if TYPE_CHECKING:
+    from main import TitaniumBot
+
 
 class UptimeKuma(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
         try:
@@ -81,5 +85,5 @@ class UptimeKuma(commands.Cog):
             return
 
 
-async def setup(bot):
+async def setup(bot: "TitaniumBot") -> None:
     await bot.add_cog(UptimeKuma(bot))
