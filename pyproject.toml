@@ -31,4 +31,4 @@ dev = [
 extend-select = ["I"]
 
 [tool.uv.sources]
-pilmoji = { git = "https://github.com/RestartB/pilmoji" }
+pilmoji = { git = "https://github.com/jay3332/pilmoji" }
