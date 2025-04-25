@@ -237,8 +237,8 @@ async def on_ready():
     # Sync tree if sync on start is enabled
     if bot.options["sync-on-start"]:
         # Control Server Sync
-        logging.info("[INIT] Syncing control server command tree...")
-        guild = bot.get_guild(1213954608632700989)
+        logging.info(f"[INIT] Syncing control server command tree ({bot.options['control-guild']})...")
+        guild = bot.get_guild(bot.options["control-guild"])
         sync = await bot.tree.sync(guild=guild)
         logging.info(
             f"[INIT] Control server command tree synced. {len(sync)} command total."

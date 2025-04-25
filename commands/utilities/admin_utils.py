@@ -117,8 +117,8 @@ class CogUtils(commands.Cog):
         await interaction.followup.send(embed=embed, ephemeral=True)
 
         # Control Server Sync
-        logging.info("[INIT] Syncing control server command tree...")
-        guild = self.bot.get_guild(1213954608632700989)
+        logging.info(f"[INIT] Syncing control server command tree ({self.bot.options['control-guild']})...")
+        guild = self.bot.get_guild(self.bot.options["control-guild"])
         sync = await self.bot.tree.sync(guild=guild)
         logging.info(
             f"[INIT] Control server command tree synced. {len(sync)} command total."
