@@ -31,7 +31,12 @@ class Analytics(commands.Cog):
                         title=f"@{interaction.user.name} ran a command",
                         color=Color.green(),
                     )
-                    embed.description = f"`/{f'{command.parent.name} ' if command.parent is not None else ''}{command.name}`"
+                   
+                    # Check if the command is a context menu command
+                    if isinstance(command, app_commands.ContextMenu):
+                        embed.description = f"`{command.name}`"
+                    else:
+                        embed.description = f"`/{f'{command.parent.name} ' if command.parent is not None else ''}{command.name}`"
 
                     embed.timestamp = interaction.created_at
                     embed.set_author(
@@ -69,7 +74,12 @@ class Analytics(commands.Cog):
                             title=f"@{interaction.user.name} started an interaction",
                             color=Color.green(),
                         )
-                        embed.description = f"`/{f'{interaction.command.parent.name} ' if interaction.command.parent is not None else ''}{interaction.command.name}`"
+                        
+                        # Check if the command is a context menu command
+                        if isinstance(interaction.command, app_commands.ContextMenu):
+                            embed.description = f"`{interaction.command.name}`"
+                        else:
+                            embed.description = f"`/{f'{interaction.command.parent.name} ' if interaction.command.parent is not None else ''}{interaction.command.name}`"
 
                         embed.timestamp = interaction.created_at
                         embed.set_author(
