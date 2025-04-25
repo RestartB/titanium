@@ -31,7 +31,7 @@ class Analytics(commands.Cog):
                         title=f"@{interaction.user.name} ran a command",
                         color=Color.green(),
                     )
-                   
+
                     # Check if the command is a context menu command
                     if isinstance(command, app_commands.ContextMenu):
                         embed.description = f"`{command.name}`"
@@ -74,7 +74,7 @@ class Analytics(commands.Cog):
                             title=f"@{interaction.user.name} started an interaction",
                             color=Color.green(),
                         )
-                        
+
                         # Check if the command is a context menu command
                         if isinstance(interaction.command, app_commands.ContextMenu):
                             embed.description = f"`{interaction.command.name}`"
