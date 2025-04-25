@@ -208,7 +208,9 @@ def _create_quote_image_sync(
         draw.text(
             text=text,
             xy=(footer_x, (527 if custom_quote or bot else 550)),
-            fill=("red" if custom_quote or bot else ("black" if light_mode else "white")),
+            fill=(
+                "red" if custom_quote or bot else ("black" if light_mode else "white")
+            ),
             font=footer_font,
             align="center",
         )
