@@ -23,6 +23,7 @@ async def create_quote_image(
     bw_mode: bool = False,
     custom_quote: bool = False,
     custom_quote_user: discord.User = None,
+    bot: bool = False,
 ) -> BytesIO:
     # Get PFP, store in memory
     async with aiohttp.ClientSession() as session:
@@ -45,6 +46,7 @@ async def create_quote_image(
         bw_mode,
         custom_quote,
         custom_quote_user,
+        bot,
     )
 
 
@@ -58,6 +60,7 @@ def _create_quote_image_sync(
     bw_mode: bool = False,
     custom_quote: bool = False,
     custom_quote_user: discord.User = None,
+    bot: bool = False,
 ) -> BytesIO:
     image_data = BytesIO()
 
@@ -181,12 +184,12 @@ def _create_quote_image_sync(
                 align="center",
             )
 
-        # Footer text
-        text = (
-            "https://titaniumbot.me"
-            if not custom_quote
-            else f"Custom Quote by @{custom_quote_user.name}\nhttps://titaniumbot.me"
-        )
+        if custom_quote:
+            text = f"Custom Quote by @{custom_quote_user.name}\nhttps://titaniumbot.me"
+        elif bot:
+            text = "Bot or Webhook Message\nhttps://titaniumbot.me"
+        else:
+            text = "https://titaniumbot.me"
 
         # Set bold Figtree font
         footer_font = ImageFont.truetype(
@@ -204,8 +207,8 @@ def _create_quote_image_sync(
         # Draw bottom text
         draw.text(
             text=text,
-            xy=(footer_x, (527 if custom_quote else 550)),
-            fill=("red" if custom_quote else ("black" if light_mode else "white")),
+            xy=(footer_x, (527 if custom_quote or bot else 550)),
+            fill=("red" if custom_quote or bot else ("black" if light_mode else "white")),
             font=footer_font,
             align="center",
         )
@@ -240,6 +243,7 @@ class QuoteView(View):
         bw_mode: bool = False,
         custom_quote: bool = False,
         custom_quote_user_id: int = None,
+        bot: bool = False,
     ):
         super().__init__(timeout=259200)  # 3 days
 
@@ -251,6 +255,7 @@ class QuoteView(View):
         self.bw_mode = bw_mode
         self.custom_quote = custom_quote
         self.custom_quote_user_id = custom_quote_user_id
+        self.bot = bot
 
         for child in self.children:
             if child.custom_id == "theme":
@@ -315,6 +320,7 @@ class QuoteView(View):
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
             custom_quote_user=custom_quote_user,
+            bot=self.bot,
         )
 
         file = discord.File(
@@ -331,6 +337,7 @@ class QuoteView(View):
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
             custom_quote_user_id=self.custom_quote_user_id,
+            bot=self.bot,
         )
 
         if not self.custom_quote:
@@ -404,6 +411,7 @@ class QuoteView(View):
             bw_mode=not self.bw_mode,
             custom_quote=self.custom_quote,
             custom_quote_user=custom_quote_user,
+            bot=self.bot,
         )
 
         file = discord.File(
@@ -420,6 +428,7 @@ class QuoteView(View):
             bw_mode=not self.bw_mode,
             custom_quote=self.custom_quote,
             custom_quote_user_id=self.custom_quote_user_id,
+            bot=self.bot,
         )
 
         if not self.custom_quote:
@@ -495,6 +504,7 @@ class QuoteView(View):
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
             custom_quote_user=custom_quote_user,
+            bot=self.bot,
         )
 
         file = discord.File(
@@ -511,6 +521,7 @@ class QuoteView(View):
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
             custom_quote_user_id=self.custom_quote_user_id,
+            bot=self.bot,
         )
 
         if not self.custom_quote:
@@ -608,6 +619,7 @@ class Quotes(commands.Cog):
             user=message.author,
             content=message.content,
             output_format="PNG",
+            bot=message.author.bot,
         )
 
         file = discord.File(
@@ -623,6 +635,7 @@ class Quotes(commands.Cog):
             light_mode=False,
             bw_mode=False,
             custom_quote=False,
+            bot=message.author.bot,
         )
         view.add_item(
             discord.ui.Button(
