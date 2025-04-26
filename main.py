@@ -240,7 +240,7 @@ async def on_ready():
         logging.info(
             f"[INIT] Syncing control server command tree ({bot.options['control-guild']})..."
         )
-        guild = bot.get_guild(bot.options["control-guild"])
+        guild = await bot.fetch_guild(bot.options["control-guild"])
         sync = await bot.tree.sync(guild=guild)
         logging.info(
             f"[INIT] Control server command tree synced. {len(sync)} command total."

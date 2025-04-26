@@ -120,7 +120,7 @@ class CogUtils(commands.Cog):
         logging.info(
             f"[INIT] Syncing control server command tree ({self.bot.options['control-guild']})..."
         )
-        guild = self.bot.get_guild(self.bot.options["control-guild"])
+        guild = await self.bot.fetch_guild(self.bot.options["control-guild"])
         sync = await self.bot.tree.sync(guild=guild)
         logging.info(
             f"[INIT] Control server command tree synced. {len(sync)} command total."
