@@ -10,7 +10,7 @@ class ImageView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=60)
         self.message: discord.InteractionMessage
-    
+
     # On timeout
     async def on_timeout(self):
         await self.message.edit(view=None)
@@ -18,8 +18,11 @@ class ImageView(discord.ui.View):
     @discord.ui.button(label="Reload", emoji="🔄", style=discord.ButtonStyle.primary)
     async def reload(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        
-        await interaction.edit_original_response(embed=interaction.message.embeds[0], view=None)
+
+        await interaction.edit_original_response(
+            embed=interaction.message.embeds[0], view=None
+        )
+
 
 class Animals(commands.Cog):
     # noinspection SpellCheckingInspection
@@ -95,7 +98,9 @@ class Animals(commands.Cog):
 
         view_instance = ImageView()
 
-        await interaction.followup.send(embed=embed, ephemeral=ephemeral, view=view_instance)
+        await interaction.followup.send(
+            embed=embed, ephemeral=ephemeral, view=view_instance
+        )
         view_instance.message = await interaction.original_response()
 
     # Dog command
@@ -135,7 +140,9 @@ class Animals(commands.Cog):
 
         view_instance = ImageView()
 
-        await interaction.followup.send(embed=embed, ephemeral=ephemeral, view=view_instance)
+        await interaction.followup.send(
+            embed=embed, ephemeral=ephemeral, view=view_instance
+        )
         view_instance.message = await interaction.original_response()
 
     # Sand Cat command
@@ -191,7 +198,9 @@ class Animals(commands.Cog):
 
         view_instance = ImageView()
 
-        await interaction.followup.send(embed=embed, ephemeral=ephemeral, view=view_instance)
+        await interaction.followup.send(
+            embed=embed, ephemeral=ephemeral, view=view_instance
+        )
         view_instance.message = await interaction.original_response()
 
 
