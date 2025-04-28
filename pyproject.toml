@@ -13,7 +13,7 @@ dependencies = [
     "pillow==11.2.1",
     "psutil==7.0.0",
     "py-cpuinfo==9.0.0",
-    "pygit2==1.17.0",
+    "pygit2==1.18.0",
     "spotipy==2.25.1",
     "thefuzz==0.22.1",
     "url-cleaner==0.1.5",
