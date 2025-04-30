@@ -12,15 +12,21 @@ This program is free software: you can redistribute it and/or modify it under th
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License in the [licence file](/LICENSE) for more details.
 
 ## Included Features
-- Wikipedia and Urban Dictionary search
+- Wikipedia, Urban Dictionary, ReviewDB search
 - Random Dog and Cat images
-- Fun commands like the 8-ball and fish command
+- Fun commands - 8ball, fun insults, freaky text and more
 - Search Spotify and get full quailty Album Art (Spotify API Keys needed)
 - Get lyrics for songs
 - Convert any streaming service URL to Spotify and get info
-- Fireboard system
-- Message leaderboard
+- Fireboard system and message stats
+- Image manipulation, video to GIF
+- Message and user quotes
+- Per user / server wide tags
+- User and server information
 - Expandable cog system to allow you to make your own commands
+- \+ even more features!
+
+The best way to see all of Titanium's commands is to add the bot to your server using the link at the top of the readme or in the [quick start](#quick-start) section, and use Discord's slash command list.
 
 ## Credit
 - me: bot code
@@ -94,7 +100,7 @@ Titanium uses several privileged intents. If your bot instance is verified (requ
 
 - Presence Intent - needed for the now playing command.
 - Server Members Intent - needed for server member counts in the server info command.
-- Message Content Intent - Required for getting message content for the starboard, and for processing the leaderboard.
+- Message Content Intent - Required for getting message content for the fireboard, and for processing the leaderboard.
 
 ## Developing your own Cogs
 Titanium is modular and will load compatible cogs automatically.
