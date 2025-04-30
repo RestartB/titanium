@@ -331,6 +331,96 @@ class Misc(commands.Cog):
             content=(user.mention if ping else ""), embed=embed
         )
 
+    # Freaky Text Command
+    @funGroup.command(
+        name="freaky",
+        description="Convert normal text to freaky text, or the other way around.",
+    )
+    @app_commands.describe(
+        convert_from="Whether to convert from freaky text to normal text.",
+        text="The text to convert.",
+        ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.",
+    )
+    async def freaky(
+        self,
+        interaction: discord.Interaction,
+        convert_from: bool,
+        text: str,
+        ephemeral: bool = False,
+    ):
+        await interaction.response.defer(ephemeral=ephemeral)
+
+        charMap = {
+            "q": "𝓺",
+            "w": "𝔀",
+            "e": "𝓮",
+            "r": "𝓻",
+            "t": "𝓽",
+            "y": "𝔂",
+            "u": "𝓾",
+            "i": "𝓲",
+            "o": "𝓸",
+            "p": "𝓹",
+            "a": "𝓪",
+            "s": "𝓼",
+            "d": "𝓭",
+            "f": "𝓯",
+            "g": "𝓰",
+            "h": "𝓱",
+            "j": "𝓳",
+            "k": "𝓴",
+            "l": "𝓵",
+            "z": "𝔃",
+            "x": "𝔁",
+            "c": "𝓬",
+            "v": "𝓿",
+            "b": "𝓫",
+            "n": "𝓷",
+            "m": "𝓶",
+            "Q": "𝓠",
+            "W": "𝓦",
+            "E": "𝓔",
+            "R": "𝓡",
+            "T": "𝓣",
+            "Y": "𝓨",
+            "U": "𝓤",
+            "I": "𝓘",
+            "O": "𝓞",
+            "P": "𝓟",
+            "A": "𝓐",
+            "S": "𝓢",
+            "D": "𝓓",
+            "F": "𝓕",
+            "G": "𝓖",
+            "H": "𝓗",
+            "J": "𝓙",
+            "K": "𝓚",
+            "L": "𝓛",
+            "Z": "𝓩",
+            "X": "𝓧",
+            "C": "𝓒",
+            "V": "𝓥",
+            "B": "𝓑",
+            "N": "𝓝",
+            "M": "𝓜",
+        }
+
+        for char in charMap:
+            if convert_from:
+                text = text.replace(charMap[char], char)
+            else:
+                text = text.replace(char, charMap[char])
+
+        embed = discord.Embed(
+            title="Freaky Text", description=text, color=Color.random()
+        )
+        embed.set_footer(
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
     # --- Misc Utility Commands --- #
 
     # First Message command
