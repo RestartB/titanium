@@ -75,7 +75,7 @@ class SpotifySearch(commands.GroupCog):
 
             options = [
                 app_commands.Choice(
-                    name="test Select a result, or send command now to search again",
+                    name="Select a result, or send command now to search again",
                     value=current,
                 )
             ]
