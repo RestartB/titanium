@@ -28,6 +28,9 @@ class SpotifySearch(commands.GroupCog):
     async def song_search_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
+        # Strip whitespace, cap at 100 characters
+        current = current.strip()[:100]
+
         if current and current != "":
             # Check if search is Spotify ID
             if len(current) == 22 and " " not in current:
@@ -72,36 +75,54 @@ class SpotifySearch(commands.GroupCog):
 
             options = [
                 app_commands.Choice(
-                    name="Select a result, or send command now to search again",
+                    name="test Select a result, or send command now to search again",
                     value=current,
                 )
             ]
 
-            result = self.sp.search(current, type="track", limit=5)
-
-            for item in result["tracks"]["items"]:
-                title = shorten(
-                    text=f"{'(E) ' if item['explicit'] else ''}{item['name']}",
-                    width=50,
-                    placeholder="...",
-                )
-
-                artists = shorten(
-                    ", ".join(
-                        [artist["name"] for artist in item["artists"]],
-                    ),
-                    width=22,
-                    placeholder="...",
-                )
-
-                album = shorten(text=item["album"]["name"], width=22, placeholder="...")
-
-                options.append(
+            try:
+                result = self.sp.search(current, type="track", limit=5)
+            except spotipy.exceptions.SpotifyException:
+                options = [
                     app_commands.Choice(
-                        name=(f"{title} - {artists} ({album})"),
-                        value=item["id"],
+                        name="Spotify error, send command now to search again",
+                        value=current,
                     )
-                )
+                ]
+
+            if len(result["tracks"]["items"]) == 0:
+                options = [
+                    app_commands.Choice(
+                        name="No results found, send command now to search again",
+                        value=current,
+                    )
+                ]
+            else:
+                for item in result["tracks"]["items"]:
+                    title = shorten(
+                        text=f"{'(E) ' if item['explicit'] else ''}{item['name']}",
+                        width=50,
+                        placeholder="...",
+                    )
+
+                    artists = shorten(
+                        ", ".join(
+                            [artist["name"] for artist in item["artists"]],
+                        ),
+                        width=22,
+                        placeholder="...",
+                    )
+
+                    album = shorten(
+                        text=item["album"]["name"], width=22, placeholder="..."
+                    )
+
+                    options.append(
+                        app_commands.Choice(
+                            name=(f"{title} - {artists} ({album})"),
+                            value=item["id"],
+                        )
+                    )
 
             return options
         else:
@@ -123,12 +144,23 @@ class SpotifySearch(commands.GroupCog):
     async def spotify_song_search(
         self,
         interaction: discord.Interaction,
-        search: str,
+        search: app_commands.Range[str, 0, 100],
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
+        search = search.strip()
         options_list = []
+
+        if not search or search == "":
+            embed = discord.Embed(
+                title="Error",
+                description="No search term provided.",
+                color=Color.red(),
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
 
         # Check if search is Spotify ID
         if len(search) == 22 and " " not in search:
@@ -231,6 +263,9 @@ class SpotifySearch(commands.GroupCog):
     async def artist_search_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
+        # Strip whitespace, cap at 100 characters
+        current = current.strip()[:100]
+
         if current and current != "":
             # Check if search is Spotify ID
             if len(current) == 22 and " " not in current:
@@ -264,17 +299,35 @@ class SpotifySearch(commands.GroupCog):
                 )
             ]
 
-            result = self.sp.search(current, type="artist", limit=5)
-
-            for item in result["artists"]["items"]:
-                options.append(
+            try:
+                result = self.sp.search(current, type="artist", limit=5)
+            except spotipy.exceptions.SpotifyException:
+                options = [
                     app_commands.Choice(
-                        name=shorten(text=item["name"], width=100, placeholder="..."),
-                        value=item["id"],
+                        name="Spotify error, send command now to search again",
+                        value=current,
                     )
-                )
+                ]
 
-            return options
+            if len(result["artists"]["items"]) == 0:
+                options = [
+                    app_commands.Choice(
+                        name="No results found, send command now to search again",
+                        value=current,
+                    )
+                ]
+            else:
+                for item in result["artists"]["items"]:
+                    options.append(
+                        app_commands.Choice(
+                            name=shorten(
+                                text=item["name"], width=100, placeholder="..."
+                            ),
+                            value=item["id"],
+                        )
+                    )
+
+                return options
         else:
             return [
                 app_commands.Choice(
@@ -294,12 +347,23 @@ class SpotifySearch(commands.GroupCog):
     async def spotify_artist_search(
         self,
         interaction: discord.Interaction,
-        search: str,
+        search: app_commands.Range[str, 0, 100],
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
+        search = search.strip()
         options_list = []
+
+        if not search or search == "":
+            embed = discord.Embed(
+                title="Error",
+                description="No search term provided.",
+                color=Color.red(),
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
 
         # Check if search is Spotify ID
         if len(search) == 22 and " " not in search:
@@ -385,6 +449,9 @@ class SpotifySearch(commands.GroupCog):
     async def album_search_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
+        # Strip whitespace, cap at 100 characters
+        current = current.strip()[:100]
+
         if current and current != "":
             # Check if search is Spotify ID
             if len(current) == 22 and " " not in current:
@@ -425,24 +492,40 @@ class SpotifySearch(commands.GroupCog):
                 )
             ]
 
-            result = self.sp.search(current, type="album", limit=5)
-
-            for item in result["albums"]["items"]:
-                # Generate artist list
-                artists_list = []
-                for artist in item["artists"]:
-                    artists_list.append(artist["name"])
-
-                artists = shorten(
-                    text=", ".join(artists_list), width=32, placeholder="..."
-                )
-
-                options.append(
+            try:
+                result = self.sp.search(current, type="album", limit=5)
+            except spotipy.exceptions.SpotifyException:
+                options = [
                     app_commands.Choice(
-                        name=f"{shorten(text=item['name'], width=65, placeholder='...')} - {artists}",
-                        value=item["id"],
+                        name="Spotify error, send command now to search again",
+                        value=current,
                     )
-                )
+                ]
+
+            if len(result["albums"]["items"]) == 0:
+                options = [
+                    app_commands.Choice(
+                        name="No results found, send command now to search again",
+                        value=current,
+                    )
+                ]
+            else:
+                for item in result["albums"]["items"]:
+                    # Generate artist list
+                    artists_list = []
+                    for artist in item["artists"]:
+                        artists_list.append(artist["name"])
+
+                    artists = shorten(
+                        text=", ".join(artists_list), width=32, placeholder="..."
+                    )
+
+                    options.append(
+                        app_commands.Choice(
+                            name=f"{shorten(text=item['name'], width=65, placeholder='...')} - {artists}",
+                            value=item["id"],
+                        )
+                    )
 
             return options
         else:
@@ -464,12 +547,23 @@ class SpotifySearch(commands.GroupCog):
     async def spotify_album_search(
         self,
         interaction: discord.Interaction,
-        search: str,
+        search: app_commands.Range[str, 0, 100],
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
+        search = search.strip()
         options_list = []
+
+        if not search or search == "":
+            embed = discord.Embed(
+                title="Error",
+                description="No search term provided.",
+                color=Color.red(),
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
 
         # Check if search is Spotify ID
         if len(search) == 22 and " " not in search:
