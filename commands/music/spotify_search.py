@@ -94,9 +94,7 @@ class SpotifySearch(commands.GroupCog):
                     placeholder="...",
                 )
 
-                album = shorten(
-                    text=item["album"]["name"], width=22, placeholder="..."
-                )
+                album = shorten(text=item["album"]["name"], width=22, placeholder="...")
 
                 options.append(
                     app_commands.Choice(
