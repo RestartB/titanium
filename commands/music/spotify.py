@@ -19,11 +19,11 @@ class Spotify(
         # Reload the modules
         importlib.reload(spotify_images)
         importlib.reload(spotify_search)
-        
+
         # Re-import the classes after reload
         from .spotify_images import SpotifyImages
         from .spotify_search import SpotifySearch
-        
+
         # Initialize parent classes
         SpotifySearch.__init__(self, bot)
         SpotifyImages.__init__(self, bot)
