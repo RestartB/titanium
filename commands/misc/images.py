@@ -526,8 +526,12 @@ class Images(commands.Cog):
 
                     # Generate colour overlay
                     r = img.split()[0]
-                    r = ImageEnhance.Contrast(r).enhance(1.0 + intensity_scale)  # Scale from 1.0 to 2.0
-                    r = ImageEnhance.Brightness(r).enhance(1.0 + (0.5 * intensity_scale))  # Scale from 1.0 to 1.5
+                    r = ImageEnhance.Contrast(r).enhance(
+                        1.0 + intensity_scale
+                    )  # Scale from 1.0 to 2.0
+                    r = ImageEnhance.Brightness(r).enhance(
+                        1.0 + (0.5 * intensity_scale)
+                    )  # Scale from 1.0 to 1.5
 
                     if red_filter:
                         colours = ((254, 0, 2), (255, 255, 15))
@@ -537,9 +541,11 @@ class Images(commands.Cog):
 
                     # Blend scaled from 0 to 0.75
                     img = Image.blend(img, r, 0.75 * intensity_scale)
-                    
+
                     # Sharpness scaled from 1.0 to 100.0
-                    img = ImageEnhance.Sharpness(img).enhance(1.0 + (99.0 * intensity_scale))
+                    img = ImageEnhance.Sharpness(img).enhance(
+                        1.0 + (99.0 * intensity_scale)
+                    )
 
                     deepfried_data = BytesIO()
 
