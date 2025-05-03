@@ -470,6 +470,8 @@ class Images(commands.Cog):
     @imageGroup.command(name="deepfry", description="Deepfry an image.")
     @app_commands.describe(
         file="The static image to deepfry.",
+        intensity="The intensity of the deepfry effect. (1% to 100%)",
+        red_filter="Whether to apply a red filter to the image. (recommended: true)",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
@@ -478,10 +480,13 @@ class Images(commands.Cog):
         self,
         interaction: discord.Interaction,
         file: discord.Attachment,
+        intensity: app_commands.Range[int, 1, 100],
+        red_filter: bool,
         spoiler: bool = False,
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
+        intensity_scale = intensity / 100.0
 
         if (
             file.content_type.split("/")[0] == "image"
@@ -521,15 +526,20 @@ class Images(commands.Cog):
 
                     # Generate colour overlay
                     r = img.split()[0]
-                    r = ImageEnhance.Contrast(r).enhance(2.0)
-                    r = ImageEnhance.Brightness(r).enhance(1.5)
+                    r = ImageEnhance.Contrast(r).enhance(1.0 + intensity_scale)  # Scale from 1.0 to 2.0
+                    r = ImageEnhance.Brightness(r).enhance(1.0 + (0.5 * intensity_scale))  # Scale from 1.0 to 1.5
 
-                    colours = ((254, 0, 2), (255, 255, 15))
-                    r = ImageOps.colorize(r, colours[0], colours[1])
+                    if red_filter:
+                        colours = ((254, 0, 2), (255, 255, 15))
+                        r = ImageOps.colorize(r, colours[0], colours[1])
+                    else:
+                        r = img.copy()
 
-                    # Overlay red and yellow onto main image and sharpen
-                    img = Image.blend(img, r, 0.75)
-                    img = ImageEnhance.Sharpness(img).enhance(100.0)
+                    # Blend scaled from 0 to 0.75
+                    img = Image.blend(img, r, 0.75 * intensity_scale)
+                    
+                    # Sharpness scaled from 1.0 to 100.0
+                    img = ImageEnhance.Sharpness(img).enhance(1.0 + (99.0 * intensity_scale))
 
                     deepfried_data = BytesIO()
 
