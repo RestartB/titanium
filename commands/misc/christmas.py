@@ -297,6 +297,30 @@ class Christmas(commands.Cog):
                         image_data.seek(0)
 
                 output_data = BytesIO()
+            else:  # If file is too large
+                embed = discord.Embed(
+                    title="Error",
+                    description="Your file is too large. Please ensure it is smaller than 20MB.",
+                    color=Color.red(),
+                )
+                embed.set_footer(
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
+                )
+
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+        else:  # If file is not a static image
+            embed = discord.Embed(
+                title="Error",
+                description="Your file is not a static image.",
+                color=Color.red(),
+            )
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
         with Image.open(image_data) as img:
             # Christmas hat
