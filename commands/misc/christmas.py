@@ -309,6 +309,7 @@ class Christmas(commands.Cog):
                 )
 
                 await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                return
         else:  # If file is not a static image
             embed = discord.Embed(
                 title="Error",
@@ -321,6 +322,7 @@ class Christmas(commands.Cog):
             )
 
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
 
         with Image.open(image_data) as img:
             # Christmas hat
