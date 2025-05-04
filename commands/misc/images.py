@@ -826,6 +826,8 @@ class Images(commands.Cog):
 
                         image_data.seek(0)
 
+                output_data = BytesIO()
+
                 # Open image
                 with Image.open(image_data) as im:
                     im = im.convert("RGBA")
@@ -875,8 +877,6 @@ class Images(commands.Cog):
                                     )
 
                                 output_image.paste(bubble_border, (0, 0), bubble_border)
-
-                            output_data = BytesIO()
 
                             if format.value == "AVIF":
                                 # Save image to AVIF
