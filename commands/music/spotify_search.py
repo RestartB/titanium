@@ -128,7 +128,7 @@ class SpotifySearch(commands.GroupCog):
         else:
             return [
                 app_commands.Choice(
-                    name="Enter a song name, or enter a song ID and send command",
+                    name="Enter a song name / lyrics, or enter a song ID and send command",
                     value=current,
                 )
             ]

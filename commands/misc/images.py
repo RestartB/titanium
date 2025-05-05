@@ -1001,7 +1001,7 @@ class Images(commands.Cog):
     )
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(
-        file="The image to use.",
+        file="The image to convert.",
         format="The format of the output image.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -1048,72 +1048,85 @@ class Images(commands.Cog):
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        if file.size < 20000000:  # 20MB file limit
-            # Get image, store in memory
-            async with aiohttp.ClientSession() as session:
-                async with session.get(file.url) as request:
-                    image_data = BytesIO()
+        if file.content_type.split("/")[0] == "image":  # Check if file is an image
+            if file.size < 20000000:  # 20MB file limit
+                # Get image, store in memory
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(file.url) as request:
+                        image_data = BytesIO()
 
-                    async for chunk in request.content.iter_chunked(10):
-                        image_data.write(chunk)
+                        async for chunk in request.content.iter_chunked(10):
+                            image_data.write(chunk)
 
-                    image_data.seek(0)
+                        image_data.seek(0)
 
-            output_data = BytesIO()
+                output_data = BytesIO()
 
-            if format.value == "GIF":
-                # Convert to GIF with wand
-                with WandImage(blob=image_data.getvalue()) as wand_image:
-                    # Set GIF optimization options
-                    wand_image.compression_quality = 80
-                    wand_image.quantum_operator = "dither"
+                if format.value == "GIF":
+                    # Convert to GIF with wand
+                    with WandImage(blob=image_data.getvalue()) as wand_image:
+                        # Set GIF optimization options
+                        wand_image.compression_quality = 80
+                        wand_image.quantum_operator = "dither"
 
-                    # Convert to GIF format
-                    wand_image.format = "gif"
+                        # Convert to GIF format
+                        wand_image.format = "gif"
 
-                    # Write to output BytesIO
-                    output_data.write(wand_image.make_blob("gif"))
+                        # Write to output BytesIO
+                        output_data.write(wand_image.make_blob("gif"))
 
-                    output_size = (wand_image.width, wand_image.height)
-            else:
-                # Convert with pillow
-                with Image.open(image_data) as im:
-                    im.save(output_data, format=format.value)
-                    output_size = im.size
+                        output_size = (wand_image.width, wand_image.height)
+                else:
+                    # Convert with pillow
+                    with Image.open(image_data) as im:
+                        im.save(output_data, format=format.value)
+                        output_size = im.size
 
-            output_data.seek(0)
+                output_data.seek(0)
 
-            # Send resized image
-            embed = discord.Embed(
-                title="Image Converted",
-                description=f"**Size: **`{output_size[0]}x{output_size[1]}`\n**Format: **`.{format.value.lower()}`",
-                color=Color.green(),
-            )
-            embed.set_footer(
-                text=f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
-            )
-
-            if ephemeral:
-                embed.add_field(
-                    name="Alert",
-                    value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
-                    inline=False,
+                # Send resized image
+                embed = discord.Embed(
+                    title="Image Converted",
+                    description=f"**Size: **`{output_size[0]}x{output_size[1]}`\n**Format: **`.{format.value.lower()}`",
+                    color=Color.green(),
+                )
+                embed.set_footer(
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
                 )
 
-            file_processed = discord.File(
-                fp=output_data,
-                filename=f"titanium_image.{format.value.lower()}",
-                spoiler=spoiler,
-            )
+                if ephemeral:
+                    embed.add_field(
+                        name="Alert",
+                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
+                        inline=False,
+                    )
 
-            await interaction.followup.send(
-                embed=embed, file=file_processed, ephemeral=ephemeral
-            )
-        else:  # If file is too large
+                file_processed = discord.File(
+                    fp=output_data,
+                    filename=f"titanium_image.{format.value.lower()}",
+                    spoiler=spoiler,
+                )
+
+                await interaction.followup.send(
+                    embed=embed, file=file_processed, ephemeral=ephemeral
+                )
+            else:  # If file is too large
+                embed = discord.Embed(
+                    title="Error",
+                    description="Your file is too large. Please ensure it is smaller than 20MB.",
+                    color=Color.red(),
+                )
+                embed.set_footer(
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
+                )
+
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+        else:  # If file is not an image
             embed = discord.Embed(
                 title="Error",
-                description="Your file is too large. Please ensure it is smaller than 20MB.",
+                description="Your file is not an image.",
                 color=Color.red(),
             )
             embed.set_footer(
