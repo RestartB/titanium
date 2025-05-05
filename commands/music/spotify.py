@@ -16,6 +16,8 @@ class Spotify(
     description="Spotify related commands.",
 ):
     def __init__(self, bot):
+        print("Root directory:", __name__)
+        
         # Reload the modules
         importlib.reload(spotify_images)
         importlib.reload(spotify_search)
