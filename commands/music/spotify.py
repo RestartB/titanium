@@ -1,8 +1,8 @@
-import importlib
+# import importlib
 
 from discord import app_commands
 
-from . import spotify_images, spotify_search
+# from . import spotify_images, spotify_search
 from .spotify_images import SpotifyImages
 from .spotify_search import SpotifySearch
 
@@ -15,20 +15,21 @@ class Spotify(
     name="spotify",
     description="Spotify related commands.",
 ):
-    def __init__(self, bot):
-        print("Root directory:", __name__)
+    pass
+    # def __init__(self, bot):
+    #     print("Root directory:", __name__)
 
-        # Reload the modules
-        importlib.reload(spotify_images)
-        importlib.reload(spotify_search)
+    #     # Reload the modules
+    #     importlib.reload(spotify_images)
+    #     importlib.reload(spotify_search)
 
-        # Re-import the classes after reload
-        from .spotify_images import SpotifyImages
-        from .spotify_search import SpotifySearch
+    #     # Re-import the classes after reload
+    #     from .spotify_images import SpotifyImages
+    #     from .spotify_search import SpotifySearch
 
-        # Initialize parent classes
-        SpotifySearch.__init__(self, bot)
-        SpotifyImages.__init__(self, bot)
+    #     # Initialize parent classes
+    #     SpotifySearch.__init__(self, bot)
+    #     SpotifyImages.__init__(self, bot)
 
 
 async def setup(bot):
