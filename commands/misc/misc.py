@@ -435,6 +435,7 @@ class Misc(commands.Cog):
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to true."
     )
+    @app_commands.checks.cooldown(1, 5)
     async def first_message(
         self,
         interaction: discord.Interaction,

@@ -29,6 +29,7 @@ class BotUtils(commands.Cog):
 
     # Ping command
     @botGroup.command(name="ping", description="Ping the bot.")
+    @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
@@ -160,6 +161,7 @@ class BotUtils(commands.Cog):
 
     # Host Info command
     @botGroup.command(name="host-info", description="Info about the bot host.")
+    @app_commands.checks.cooldown(1, 5)
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )

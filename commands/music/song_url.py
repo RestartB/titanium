@@ -63,7 +63,7 @@ class SongURL(commands.Cog):
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @app_commands.checks.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 10)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def song_url(

@@ -37,6 +37,7 @@ class NowPlaying(commands.Cog):
     @app_commands.describe(
         user="Optional: the user to show the activity of. If not provided, it will show your own activity."
     )
+    @app_commands.checks.cooldown(1, 5)
     async def now_playing(
         self, interaction: discord.Interaction, user: discord.User = None
     ):

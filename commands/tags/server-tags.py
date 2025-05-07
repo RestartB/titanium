@@ -120,6 +120,7 @@ class ServerTags(commands.Cog):
     @app_commands.command(name="server-tag", description="Use a server tag.")
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    @app_commands.checks.cooldown(1, 5)
     @app_commands.autocomplete(tag=server_tag_autocomplete)
     async def server_tags_use(
         self, interaction: discord.Interaction, tag: str, ephemeral: bool = False
@@ -176,6 +177,7 @@ class ServerTags(commands.Cog):
 
     # Tags List command
     @tagsGroup.command(name="list", description="View the server's tags.")
+    @app_commands.checks.cooldown(1, 5)
     async def tags_list(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
@@ -371,6 +373,7 @@ class ServerTags(commands.Cog):
 
     # Tags Create command
     @tagsGroup.command(name="create", description="Create a new tag.")
+    @app_commands.checks.cooldown(1, 5)
     @app_commands.describe(
         attachment="Optional: quickly add an attachment to the tag. Overrides content."
     )
@@ -436,6 +439,7 @@ class ServerTags(commands.Cog):
 
     # Tags Edit command
     @tagsGroup.command(name="edit", description="Edit a tag.")
+    @app_commands.checks.cooldown(1, 5)
     @app_commands.describe(tag="The tag to edit.")
     @app_commands.describe(
         attachment="Optional: quickly add an attachment to the tag. Overrides content."
@@ -553,6 +557,7 @@ class ServerTags(commands.Cog):
 
     # Tags Delete command
     @tagsGroup.command(name="delete", description="Delete a tag.")
+    @app_commands.checks.cooldown(1, 5)
     @app_commands.describe(tag="The tag to delete.")
     @app_commands.autocomplete(tag=server_tag_autocomplete)
     async def tags_delete(self, interaction: discord.Interaction, tag: str):

@@ -49,7 +49,7 @@ class Videos(commands.Cog):
     @app_commands.describe(
         mode="Optional: the mode to use when converting. Defaults to high FPS."
     )
-    @app_commands.checks.cooldown(1, 30)
+    @app_commands.checks.cooldown(1, 20)
     async def video_to_gif(
         self,
         interaction: discord.Interaction,

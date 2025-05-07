@@ -109,6 +109,7 @@ class UserTags(commands.Cog):
 
     # User Tags Use command
     @app_commands.command(name="user-tag", description="Use a user tag.")
+    @app_commands.checks.cooldown(1, 5)
     @app_commands.autocomplete(tag=user_tag_autocomplete)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -153,6 +154,7 @@ class UserTags(commands.Cog):
 
     # Tags List command
     @tagsGroup.command(name="list", description="View your tags.")
+    @app_commands.checks.cooldown(1, 5)
     async def tags_list(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
@@ -346,6 +348,7 @@ class UserTags(commands.Cog):
 
     # Tags Create command
     @tagsGroup.command(name="create", description="Create a new tag.")
+    @app_commands.checks.cooldown(1, 5)
     @app_commands.describe(
         attachment="Optional: quickly add an attachment to the tag. Overrides content."
     )
@@ -411,6 +414,7 @@ class UserTags(commands.Cog):
 
     # Tags Edit command
     @tagsGroup.command(name="edit", description="Edit a tag.")
+    @app_commands.checks.cooldown(1, 5)
     @app_commands.describe(tag="The tag to edit.")
     @app_commands.describe(
         attachment="Optional: quickly add an attachment to the tag. Overrides content."
@@ -528,6 +532,7 @@ class UserTags(commands.Cog):
 
     # Tags Delete command
     @tagsGroup.command(name="delete", description="Delete a tag.")
+    @app_commands.checks.cooldown(1, 5)
     @app_commands.describe(tag="The tag to delete.")
     @app_commands.autocomplete(tag=user_tag_autocomplete)
     async def tags_delete(self, interaction: discord.Interaction, tag: str):

@@ -63,7 +63,7 @@ class Images(commands.Cog):
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @app_commands.checks.cooldown(1, 20)
+    @app_commands.checks.cooldown(1, 10)
     async def resize_image(
         self,
         interaction: discord.Interaction,
