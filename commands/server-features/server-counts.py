@@ -60,13 +60,18 @@ class ServerCounts(commands.Cog):
 
             for server in servers:
                 try:
+                    logging.debug(f"Updating server count for {server[0]}")
+                    logging.debug("Trying cache...")
+
                     # Get server members
                     guild = self.bot.get_guild(server[0])
 
                     if guild is None:
                         try:
+                            logging.debug("Trying Discord...")
                             guild = self.bot.fetch_guild(server[0])
                         except discord.NotFound:
+                            logging.debug("Fail")
                             # If the guild is not found, remove it from the database
                             await sql.execute(
                                 "DELETE FROM channels WHERE server_id = ?",
@@ -75,6 +80,8 @@ class ServerCounts(commands.Cog):
 
                             await sql.commit()
                             continue
+
+                    logging.debug("Got server")
 
                     if guild.me.guild_permissions.manage_channels:
                         # Get server count channels
@@ -89,13 +96,18 @@ class ServerCounts(commands.Cog):
                                 channel_name: str = channel[2]
                                 channel_type: str = channel[3]
 
+                                logging.debug(f"Processing channel {channel_id}...")
+                                logging.debug("Trying cache...")
+
                                 # Get the channel
                                 channel = guild.get_channel(channel_id)
 
                                 if channel is None:
                                     try:
+                                        logging.debug("Trying Discord...")
                                         channel = guild.fetch_channel(channel_id)
                                     except discord.NotFound:
+                                        logging.info("Fail")
                                         # If the channel is not found, remove it from the database
                                         await sql.execute(
                                             "DELETE FROM channels WHERE server_id = ? AND channel_id = ?",
@@ -104,73 +116,56 @@ class ServerCounts(commands.Cog):
 
                                         await sql.commit()
                                         continue
+                                
+                                logging.debug("Got channel")
 
                                 # Update the channel name with the server count
                                 if channel_type == "total_members":
-                                    await channel.edit(
-                                        name=channel_name.replace(
-                                            "$VALUE$", human_format(guild.member_count)
-                                        )
-                                    )
+                                    updated_value = guild.member_count
                                 elif channel_type == "users":
-                                    user_count = 0
+                                    updated_value = 0
 
                                     for member in guild.members:
                                         if not member.bot:
-                                            user_count += 1
-
-                                    await channel.edit(
-                                        name=channel_name.replace(
-                                            "$VALUE$", human_format(user_count)
-                                        )
-                                    )
+                                            updated_value += 1
                                 elif channel_type == "bots":
-                                    bot_count = 0
+                                    updated_value = 0
 
                                     for member in guild.members:
                                         if member.bot:
-                                            bot_count += 1
-
-                                    await channel.edit(
-                                        name=channel_name.replace(
-                                            "$VALUE$", human_format(bot_count)
-                                        )
-                                    )
+                                            updated_value += 1
                                 elif channel_type == "online_members":
-                                    online_count = 0
+                                    updated_value = 0
 
                                     for member in guild.members:
                                         if member.status != discord.Status.offline:
-                                            online_count += 1
-
-                                    await channel.edit(
-                                        name=channel_name.replace(
-                                            "$VALUE$", human_format(online_count)
-                                        )
-                                    )
+                                            updated_value += 1
                                 elif channel_type == "offline_members":
-                                    offline_count = 0
+                                    updated_value = 0
 
                                     for member in guild.members:
                                         if member.status == discord.Status.offline:
-                                            offline_count += 1
-
-                                    await channel.edit(
-                                        name=channel_name.replace(
-                                            "$VALUE$", human_format(offline_count)
-                                        )
-                                    )
+                                            updated_value += 1
                                 elif channel_type == "channels":
-                                    channel_count = (
+                                    updated_value = (
                                         len(guild.text_channels)
                                         + len(guild.voice_channels)
                                         + len(guild.stage_channels)
                                     )
 
+                                channel_name = channel_name.replace(
+                                    "$VALUE$", human_format(updated_value)
+                                )
+
+                                if channel_name == channel.name:
+                                    logging.debug("No update needed")
+                                    continue
+                                else:
+                                    logging.debug("Updating channel name")
+                                    # Update the channel name
                                     await channel.edit(
-                                        name=channel_name.replace(
-                                            "$VALUE$", human_format(channel_count)
-                                        )
+                                        name=channel_name,
+                                        reason="Automated server counter update",
                                     )
                             except Exception:
                                 logging.error("Server Counts Update Error - Channel")
@@ -458,6 +453,8 @@ class ServerCounts(commands.Cog):
                         (name, interaction.guild.id, channel.id),
                     )
                     await sql.commit()
+                else:
+                    name = sql_channel[2]
 
                 if channel_type is not None:
                     # Update the channel type in the database
