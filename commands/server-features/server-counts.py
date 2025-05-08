@@ -116,7 +116,7 @@ class ServerCounts(commands.Cog):
 
                                         await sql.commit()
                                         continue
-                                
+
                                 logging.debug("Got channel")
 
                                 # Update the channel name with the server count
