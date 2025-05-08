@@ -512,12 +512,12 @@ class CogUtils(commands.Cog):
     async def edit_channel_name(
         self,
         interaction: discord.Interaction,
-        server_id: int,
-        channel_id: int,
+        server_id: str,
+        channel_id: str,
         name: str,
     ):
-        guild = self.bot.get_guild(server_id)
-        channel = guild.get_channel(channel_id)
+        guild = self.bot.get_guild(int(server_id))
+        channel = guild.get_channel(int(channel_id))
 
         if channel is not None:
             await channel.edit(name=name, reason="Titanium Debug")
