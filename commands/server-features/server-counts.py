@@ -280,7 +280,10 @@ class ServerCounts(commands.Cog):
                     read_messages=True, send_messages=False, connect=False
                 ),
                 interaction.guild.me: discord.PermissionOverwrite(
-                    read_messages=True, send_messages=True, connect=True, manage_channels = True
+                    read_messages=True,
+                    send_messages=True,
+                    connect=True,
+                    manage_channels=True,
                 ),
             }
 
