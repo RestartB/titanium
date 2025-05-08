@@ -503,6 +503,25 @@ class CogUtils(commands.Cog):
     async def defer_test(self, interaction: discord.Interaction, seconds: int):
         await asyncio.sleep(seconds)
         await interaction.followup.send("Done.", ephemeral=True)
+    
+    # Channel Name test command
+    @adminGroup.command(
+        name="edit-channel",
+        description="Admin Only: test editing channel names.",
+    )
+    async def edit_channel_name(self, interaction: discord.Interaction, server_id: int, channel_id: int, name: str):
+        guild = self.bot.get_guild(server_id)
+        channel = guild.get_channel(channel_id)
+
+        if channel is not None:
+            await channel.edit(name=name, reason="Titanium Debug")
+            embed = discord.Embed(
+                title="Success!",
+                description=f"Channel name changed to {name}.",
+                color=Color.green(),
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 async def setup(bot):
