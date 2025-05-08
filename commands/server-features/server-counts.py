@@ -279,6 +279,9 @@ class ServerCounts(commands.Cog):
                 interaction.guild.default_role: discord.PermissionOverwrite(
                     read_messages=True, send_messages=False, connect=False
                 ),
+                interaction.guild.me: discord.PermissionOverwrite(
+                    read_messages=True, send_messages=True, connect=True, manage_channels = True
+                ),
             }
 
             # Make a new channel
@@ -463,6 +466,8 @@ class ServerCounts(commands.Cog):
                         (channel_type.value, interaction.guild.id, channel.id),
                     )
                     await sql.commit()
+                else:
+                    channel_type = app_commands.Choice(name="", value=sql_channel[3])
 
                 # Update the channel name with the server count
                 if channel_type.value == "total_members":
