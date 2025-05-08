@@ -67,19 +67,15 @@ class ServerCounts(commands.Cog):
                     guild = self.bot.get_guild(server[0])
 
                     if guild is None:
-                        try:
-                            logging.debug("Trying Discord...")
-                            guild = self.bot.fetch_guild(server[0])
-                        except discord.NotFound:
-                            logging.debug("Fail")
-                            # If the guild is not found, remove it from the database
-                            await sql.execute(
-                                "DELETE FROM channels WHERE server_id = ?",
-                                (server[0],),
-                            )
+                        logging.debug("Fail")
+                        # If the guild is not found, remove it from the database
+                        await sql.execute(
+                            "DELETE FROM channels WHERE server_id = ?",
+                            (server[0],),
+                        )
 
-                            await sql.commit()
-                            continue
+                        await sql.commit()
+                        continue
 
                     logging.debug("Got server")
 
@@ -103,19 +99,15 @@ class ServerCounts(commands.Cog):
                                 channel = guild.get_channel(channel_id)
 
                                 if channel is None:
-                                    try:
-                                        logging.debug("Trying Discord...")
-                                        channel = guild.fetch_channel(channel_id)
-                                    except discord.NotFound:
-                                        logging.info("Fail")
-                                        # If the channel is not found, remove it from the database
-                                        await sql.execute(
-                                            "DELETE FROM channels WHERE server_id = ? AND channel_id = ?",
-                                            (server[0], channel_id),
-                                        )
+                                    logging.info("Fail")
+                                    # If the channel is not found, remove it from the database
+                                    await sql.execute(
+                                        "DELETE FROM channels WHERE server_id = ? AND channel_id = ?",
+                                        (server[0], channel_id),
+                                    )
 
-                                        await sql.commit()
-                                        continue
+                                    await sql.commit()
+                                    continue
 
                                 logging.debug("Got channel")
 
