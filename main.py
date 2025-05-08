@@ -181,6 +181,12 @@ class TitaniumBot(commands.Bot):
             os.path.join("content", "sql", "tags.db")
         )
 
+        # Server Counters Pool
+        open(os.path.join("content", "sql", "server-counts.db"), "a").close()
+        self.server_counts_pool = await asqlite.create_pool(
+            os.path.join("content", "sql", "server-counts.db")
+        )
+
         async with self.tags_pool.acquire() as sql:
             # Create table if it doesn't exist
             await sql.execute(

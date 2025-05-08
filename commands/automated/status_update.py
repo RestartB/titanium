@@ -65,7 +65,7 @@ class StatusUpdate(commands.Cog):
                     status=discord.Status.online,
                     type=discord.ActivityType.custom,
                     name="custom",
-                    state=f"{self.user_installs} users, {self.guild_installs} servers with {self.server_members} members - use /",
+                    state=f"{self.user_installs} users, {self.guild_installs} servers with {self.server_members:,} members - use /",
                 )
             )
 

@@ -40,7 +40,9 @@ class ServerUtils(commands.Cog):
         )
 
         # Member count
-        embed.add_field(name="Total Members", value=interaction.guild.member_count)
+        embed.add_field(
+            name="Total Members", value=f"{interaction.guild.member_count:,}"
+        )
 
         # Creation date
         embed.add_field(
