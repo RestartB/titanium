@@ -277,13 +277,14 @@ class ServerCounts(commands.Cog):
             # Do not allow sending messages or connecting to the channel
             overwrites = {
                 interaction.guild.default_role: discord.PermissionOverwrite(
-                    read_messages=True, send_messages=False, connect=False
+                    view_channel=True, send_messages=False, connect=False
                 ),
                 interaction.guild.me: discord.PermissionOverwrite(
-                    read_messages=True,
-                    send_messages=True,
-                    connect=True,
+                    view_channel=True,
                     manage_channels=True,
+                    manage_permissions=True,
+                    connect=True,
+                    send_messages=True,
                 ),
             }
 
