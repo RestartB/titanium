@@ -279,7 +279,7 @@ class ServerCounts(commands.Cog):
                     manage_channels=True,
                     connect=True,
                     send_messages=True,
-                    embed_links=True
+                    embed_links=True,
                 ),
             }
 
