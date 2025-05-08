@@ -57,17 +57,18 @@ class ServerCounts(commands.Cog):
         async with self.bot.server_counts_pool.acquire() as sql:
             # Get servers
             servers = await sql.fetchall("SELECT DISTINCT server_id FROM channels")
+            print(servers)
 
             for server in servers:
                 try:
-                    logging.debug(f"Updating server count for {server[0]}")
-                    logging.debug("Trying cache...")
+                    print(f"Updating server count for {server[0]}")
+                    print("Trying cache...")
 
                     # Get server members
                     guild = self.bot.get_guild(server[0])
 
                     if guild is None:
-                        logging.debug("Fail")
+                        print("Fail")
                         # If the guild is not found, remove it from the database
                         await sql.execute(
                             "DELETE FROM channels WHERE server_id = ?",
@@ -77,7 +78,7 @@ class ServerCounts(commands.Cog):
                         await sql.commit()
                         continue
 
-                    logging.debug("Got server")
+                    print("Got server")
 
                     if guild.me.guild_permissions.manage_channels:
                         # Get server count channels
@@ -92,8 +93,8 @@ class ServerCounts(commands.Cog):
                                 channel_name: str = channel[2]
                                 channel_type: str = channel[3]
 
-                                logging.debug(f"Processing channel {channel_id}...")
-                                logging.debug("Trying cache...")
+                                print(f"Processing channel {channel_id}...")
+                                print("Trying cache...")
 
                                 # Get the channel
                                 channel = guild.get_channel(channel_id)
@@ -109,7 +110,7 @@ class ServerCounts(commands.Cog):
                                     await sql.commit()
                                     continue
 
-                                logging.debug("Got channel")
+                                print("Got channel")
 
                                 # Update the channel name with the server count
                                 if channel_type == "total_members":
@@ -149,11 +150,13 @@ class ServerCounts(commands.Cog):
                                     "$VALUE$", human_format(updated_value)
                                 )
 
+                                print("Old Name: ", channel.name)
+
                                 if channel_name == channel.name:
-                                    logging.debug("No update needed")
+                                    print("No update needed")
                                     continue
                                 else:
-                                    logging.debug("Updating channel name")
+                                    print("Updating channel name")
                                     # Update the channel name
                                     await channel.edit(
                                         name=channel_name,
@@ -269,8 +272,15 @@ class ServerCounts(commands.Cog):
             # Do not allow sending messages or connecting to the channel
             overwrites = {
                 interaction.guild.default_role: discord.PermissionOverwrite(
-                    send_messages=False, connect=False
-                )
+                    view_channel=True, connect=False, send_messages=False
+                ),
+                interaction.guild.me: discord.PermissionOverwrite(
+                    view_channel=True,
+                    manage_channels=True,
+                    connect=True,
+                    send_messages=True,
+                    embed_links=True
+                ),
             }
 
             # Make a new channel
