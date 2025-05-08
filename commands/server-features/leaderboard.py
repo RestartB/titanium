@@ -99,10 +99,12 @@ class Leaderboard(commands.Cog):
     context = discord.app_commands.AppCommandContext(
         guild=True, dm_channel=False, private_channel=False
     )
+    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
     lbGroup = app_commands.Group(
         name="leaderboard",
         description="View the server leaderboard.",
         allowed_contexts=context,
+        allowed_installs=installs,
     )
 
     # Leaderboard Command

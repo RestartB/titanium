@@ -182,11 +182,13 @@ class ServerCounts(commands.Cog):
     context = discord.app_commands.AppCommandContext(
         guild=True, dm_channel=False, private_channel=False
     )
+    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
     perms = discord.Permissions()
     server_counter_group = app_commands.Group(
         name="server-counters",
         description="Set up live updating server count channels.",
         allowed_contexts=context,
+        allowed_installs=installs,
         default_permissions=perms,
     )
 
