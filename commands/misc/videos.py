@@ -47,7 +47,9 @@ class Videos(commands.Cog):
     )
     @app_commands.describe(file="The file to convert.")
     @app_commands.describe(
-        mode="Optional: the mode to use when converting. Defaults to high FPS."
+        mode="Optional: the mode to use when converting. Defaults to high FPS.",
+        spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.checks.cooldown(1, 20)
     async def video_to_gif(
@@ -55,8 +57,10 @@ class Videos(commands.Cog):
         interaction: discord.Interaction,
         file: discord.Attachment,
         mode: app_commands.Choice[str] = None,
+        spoiler: bool = False,
+        ephemeral: bool = False,
     ):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=ephemeral)
 
         # If mode is None, create a default Choice object
         if mode is None:
@@ -78,7 +82,7 @@ class Videos(commands.Cog):
                     icon_url=interaction.user.display_avatar.url,
                 )
 
-                await interaction.followup.send(embed=embed)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
                 with tempfile.NamedTemporaryFile(
                     "wb", suffix=os.path.splitext(file.filename)[1], dir="tmp"
@@ -174,9 +178,23 @@ class Videos(commands.Cog):
                                 icon_url=interaction.user.display_avatar.url,
                             )
 
+                            if ephemeral:
+                                embed.add_field(
+                                    name="Alert",
+                                    value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
+                                    inline=False,
+                                )
+                            else:
+                                embed.add_field(
+                                    name="Tip",
+                                    value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To bypass this, please download the image, resend it, then star that. Run the command in a channel where you have permissions to avoid this.",
+                                    inline=False,
+                                )
+
                             file_processed = discord.File(
                                 fp=tmp_output.name,
                                 filename=f"titanium_image.{'gif' if mode.value == 'compatibility' else 'webp'}",
+                                spoiler=spoiler,
                             )
 
                             await interaction.edit_original_response(
@@ -197,7 +215,7 @@ class Videos(commands.Cog):
                     icon_url=interaction.user.display_avatar.url,
                 )
 
-                await interaction.followup.send(embed=embed)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         elif file.content_type.split("/")[0] == "image":  # If file is an image
             commands = await self.bot.tree.fetch_commands()
 
@@ -225,7 +243,7 @@ class Videos(commands.Cog):
                 icon_url=interaction.user.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         else:  # If file is not a video
             embed = discord.Embed(
                 title="Error",
@@ -237,7 +255,7 @@ class Videos(commands.Cog):
                 icon_url=interaction.user.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot):

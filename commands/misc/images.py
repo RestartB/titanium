@@ -174,7 +174,13 @@ class Images(commands.Cog):
                         if ephemeral:
                             embed.add_field(
                                 name="Alert",
-                                value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
+                                value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
+                                inline=False,
+                            )
+                        else:
+                            embed.add_field(
+                                name="Tip",
+                                value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To bypass this, please download the image, resend it, then star that. Run the command in a channel where you have permissions to avoid this.",
                                 inline=False,
                             )
 
@@ -325,7 +331,13 @@ class Images(commands.Cog):
                 if ephemeral:
                     embed.add_field(
                         name="Alert",
-                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
+                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
+                        inline=False,
+                    )
+                else:
+                    embed.add_field(
+                        name="Tip",
+                        value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To bypass this, please download the image, resend it, then star that. Run the command in a channel where you have permissions to avoid this.",
                         inline=False,
                     )
 
@@ -580,7 +592,13 @@ class Images(commands.Cog):
                 if ephemeral:
                     embed.add_field(
                         name="Alert",
-                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
+                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
+                        inline=False,
+                    )
+                else:
+                    embed.add_field(
+                        name="Tip",
+                        value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To bypass this, please download the image, resend it, then star that. Run the command in a channel where you have permissions to avoid this.",
                         inline=False,
                     )
 
@@ -957,7 +975,13 @@ class Images(commands.Cog):
                 if ephemeral:
                     embed.add_field(
                         name="Alert",
-                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
+                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
+                        inline=False,
+                    )
+                else:
+                    embed.add_field(
+                        name="Tip",
+                        value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To bypass this, please download the image, resend it, then star that. Run the command in a channel where you have permissions to avoid this.",
                         inline=False,
                     )
 
@@ -1098,7 +1122,13 @@ class Images(commands.Cog):
                 if ephemeral:
                     embed.add_field(
                         name="Alert",
-                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it.",
+                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
+                        inline=False,
+                    )
+                else:
+                    embed.add_field(
+                        name="Tip",
+                        value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To bypass this, please download the image, resend it, then star that. Run the command in a channel where you have permissions to avoid this.",
                         inline=False,
                     )
 
