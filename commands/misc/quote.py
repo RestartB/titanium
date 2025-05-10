@@ -156,6 +156,7 @@ def _create_quote_image_sync(
                 font=quote_font,
                 align="center",
                 spacing=20,
+                emoji_position_offset=(0, -10),
             )
 
             # Author text
@@ -173,7 +174,7 @@ def _create_quote_image_sync(
 
             # Calculate x and y position
             displayname_x = ((600 - displayname_width) // 2) + 600
-            displayname_y = quote_y + 40 + quote_height
+            displayname_y = quote_y + 30 + quote_height
 
             # Draw text
             pilmoji.text(
