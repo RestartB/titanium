@@ -913,8 +913,6 @@ class Images(commands.Cog):
                                 # Save image as PNG temporarily
                                 output_image.save(output_data_temp, format="PNG")
 
-                                print("Saved as PNG temporarily")
-
                                 # Convert to GIF
                                 output_data_temp.seek(0)
                                 with WandImage(

@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING, Union
 
 import aiohttp
@@ -55,7 +56,7 @@ class Analytics(commands.Cog):
                         )
                         await webhook.send(embed=embed)
                 except Exception as e:
-                    print(f"[ANALYTICS] Failed to send analytics webhook - {e}")
+                    logging.error(f"[ANALYTICS] Failed to send analytics webhook - {e}")
         except KeyError:
             pass
 
@@ -99,7 +100,7 @@ class Analytics(commands.Cog):
                             )
                             await webhook.send(embed=embed)
                 except Exception as e:
-                    print(f"[ANALYTICS] Failed to send raw analytics webhook - {e}")
+                    logging.error(f"[ANALYTICS] Failed to send raw analytics webhook - {e}")
         except KeyError:
             pass
 
