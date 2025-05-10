@@ -100,7 +100,9 @@ class Analytics(commands.Cog):
                             )
                             await webhook.send(embed=embed)
                 except Exception as e:
-                    logging.error(f"[ANALYTICS] Failed to send raw analytics webhook - {e}")
+                    logging.error(
+                        f"[ANALYTICS] Failed to send raw analytics webhook - {e}"
+                    )
         except KeyError:
             pass
 
