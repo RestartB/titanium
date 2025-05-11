@@ -345,32 +345,31 @@ async def artist(
         text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
     )
 
-    topsong_string = ""
-    for i in range(0, 5):
-        artist_string = ""
-        for artist in top_tracks["tracks"][i]["artists"]:
-            if artist_string == "":
-                artist_string = escape_markdown(artist["name"])
-            else:
-                artist_string += f", {escape_markdown(artist['name'])}"
+    try:
+        topsong_string = ""
+        for i in range(0, 5):
+            artist_string = ""
+            for artist in top_tracks["tracks"][i]["artists"]:
+                if artist_string == "":
+                    artist_string = escape_markdown(artist["name"])
+                else:
+                    artist_string += f", {escape_markdown(artist['name'])}"
 
-        # Hide artist string from song listing if there is only one artist
-        if len(top_tracks["tracks"][i]["artists"]) == 1:
-            if topsong_string == "":
-                topsong_string = (
-                    f"{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}**"
-                )
+            # Hide artist string from song listing if there is only one artist
+            if len(top_tracks["tracks"][i]["artists"]) == 1:
+                if topsong_string == "":
+                    topsong_string = f"{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}**"
+                else:
+                    topsong_string += f"\n{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}**"
             else:
-                topsong_string += (
-                    f"\n{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}**"
-                )
-        else:
-            if topsong_string == "":
-                topsong_string = f"{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}** - {artist_string}"
-            else:
-                topsong_string += f"\n{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}** - {artist_string}"
+                if topsong_string == "":
+                    topsong_string = f"{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}** - {artist_string}"
+                else:
+                    topsong_string += f"\n{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}** - {artist_string}"
 
-    embed.add_field(name="Top Songs", value=topsong_string, inline=False)
+        embed.add_field(name="Top Songs", value=topsong_string, inline=False)
+    except IndexError:
+        pass
 
     # Get image, store in memory
     async with aiohttp.ClientSession() as session:
