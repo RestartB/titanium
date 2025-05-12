@@ -98,9 +98,12 @@ def _create_quote_image_sync(
         if len(raw) < 120:
             font_size = 40
             max_chars, wrap_width = 120, 20
+        elif len(raw) < 210:
+            font_size = 32
+            max_chars, wrap_width = 210, 28
         else:
-            font_size = 35
-            max_chars, wrap_width = 150, 25
+            font_size = 26
+            max_chars, wrap_width = 310, 35
 
         # Truncate, preserving newlines
         if len(raw) > max_chars:
@@ -113,6 +116,12 @@ def _create_quote_image_sync(
                 wrapped.append("")  # Preserve blank lines
             else:
                 wrapped.extend(wrap(para, wrap_width))
+        
+        # Calculate y offset for text
+        if len(wrapped) > 5:
+            y_offset = (font_size - 10) * (len(wrapped) - 5)
+        else:
+            y_offset = 0
 
         # Go through each line, replace placeholder with emoji
         processed_lines = []
@@ -146,7 +155,10 @@ def _create_quote_image_sync(
 
             # Calculate x and y position
             quote_x = ((600 - quote_width) // 2) + 600
-            quote_y = (600 - quote_height) // 2
+            if y_offset != 0:
+                quote_y = (600 - quote_height) // 2 - y_offset
+            else:
+                quote_y = (600 - quote_height) // 2
 
             # Draw quote text
             pilmoji.text(
