@@ -116,7 +116,7 @@ def _create_quote_image_sync(
                 wrapped.append("")  # Preserve blank lines
             else:
                 wrapped.extend(wrap(para, wrap_width))
-        
+
         # Calculate y offset for text
         if len(wrapped) > 5:
             y_offset = (font_size - 10) * (len(wrapped) - 5)
