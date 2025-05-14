@@ -80,7 +80,10 @@ class Analytics(commands.Cog):
                         if isinstance(interaction.command, app_commands.ContextMenu):
                             embed.description = f"`{interaction.command.name}`"
                         else:
-                            embed.description = f"`/{f'{interaction.command.parent.name} ' if interaction.command.parent is not None else ''}{interaction.command.name}`"
+                            try:
+                                embed.description = f"`/{f'{interaction.command.parent.name} ' if interaction.command.parent is not None else ''}{interaction.command.name}`"
+                            except AttributeError:
+                                embed.description = f"`{interaction.command.name}`"
 
                         embed.timestamp = interaction.created_at
                         embed.set_author(
