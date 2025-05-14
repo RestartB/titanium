@@ -19,6 +19,7 @@ async def create_quote_image(
     user: discord.User,
     content: str,
     output_format: str,
+    fade: bool = True,
     light_mode: bool = False,
     bw_mode: bool = False,
     custom_quote: bool = False,
@@ -42,6 +43,7 @@ async def create_quote_image(
         pfp_data,
         content,
         output_format,
+        fade,
         light_mode,
         bw_mode,
         custom_quote,
@@ -56,6 +58,7 @@ def _create_quote_image_sync(
     pfp_data: BytesIO,
     content: str,
     output_format: str,
+    fade: bool = True,
     light_mode: bool = False,
     bw_mode: bool = False,
     custom_quote: bool = False,
@@ -75,8 +78,11 @@ def _create_quote_image_sync(
             if bw_mode:
                 pfp = pfp.convert("L")
 
-            mask = Image.linear_gradient("L").rotate(-90).resize((600, 600))
-            img.paste(pfp, (0, 0), mask)
+            if fade:
+                mask = Image.linear_gradient("L").rotate(-90).resize((600, 600))
+                img.paste(pfp, (0, 0), mask)
+            else:
+                img.paste(pfp, (0, 0))
 
         draw = ImageDraw.Draw(img)
 
@@ -253,19 +259,24 @@ class QuoteView(View):
         user_id: int,
         content: str,
         output_format: str,
+        allowed_ids: list,
         og_msg: str = None,
+        fade: bool = True,
         light_mode: bool = False,
         bw_mode: bool = False,
         custom_quote: bool = False,
         custom_quote_user_id: int = None,
         bot: bool = False,
+        
     ):
         super().__init__(timeout=259200)  # 3 days
-
+        
         self.user_id = user_id
         self.content = content
         self.output_format = output_format
+        self.allowed_ids = allowed_ids
         self.og_msg = og_msg
+        self.fade = fade
         self.light_mode = light_mode
         self.bw_mode = bw_mode
         self.custom_quote = custom_quote
@@ -288,10 +299,26 @@ class QuoteView(View):
                     child.label = "Black & White"
                     child.emoji = "⚫"
 
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        await interaction.response.defer(ephemeral=True)
+
+        if interaction.user.id in self.allowed_ids:
+            return True
+        else:
+            embed = discord.Embed(
+                title="Error",
+                description="You can't modify this quote, as you did not run the command or get quoted.",
+                color=discord.Color.red(),
+            )
+
+            await interaction.followup.send(
+                embed=embed,
+                ephemeral=True,
+            )
+            return False
+    
     @discord.ui.button(label="", style=discord.ButtonStyle.gray, custom_id="theme")
     async def theme(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-
         try:
             # Try to get member if available
             user = await interaction.client.fetch_user(self.user_id)
@@ -331,6 +358,7 @@ class QuoteView(View):
             user=user,
             content=self.content,
             output_format=self.output_format,
+            fade=self.fade,
             light_mode=not self.light_mode,
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
@@ -347,7 +375,9 @@ class QuoteView(View):
             user_id=self.user_id,
             content=self.content,
             output_format=self.output_format,
+            allowed_ids=self.allowed_ids,
             og_msg=self.og_msg,
+            fade=self.fade,
             light_mode=not self.light_mode,
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
@@ -381,8 +411,6 @@ class QuoteView(View):
 
     @discord.ui.button(label="", style=discord.ButtonStyle.gray, custom_id="bw")
     async def bw(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-
         try:
             # Try to get member if available
             user = await interaction.client.fetch_user(self.user_id)
@@ -422,6 +450,7 @@ class QuoteView(View):
             user=user,
             content=self.content,
             output_format=self.output_format,
+            fade=self.fade,
             light_mode=self.light_mode,
             bw_mode=not self.bw_mode,
             custom_quote=self.custom_quote,
@@ -438,7 +467,9 @@ class QuoteView(View):
             user_id=self.user_id,
             content=self.content,
             output_format=self.output_format,
+            allowed_ids=self.allowed_ids,
             og_msg=self.og_msg,
+            fade=self.fade,
             light_mode=self.light_mode,
             bw_mode=not self.bw_mode,
             custom_quote=self.custom_quote,
@@ -474,8 +505,6 @@ class QuoteView(View):
         label="", emoji="🔄", style=discord.ButtonStyle.gray, custom_id="reload"
     )
     async def reload(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer(ephemeral=True)
-
         try:
             # Try to get member if available
             user = await interaction.client.fetch_user(self.user_id)
@@ -515,6 +544,7 @@ class QuoteView(View):
             user=user,
             content=self.content,
             output_format=self.output_format,
+            fade=self.fade,
             light_mode=self.light_mode,
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
@@ -531,7 +561,9 @@ class QuoteView(View):
             user_id=self.user_id,
             content=self.content,
             output_format=self.output_format,
+            allowed_ids=self.allowed_ids,
             og_msg=self.og_msg,
+            fade=self.fade,
             light_mode=self.light_mode,
             bw_mode=self.bw_mode,
             custom_quote=self.custom_quote,
@@ -567,8 +599,6 @@ class QuoteView(View):
         label="", emoji="🗑️", style=discord.ButtonStyle.red, custom_id="delete"
     )
     async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer(ephemeral=True)
-
         if interaction.user.id == self.user_id:
             await interaction.delete_original_response()
 
@@ -646,6 +676,7 @@ class Quotes(commands.Cog):
             user_id=message.author.id,
             content=message.content,
             output_format="PNG",
+            allowed_ids=[interaction.user.id, message.author.id],
             og_msg=message.jump_url,
             light_mode=False,
             bw_mode=False,
@@ -698,6 +729,7 @@ class Quotes(commands.Cog):
         user: discord.User,
         content: str,
         format: app_commands.Choice[str] = "",
+        fade: bool = True,
         light_mode: bool = False,
         bw_mode: bool = False,
     ):
@@ -713,6 +745,7 @@ class Quotes(commands.Cog):
             user=user,
             content=content,
             output_format=format.value,
+            fade=fade,
             light_mode=light_mode,
             bw_mode=bw_mode,
             custom_quote=True,
@@ -728,6 +761,8 @@ class Quotes(commands.Cog):
             user_id=user.id,
             content=content,
             output_format=format.value,
+            allowed_ids=[interaction.user.id, user.id],
+            fade=fade,
             light_mode=light_mode,
             bw_mode=bw_mode,
             custom_quote=True,
