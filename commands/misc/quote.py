@@ -337,7 +337,7 @@ class QuoteView(View):
         if self.custom_quote:
             try:
                 # Try to get member if available
-                custom_quote_user = await interaction.client.fetch_user(self.user_id)
+                custom_quote_user = await interaction.client.fetch_user(self.custom_quote_user_id)
             except discord.NotFound:
                 embed = discord.Embed(
                     title="Error",
@@ -429,7 +429,7 @@ class QuoteView(View):
         if self.custom_quote:
             try:
                 # Try to get member if available
-                custom_quote_user = await interaction.client.fetch_user(self.user_id)
+                custom_quote_user = await interaction.client.fetch_user(self.custom_quote_user_id)
             except discord.NotFound:
                 embed = discord.Embed(
                     title="Error",
@@ -523,7 +523,7 @@ class QuoteView(View):
         if self.custom_quote:
             try:
                 # Try to get member if available
-                custom_quote_user = await interaction.client.fetch_user(self.user_id)
+                custom_quote_user = await interaction.client.fetch_user(self.custom_quote_user_id)
             except discord.NotFound:
                 embed = discord.Embed(
                     title="Error",
