@@ -179,7 +179,7 @@ class SpotifySearch(commands.GroupCog):
                 pass
 
         # Search Spotify
-        result = self.sp.search(search, type="track", limit=5)
+        result = self.sp.search(search, type="track", limit=10)
 
         # Check if result is blank
         if len(result["tracks"]["items"]) == 0:
@@ -384,7 +384,7 @@ class SpotifySearch(commands.GroupCog):
                 pass
 
         # Search Spotify
-        result = self.sp.search(search, type="artist", limit=5)
+        result = self.sp.search(search, type="artist", limit=10)
 
         # Check if result is blank
         if len(result["artists"]["items"]) == 0:
@@ -582,7 +582,7 @@ class SpotifySearch(commands.GroupCog):
                 pass
 
         # Search Spotify
-        result = self.sp.search(search, type="album", limit=5)
+        result = self.sp.search(search, type="album", limit=10)
 
         # Check if result is blank
         if len(result["albums"]["items"]) == 0:
