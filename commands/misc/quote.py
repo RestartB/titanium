@@ -267,10 +267,9 @@ class QuoteView(View):
         custom_quote: bool = False,
         custom_quote_user_id: int = None,
         bot: bool = False,
-        
     ):
         super().__init__(timeout=259200)  # 3 days
-        
+
         self.user_id = user_id
         self.content = content
         self.output_format = output_format
@@ -316,7 +315,7 @@ class QuoteView(View):
                 ephemeral=True,
             )
             return False
-    
+
     @discord.ui.button(label="", style=discord.ButtonStyle.gray, custom_id="theme")
     async def theme(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
