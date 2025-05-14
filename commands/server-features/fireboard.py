@@ -219,9 +219,15 @@ class Fireboard(commands.Cog):
             if ignore_bots and message.author.bot:
                 return
 
-            # Stop if message is in an NSFW channel
-            if message.channel.nsfw:
-                return
+            # Check if this is a thread
+            if isinstance(msg_channel, discord.Thread):
+                # Check if parent channel is NSFW
+                if msg_channel.parent.nsfw:
+                    return
+            else:
+                # Stop if message is in an NSFW channel
+                if message.channel.nsfw:
+                    return
 
             # Stop if not enough reactions
             for reaction in message.reactions:
@@ -459,9 +465,15 @@ class Fireboard(commands.Cog):
             if ignore_bots and message.author.bot:
                 return
 
-            # Stop if message is in an NSFW channel
-            if message.channel.nsfw:
-                return
+            # Check if this is a thread
+            if isinstance(msg_channel, discord.Thread):
+                # Check if parent channel is NSFW
+                if msg_channel.parent.nsfw:
+                    return
+            else:
+                # Stop if message is in an NSFW channel
+                if message.channel.nsfw:
+                    return
 
             # Get reaction count
             react_count = 0
