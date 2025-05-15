@@ -28,9 +28,13 @@ class SongView(View):
         self.add_button_url = add_button_url
         self.add_button_text = add_button_text
 
+        # Calculate duration
+        seconds, item["duration_ms"] = divmod(item["duration_ms"], 1000)
+        minutes, seconds = divmod(seconds, 60)
+
         # Add Open in Spotify button
         spotify_button = discord.ui.Button(
-            label="Play on Spotify",
+            label=f"Play on Spotify ({int(minutes):02d}:{int(seconds):02d})",
             style=discord.ButtonStyle.url,
             url=item["external_urls"]["spotify"],
         )
