@@ -34,7 +34,6 @@ def _fetch_playlist_items(self, result_info, url) -> list:
     page_str = ""
 
     for current in range(amount_spotify_pages):
-        print(f"Page {current + 1}/{amount_spotify_pages}")
         result_current = self.sp.playlist_items(
             url, market="GB", offset=(current * 100)
         )
@@ -97,8 +96,6 @@ def _fetch_playlist_items(self, result_info, url) -> list:
             if i % 15 == 0:
                 pages.append(page_str)
                 page_str = ""
-
-        print(f"Page {current + 1}/{amount_spotify_pages} done")
 
     # If there is still data in page_str, add it to a new page
     if page_str != "":

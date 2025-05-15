@@ -23,6 +23,7 @@ class TagCreateModal(discord.ui.Modal, title="Create Tag"):
         placeholder="If you have added an attachment, leave this blank.",
         style=discord.TextStyle.paragraph,
         required=False,
+        max_length=2000,
     )
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -49,6 +50,7 @@ class TagEditModal(discord.ui.Modal, title="Edit Selected Tag"):
         placeholder="If you have added an attachment, leave this blank.",
         style=discord.TextStyle.paragraph,
         required=False,
+        max_length=2000,
     )
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -384,33 +386,45 @@ class UserTags(commands.Cog):
                     )
                     await interaction.followup.send(embed=embed, ephemeral=True)
                 else:
-                    if attachment is not None:
-                        async with self.tags_pool.acquire() as sql:
-                            await sql.execute(
-                                "INSERT INTO tags (creatorID, name, content) VALUES (?, ?, ?)",
-                                (interaction.user.id, name, attachment.url),
-                            )
-
-                        if interaction.user.id not in self.tags:
-                            self.tags[interaction.user.id] = {}
-
-                        self.tags[interaction.user.id][name] = attachment.url
+                    if len(tagModal.content.value) > 2000:
+                        embed = discord.Embed(
+                            title="Error",
+                            description="Tag content is too long.",
+                            color=Color.red(),
+                        )
+                        await interaction.followup.send(embed=embed, ephemeral=True)
                     else:
-                        async with self.tags_pool.acquire() as sql:
-                            await sql.execute(
-                                "INSERT INTO tags (creatorID, name, content) VALUES (?, ?, ?)",
-                                (interaction.user.id, name, tagModal.content.value),
+                        if attachment is not None:
+                            async with self.tags_pool.acquire() as sql:
+                                await sql.execute(
+                                    "INSERT INTO tags (creatorID, name, content) VALUES (?, ?, ?)",
+                                    (interaction.user.id, name, attachment.url),
+                                )
+
+                            if interaction.user.id not in self.tags:
+                                self.tags[interaction.user.id] = {}
+
+                            self.tags[interaction.user.id][name] = attachment.url
+                        else:
+                            async with self.tags_pool.acquire() as sql:
+                                await sql.execute(
+                                    "INSERT INTO tags (creatorID, name, content) VALUES (?, ?, ?)",
+                                    (interaction.user.id, name, tagModal.content.value),
+                                )
+
+                            if interaction.user.id not in self.tags:
+                                self.tags[interaction.user.id] = {}
+
+                            self.tags[interaction.user.id][name] = (
+                                tagModal.content.value
                             )
 
-                        if interaction.user.id not in self.tags:
-                            self.tags[interaction.user.id] = {}
-
-                        self.tags[interaction.user.id][name] = tagModal.content.value
-
-                    embed = discord.Embed(
-                        title="Success", description="Tag created.", color=Color.green()
-                    )
-                    await interaction.followup.send(embed=embed, ephemeral=True)
+                        embed = discord.Embed(
+                            title="Success",
+                            description="Tag created.",
+                            color=Color.green(),
+                        )
+                        await interaction.followup.send(embed=embed, ephemeral=True)
 
     # Tags Edit command
     @tagsGroup.command(name="edit", description="Edit a tag.")
@@ -475,6 +489,15 @@ class UserTags(commands.Cog):
 
                             await interaction.followup.send(embed=embed, ephemeral=True)
                             return
+
+                if len(tagModal.content.value) > 2000:
+                    embed = discord.Embed(
+                        title="Error",
+                        description="Tag content is too long.",
+                        color=Color.red(),
+                    )
+                    await interaction.followup.send(embed=embed, ephemeral=True)
+                    return
 
                 # Update Attachment / Content
                 if attachment is not None:  # Attachment
