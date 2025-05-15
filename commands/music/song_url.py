@@ -63,9 +63,7 @@ def _fetch_playlist_items(self, result_info, url) -> list:
                             artist_string = artist["name"].replace("*", "-")
                         else:
                             # Else, we add the current artist to the existing artist string
-                            artist_string += f", {artist['name']}".replace(
-                                "*", "-"
-                            )
+                            artist_string += f", {artist['name']}".replace("*", "-")
 
                     # If there's nothing in the current page, make a new one
                     if page_str == "":
@@ -99,15 +97,16 @@ def _fetch_playlist_items(self, result_info, url) -> list:
             if i % 15 == 0:
                 pages.append(page_str)
                 page_str = ""
-        
+
         print(f"Page {current + 1}/{amount_spotify_pages} done")
 
     # If there is still data in page_str, add it to a new page
     if page_str != "":
         pages.append(page_str)
         page_str = ""
-    
+
     return pages
+
 
 class SongURL(commands.Cog):
     def __init__(self, bot):
