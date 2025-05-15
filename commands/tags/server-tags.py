@@ -434,16 +434,24 @@ class ServerTags(commands.Cog):
                             async with self.tags_pool.acquire() as sql:
                                 await sql.execute(
                                     "INSERT INTO tags (creatorID, name, content) VALUES (?, ?, ?)",
-                                    (interaction.guild_id, name, tagModal.content.value),
+                                    (
+                                        interaction.guild_id,
+                                        name,
+                                        tagModal.content.value,
+                                    ),
                                 )
 
                             if interaction.guild_id not in self.tags:
                                 self.tags[interaction.guild_id] = {}
 
-                            self.tags[interaction.guild_id][name] = tagModal.content.value
+                            self.tags[interaction.guild_id][name] = (
+                                tagModal.content.value
+                            )
 
                         embed = discord.Embed(
-                            title="Success", description="Tag created.", color=Color.green()
+                            title="Success",
+                            description="Tag created.",
+                            color=Color.green(),
                         )
                         await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -519,7 +527,7 @@ class ServerTags(commands.Cog):
                     )
                     await interaction.followup.send(embed=embed, ephemeral=True)
                     return
-                
+
                 # Update Attachment / Content
                 if attachment is not None:  # Attachment
                     async with self.tags_pool.acquire() as sql:
