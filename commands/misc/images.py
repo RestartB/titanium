@@ -1,3 +1,4 @@
+import asyncio
 import os
 from io import BytesIO
 
@@ -10,11 +11,9 @@ from PIL import Image, ImageChops, ImageEnhance, ImageOps
 from wand.image import Image as WandImage
 
 
-# noinspection PyTypeChecker
 class Images(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot: commands.Bot
 
         # Convert to GIF option
         self.img_gif_ctx = app_commands.ContextMenu(
@@ -53,6 +52,31 @@ class Images(commands.Cog):
         allowed_contexts=context,
         allowed_installs=installs,
     )
+
+    def _resize_image(
+        self,
+        image_data: BytesIO,
+        width: int,
+        height: int,
+        format: str,
+    ) -> tuple[BytesIO, tuple[int, int]]:
+        # Open image
+        with Image.open(image_data) as im:
+            # Resize image
+            resized_image = im.resize((int(width), int(height)))
+
+            resized_image_data = BytesIO()
+
+            # Save resized image
+            resized_image.save(
+                resized_image_data,
+                format=format.upper().replace("JPG", "JPEG"),
+            )
+
+            new_size = resized_image.size
+
+        resized_image_data.seek(0)
+        return resized_image_data, new_size
 
     # Image Resize command
     @imageGroup.command(name="resize", description="Resize an image.")
@@ -119,28 +143,18 @@ class Images(commands.Cog):
                         async with session.get(file.url) as request:
                             image_data = BytesIO()
 
-                            async for chunk in request.content.iter_chunked(10):
+                            async for chunk in request.content.iter_chunked(8192):
                                 image_data.write(chunk)
 
                             image_data.seek(0)
 
-                    # Open image
-                    with Image.open(image_data) as im:
-                        # Resize image
-                        resized_image = im.resize((int(target_x), int(target_y)))
-
-                        resized_image_data = BytesIO()
-
-                        # Save resized image
-                        resized_image.save(
-                            resized_image_data,
-                            format=os.path.splitext(file.filename)[1][1:]
-                            .upper()
-                            .replace("JPG", "JPEG"),
+                        resized_image_data, new_size = await asyncio.to_thread(
+                            self._resize_image,
+                            image_data=image_data,
+                            width=target_x,
+                            height=target_y,
+                            format=os.path.splitext(file.filename)[1][1:],
                         )
-                        resized_image_data.seek(0)
-
-                        new_size = resized_image.size
 
                         if (
                             new_size[0] > 10000 or new_size[1] > 10000
@@ -231,6 +245,45 @@ class Images(commands.Cog):
 
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
+    def _to_gif(
+        self,
+        image_data: BytesIO,
+        mode: str,
+    ) -> tuple[BytesIO, tuple[int, int]]:
+        output_data = BytesIO()
+
+        # Open image
+        with Image.open(image_data) as im:
+            if mode == "quality":
+                with Image.open(image_data) as im2:
+                    # Convert image to GIF
+                    im.save(
+                        output_data,
+                        format="AVIF",
+                        append_images=[im2],
+                        save_all=True,
+                        duration=500,
+                        loop=0,
+                    )
+                    output_size = im.size
+            else:
+                # Convert to GIF with wand
+                with WandImage(blob=image_data.getvalue()) as wand_image:
+                    # Set GIF optimization options
+                    wand_image.compression_quality = 80
+                    wand_image.quantum_operator = "dither"
+
+                    # Convert to GIF format
+                    wand_image.format = "gif"
+
+                    # Write to output BytesIO
+                    output_data.write(wand_image.make_blob("gif"))
+
+                    output_size = (wand_image.width, wand_image.height)
+
+        output_data.seek(0)
+        return output_data, output_size
+
     # Image to GIF command
     @imageGroup.command(name="to-gif", description="Convert an image to GIF.")
     @app_commands.checks.cooldown(1, 10)
@@ -279,43 +332,16 @@ class Images(commands.Cog):
                     async with session.get(file.url) as request:
                         image_data = BytesIO()
 
-                        async for chunk in request.content.iter_chunked(10):
+                        async for chunk in request.content.iter_chunked(8192):
                             image_data.write(chunk)
 
                         image_data.seek(0)
 
-                output_data = BytesIO()
-
-                # Open image
-                with Image.open(image_data) as im:
-                    if mode.value == "quality":
-                        with Image.open(image_data) as im2:
-                            # Convert image to GIF
-                            im.save(
-                                output_data,
-                                format="AVIF",
-                                append_images=[im2],
-                                save_all=True,
-                                duration=500,
-                                loop=0,
-                            )
-                            output_size = im.size
-                    else:
-                        # Convert to GIF with wand
-                        with WandImage(blob=image_data.getvalue()) as wand_image:
-                            # Set GIF optimization options
-                            wand_image.compression_quality = 80
-                            wand_image.quantum_operator = "dither"
-
-                            # Convert to GIF format
-                            wand_image.format = "gif"
-
-                            # Write to output BytesIO
-                            output_data.write(wand_image.make_blob("gif"))
-
-                            output_size = (wand_image.width, wand_image.height)
-
-                output_data.seek(0)
+                output_data, output_size = await asyncio.to_thread(
+                    self._to_gif,
+                    image_data=image_data,
+                    mode=mode.value,
+                )
 
                 # Send resized image
                 embed = discord.Embed(
@@ -436,33 +462,24 @@ class Images(commands.Cog):
                                 async with session.get(file.url) as request:
                                     image_data = BytesIO()
 
-                                    async for chunk in request.content.iter_chunked(10):
+                                    async for chunk in request.content.iter_chunked(
+                                        8192
+                                    ):
                                         image_data.write(chunk)
 
                                     image_data.seek(0)
 
-                            # Open image
-                            with Image.open(image_data) as im:
-                                output_data = BytesIO()
+                            output_data, output_size = await asyncio.to_thread(
+                                self._to_gif,
+                                image_data=image_data,
+                                mode="quality",
+                            )
 
-                                with Image.open(image_data) as im2:
-                                    # Convert image to GIF
-                                    im.save(
-                                        output_data,
-                                        format="AVIF",
-                                        append_images=[im2],
-                                        save_all=True,
-                                        duration=500,
-                                        loop=0,
-                                    )
-
-                                output_data.seek(0)
-
-                                # Add converted file to list
-                                converted_file = discord.File(
-                                    fp=output_data, filename="titanium_image.avif"
-                                )
-                                converted.append(converted_file)
+                            # Add converted file to list
+                            converted_file = discord.File(
+                                fp=output_data, filename="titanium_image.avif"
+                            )
+                            converted.append(converted_file)
                         else:  # If file is too large
                             fails.append(
                                 f"**{file.filename}** - too large (limit: 20MB, actual: {file.size * 1000000}MB)"
@@ -488,6 +505,62 @@ class Images(commands.Cog):
                     await interaction.followup.send(embed=embed)
             else:
                 await interaction.followup.send(files=converted)
+
+    def _deepfry_image(
+        self,
+        image_data: BytesIO,
+        intensity_scale: float,
+        red_filter: bool,
+    ) -> tuple[BytesIO, tuple[int, int]]:
+        # Open image
+        with Image.open(image_data) as img:
+            # Crediit: https://github.com/Ovyerus/deeppyer
+            # MIT Licence - https://github.com/Ovyerus/deeppyer/blob/master/LICENSE
+
+            # Deepfry image
+            img = img.convert("RGB")
+            width, height = img.width, img.height
+            img = img.resize(
+                (int(width**0.75), int(height**0.75)), resample=Image.LANCZOS
+            )
+            img = img.resize(
+                (int(width**0.88), int(height**0.88)), resample=Image.BILINEAR
+            )
+            img = img.resize(
+                (int(width**0.9), int(height**0.9)), resample=Image.BICUBIC
+            )
+            img = img.resize((width, height), resample=Image.BICUBIC)
+            img = ImageOps.posterize(img, 4)
+
+            # Generate colour overlay
+            r = img.split()[0]
+            r = ImageEnhance.Contrast(r).enhance(
+                1.0 + intensity_scale
+            )  # Scale from 1.0 to 2.0
+            r = ImageEnhance.Brightness(r).enhance(
+                1.0 + (0.5 * intensity_scale)
+            )  # Scale from 1.0 to 1.5
+
+            if red_filter:
+                colours = ((254, 0, 2), (255, 255, 15))
+                r = ImageOps.colorize(r, colours[0], colours[1])
+            else:
+                r = img.copy()
+
+            # Blend scaled from 0 to 0.75
+            img = Image.blend(img, r, 0.75 * intensity_scale)
+
+            # Sharpness scaled from 1.0 to 100.0
+            img = ImageEnhance.Sharpness(img).enhance(1.0 + (99.0 * intensity_scale))
+
+            deepfried_data = BytesIO()
+
+            # Save image
+            img.save(deepfried_data, format="PNG")
+            output_size = img.size
+
+        deepfried_data.seek(0)
+        return deepfried_data, output_size
 
     # Deepfry image command
     @imageGroup.command(name="deepfry", description="Deepfry an image.")
@@ -522,61 +595,17 @@ class Images(commands.Cog):
                     async with session.get(file.url) as request:
                         image_data = BytesIO()
 
-                        async for chunk in request.content.iter_chunked(10):
+                        async for chunk in request.content.iter_chunked(8192):
                             image_data.write(chunk)
 
                         image_data.seek(0)
 
-                # Open image
-                with Image.open(image_data) as img:
-                    # Crediit: https://github.com/Ovyerus/deeppyer
-                    # MIT Licence - https://github.com/Ovyerus/deeppyer/blob/master/LICENSE
-
-                    # Deepfry image
-                    img = img.convert("RGB")
-                    width, height = img.width, img.height
-                    img = img.resize(
-                        (int(width**0.75), int(height**0.75)), resample=Image.LANCZOS
-                    )
-                    img = img.resize(
-                        (int(width**0.88), int(height**0.88)), resample=Image.BILINEAR
-                    )
-                    img = img.resize(
-                        (int(width**0.9), int(height**0.9)), resample=Image.BICUBIC
-                    )
-                    img = img.resize((width, height), resample=Image.BICUBIC)
-                    img = ImageOps.posterize(img, 4)
-
-                    # Generate colour overlay
-                    r = img.split()[0]
-                    r = ImageEnhance.Contrast(r).enhance(
-                        1.0 + intensity_scale
-                    )  # Scale from 1.0 to 2.0
-                    r = ImageEnhance.Brightness(r).enhance(
-                        1.0 + (0.5 * intensity_scale)
-                    )  # Scale from 1.0 to 1.5
-
-                    if red_filter:
-                        colours = ((254, 0, 2), (255, 255, 15))
-                        r = ImageOps.colorize(r, colours[0], colours[1])
-                    else:
-                        r = img.copy()
-
-                    # Blend scaled from 0 to 0.75
-                    img = Image.blend(img, r, 0.75 * intensity_scale)
-
-                    # Sharpness scaled from 1.0 to 100.0
-                    img = ImageEnhance.Sharpness(img).enhance(
-                        1.0 + (99.0 * intensity_scale)
-                    )
-
-                    deepfried_data = BytesIO()
-
-                    # Save image
-                    img.save(deepfried_data, format="PNG")
-                    output_size = img.size
-
-                deepfried_data.seek(0)
+                deepfried_data, output_size = await asyncio.to_thread(
+                    self._deepfry_image,
+                    image_data=image_data,
+                    intensity_scale=intensity_scale,
+                    red_filter=red_filter,
+                )
 
                 # Send resized image
                 embed = discord.Embed(
@@ -670,60 +699,26 @@ class Images(commands.Cog):
                                 async with session.get(file.url) as request:
                                     image_data = BytesIO()
 
-                                    async for chunk in request.content.iter_chunked(10):
+                                    async for chunk in request.content.iter_chunked(
+                                        8192
+                                    ):
                                         image_data.write(chunk)
 
                                     image_data.seek(0)
 
-                            # Open image
-                            with Image.open(image_data) as img:
-                                # Crediit: https://github.com/Ovyerus/deeppyer
-                                # MIT Licence - https://github.com/Ovyerus/deeppyer/blob/master/LICENSE
+                            deepfried_data, output_size = await asyncio.to_thread(
+                                self._deepfry_image,
+                                image_data=image_data,
+                                intensity_scale=1.0,
+                                red_filter=True,
+                            )
 
-                                # Deepfry image
-                                img = img.convert("RGB")
-                                width, height = img.width, img.height
-                                img = img.resize(
-                                    (int(width**0.75), int(height**0.75)),
-                                    resample=Image.LANCZOS,
-                                )
-                                img = img.resize(
-                                    (int(width**0.88), int(height**0.88)),
-                                    resample=Image.BILINEAR,
-                                )
-                                img = img.resize(
-                                    (int(width**0.9), int(height**0.9)),
-                                    resample=Image.BICUBIC,
-                                )
-                                img = img.resize(
-                                    (width, height), resample=Image.BICUBIC
-                                )
-                                img = ImageOps.posterize(img, 4)
-
-                                # Generate colour overlay
-                                r = img.split()[0]
-                                r = ImageEnhance.Contrast(r).enhance(2.0)
-                                r = ImageEnhance.Brightness(r).enhance(1.5)
-
-                                colours = ((254, 0, 2), (255, 255, 15))
-                                r = ImageOps.colorize(r, colours[0], colours[1])
-
-                                # Overlay red and yellow onto main image and sharpen
-                                img = Image.blend(img, r, 0.75)
-                                img = ImageEnhance.Sharpness(img).enhance(100.0)
-
-                                deepfried_data = BytesIO()
-
-                                # Save image
-                                img.save(deepfried_data, format="PNG")
-                                deepfried_data.seek(0)
-
-                                # Add converted file to list
-                                converted_file = discord.File(
-                                    fp=deepfried_data,
-                                    filename="titanium_image.png",
-                                )
-                                converted.append(converted_file)
+                            # Add converted file to list
+                            converted_file = discord.File(
+                                fp=deepfried_data,
+                                filename="titanium_image.png",
+                            )
+                            converted.append(converted_file)
                         else:  # If file is too large
                             fails.append(
                                 f"**{file.filename}** - too large (limit: 20MB, actual: {file.size * 1000000}MB)"
@@ -762,6 +757,123 @@ class Images(commands.Cog):
                     )
 
                     await interaction.followup.send(embed=embed)
+
+    def _speech_bubble_image(
+        self,
+        image_data: BytesIO,
+        colour: str,
+        direction: str,
+        format: str,
+    ) -> tuple[BytesIO, tuple[int, int]]:
+        output_data = BytesIO()
+
+        # Open image
+        with Image.open(image_data) as im:
+            im = im.convert("RGBA")
+
+            # Open speech bubble image
+            with Image.open(os.path.join("content", "speech.png")) as bubble:
+                bubble = bubble.convert("RGBA")
+                bubble = bubble.resize(im.size, Image.Resampling.LANCZOS)
+
+                if direction == "left":  # Flip bubble image if left selected
+                    bubble = bubble.transpose(Image.FLIP_LEFT_RIGHT)
+
+                if colour == "black":  # Invert if black selected
+                    bubble_a = bubble.getchannel("A")
+                    bubble = bubble.convert("RGB")  # Convert to RGB for invert
+
+                    bubble = ImageOps.invert(bubble)
+                    bubble.putalpha(bubble_a)
+
+                if colour == "transparent":
+                    # Subtract bubble shape from image
+                    output_image = ImageChops.subtract_modulo(im, bubble)
+
+                    with Image.open(
+                        os.path.join("content", "speech_border.png")
+                    ) as bubble_border:
+                        # Add speech bubble border
+                        bubble_border = bubble_border.convert("RGBA")
+                        bubble_border = bubble_border.resize(
+                            im.size, Image.Resampling.LANCZOS
+                        )
+
+                        # Make border white
+                        bubble_border_a = bubble_border.getchannel("A")
+                        bubble_border = bubble_border.convert(
+                            "RGB"
+                        )  # Convert to RGB for invert
+
+                        bubble_border = ImageOps.invert(bubble_border)
+                        bubble_border.putalpha(bubble_border_a)
+
+                        if direction == "left":
+                            bubble_border = bubble_border.transpose(
+                                Image.FLIP_LEFT_RIGHT
+                            )
+
+                        output_image.paste(bubble_border, (0, 0), bubble_border)
+
+                    if format == "AVIF":
+                        # Save image to AVIF
+                        output_image.save(
+                            output_data,
+                            format="AVIF",
+                            append_images=[output_image],
+                            save_all=True,
+                            duration=500,
+                            loop=0,
+                        )
+                        output_size = output_image.size
+                    elif format == "GIF":
+                        output_data_temp = BytesIO()
+
+                        # Save image as PNG temporarily
+                        output_image.save(output_data_temp, format="PNG")
+
+                        # Convert to GIF
+                        output_data_temp.seek(0)
+                        with WandImage(blob=output_data_temp.getvalue()) as wand_image:
+                            # Set GIF optimization options
+                            wand_image.compression_quality = 80
+                            wand_image.quantum_operator = "dither"
+
+                            # Convert to GIF format
+                            wand_image.format = "gif"
+
+                            # Write to output BytesIO
+                            output_data.write(wand_image.make_blob("gif"))
+
+                            output_size = (wand_image.width, wand_image.height)
+                    else:
+                        # Save image
+                        output_image.save(output_data, format="PNG")
+                        output_size = output_image.size
+                else:
+                    with Image.new("RGBA", im.size) as output_image:
+                        # Add speech bubble
+                        output_image.paste(im, (0, 0))
+                        output_image.paste(bubble, (0, 0), bubble.getchannel("A"))
+
+                        if format == "AVIF":
+                            # Save image to AVIF
+                            output_image.save(
+                                output_data,
+                                format="AVIF",
+                                append_images=[output_image],
+                                save_all=True,
+                                duration=500,
+                                loop=0,
+                            )
+                            output_size = output_image.size
+                        else:
+                            # Save image
+                            output_image.save(output_data, format=format)
+                            output_size = output_image.size
+
+        output_data.seek(0)
+        return output_data, output_size
 
     # Speech bubble command
     @imageGroup.command(
@@ -839,125 +951,18 @@ class Images(commands.Cog):
                     async with session.get(file.url) as request:
                         image_data = BytesIO()
 
-                        async for chunk in request.content.iter_chunked(10):
+                        async for chunk in request.content.iter_chunked(8192):
                             image_data.write(chunk)
 
                         image_data.seek(0)
 
-                output_data = BytesIO()
-
-                # Open image
-                with Image.open(image_data) as im:
-                    im = im.convert("RGBA")
-
-                    # Open speech bubble image
-                    with Image.open(os.path.join("content", "speech.png")) as bubble:
-                        bubble = bubble.convert("RGBA")
-                        bubble = bubble.resize(im.size, Image.Resampling.LANCZOS)
-
-                        if (
-                            direction.value == "left"
-                        ):  # Flip bubble image if left selected
-                            bubble = bubble.transpose(Image.FLIP_LEFT_RIGHT)
-
-                        if colour.value == "black":  # Invert if black selected
-                            bubble_a = bubble.getchannel("A")
-                            bubble = bubble.convert("RGB")  # Convert to RGB for invert
-
-                            bubble = ImageOps.invert(bubble)
-                            bubble.putalpha(bubble_a)
-
-                        if colour.value == "transparent":
-                            # Subtract bubble shape from image
-                            output_image = ImageChops.subtract_modulo(im, bubble)
-
-                            with Image.open(
-                                os.path.join("content", "speech_border.png")
-                            ) as bubble_border:
-                                # Add speech bubble border
-                                bubble_border = bubble_border.convert("RGBA")
-                                bubble_border = bubble_border.resize(
-                                    im.size, Image.Resampling.LANCZOS
-                                )
-
-                                # Make border white
-                                bubble_border_a = bubble_border.getchannel("A")
-                                bubble_border = bubble_border.convert(
-                                    "RGB"
-                                )  # Convert to RGB for invert
-
-                                bubble_border = ImageOps.invert(bubble_border)
-                                bubble_border.putalpha(bubble_border_a)
-
-                                if direction.value == "left":
-                                    bubble_border = bubble_border.transpose(
-                                        Image.FLIP_LEFT_RIGHT
-                                    )
-
-                                output_image.paste(bubble_border, (0, 0), bubble_border)
-
-                            if format.value == "AVIF":
-                                # Save image to AVIF
-                                output_image.save(
-                                    output_data,
-                                    format="AVIF",
-                                    append_images=[output_image],
-                                    save_all=True,
-                                    duration=500,
-                                    loop=0,
-                                )
-                                output_size = output_image.size
-                            elif format.value == "GIF":
-                                output_data_temp = BytesIO()
-
-                                # Save image as PNG temporarily
-                                output_image.save(output_data_temp, format="PNG")
-
-                                # Convert to GIF
-                                output_data_temp.seek(0)
-                                with WandImage(
-                                    blob=output_data_temp.getvalue()
-                                ) as wand_image:
-                                    # Set GIF optimization options
-                                    wand_image.compression_quality = 80
-                                    wand_image.quantum_operator = "dither"
-
-                                    # Convert to GIF format
-                                    wand_image.format = "gif"
-
-                                    # Write to output BytesIO
-                                    output_data.write(wand_image.make_blob("gif"))
-
-                                    output_size = (wand_image.width, wand_image.height)
-                            else:
-                                # Save image
-                                output_image.save(output_data, format="PNG")
-                                output_size = output_image.size
-                        else:
-                            with Image.new("RGBA", im.size) as output_image:
-                                # Add speech bubble
-                                output_image.paste(im, (0, 0))
-                                output_image.paste(
-                                    bubble, (0, 0), bubble.getchannel("A")
-                                )
-
-                                if format.value == "AVIF":
-                                    # Save image to AVIF
-                                    output_image.save(
-                                        output_data,
-                                        format="AVIF",
-                                        append_images=[output_image],
-                                        save_all=True,
-                                        duration=500,
-                                        loop=0,
-                                    )
-                                    output_size = output_image.size
-                                else:
-                                    # Save image
-                                    output_image.save(output_data, format=format.value)
-                                    output_size = output_image.size
-
-                output_data.seek(0)
+                output_data, output_size = await asyncio.to_thread(
+                    self._speech_bubble_image,
+                    image_data=image_data,
+                    colour=colour.value,
+                    direction=direction.value,
+                    format=format.value,
+                )
 
                 # Send resized image
                 embed = discord.Embed(
@@ -1016,6 +1021,36 @@ class Images(commands.Cog):
             )
 
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+    def _convert_image(
+        self,
+        image_data: BytesIO,
+        format: str,
+    ) -> tuple[BytesIO, tuple[int, int]]:
+        output_data = BytesIO()
+
+        if format == "GIF":
+            # Convert to GIF with wand
+            with WandImage(blob=image_data.getvalue()) as wand_image:
+                # Set GIF optimization options
+                wand_image.compression_quality = 80
+                wand_image.quantum_operator = "dither"
+
+                # Convert to GIF format
+                wand_image.format = "gif"
+
+                # Write to output BytesIO
+                output_data.write(wand_image.make_blob("gif"))
+
+                output_size = (wand_image.width, wand_image.height)
+        else:
+            # Convert with pillow
+            with Image.open(image_data) as im:
+                im.save(output_data, format=format)
+                output_size = im.size
+
+        output_data.seek(0)
+        return output_data, output_size
 
     # Convert image command
     @imageGroup.command(
@@ -1077,34 +1112,16 @@ class Images(commands.Cog):
                     async with session.get(file.url) as request:
                         image_data = BytesIO()
 
-                        async for chunk in request.content.iter_chunked(10):
+                        async for chunk in request.content.iter_chunked(8192):
                             image_data.write(chunk)
 
                         image_data.seek(0)
 
-                output_data = BytesIO()
-
-                if format.value == "GIF":
-                    # Convert to GIF with wand
-                    with WandImage(blob=image_data.getvalue()) as wand_image:
-                        # Set GIF optimization options
-                        wand_image.compression_quality = 80
-                        wand_image.quantum_operator = "dither"
-
-                        # Convert to GIF format
-                        wand_image.format = "gif"
-
-                        # Write to output BytesIO
-                        output_data.write(wand_image.make_blob("gif"))
-
-                        output_size = (wand_image.width, wand_image.height)
-                else:
-                    # Convert with pillow
-                    with Image.open(image_data) as im:
-                        im.save(output_data, format=format.value)
-                        output_size = im.size
-
-                output_data.seek(0)
+                output_data, output_size = await asyncio.to_thread(
+                    self._convert_image,
+                    image_data=image_data,
+                    format=format.value,
+                )
 
                 # Send resized image
                 embed = discord.Embed(
@@ -1126,7 +1143,7 @@ class Images(commands.Cog):
                 else:
                     embed.add_field(
                         name="Tip",
-                        value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To bypass this, please download the image, resend it, then star that. Run the command in a channel where you have permissions to avoid this.",
+                        value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
                         inline=False,
                     )
 

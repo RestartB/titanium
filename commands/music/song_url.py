@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 from io import BytesIO
@@ -18,6 +19,95 @@ from url_cleaner import UrlCleaner
 import utils.songlink_exceptions as songlink_exceptions
 import utils.spotify_elements as elements
 
+
+def _fetch_playlist_items(self, result_info, url) -> list:
+    print("Hand off")
+    total_items = result_info["tracks"]["total"]
+
+    amount_spotify_pages = total_items // 100
+    if total_items % 100 != 0:
+        amount_spotify_pages += 1
+
+    # Variables
+    i = 0
+    pages = []
+    page_str = ""
+
+    for current in range(amount_spotify_pages):
+        print(f"Page {current + 1}/{amount_spotify_pages}")
+        result_current = self.sp.playlist_items(
+            url, market="GB", offset=(current * 100)
+        )
+        # Work through all tracks in playlist, adding them to a page
+        for playlist_item in result_current["items"]:
+            try:
+                i += 1
+                artist_string = ""
+
+                # Check if item is a track, podcast, unavailable in current reigon or unknown
+                if playlist_item["track"] is None:
+                    # Item type is unavailable in the GB reigon
+                    # If there's nothing in the current page, make a new one
+                    if page_str == "":
+                        page_str = f"{i}. *(Media Unavailable)*"
+                    # Else, add string to existing page
+                    else:
+                        page_str += f"\n{i}. *(Media Unavailable)*"
+                elif playlist_item["track"]["type"] == "track":
+                    # Item is a track
+                    # Work through all artists of item
+                    for artist in playlist_item["track"]["artists"]:
+                        # If there is no artists already in the artist string
+                        if artist_string == "":
+                            # We set the artist string to the artist we're currently on
+                            artist_string = artist["name"].replace("*", "-")
+                        else:
+                            # Else, we add the current artist to the existing artist string
+                            artist_string += f", {artist['name']}".replace(
+                                "*", "-"
+                            )
+
+                    # If there's nothing in the current page, make a new one
+                    if page_str == "":
+                        page_str = f"{i}. **{escape_markdown(playlist_item['track']['name'])}** - {artist_string}"
+                    # Else, add string to existing page
+                    else:
+                        page_str += f"\n{i}. **{escape_markdown(playlist_item['track']['name'])}** - {artist_string}"
+                elif playlist_item["track"]["type"] == "episode":
+                    # Item is a podcast
+                    if page_str == "":
+                        page_str = f"{i}. **{escape_markdown(playlist_item['track']['album']['name'])}** - {escape_markdown(playlist_item['track']['name'])} (Podcast)"
+                    else:
+                        page_str += f"\n{i}. **{escape_markdown(playlist_item['track']['album']['name'])}** - {escape_markdown(playlist_item['track']['name'])} (Podcast)"
+                else:
+                    # Item type is unknown / unsupported
+                    # If there's nothing in the current page, make a new one
+                    if page_str == "":
+                        page_str = f"{i}. *(Unknown Media Type)*"
+                    # Else, add string to existing page
+                    else:
+                        page_str += f"\n{i}. *(Unknown Media Type)*"
+            except KeyError:
+                # Create new page if current page is empty
+                if page_str == "":
+                    page_str = f"{i}. *(Media Unavailable)*"
+                # Else, add string to existing page
+                else:
+                    page_str += f"\n{i}. *(Media Unavailable)*"
+
+            # If there's 15 items in the current page, we split it into a new page
+            if i % 15 == 0:
+                pages.append(page_str)
+                page_str = ""
+        
+        print(f"Page {current + 1}/{amount_spotify_pages} done")
+
+    # If there is still data in page_str, add it to a new page
+    if page_str != "":
+        pages.append(page_str)
+        page_str = ""
+    
+    return pages
 
 class SongURL(commands.Cog):
     def __init__(self, bot):
@@ -492,37 +582,26 @@ class SongURL(commands.Cog):
             # Playlist URL
             elif "playlist" in url:
                 # Search playlist on Spotify
-                try:
-                    result_info = self.sp.playlist(url, market="GB")
-                except spotipy.exceptions.SpotifyException:
-                    embed = discord.Embed(
-                        title="Error",
-                        description="A Spotify error occurred. Check the link is valid.",
-                        color=Color.red(),
-                    )
-                    embed.add_field(
-                        name="Tip",
-                        value="Is there a reigon code in the Spotify URL - e.g. `/intl-de/`? Remove it and it should fix the URL.",
-                    )
-                    embed.set_footer(
-                        text=f"@{interaction.user.name}",
-                        icon_url=interaction.user.display_avatar.url,
-                    )
+                # try:
+                result_info = self.sp.playlist(url, market="GB")
+                # except spotipy.exceptions.SpotifyException:
+                #     embed = discord.Embed(
+                #         title="Error",
+                #         description="A Spotify error occurred. Check the link is valid.",
+                #         color=Color.red(),
+                #     )
+                #     embed.add_field(
+                #         name="Tip",
+                #         value="Is there a reigon code in the Spotify URL - e.g. `/intl-de/`? Remove it and it should fix the URL.",
+                #     )
+                #     embed.set_footer(
+                #         text=f"@{interaction.user.name}",
+                #         icon_url=interaction.user.display_avatar.url,
+                #     )
 
-                    await interaction.followup.send(embed=embed)
+                #     await interaction.followup.send(embed=embed)
 
-                    return
-
-                total_items = result_info["tracks"]["total"]
-
-                amount_spotify_pages = total_items // 100
-                if total_items % 100 != 0:
-                    amount_spotify_pages += 1
-
-                # Variables
-                i = 0
-                pages = []
-                page_str = ""
+                #     return
 
                 embed = discord.Embed(
                     title="Loading...",
@@ -565,76 +644,12 @@ class SongURL(commands.Cog):
                 )
                 await interaction.edit_original_response(embed=embed)
 
-                for current in range(amount_spotify_pages):
-                    result_current = self.sp.playlist_items(
-                        url, market="GB", offset=(current * 100)
-                    )
-                    # Work through all tracks in playlist, adding them to a page
-                    for playlist_item in result_current["items"]:
-                        try:
-                            i += 1
-                            artist_string = ""
-
-                            # Check if item is a track, podcast, unavailable in current reigon or unknown
-                            if playlist_item["track"] is None:
-                                # Item type is unavailable in the GB reigon
-                                # If there's nothing in the current page, make a new one
-                                if page_str == "":
-                                    page_str = f"{i}. *(Media Unavailable)*"
-                                # Else, add string to existing page
-                                else:
-                                    page_str += f"\n{i}. *(Media Unavailable)*"
-                            elif playlist_item["track"]["type"] == "track":
-                                # Item is a track
-                                # Work through all artists of item
-                                for artist in playlist_item["track"]["artists"]:
-                                    # If there is no artists already in the artist string
-                                    if artist_string == "":
-                                        # We set the artist string to the artist we're currently on
-                                        artist_string = artist["name"].replace("*", "-")
-                                    else:
-                                        # Else, we add the current artist to the existing artist string
-                                        artist_string += f", {artist['name']}".replace(
-                                            "*", "-"
-                                        )
-
-                                # If there's nothing in the current page, make a new one
-                                if page_str == "":
-                                    page_str = f"{i}. **{escape_markdown(playlist_item['track']['name'])}** - {artist_string}"
-                                # Else, add string to existing page
-                                else:
-                                    page_str += f"\n{i}. **{escape_markdown(playlist_item['track']['name'])}** - {artist_string}"
-                            elif playlist_item["track"]["type"] == "episode":
-                                # Item is a podcast
-                                if page_str == "":
-                                    page_str = f"{i}. **{escape_markdown(playlist_item['track']['album']['name'])}** - {escape_markdown(playlist_item['track']['name'])} (Podcast)"
-                                else:
-                                    page_str += f"\n{i}. **{escape_markdown(playlist_item['track']['album']['name'])}** - {escape_markdown(playlist_item['track']['name'])} (Podcast)"
-                            else:
-                                # Item type is unknown / unsupported
-                                # If there's nothing in the current page, make a new one
-                                if page_str == "":
-                                    page_str = f"{i}. *(Unknown Media Type)*"
-                                # Else, add string to existing page
-                                else:
-                                    page_str += f"\n{i}. *(Unknown Media Type)*"
-                        except KeyError:
-                            # Create new page if current page is empty
-                            if page_str == "":
-                                page_str = f"{i}. *(Media Unavailable)*"
-                            # Else, add string to existing page
-                            else:
-                                page_str += f"\n{i}. *(Media Unavailable)*"
-
-                        # If there's 15 items in the current page, we split it into a new page
-                        if i % 15 == 0:
-                            pages.append(page_str)
-                            page_str = ""
-
-                # If there is still data in page_str, add it to a new page
-                if page_str != "":
-                    pages.append(page_str)
-                    page_str = ""
+                pages = await asyncio.to_thread(
+                    _fetch_playlist_items,
+                    self,
+                    result_info=result_info,
+                    url=url,
+                )
 
                 # Define page view
                 class PlaylistPagesController(View):
