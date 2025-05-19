@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8" />
+    <title>title</title>
+
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap");
+
+        html,
+        body {
+            width: 1200px;
+            height: 600px;
+            margin: 0;
+            padding: 0;
+            color: white;
+            background-color: black;
+            font-family: "Figtree", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 500;
+            font-style: normal;
+        }
+
+        body {
+            display: flex;
+        }
+
+        p,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            margin: 0;
+            padding: 0;
+        }
+
+        section {
+            flex: 1 1 50%;
+            max-width: 50%;
+        }
+
+        .quote {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            overflow: hidden;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            gap: 10px;
+        }
+
+        .content {
+            margin-top: auto;
+            font-size: 37px;
+            overflow: hidden;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            max-height: 502px;
+            gap: 5px;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            text-align: center;
+            width: 100%;
+            white-space: pre-wrap;
+        }
+
+        .content img {
+            height: 40px;
+            width: auto;
+            flex-shrink: 0;
+            object-fit: contain;
+        }
+
+        .content img:not([src]),
+        .content img[src=""],
+        .content img[src*="undefined"],
+        .content img:error {
+            display: none;
+        }
+
+        .content img:not([src])::after,
+        .content img[src=""]::after,
+        .content img[src*="undefined"]::after,
+        .content img:error::after {
+            content: attr(alt);
+            display: inline;
+        }
+
+        .fade-bottom {
+            position: relative;
+        }
+
+        .fade-bottom::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to bottom, transparent, black 90%);
+        }
+
+        .author {
+            font-size: 25px;
+            font-weight: 400;
+            margin-bottom: auto;
+        }
+
+        .footer {
+            font-size: 23px;
+            font-weight: 500;
+        }
+    </style>
+
+    {% if fade %}
+    <style>
+        .avatar {
+            img {
+                mask-image: linear-gradient(to left,
+                        rgba(0, 0, 0, 0) 0%,
+                        rgba(0, 0, 0, 1) 100%);
+            }
+        }
+    </style>
+    {% endif %}
+
+    {% if bw_mode %}
+    <style>
+        img {
+            filter: grayscale(100%);
+        }
+    </style>
+    {% endif %}
+
+    {% if light_mode %}
+    <style>
+        body {
+            background-color: white !important;
+            color: black !important;
+        }
+
+        .fade-bottom::after {
+            background: linear-gradient(to bottom, transparent, white 90%) !important;
+        }
+    </style>
+    {% endif %}
+
+    {% if light_mode and fade %}
+    <style>
+        .avatar {
+            img {
+                mask-image: linear-gradient(to left,
+                        rgba(255, 255, 255, 0) 0%,
+                        rgba(255, 255, 255, 1) 100%) !important;
+            }
+        }
+    </style>
+    {% endif %}
+</head>
+
+<body>
+    <section class="avatar">
+        <img src="{{ user.display_avatar.url }}" alt="Failed to load avatar" style="width: 100%; height: 100%" />
+    </section>
+    <section class="quote">
+        <h1 class="content">{{ content|safe }}</h1>
+
+        <div class="author">
+            {% if nickname %}
+            <p>- {{ user.display_name }}</p>
+            <p style="color: #808080">@{{ user.name }}</p>
+            {% else %}
+            <p style="color: #808080">- @{{ user.name }}</p>
+            {% endif %}
+        </div>
+
+        <div class="footer">
+            {% if custom_quote %}
+            <p style="color: red !important;">
+                Custom Quote by @{{ custom_quote_user.name }}
+            </p>
+            {% elif bot %}
+            <p style="color: red !important;">Bot or Webhook Message</p>
+            {% endif %}
+            <p>https://titaniumbot.me</p>
+        </div>
+    </section>
+
+    <script>
+        // Add fade if content overflows
+        window.onload = function () {
+            const content = document.querySelector(".content");
+            if (content.scrollHeight > content.clientHeight) {
+                content.classList.add("fade-bottom");
+            }
+        };
+    </script>
+</body>
+
+</html>

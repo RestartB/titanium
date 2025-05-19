@@ -3,7 +3,7 @@ name = "titanium"
 version = "0.1.0"
 description = "Titanium Discord Bot"
 readme = "README.md"
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.13"
 dependencies = [
     "aiohttp==3.11.18",
     "asqlite==2.0.0",
@@ -21,6 +21,9 @@ dependencies = [
     "flask[async]==3.1.0",
     "pilmoji",
     "wand>=0.6.13",
+    "pytest-playwright>=0.7.0",
+    "websockets>=15.0.1",
+    "jinja2>=3.1.6",
 ]
 
 [dependency-groups]

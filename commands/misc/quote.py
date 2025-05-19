@@ -1,17 +1,57 @@
 import asyncio
+import html
 import os
 import re
 from io import BytesIO
-from textwrap import wrap
 
-import aiohttp
 import discord
+import jinja2
 import pillow_avif  # noqa: F401
 from discord import app_commands
 from discord.ext import commands
 from discord.ui import View
-from PIL import Image, ImageDraw, ImageFont, ImageOps
-from pilmoji import Pilmoji
+from PIL import Image
+from playwright.async_api import async_playwright
+from wand.image import Image as WandImage
+
+
+def _to_gif(
+    image_data: BytesIO,
+    mode: str,
+) -> tuple[BytesIO, tuple[int, int]]:
+    output_data = BytesIO()
+
+    # Open image
+    with Image.open(image_data) as im:
+        if mode == "quality":
+            with Image.open(image_data) as im2:
+                # Convert image to GIF
+                im.save(
+                    output_data,
+                    format="AVIF",
+                    append_images=[im2],
+                    save_all=True,
+                    duration=500,
+                    loop=0,
+                )
+                output_size = im.size
+        else:
+            # Convert to GIF with wand
+            with WandImage(blob=image_data.getvalue()) as wand_image:
+                # Set GIF optimization options
+                wand_image.compression_quality = 80
+                wand_image.quantum_operator = "dither"
+
+                # Convert to GIF format
+                wand_image.format = "gif"
+
+                # Write to output BytesIO
+                output_data.write(wand_image.make_blob("gif"))
+
+                output_size = (wand_image.width, wand_image.height)
+
+    output_data.seek(0)
+    return output_data, output_size
 
 
 # Create quote image function
@@ -19,45 +59,7 @@ async def create_quote_image(
     user: discord.User,
     content: str,
     output_format: str,
-    fade: bool = True,
-    light_mode: bool = False,
-    bw_mode: bool = False,
-    custom_quote: bool = False,
-    custom_quote_user: discord.User = None,
-    bot: bool = False,
-) -> BytesIO:
-    # Get PFP, store in memory
-    async with aiohttp.ClientSession() as session:
-        async with session.get(user.display_avatar.url) as request:
-            pfp_data = BytesIO()
-
-            async for chunk in request.content.iter_chunked(10):
-                pfp_data.write(chunk)
-
-            pfp_data.seek(0)  # Reset buffer position to start
-
-    # Run in thread to avoid blocking
-    return await asyncio.to_thread(
-        _create_quote_image_sync,
-        user,
-        pfp_data,
-        content,
-        output_format,
-        fade,
-        light_mode,
-        bw_mode,
-        custom_quote,
-        custom_quote_user,
-        bot,
-    )
-
-
-# Create quote image - sync function helper function
-def _create_quote_image_sync(
-    user: discord.User,
-    pfp_data: BytesIO,
-    content: str,
-    output_format: str,
+    nickname: bool = False,
     fade: bool = True,
     light_mode: bool = False,
     bw_mode: bool = False,
@@ -67,189 +69,77 @@ def _create_quote_image_sync(
 ) -> BytesIO:
     image_data = BytesIO()
 
-    # Create image
-    with Image.new("RGB", (1200, 600), ("white" if light_mode else "black")) as img:
-        with Image.open(pfp_data) as pfp:
-            if pfp.size[0] > 600 or pfp.size[1] > 600:
-                pfp.thumbnail((600, 600))
-            else:
-                pfp = ImageOps.contain(pfp, (600, 600))
+    content = html.escape(content)
 
-            if bw_mode:
-                pfp = pfp.convert("L")
+    # Find Discord emojis in content
+    discord_emojis = re.findall(r"&lt;a?:\w+:\d+&gt;", content)
 
-            if fade:
-                mask = Image.linear_gradient("L").rotate(-90).resize((600, 600))
-                img.paste(pfp, (0, 0), mask)
-            else:
-                img.paste(pfp, (0, 0))
-
-        draw = ImageDraw.Draw(img)
-
-        EMOJI_REGEX = r"(<a?:\w+:\d{17,20}>)"
-        placeholder = "\ufffc"  # Unicode replacement character
-
-        # Get message content, remove any replacement characters from the user
-        raw = content
-        raw = raw.replace(placeholder, "\ue000")
-
-        # Get custom Discord emojis in message
-        emojis = re.findall(EMOJI_REGEX, raw)
-
-        # Swap emojis with placeholder character
-        for e in emojis:
-            raw = raw.replace(e, placeholder, 1)
-
-        # Calculate optimal font size
-        if len(raw) < 120:
-            font_size = 40
-            max_chars, wrap_width = 120, 20
-        elif len(raw) < 210:
-            font_size = 32
-            max_chars, wrap_width = 210, 28
-        else:
-            font_size = 26
-            max_chars, wrap_width = 310, 35
-
-        # Truncate, preserving newlines
-        if len(raw) > max_chars:
-            raw = raw[: max_chars - 3] + "..."
-
-        # Wrap each line individually to keep user line breaks
-        wrapped = []
-        for para in raw.split("\n"):
-            if para == "":
-                wrapped.append("")  # Preserve blank lines
-            else:
-                wrapped.extend(wrap(para, wrap_width))
-
-        # Calculate y offset for text
-        if len(wrapped) > 5:
-            y_offset = (font_size - 10) * (len(wrapped) - 5)
-        else:
-            y_offset = 0
-
-        # Go through each line, replace placeholder with emoji
-        processed_lines = []
-        emoji_iter = iter(emojis)
-
-        for line in wrapped:
-            new_line = []
-            for char in line:
-                if char == placeholder:  # Placeholder found
-                    try:
-                        new_line.append(next(emoji_iter))
-                    except StopIteration:  # Out of emojis
-                        new_line.append(char)
-                else:
-                    new_line.append(char)
-            processed_lines.append("".join(new_line))
-
-        # Join lines, add new lines
-        text = "\n".join(processed_lines) + "\n"
-
-        with Pilmoji(img) as pilmoji:
-            # Set regular Figtree font
-            quote_font = ImageFont.truetype(
-                os.path.join("content", "fonts", "Figtree-Medium.ttf"), font_size
-            )
-
-            # Get text width and height
-            quote_width, quote_height = pilmoji.getsize(
-                text=text, font=quote_font, spacing=20
-            )
-
-            # Calculate x and y position
-            quote_x = ((600 - quote_width) // 2) + 600
-            if y_offset != 0:
-                quote_y = (600 - quote_height) // 2 - y_offset
-            else:
-                quote_y = (600 - quote_height) // 2
-
-            # Draw quote text
-            pilmoji.text(
-                text=text,
-                xy=(quote_x, quote_y),
-                fill=("black" if light_mode else "white"),
-                font=quote_font,
-                align="center",
-                spacing=20,
-                emoji_position_offset=(0, -10),
-            )
-
-            # Author text
-            text = f"- @{user.name}"
-
-            # Set bold Figtree font
-            displayname_font = ImageFont.truetype(
-                os.path.join("content", "fonts", "Figtree-Bold.ttf"), 30
-            )
-
-            # Get bounding box of text, get width
-            displayname_width, displayname_height = pilmoji.getsize(
-                text=text, font=displayname_font
-            )
-
-            # Calculate x and y position
-            displayname_x = ((600 - displayname_width) // 2) + 600
-            displayname_y = quote_y + 30 + quote_height
-
-            # Draw text
-            pilmoji.text(
-                text=text,
-                xy=(displayname_x, displayname_y),
-                fill="gray",
-                font=displayname_font,
-                align="center",
-            )
-
-        if custom_quote:
-            text = f"Custom Quote by @{custom_quote_user.name}\nhttps://titaniumbot.me"
-        elif bot:
-            text = "Bot or Webhook Message\nhttps://titaniumbot.me"
-        else:
-            text = "https://titaniumbot.me"
-
-        # Set bold Figtree font
-        footer_font = ImageFont.truetype(
-            os.path.join("content", "fonts", "Figtree-Bold.ttf"), 20
+    # Replace Discord emojis with image tags
+    for emoji in discord_emojis:
+        emoji: str
+        emoji_id = emoji.split(":")[2].rstrip("&gt;")
+        content = content.replace(
+            emoji,
+            f"<img src='https://cdn.discordapp.com/emojis/{html.escape(emoji_id)}.png' height='44' alt='{emoji}' />",
         )
 
-        # Get bounding box of bottom text, calculate width and X position
-        footer_box = draw.textbbox(
-            text=text, xy=(0, 0), font=footer_font, align="center"
+    # Render Jinja2 template
+    env = jinja2.Environment(
+        enable_async=True,
+        loader=jinja2.FileSystemLoader(os.path.join("content", "templates")),
+        autoescape=True,
+    )
+    template = env.get_template("quote.jinja")
+    quote_html = await template.render_async(
+        user=user,
+        content=content,
+        nickname=nickname,
+        fade=fade,
+        light_mode=light_mode,
+        bw_mode=bw_mode,
+        custom_quote=custom_quote,
+        custom_quote_user=custom_quote_user,
+        bot=bot,
+    )
+
+    async with async_playwright() as p:
+        # Launch browser
+        browser = await p.chromium.launch()
+        page = await browser.new_page(viewport={"width": 1200, "height": 600})
+
+        # Set HTML content
+        await page.set_content(quote_html, wait_until="networkidle")
+
+        # Wait for images
+        await page.wait_for_load_state("networkidle")
+
+        # Take screenshot as bytes
+        screenshot = await page.screenshot(
+            type="png",
+            full_page=False,
+            clip={"x": 0, "y": 0, "width": 1200, "height": 600},
         )
 
-        footer_width = footer_box[2] - footer_box[0]
-        footer_x = ((600 - footer_width) // 2) + 600
+        # Write to BytesIO
+        image_data.write(screenshot)
+        await browser.close()
 
-        # Draw bottom text
-        draw.text(
-            text=text,
-            xy=(footer_x, (527 if custom_quote or bot else 550)),
-            fill=(
-                "red" if custom_quote or bot else ("black" if light_mode else "white")
-            ),
-            font=footer_font,
-            align="center",
-        )
-
-        if output_format == "GIF" or output_format == "PNG":
-            # Save image
-            img.save(image_data, format=output_format)
+    if output_format != "PNG":
+        if output_format == "GIF":
+            image_data, output_size = await asyncio.to_thread(
+                _to_gif,
+                image_data=image_data,
+                mode="compatibility",
+            )
         elif output_format == "AVIF":
-            # Save image to AVIF
-            img.save(
-                image_data,
-                format="AVIF",
-                append_images=[img],
-                save_all=True,
-                duration=500,
-                loop=0,
+            image_data, output_size = await asyncio.to_thread(
+                _to_gif,
+                image_data=image_data,
+                mode="quality",
             )
 
-        image_data.seek(0)
-        return image_data
+    image_data.seek(0)
+    return image_data
 
 
 # Quotes view
@@ -261,6 +151,7 @@ class QuoteView(View):
         output_format: str,
         allowed_ids: list,
         og_msg: str = None,
+        nickname: bool = False,
         fade: bool = True,
         light_mode: bool = False,
         bw_mode: bool = False,
@@ -275,6 +166,7 @@ class QuoteView(View):
         self.output_format = output_format
         self.allowed_ids = allowed_ids
         self.og_msg = og_msg
+        self.nickname = nickname
         self.fade = fade
         self.light_mode = light_mode
         self.bw_mode = bw_mode
@@ -318,10 +210,9 @@ class QuoteView(View):
 
     @discord.ui.button(label="", style=discord.ButtonStyle.gray, custom_id="theme")
     async def theme(self, interaction: discord.Interaction, button: discord.ui.Button):
-        try:
-            # Try to get member if available
-            user = await interaction.client.fetch_user(self.user_id)
-        except discord.NotFound:
+        # Try to get member if available
+        user = interaction.guild.get_member(self.user_id)
+        if user is None:
             embed = discord.Embed(
                 title="Error",
                 description="Couldn't find the user. Please try again later.",
@@ -335,12 +226,9 @@ class QuoteView(View):
             return
 
         if self.custom_quote:
-            try:
-                # Try to get member if available
-                custom_quote_user = await interaction.client.fetch_user(
-                    self.custom_quote_user_id
-                )
-            except discord.NotFound:
+            # Try to get member if available
+            custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
+            if custom_quote_user is None:
                 embed = discord.Embed(
                     title="Error",
                     description="Couldn't find the custom quote creator. Please try again later.",
@@ -359,6 +247,7 @@ class QuoteView(View):
             user=user,
             content=self.content,
             output_format=self.output_format,
+            nickname=self.nickname,
             fade=self.fade,
             light_mode=not self.light_mode,
             bw_mode=self.bw_mode,
@@ -378,6 +267,7 @@ class QuoteView(View):
             output_format=self.output_format,
             allowed_ids=self.allowed_ids,
             og_msg=self.og_msg,
+            nickname=self.nickname,
             fade=self.fade,
             light_mode=not self.light_mode,
             bw_mode=self.bw_mode,
@@ -412,10 +302,9 @@ class QuoteView(View):
 
     @discord.ui.button(label="", style=discord.ButtonStyle.gray, custom_id="bw")
     async def bw(self, interaction: discord.Interaction, button: discord.ui.Button):
-        try:
-            # Try to get member if available
-            user = await interaction.client.fetch_user(self.user_id)
-        except discord.NotFound:
+        # Try to get member if available
+        user = interaction.guild.get_member(self.user_id)
+        if user is None:
             embed = discord.Embed(
                 title="Error",
                 description="Couldn't find the user. Please try again later.",
@@ -429,12 +318,9 @@ class QuoteView(View):
             return
 
         if self.custom_quote:
-            try:
-                # Try to get member if available
-                custom_quote_user = await interaction.client.fetch_user(
-                    self.custom_quote_user_id
-                )
-            except discord.NotFound:
+            # Try to get member if available
+            custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
+            if custom_quote_user is None:
                 embed = discord.Embed(
                     title="Error",
                     description="Couldn't find the custom quote creator. Please try again later.",
@@ -453,6 +339,7 @@ class QuoteView(View):
             user=user,
             content=self.content,
             output_format=self.output_format,
+            nickname=self.nickname,
             fade=self.fade,
             light_mode=self.light_mode,
             bw_mode=not self.bw_mode,
@@ -472,6 +359,7 @@ class QuoteView(View):
             output_format=self.output_format,
             allowed_ids=self.allowed_ids,
             og_msg=self.og_msg,
+            nickname=self.nickname,
             fade=self.fade,
             light_mode=self.light_mode,
             bw_mode=not self.bw_mode,
@@ -508,10 +396,9 @@ class QuoteView(View):
         label="", emoji="🔄", style=discord.ButtonStyle.gray, custom_id="reload"
     )
     async def reload(self, interaction: discord.Interaction, button: discord.ui.Button):
-        try:
-            # Try to get member if available
-            user = await interaction.client.fetch_user(self.user_id)
-        except discord.NotFound:
+        # Try to get member if available
+        user = interaction.guild.get_member(self.user_id)
+        if user is None:
             embed = discord.Embed(
                 title="Error",
                 description="Couldn't find the user. Please try again later.",
@@ -525,12 +412,9 @@ class QuoteView(View):
             return
 
         if self.custom_quote:
-            try:
-                # Try to get member if available
-                custom_quote_user = await interaction.client.fetch_user(
-                    self.custom_quote_user_id
-                )
-            except discord.NotFound:
+            # Try to get member if available
+            custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
+            if custom_quote_user is None:
                 embed = discord.Embed(
                     title="Error",
                     description="Couldn't find the custom quote creator. Please try again later.",
@@ -549,6 +433,7 @@ class QuoteView(View):
             user=user,
             content=self.content,
             output_format=self.output_format,
+            nickname=self.nickname,
             fade=self.fade,
             light_mode=self.light_mode,
             bw_mode=self.bw_mode,
@@ -568,6 +453,7 @@ class QuoteView(View):
             output_format=self.output_format,
             allowed_ids=self.allowed_ids,
             og_msg=self.og_msg,
+            nickname=self.nickname,
             fade=self.fade,
             light_mode=self.light_mode,
             bw_mode=self.bw_mode,
@@ -683,6 +569,7 @@ class Quotes(commands.Cog):
             output_format="PNG",
             allowed_ids=[interaction.user.id, message.author.id],
             og_msg=message.jump_url,
+            nickname=True,
             light_mode=False,
             bw_mode=False,
             custom_quote=False,
@@ -706,6 +593,8 @@ class Quotes(commands.Cog):
         user="The user to quote.",
         content="The content to quote. To quote messages, right click the message, click apps, then Quote This.",
         format="Optional: the format to use. Defaults to PNG.",
+        fade="Optional: whether to apply a fade to the user's PFP. Defaults to true.",
+        nickname="Optional: whether to show the user's nickname. Defaults to false.",
         light_mode="Optional: whether to start with light mode. Defaults to false.",
         bw_mode="Optional: whether to start with black and white mode. Defaults to false.",
     )
@@ -735,6 +624,7 @@ class Quotes(commands.Cog):
         content: str,
         format: app_commands.Choice[str] = "",
         fade: bool = True,
+        nickname: bool = False,
         light_mode: bool = False,
         bw_mode: bool = False,
     ):
@@ -750,6 +640,7 @@ class Quotes(commands.Cog):
             user=user,
             content=content,
             output_format=format.value,
+            nickname=nickname,
             fade=fade,
             light_mode=light_mode,
             bw_mode=bw_mode,
@@ -767,6 +658,7 @@ class Quotes(commands.Cog):
             content=content,
             output_format=format.value,
             allowed_ids=[interaction.user.id, user.id],
+            nickname=nickname,
             fade=fade,
             light_mode=light_mode,
             bw_mode=bw_mode,
