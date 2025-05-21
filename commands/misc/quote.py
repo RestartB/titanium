@@ -264,7 +264,7 @@ class QuoteView(View):
 
         file = discord.File(
             fp=image_data,
-            filename="titanium_quote.png",
+            filename=f"titanium_quote.{self.output_format.lower()}",
         )
 
         view = QuoteView(
@@ -375,7 +375,7 @@ class QuoteView(View):
 
         file = discord.File(
             fp=image_data,
-            filename="titanium_quote.png",
+            filename=f"titanium_quote.{self.output_format.lower()}",
         )
 
         view = QuoteView(
@@ -503,7 +503,7 @@ class QuoteView(View):
 
         file = discord.File(
             fp=image_data,
-            filename="titanium_quote.png",
+            filename=f"titanium_quote.{self.output_format.lower()}",
         )
 
         view = QuoteView(
