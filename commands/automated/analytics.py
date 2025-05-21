@@ -77,13 +77,18 @@ class Analytics(commands.Cog):
                         )
 
                         # Check if the command is a context menu command
-                        if isinstance(interaction.command, app_commands.ContextMenu):
-                            embed.description = f"`{interaction.command.name}`"
-                        else:
-                            try:
-                                embed.description = f"`/{f'{interaction.command.parent.name} ' if interaction.command.parent is not None else ''}{interaction.command.name}`"
-                            except AttributeError:
+                        try:
+                            if isinstance(
+                                interaction.command, app_commands.ContextMenu
+                            ):
                                 embed.description = f"`{interaction.command.name}`"
+                            else:
+                                try:
+                                    embed.description = f"`/{f'{interaction.command.parent.name} ' if interaction.command.parent is not None else ''}{interaction.command.name}`"
+                                except AttributeError:
+                                    embed.description = f"`{interaction.command.name}`"
+                        except AttributeError:
+                            embed.description = f"`{interaction.type}`"
 
                         embed.timestamp = interaction.created_at
                         embed.set_author(

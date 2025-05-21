@@ -213,17 +213,20 @@ class QuoteView(View):
         # Try to get member if available
         user = interaction.guild.get_member(self.user_id)
         if user is None:
-            embed = discord.Embed(
-                title="Error",
-                description="Couldn't find the user. Please try again later.",
-                color=discord.Color.red(),
-            )
+            user = interaction.client.get_user(self.user_id)
 
-            await interaction.followup.send(
-                embed=embed,
-                ephemeral=True,
-            )
-            return
+            if user is None:
+                embed = discord.Embed(
+                    title="Error",
+                    description="Couldn't find the user. Please try again later.",
+                    color=discord.Color.red(),
+                )
+
+                await interaction.followup.send(
+                    embed=embed,
+                    ephemeral=True,
+                )
+                return
 
         if self.custom_quote:
             # Try to get member if available
@@ -285,7 +288,17 @@ class QuoteView(View):
                 )
             )
 
+        if interaction.guild not in interaction.client.guilds:
+            embed = discord.Embed(
+                title="Notice",
+                description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
+                color=discord.Color.orange(),
+            )
+        else:
+            embed = None
+
         await interaction.edit_original_response(
+            embed=embed,
             attachments=[file],
             view=view,
         )
@@ -305,17 +318,20 @@ class QuoteView(View):
         # Try to get member if available
         user = interaction.guild.get_member(self.user_id)
         if user is None:
-            embed = discord.Embed(
-                title="Error",
-                description="Couldn't find the user. Please try again later.",
-                color=discord.Color.red(),
-            )
+            user = interaction.client.get_user(self.user_id)
 
-            await interaction.followup.send(
-                embed=embed,
-                ephemeral=True,
-            )
-            return
+            if user is None:
+                embed = discord.Embed(
+                    title="Error",
+                    description="Couldn't find the user. Please try again later.",
+                    color=discord.Color.red(),
+                )
+
+                await interaction.followup.send(
+                    embed=embed,
+                    ephemeral=True,
+                )
+                return
 
         if self.custom_quote:
             # Try to get member if available
@@ -377,7 +393,17 @@ class QuoteView(View):
                 )
             )
 
+        if interaction.guild not in interaction.client.guilds:
+            embed = discord.Embed(
+                title="Notice",
+                description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
+                color=discord.Color.orange(),
+            )
+        else:
+            embed = None
+
         await interaction.edit_original_response(
+            embed=embed,
             attachments=[file],
             view=view,
         )
@@ -399,17 +425,35 @@ class QuoteView(View):
         # Try to get member if available
         user = interaction.guild.get_member(self.user_id)
         if user is None:
-            embed = discord.Embed(
-                title="Error",
-                description="Couldn't find the user. Please try again later.",
-                color=discord.Color.red(),
-            )
+            user = interaction.client.get_user(self.user_id)
 
-            await interaction.followup.send(
-                embed=embed,
-                ephemeral=True,
-            )
-            return
+            if user is None:
+                embed = discord.Embed(
+                    title="Error",
+                    description="Couldn't find the user. Please try again later.",
+                    color=discord.Color.red(),
+                )
+
+                view = QuoteView(
+                    user_id=self.user_id,
+                    content=self.content,
+                    output_format=self.output_format,
+                    allowed_ids=self.allowed_ids,
+                    og_msg=self.og_msg,
+                    nickname=self.nickname,
+                    fade=self.fade,
+                    light_mode=self.light_mode,
+                    bw_mode=self.bw_mode,
+                    custom_quote=self.custom_quote,
+                    custom_quote_user_id=self.custom_quote_user_id,
+                    bot=self.bot,
+                )
+
+                await interaction.followup.send(
+                    embed=embed,
+                    ephemeral=True,
+                )
+                return
 
         if self.custom_quote:
             # Try to get member if available
@@ -471,7 +515,17 @@ class QuoteView(View):
                 )
             )
 
+        if interaction.guild not in interaction.client.guilds:
+            embed = discord.Embed(
+                title="Notice",
+                description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
+                color=discord.Color.orange(),
+            )
+        else:
+            embed = None
+
         await interaction.edit_original_response(
+            embed=embed,
             attachments=[file],
             view=view,
         )
@@ -555,6 +609,7 @@ class Quotes(commands.Cog):
             user=message.author,
             content=message.content,
             output_format="PNG",
+            nickname=True,
             bot=message.author.bot,
         )
 
@@ -583,7 +638,16 @@ class Quotes(commands.Cog):
             )
         )
 
-        await interaction.followup.send(file=file, view=view)
+        if interaction.guild not in interaction.client.guilds:
+            embed = discord.Embed(
+                title="Notice",
+                description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
+                color=discord.Color.orange(),
+            )
+        else:
+            embed = None
+
+        await interaction.followup.send(embed=embed, file=file, view=view)
 
     @app_commands.command(
         name="quote",
@@ -666,7 +730,16 @@ class Quotes(commands.Cog):
             custom_quote_user_id=interaction.user.id,
         )
 
-        await interaction.followup.send(file=file, view=view)
+        if interaction.guild not in interaction.client.guilds:
+            embed = discord.Embed(
+                title="Notice",
+                description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
+                color=discord.Color.orange(),
+            )
+        else:
+            embed = None
+
+        await interaction.followup.send(embed=embed, file=file, view=view)
 
 
 async def setup(bot):
