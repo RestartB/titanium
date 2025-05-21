@@ -291,7 +291,10 @@ class QuoteView(View):
                 )
             )
 
-        if interaction.guild not in interaction.client.guilds and interaction.guild is not None:
+        if (
+            interaction.guild not in interaction.client.guilds
+            and interaction.guild is not None
+        ):
             embed = discord.Embed(
                 title="Notice",
                 description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
@@ -399,7 +402,10 @@ class QuoteView(View):
                 )
             )
 
-        if interaction.guild not in interaction.client.guilds and interaction.guild is not None:
+        if (
+            interaction.guild not in interaction.client.guilds
+            and interaction.guild is not None
+        ):
             embed = discord.Embed(
                 title="Notice",
                 description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
@@ -524,7 +530,10 @@ class QuoteView(View):
                 )
             )
 
-        if interaction.guild not in interaction.client.guilds and interaction.guild is not None:
+        if (
+            interaction.guild not in interaction.client.guilds
+            and interaction.guild is not None
+        ):
             embed = discord.Embed(
                 title="Notice",
                 description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
@@ -659,7 +668,10 @@ class Quotes(commands.Cog):
             )
         )
 
-        if interaction.guild not in interaction.client.guilds and interaction.guild is not None:
+        if (
+            interaction.guild not in interaction.client.guilds
+            and interaction.guild is not None
+        ):
             embed = discord.Embed(
                 title="Notice",
                 description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
@@ -751,8 +763,10 @@ class Quotes(commands.Cog):
             custom_quote_user_id=interaction.user.id,
         )
 
-
-        if interaction.guild not in interaction.client.guilds and interaction.guild is not None:
+        if (
+            interaction.guild not in interaction.client.guilds
+            and interaction.guild is not None
+        ):
             embed = discord.Embed(
                 title="Notice",
                 description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
