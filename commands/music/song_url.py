@@ -21,7 +21,6 @@ import utils.spotify_elements as elements
 
 
 def _fetch_playlist_items(self, result_info, url) -> list:
-    print("Hand off")
     total_items = result_info["tracks"]["total"]
 
     amount_spotify_pages = total_items // 100

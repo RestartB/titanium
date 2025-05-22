@@ -177,17 +177,17 @@ class BotUtils(commands.Cog):
 
         sysinfo = cpuinfo.get_cpu_info()
 
-        embed.add_field(name="Python Version", value=sysinfo["python_version"])
+        embed.add_field(name="Python Version", value=f"`{sysinfo['python_version']}`")
         embed.add_field(
             name="System Uptime",
-            value=("%d:%d:%d:%d" % (d.day - 1, d.hour, d.minute, d.second)),
+            value=f"`{(d.day - 1):02d}:{d.hour:02d}:{d.minute:02d}:{d.second:02d}`",
         )
         embed.add_field(
-            name="Operating System", value=f"{platform.system()} {platform.release()}"
+            name="Operating System", value=f"`{platform.system()} {platform.release()}`"
         )
-        embed.add_field(name="CPU Name", value=sysinfo["brand_raw"])
-        embed.add_field(name="CPU Usage", value=f"{psutil.cpu_percent()}%")
-        embed.add_field(name="RAM Usage", value=f"{psutil.virtual_memory().percent}%")
+        embed.add_field(name="CPU Name", value=f"`{sysinfo['brand_raw']}`")
+        embed.add_field(name="CPU Usage", value=f"`{psutil.cpu_percent()}%`")
+        embed.add_field(name="RAM Usage", value=f"`{psutil.virtual_memory().percent}%` (`{psutil.virtual_memory().used / 1000000:.2f}MB` used, `{psutil.virtual_memory().total / 1000000:.2f}MB` total)")
 
         embed.set_footer(
             text=f"@{interaction.user.name}",
