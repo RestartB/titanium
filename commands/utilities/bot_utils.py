@@ -187,7 +187,10 @@ class BotUtils(commands.Cog):
         )
         embed.add_field(name="CPU Name", value=f"`{sysinfo['brand_raw']}`")
         embed.add_field(name="CPU Usage", value=f"`{psutil.cpu_percent()}%`")
-        embed.add_field(name="RAM Usage", value=f"`{psutil.virtual_memory().percent}%` (`{psutil.virtual_memory().used / 1000000:.2f}MB` used, `{psutil.virtual_memory().total / 1000000:.2f}MB` total)")
+        embed.add_field(
+            name="RAM Usage",
+            value=f"`{psutil.virtual_memory().percent}%` (`{psutil.virtual_memory().used / 1000000:.2f}MB` used, `{psutil.virtual_memory().total / 1000000:.2f}MB` total)",
+        )
 
         embed.set_footer(
             text=f"@{interaction.user.name}",
