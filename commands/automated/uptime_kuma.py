@@ -50,7 +50,7 @@ class UptimeKuma(commands.Cog):
                     if retry > 0:
                         logging.debug(f"[KUMA] Retrying ping... (retry {retry})")
 
-                    if not self.bot.is_closed():
+                    if self.bot.connected:
                         async with await session.get(
                             f"{self.bot.options['uptime-kuma-push']}?status=up&msg=OK&ping={round(self.bot.latency * 1000, 2)}"
                         ) as req:

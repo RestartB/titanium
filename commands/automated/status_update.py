@@ -11,10 +11,6 @@ class StatusUpdate(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
-        self.user_installs = 0
-        self.guild_installs = 0
-        self.server_members = 0
-
         # Set to true to start with website status
         self.showing_info = True
 
@@ -39,9 +35,9 @@ class StatusUpdate(commands.Cog):
         app_data: discord.AppInfo = await self.bot.application_info()
 
         # Set variables
-        self.user_installs = app_data.approximate_user_install_count
-        self.guild_installs = app_data.approximate_guild_count
-        self.server_members = server_members
+        self.bot.user_installs = app_data.approximate_user_install_count
+        self.bot.guild_installs = app_data.approximate_guild_count
+        self.bot.guild_member_count = server_members
 
     # Status update task
     @tasks.loop(minutes=10)
@@ -65,7 +61,7 @@ class StatusUpdate(commands.Cog):
                     status=discord.Status.online,
                     type=discord.ActivityType.custom,
                     name="custom",
-                    state=f"{self.user_installs} users, {self.guild_installs} servers with {self.server_members:,} members - use /",
+                    state=f"{self.bot.user_installs} users, {self.bot.guild_installs} servers with {self.bot.guild_member_count:,} members - use /",
                 )
             )
 

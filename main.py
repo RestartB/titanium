@@ -34,6 +34,7 @@ logging.basicConfig(
 
 # Get loggers
 rootLogger = logging.getLogger()
+
 discordLogger = logging.getLogger("discord")
 discordLogger.setLevel(logging.INFO)
 
@@ -118,6 +119,12 @@ intents.presences = True
 
 
 class TitaniumBot(commands.Bot):
+    user_installs = 0
+    guild_installs = 0
+    guild_member_count = 0
+
+    connect_time: datetime.datetime
+
     async def setup_hook(self):
         logging.info("[INIT] Reading config files.")
 

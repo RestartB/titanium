@@ -18,7 +18,6 @@ dependencies = [
     "thefuzz==0.22.1",
     "url-cleaner==0.1.5",
     "wikipedia==1.4.0",
-    "flask[async]==3.1.1",
     "pilmoji",
     "wand>=0.6.13",
     "pytest-playwright>=0.7.0",
