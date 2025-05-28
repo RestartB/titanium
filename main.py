@@ -231,18 +231,23 @@ class TitaniumBot(commands.Bot):
         await self.cache_pool.close()
         await self.fireboard_pool.close()
         await self.lb_pool.close()
+        await self.economy_pool.close()
+        await self.tags_pool.close()
+        await self.server_counts_pool.close()
+
         await super().close()
 
     async def on_connect(self):
         self.connected = True
 
-    async def on_resume(self):
+    async def on_resumed(self):
         self.connected = True
+        self.last_resume = datetime.datetime.now()
 
     async def on_disconnect(self):
         if self.connected:
             self.connected = False
-            self.last_disconnect = datetime.datetime.utcnow()
+            self.last_disconnect = datetime.datetime.now()
 
 
 bot = TitaniumBot(intents=intents, command_prefix="", help_command=None)
@@ -417,6 +422,10 @@ async def on_app_command_error(
 try:
     config.read("config.cfg")
     bot_token = dict(config.items("TOKENS"))["discord-bot-token"]
+
+    bot.connect_time = datetime.datetime.now()
+    bot.last_disconnect = None
+    bot.last_resume = None
 
     # Run bot with token
     bot.run(bot_token, log_handler=None)
