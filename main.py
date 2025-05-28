@@ -232,6 +232,17 @@ class TitaniumBot(commands.Bot):
         await self.fireboard_pool.close()
         await self.lb_pool.close()
         await super().close()
+    
+    async def on_connect(self):
+        self.connected = True
+
+    async def on_resume(self):
+        self.connected = True
+
+    async def on_disconnect(self):
+        if self.connected:
+            self.connected = False
+            self.last_disconnect = datetime.datetime.utcnow()
 
 
 bot = TitaniumBot(intents=intents, command_prefix="", help_command=None)
