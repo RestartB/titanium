@@ -232,7 +232,7 @@ class TitaniumBot(commands.Bot):
         await self.fireboard_pool.close()
         await self.lb_pool.close()
         await super().close()
-    
+
     async def on_connect(self):
         self.connected = True
 
