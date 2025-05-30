@@ -29,7 +29,10 @@ class Videos(commands.Cog):
     )
 
     # Video to GIF command
-    @videoGroup.command(name="to-gif-webp", description="Convert a video to WEBP or GIF for bookmarking.")
+    @videoGroup.command(
+        name="to-gif-webp",
+        description="Convert a video to WEBP or GIF for bookmarking.",
+    )
     @app_commands.choices(
         mode=[
             app_commands.Choice(

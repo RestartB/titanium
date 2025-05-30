@@ -285,7 +285,10 @@ class Images(commands.Cog):
         return output_data, output_size
 
     # Image to GIF command
-    @imageGroup.command(name="to-gif-avif", description="Convert an image to GIF or AVIF for bookmarking.")
+    @imageGroup.command(
+        name="to-gif-avif",
+        description="Convert an image to GIF or AVIF for bookmarking.",
+    )
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(
         file="The static image to convert.",
@@ -477,7 +480,8 @@ class Images(commands.Cog):
 
                             # Add converted file to list
                             converted_file = discord.File(
-                                fp=output_data, filename=f"titanium_{os.path.splitext(file.filename)[0]}.gif"
+                                fp=output_data,
+                                filename=f"titanium_{os.path.splitext(file.filename)[0]}.gif",
                             )
                             converted.append(converted_file)
                         else:  # If file is too large
