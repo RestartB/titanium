@@ -200,7 +200,7 @@ class Images(commands.Cog):
 
                         file_processed = discord.File(
                             fp=resized_image_data,
-                            filename=f"titanium_image.{os.path.splitext(file.filename)[1][1:]}",
+                            filename=f"titanium_{os.path.splitext(file.filename)[0]}.{os.path.splitext(file.filename)[1][1:]}",
                             spoiler=spoiler,
                         )
                         embed.set_image(url=f"attachment://{file_processed.filename}")
@@ -285,7 +285,7 @@ class Images(commands.Cog):
         return output_data, output_size
 
     # Image to GIF command
-    @imageGroup.command(name="to-gif", description="Convert an image to GIF.")
+    @imageGroup.command(name="to-gif-avif", description="Convert an image to GIF or AVIF for bookmarking.")
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(
         file="The static image to convert.",
@@ -369,7 +369,7 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=output_data,
-                    filename=f"titanium_image.{'avif' if mode.value == 'quality' else 'gif'}",
+                    filename=f"titanium_{os.path.splitext(file.filename)[0]}.{'avif' if mode.value == 'quality' else 'gif'}",
                     spoiler=spoiler,
                 )
 
@@ -472,12 +472,12 @@ class Images(commands.Cog):
                             output_data, output_size = await asyncio.to_thread(
                                 self._to_gif,
                                 image_data=image_data,
-                                mode="quality",
+                                mode="compatibility",
                             )
 
                             # Add converted file to list
                             converted_file = discord.File(
-                                fp=output_data, filename="titanium_image.avif"
+                                fp=output_data, filename=f"titanium_{os.path.splitext(file.filename)[0]}.gif"
                             )
                             converted.append(converted_file)
                         else:  # If file is too large
@@ -633,7 +633,7 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=deepfried_data,
-                    filename="titanium_image.png",
+                    filename=f"titanium_{os.path.splitext(file.filename)[0]}.png",
                     spoiler=spoiler,
                 )
                 embed.set_image(url=f"attachment://{file_processed.filename}")
@@ -716,7 +716,7 @@ class Images(commands.Cog):
                             # Add converted file to list
                             converted_file = discord.File(
                                 fp=deepfried_data,
-                                filename="titanium_image.png",
+                                filename=f"titanium_{os.path.splitext(file.filename)[0]}.png",
                             )
                             converted.append(converted_file)
                         else:  # If file is too large
@@ -990,7 +990,7 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=output_data,
-                    filename=f"titanium_image.{format.value.lower()}",
+                    filename=f"titanium_{os.path.splitext(file.filename)[0]}.{format.value.lower()}",
                     spoiler=spoiler,
                 )
 
@@ -1149,7 +1149,7 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=output_data,
-                    filename=f"titanium_image.{format.value.lower()}",
+                    filename=f"titanium_{os.path.splitext(file.filename)[0]}.{format.value.lower()}",
                     spoiler=spoiler,
                 )
 

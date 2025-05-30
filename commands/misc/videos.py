@@ -29,7 +29,7 @@ class Videos(commands.Cog):
     )
 
     # Video to GIF command
-    @videoGroup.command(name="to-gif", description="Convert a video to WEBP or GIF.")
+    @videoGroup.command(name="to-gif-webp", description="Convert a video to WEBP or GIF for bookmarking.")
     @app_commands.choices(
         mode=[
             app_commands.Choice(
@@ -193,7 +193,7 @@ class Videos(commands.Cog):
 
                             file_processed = discord.File(
                                 fp=tmp_output.name,
-                                filename=f"titanium_image.{'gif' if mode.value == 'compatibility' else 'webp'}",
+                                filename=f"titanium_{os.path.splitext(file.filename)[0]}.{'gif' if mode.value == 'compatibility' else 'webp'}",
                                 spoiler=spoiler,
                             )
 
