@@ -45,6 +45,7 @@ class API(commands.Cog):
         self.app.router.add_get("/stats", self.stats)
         self.app.router.add_get("/ping", self.ping)
         self.app.router.add_get("/status", self.status)
+        self.app.router.add_get("/pfp", self.pfp)
 
     async def index(self, request: web.Request) -> web.Response:
         return web.json_response({"version": "Titanium API v1"})
@@ -76,6 +77,11 @@ class API(commands.Cog):
             else None,
         }
         return web.json_response(data)
+    
+    async def pfp(self, request: web.Request) -> web.Response:
+        # Get bot's profile picture URL
+        pfp_url = self.bot.user.display_avatar.url if self.bot.user else None
+        return web.json_response({"url": pfp_url})
 
     async def cog_unload(self):
         if self.server_task:
