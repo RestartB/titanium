@@ -1,3 +1,4 @@
+import datetime
 import logging
 import traceback
 from typing import TYPE_CHECKING
@@ -50,7 +51,12 @@ class UptimeKuma(commands.Cog):
                     if retry > 0:
                         logging.debug(f"[KUMA] Retrying ping... (retry {retry})")
 
-                    if self.bot.connected:
+                    # Ok if the bot is connected or if it was disconnected less than or 3 seconds ago
+                    if self.bot.connected or (
+                        not self.bot.connected
+                        and (datetime.datetime.now() - self.bot.last_disconnect).seconds
+                        <= 3
+                    ):
                         async with await session.get(
                             f"{self.bot.options['uptime-kuma-push']}?status=up&msg=OK&ping={round(self.bot.latency * 1000, 2)}"
                         ) as req:
