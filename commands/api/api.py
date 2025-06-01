@@ -77,7 +77,7 @@ class API(commands.Cog):
             else None,
         }
         return web.json_response(data)
-    
+
     async def pfp(self, request: web.Request) -> web.Response:
         # Get bot's profile picture URL
         pfp_url = self.bot.user.display_avatar.url if self.bot.user else None
