@@ -134,6 +134,48 @@ class ServerCounts(commands.Cog):
                                     for member in guild.members:
                                         if member.status != discord.Status.offline:
                                             updated_value += 1
+                                elif channel_type == "members_status_online":
+                                    updated_value = 0
+
+                                    for member in guild.members:
+                                        if member.status == discord.Status.online:
+                                            updated_value += 1
+                                elif channel_type == "members_status_idle":
+                                    updated_value = 0
+
+                                    for member in guild.members:
+                                        if member.status == discord.Status.idle:
+                                            updated_value += 1
+                                elif channel_type == "members_status_dnd":
+                                    updated_value = 0
+
+                                    for member in guild.members:
+                                        if member.status == discord.Status.dnd:
+                                            updated_value += 1
+                                elif channel_type == "members_activity":
+                                    updated_value = 0
+
+                                    for member in guild.members:
+                                        if member.activity is not None:
+                                            for activity in member.activities:
+                                                if (
+                                                    activity.type
+                                                    != discord.ActivityType.custom
+                                                ):
+                                                    updated_value += 1
+                                                    break
+                                elif channel_type == "members_custom_status":
+                                    updated_value = 0
+
+                                    for member in guild.members:
+                                        if member.activity is not None:
+                                            for activity in member.activities:
+                                                if (
+                                                    activity.type
+                                                    == discord.ActivityType.custom
+                                                ):
+                                                    updated_value += 1
+                                                    break
                                 elif channel_type == "offline_members":
                                     updated_value = 0
 
@@ -145,6 +187,7 @@ class ServerCounts(commands.Cog):
                                         len(guild.text_channels)
                                         + len(guild.voice_channels)
                                         + len(guild.stage_channels)
+                                        + len(guild.forums)
                                     )
 
                                 channel_name = channel_name.replace(
@@ -194,6 +237,21 @@ class ServerCounts(commands.Cog):
             app_commands.Choice(name="Bots", value="bots"),
             app_commands.Choice(name="Online Members", value="online_members"),
             app_commands.Choice(name="Offline Members", value="offline_members"),
+            app_commands.Choice(
+                name="Members with Online status", value="members_status_online"
+            ),
+            app_commands.Choice(
+                name="Members with Idle status", value="members_status_idle"
+            ),
+            app_commands.Choice(
+                name="Members with DND status", value="members_status_dnd"
+            ),
+            app_commands.Choice(
+                name="Members playing something", value="members_activity"
+            ),
+            app_commands.Choice(
+                name="Members with Custom status", value="members_custom_status"
+            ),
             app_commands.Choice(name="Total Channels", value="channels"),
         ]
     )
@@ -261,11 +319,60 @@ class ServerCounts(commands.Cog):
                         offline_count += 1
 
                 name = channel_name.replace("$VALUE$", human_format(offline_count))
+            elif channel_type.value == "members_status_online":
+                online_count = 0
+
+                for member in interaction.guild.members:
+                    if member.status == discord.Status.online:
+                        online_count += 1
+
+                name = channel_name.replace("$VALUE$", human_format(online_count))
+            elif channel_type.value == "members_status_idle":
+                idle_count = 0
+
+                for member in interaction.guild.members:
+                    if member.status == discord.Status.idle:
+                        idle_count += 1
+
+                name = channel_name.replace("$VALUE$", human_format(idle_count))
+            elif channel_type.value == "members_status_dnd":
+                dnd_count = 0
+
+                for member in interaction.guild.members:
+                    if member.status == discord.Status.dnd:
+                        dnd_count += 1
+
+                name = channel_name.replace("$VALUE$", human_format(dnd_count))
+            elif channel_type.value == "members_activity":
+                activity_count = 0
+
+                for member in interaction.guild.members:
+                    if member.activity is not None:
+                        for activity in member.activities:
+                            if activity.type != discord.ActivityType.custom:
+                                activity_count += 1
+                                break
+
+                name = channel_name.replace("$VALUE$", human_format(activity_count))
+            elif channel_type.value == "members_custom_status":
+                custom_status_count = 0
+
+                for member in interaction.guild.members:
+                    if member.activity is not None:
+                        for activity in member.activities:
+                            if activity.type == discord.ActivityType.custom:
+                                custom_status_count += 1
+                                break
+
+                name = channel_name.replace(
+                    "$VALUE$", human_format(custom_status_count)
+                )
             elif channel_type.value == "channels":
                 channel_count = (
                     len(interaction.guild.text_channels)
                     + len(interaction.guild.voice_channels)
                     + len(interaction.guild.stage_channels)
+                    + len(interaction.guild.forums)
                 )
 
                 name = channel_name.replace("$VALUE$", human_format(channel_count))
@@ -391,6 +498,21 @@ class ServerCounts(commands.Cog):
             app_commands.Choice(name="Bots", value="bots"),
             app_commands.Choice(name="Online Members", value="online_members"),
             app_commands.Choice(name="Offline Members", value="offline_members"),
+            app_commands.Choice(
+                name="Members with Online status", value="members_status_online"
+            ),
+            app_commands.Choice(
+                name="Members with Idle status", value="members_status_idle"
+            ),
+            app_commands.Choice(
+                name="Members with DND status", value="members_status_dnd"
+            ),
+            app_commands.Choice(
+                name="Members playing something", value="members_activity"
+            ),
+            app_commands.Choice(
+                name="Members with Custom status", value="members_custom_status"
+            ),
             app_commands.Choice(name="Total Channels", value="channels"),
         ]
     )
@@ -506,11 +628,58 @@ class ServerCounts(commands.Cog):
                             offline_count += 1
 
                     name = name.replace("$VALUE$", human_format(offline_count))
+                elif channel_type.value == "members_status_online":
+                    online_count = 0
+
+                    for member in interaction.guild.members:
+                        if member.status == discord.Status.online:
+                            online_count += 1
+
+                    name = name.replace("$VALUE$", human_format(online_count))
+                elif channel_type.value == "members_status_idle":
+                    idle_count = 0
+
+                    for member in interaction.guild.members:
+                        if member.status == discord.Status.idle:
+                            idle_count += 1
+
+                    name = name.replace("$VALUE$", human_format(idle_count))
+                elif channel_type.value == "members_status_dnd":
+                    dnd_count = 0
+
+                    for member in interaction.guild.members:
+                        if member.status == discord.Status.dnd:
+                            dnd_count += 1
+
+                    name = name.replace("$VALUE$", human_format(dnd_count))
+                elif channel_type.value == "members_activity":
+                    activity_count = 0
+
+                    for member in interaction.guild.members:
+                        if member.activity is not None:
+                            for activity in member.activities:
+                                if activity.type != discord.ActivityType.custom:
+                                    activity_count += 1
+                                    break
+
+                    name = name.replace("$VALUE$", human_format(activity_count))
+                elif channel_type.value == "members_custom_status":
+                    custom_status_count = 0
+
+                    for member in interaction.guild.members:
+                        if member.activity is not None:
+                            for activity in member.activities:
+                                if activity.type == discord.ActivityType.custom:
+                                    custom_status_count += 1
+                                    break
+
+                    name = name.replace("$VALUE$", human_format(custom_status_count))
                 elif channel_type.value == "channels":
                     channel_count = (
                         len(interaction.guild.text_channels)
                         + len(interaction.guild.voice_channels)
                         + len(interaction.guild.stage_channels)
+                        + len(interaction.guild.forums)
                     )
 
                     name = name.replace("$VALUE$", human_format(channel_count))
