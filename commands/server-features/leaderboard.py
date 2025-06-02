@@ -31,6 +31,31 @@ class Leaderboard(commands.Cog):
             for id in raw_opt_out_list:
                 self.opt_out_list.append(id[0])
 
+            if (
+                await sql.fetchone(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='settings';"
+                )
+                is None
+            ):
+                # Assuming this is an old version without settings table, perform migration
+                logging.debug("[LB] Migrating old database to add settings table - this is normal on first run.")
+                await sql.execute("CREATE TABLE settings (id int, deleteOnLeave int)")
+
+                # Get all tables that aren't opt out or settings
+                tables = await sql.fetchall(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND NOT name IN ('optOut', 'settings');"
+                )
+
+                for table in tables:
+                    # Create settings for each table
+                    await sql.execute(
+                        "INSERT INTO settings (id, deleteOnLeave) VALUES (?, 0);",
+                        (int(table[0]),),
+                    )
+
+                await sql.commit()
+                logging.debug("[LB] Migration complete. Settings table created.")
+
     # Refresh opt out list function
     async def refresh_opt_out_list(self):
         try:
@@ -95,6 +120,21 @@ class Leaderboard(commands.Cog):
         except Exception as error:
             logging.error("Error occurred while logging message for leaderboard!")
             logging.error(error)
+
+    # Listen for members leaving
+    @commands.Cog.listener()
+    async def on_raw_member_remove(self, payload: discord.RawMemberRemoveEvent):
+        async with self.lb_pool.acquire() as sql:
+            row = await sql.fetchone(
+                f"SELECT * FROM settings WHERE id={payload.guild_id};"
+            )
+            if row is not None:
+                if row[1] == 1:
+                    await sql.execute(
+                        f"DELETE FROM '{payload.guild_id}' WHERE userMention = ?;",
+                        (payload.user.mention,),
+                    )
+                    await sql.commit()
 
     context = discord.app_commands.AppCommandContext(
         guild=True, dm_channel=False, private_channel=False
@@ -697,6 +737,54 @@ class Leaderboard(commands.Cog):
                     color=Color.orange(),
                 )
                 await interaction.edit_original_response(embed=embed, view=view)
+
+    # Toggle auto delete command
+    @lbCtrlGroup.command(
+        name="delete-on-leave",
+        description="Toggle whether to delete users from the leaderboard when they leave.",
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
+    async def toggle_delete_on_leave(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        async with self.lb_pool.acquire() as sql:
+            row = await sql.fetchone(
+                "SELECT * FROM settings WHERE id=?;", (interaction.guild.id,)
+            )
+            if row is None:
+                embed = discord.Embed(
+                    title="Failed",
+                    description="Leaderboard is disabled in this server.",
+                    color=Color.red(),
+                )
+            else:
+                if row[1] == 0:
+                    await sql.execute(
+                        "UPDATE settings SET deleteOnLeave = 1 WHERE id = ?;",
+                        (interaction.guild.id,),
+                    )
+                    await sql.commit()
+
+                    embed = discord.Embed(
+                        title="Success",
+                        description="Titanium will now try to delete users from the leaderboard when they leave the server.",
+                        color=Color.green(),
+                    )
+                else:
+                    await sql.execute(
+                        "UPDATE settings SET deleteOnLeave = 0 WHERE id = ?;",
+                        (interaction.guild.id,),
+                    )
+                    await sql.commit()
+
+                    embed = discord.Embed(
+                        title="Success",
+                        description="Titanium will no longer delete users from the leaderboard when they leave the server.",
+                        color=Color.green(),
+                    )
+
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 async def setup(bot):

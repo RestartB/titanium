@@ -98,8 +98,8 @@ applications.commands
 ## Intents
 Titanium uses several privileged intents. If your bot instance is verified (required for 100+ servers), you **MUST** get approval from Discord before you can use them.
 
-- Presence Intent - needed for the now playing command.
-- Server Members Intent - needed for server member counts in the server info command.
+- Presence Intent - needed for the now playing command, server counters.
+- Server Members Intent - needed for server member counts in the server info command, getting when members leave for the leaderboard.
 - Message Content Intent - Required for getting message content for the fireboard, and for processing the leaderboard.
 
 ## Developing your own Cogs
