@@ -1,7 +1,7 @@
 # Titanium
 Welcome to Titanium's main code repo! Titanium is your multipurpose, open source Discord bot.
 
-[Add Titanium Now!](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](/Privacy.md) and [Terms of Use policy](/Terms.md))
+[Add Titanium Now!](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](https://titaniumbot.me/privacy/bot) and [Terms of Use policy](https://titaniumbot.me/terms))
 
 ## Contributions Welcome!
 Contributions to Titanium are welcome! To contribute, make a pull request and I'll take a look. When contributing, please ensure that you use Ruff to check and format your code. This ensures that all of Titanium's code stays in a consistent style. To do this with the uv package manager, run `uvx ruff check --fix` and `uvx ruff format`.
@@ -34,7 +34,7 @@ The best way to see all of Titanium's commands is to add the bot to your server 
 
 ## Quick Start
 You can quickly start using Titanium with the following link to add the main Titanium instance:\
-[Add Titanium](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](/Privacy.md) and [Terms of Use policy](/Terms.md))
+[Add Titanium](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](https://titaniumbot.me/privacy/bot) and [Terms of Use policy](https://titaniumbot.me/terms))
 
 If you would like to self-host your own instance of Titanium instead, please read the section below.
 
