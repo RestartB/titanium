@@ -38,7 +38,9 @@ class Leaderboard(commands.Cog):
                 is None
             ):
                 # Assuming this is an old version without settings table, perform migration
-                logging.debug("[LB] Migrating old database to add settings table - this is normal on first run.")
+                logging.debug(
+                    "[LB] Migrating old database to add settings table - this is normal on first run."
+                )
                 await sql.execute("CREATE TABLE settings (id int, deleteOnLeave int)")
 
                 # Get all tables that aren't opt out or settings
