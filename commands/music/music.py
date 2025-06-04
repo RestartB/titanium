@@ -17,7 +17,7 @@ class Music(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(search="The song you're seaching for.")
     @app_commands.describe(
-        longer_pages="Optional: allows a max of 4096 characters / unlimited paragraphs per page instead of 1000 characters / 4 paragraphs. Defaults to false."
+        longer_pages="Optional: allows a max of 3500 characters per page instead of 1024. Defaults to false."
     )
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false."
@@ -184,35 +184,26 @@ class Music(commands.Cog):
                     list_place = id_list.index(int(self.values[0]))
 
                     try:
-                        lyrics_split = str(lyrics_list[list_place]).split("\n\n")
-
+                        lyrics_paragraphs = str(lyrics_list[list_place]).split("\n\n")
                         pages = []
                         current_page = ""
 
-                        if len(lyrics_split) == 1:  # No page split
-                            pages = lyrics_split
-                        else:
-                            for i, paragraph in enumerate(lyrics_split):
-                                if longer_pages:
-                                    if not (i == 0) and len(current_page) > 4096:
-                                        pages.append(current_page)
-                                        current_page = paragraph
-                                    else:
-                                        current_page += paragraph + "\n\n"
-                                else:
-                                    if (
-                                        not (i == 0)
-                                        and i % 5 == 0
-                                        or len(current_page) > 1024
-                                    ):
-                                        pages.append(current_page)
-                                        current_page = paragraph
-                                    else:
-                                        current_page += paragraph + "\n\n"
+                        for paragraph in lyrics_paragraphs:
+                            for line in paragraph.splitlines():
+                                if (len(current_page)) >= (
+                                    3500 if longer_pages else 1024
+                                ) or len(current_page.splitlines()) >= 30:
+                                    if current_page:
+                                        pages.append(current_page.strip())
+                                        current_page = ""
 
-                            # Add any remaining contents
-                            if current_page != "":
-                                pages.append(current_page)
+                                current_page += f"{line}\n"
+
+                            if current_page:
+                                current_page += "\n"
+
+                        if current_page:
+                            pages.append(current_page.strip())
 
                         # Create lyric embed
                         embed = discord.Embed(

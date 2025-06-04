@@ -1,5 +1,5 @@
 from io import BytesIO
-from textwrap import shorten, wrap
+from textwrap import shorten
 from urllib.parse import quote_plus
 
 import aiohttp
@@ -224,10 +224,24 @@ class SongLyricSelection(discord.ui.Select):
 
         raw_lyrics: str = selected_song_data["plainLyrics"]
 
-        # Split lyrics into pages of 2048 characters
-        lyrics = wrap(
-            raw_lyrics, 1024, replace_whitespace=False, break_long_words=False
-        )
+        lyrics_paragraphs = raw_lyrics.split("\n\n")
+        lyrics = []
+        current_page = ""
+
+        for paragraph in lyrics_paragraphs:
+            for line in paragraph.splitlines():
+                if (len(current_page)) >= 1024 or len(current_page.splitlines()) >= 30:
+                    if current_page:
+                        lyrics.append(current_page.strip())
+                        current_page = ""
+
+                current_page += f"{line}\n"
+
+            if current_page:
+                current_page += "\n"
+
+        if current_page:
+            lyrics.append(current_page.strip())
 
         view = SongLyricsView(
             pages=lyrics,
@@ -271,6 +285,10 @@ class SongLyricsView(View):
         for item in self.children:
             if item.custom_id == "first" or item.custom_id == "prev":
                 item.disabled = True
+            elif (item.custom_id == "next" or item.custom_id == "last") and len(
+                self.pages
+            ) <= 1:
+                item.disabled = True
             elif item.custom_id == "lock" and self.private:
                 self.remove_item(item)
 
@@ -282,7 +300,7 @@ class SongLyricsView(View):
         )
 
         embed.set_footer(
-            text=f"@{interaction.user.name} - Page {page + 1}/{len(self.pages)}",
+            text=f"@{interaction.user.name} - Page {page + 1}/{len(self.pages)}, from lrclib.net",
             icon_url=interaction.user.display_avatar.url,
         )
         embed.set_author(
