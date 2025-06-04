@@ -22,7 +22,7 @@ class Analytics(commands.Cog):
         command: Union[app_commands.Command, app_commands.ContextMenu],
     ) -> None:
         try:
-            # Ignore if there is no werbhook
+            # Ignore if there is no webhook
             if (
                 self.bot.options["analytics-webhook"] is not None
                 and self.bot.options["analytics-webhook"] != ""
@@ -64,7 +64,7 @@ class Analytics(commands.Cog):
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
         try:
-            # Ignore if there is no werbhook
+            # Ignore if there is no webhook
             if (
                 self.bot.options["raw-analytics-webhook"] is not None
                 and self.bot.options["raw-analytics-webhook"] != ""
@@ -111,6 +111,76 @@ class Analytics(commands.Cog):
                     logging.error(
                         f"[ANALYTICS] Failed to send raw analytics webhook - {e}"
                     )
+        except KeyError:
+            pass
+
+    # Analytics for server joins
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild):
+        try:
+            # Ignore if there is no webhook
+            if (
+                self.bot.options["analytics-webhook"] is not None
+                and self.bot.options["analytics-webhook"] != ""
+            ):
+                try:
+                    embed = discord.Embed(
+                        title="Joined Server",
+                        color=Color.green(),
+                    )
+
+                    embed.description = (
+                        f"Titanium has joined **{guild.name}** ({guild.id})."
+                    )
+                    embed.thumbnail = guild.icon.url if guild.icon else None
+                    embed.timestamp = guild.created_at
+                    embed.set_author(
+                        name=str(self.bot.user),
+                        icon_url=self.bot.user.display_avatar.url,
+                    )
+
+                    async with aiohttp.ClientSession() as session:
+                        webhook = discord.Webhook.from_url(
+                            self.bot.options["analytics-webhook"], session=session
+                        )
+                        await webhook.send(embed=embed)
+                except Exception as e:
+                    logging.error(f"[ANALYTICS] Failed to send analytics webhook - {e}")
+        except KeyError:
+            pass
+
+    # Analytics for server removes
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild: discord.Guild):
+        try:
+            # Ignore if there is no webhook
+            if (
+                self.bot.options["analytics-webhook"] is not None
+                and self.bot.options["analytics-webhook"] != ""
+            ):
+                try:
+                    embed = discord.Embed(
+                        title="Left Server",
+                        color=Color.red(),
+                    )
+
+                    embed.description = (
+                        f"Titanium has left **{guild.name}** ({guild.id})."
+                    )
+                    embed.thumbnail = guild.icon.url if guild.icon else None
+                    embed.timestamp = guild.created_at
+                    embed.set_author(
+                        name=str(self.bot.user),
+                        icon_url=self.bot.user.display_avatar.url,
+                    )
+
+                    async with aiohttp.ClientSession() as session:
+                        webhook = discord.Webhook.from_url(
+                            self.bot.options["analytics-webhook"], session=session
+                        )
+                        await webhook.send(embed=embed)
+                except Exception as e:
+                    logging.error(f"[ANALYTICS] Failed to send analytics webhook - {e}")
         except KeyError:
             pass
 
