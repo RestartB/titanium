@@ -1,4 +1,5 @@
 from io import BytesIO
+from textwrap import shorten, wrap
 from urllib.parse import quote_plus
 
 import aiohttp
@@ -7,8 +8,6 @@ from colorthief import ColorThief
 from discord import ButtonStyle, Color
 from discord.ui import View
 from discord.utils import escape_markdown
-
-from utils.truncate import truncate
 
 # --- Song Classes and Functions ---
 
@@ -146,6 +145,270 @@ class SongMenuView(View):
             await interaction.edit_original_response(embed=embed)
 
         self.stop()
+
+    @discord.ui.button(label="Lyrics", style=discord.ButtonStyle.gray)
+    async def lyrics(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
+
+        search = f"{self.item['name']} {' '.join(artist['name'] for artist in self.item['artists'])}"
+        request_url = f"https://lrclib.net/api/search?q={search}"
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(request_url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data != []:
+                        selector = SongLyricSelection(item=self.item)
+                        for lyric_data in data:
+                            selector.add_option(
+                                label=shorten(
+                                    lyric_data["name"], width=100, placeholder="..."
+                                ),
+                                value=lyric_data["id"],
+                                description=shorten(
+                                    f"{lyric_data['artistName']} - {lyric_data['albumName']}",
+                                    width=100,
+                                    placeholder="...",
+                                ),
+                            )
+
+                        view = SongLyricsSelectionView()
+                        view.add_item(selector)
+                        await interaction.edit_original_response(view=view)
+
+                        view.message = await interaction.original_response()
+                    else:
+                        embed = discord.Embed(
+                            title="No Lyrics Found",
+                            description="No lyrics were found for this song.",
+                            color=Color.red(),
+                        )
+                        await interaction.edit_original_response(embed=embed)
+                else:
+                    embed = discord.Embed(
+                        title="Error",
+                        description="Failed to fetch lyrics. Please try again later.",
+                        color=Color.red(),
+                    )
+                    await interaction.edit_original_response(embed=embed)
+
+        self.stop()
+
+
+class SongLyricSelection(discord.ui.Select):
+    def __init__(self, item: dict):
+        super().__init__(
+            placeholder="Select a song",
+            min_values=1,
+            max_values=1,
+        )
+
+        self.item = item
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        request_url = f"https://lrclib.net/api/get/{self.values[0]}"
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(request_url) as response:
+                if response.status == 200:
+                    selected_song_data = await response.json()
+                else:
+                    embed = discord.Embed(
+                        title="Error",
+                        description="Failed to fetch lyrics. Please try again later.",
+                        color=Color.red(),
+                    )
+                    await interaction.edit_original_response(embed=embed)
+                    return
+
+        raw_lyrics: str = selected_song_data["plainLyrics"]
+
+        # Split lyrics into pages of 2048 characters
+        lyrics = wrap(
+            raw_lyrics, 1024, replace_whitespace=False, break_long_words=False
+        )
+
+        view = SongLyricsView(
+            pages=lyrics,
+            private=True,
+            creator_id=interaction.user.id,
+            info=selected_song_data,
+        )
+
+        embed = await view._create_embed(0, interaction)
+        await interaction.edit_original_response(embed=embed, view=view)
+
+
+class SongLyricsSelectionView(View):
+    def __init__(self):
+        super().__init__(timeout=900)
+
+        self.message: discord.InteractionMessage
+
+    async def on_timeout(self):
+        await self.message.delete()
+
+
+class SongLyricsView(View):
+    def __init__(
+        self,
+        pages: list,
+        private: bool,
+        creator_id: int,
+        info: dict,
+    ):
+        super().__init__(timeout=900)
+
+        self.pages = pages
+        self.page = 0
+        self.locked = False
+        self.info = info
+
+        self.private = private
+        self.creator_id = creator_id
+
+        for item in self.children:
+            if item.custom_id == "first" or item.custom_id == "prev":
+                item.disabled = True
+            elif item.custom_id == "lock" and self.private:
+                self.remove_item(item)
+
+    async def _create_embed(self, page: int, interaction: discord.Interaction):
+        embed = discord.Embed(
+            title=f"{self.info['name']} - Lyrics",
+            description=self.pages[page],
+            color=Color.random(),
+        )
+
+        embed.set_footer(
+            text=f"@{interaction.user.name} - Page {page + 1}/{len(self.pages)}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+        embed.set_author(
+            name=f"{self.info['artistName']}",
+        )
+
+        return embed
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.creator_id:
+            if self.locked:
+                embed = discord.Embed(
+                    title="Error",
+                    description="This command is locked. Only the owner can control it.",
+                    color=Color.red(),
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            else:
+                return True
+        else:
+            return True
+
+    @discord.ui.button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
+    async def first_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ):
+        self.page = 0
+
+        for item in self.children:
+            item.disabled = False
+
+            if item.custom_id == "first" or item.custom_id == "prev":
+                item.disabled = True
+
+        embed = await self._create_embed(self.page, interaction)
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(emoji="⏪", style=ButtonStyle.gray, custom_id="prev")
+    async def prev_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ):
+        if self.page - 1 == 0:
+            self.page -= 1
+
+            for item in self.children:
+                item.disabled = False
+
+                if item.custom_id == "first" or item.custom_id == "prev":
+                    item.disabled = True
+        else:
+            self.page -= 1
+
+            for item in self.children:
+                item.disabled = False
+
+        embed = await self._create_embed(self.page, interaction)
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(emoji="🔓", style=ButtonStyle.green, custom_id="lock")
+    async def lock_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ):
+        if interaction.user.id == self.creator_id:
+            self.locked = not self.locked
+
+            if self.locked:
+                button.emoji = "🔒"
+                button.style = ButtonStyle.red
+            else:
+                button.emoji = "🔓"
+                button.style = ButtonStyle.green
+
+            await interaction.response.edit_message(view=self)
+        else:
+            embed = discord.Embed(
+                title="Error",
+                description="Only the command runner can toggle the page controls lock.",
+                color=Color.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(emoji="⏩", style=ButtonStyle.gray, custom_id="next")
+    async def next_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ):
+        if (self.page + 1) == (len(self.pages) - 1):
+            self.page += 1
+
+            for item in self.children:
+                item.disabled = False
+
+                if item.custom_id == "next" or item.custom_id == "last":
+                    item.disabled = True
+        else:
+            self.page += 1
+
+            for item in self.children:
+                item.disabled = False
+
+        embed = await self._create_embed(self.page, interaction)
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
+    async def last_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ):
+        self.page = len(self.pages) - 1
+
+        for item in self.children:
+            item.disabled = False
+
+            if item.custom_id == "next" or item.custom_id == "last":
+                item.disabled = True
+
+        embed = await self._create_embed(self.page, interaction)
+        await interaction.response.edit_message(embed=embed, view=self)
 
 
 # Song element function
@@ -797,7 +1060,7 @@ async def album(
     for artist in item["artists"]:
         artists_list.append(escape_markdown(artist["name"]))
 
-    artists = truncate(", ".join(artists_list), 256)
+    artists = shorten(", ".join(artists_list), width=256, placeholder="...")
 
     # Generate pages with 15 items
     for i, track in enumerate(item["tracks"]["items"]):
@@ -808,12 +1071,16 @@ async def album(
 
         # Only show artists if they are not the same as the album artist
         if track_artists_list == artists_list:
-            page.append(f"{i + 1}. **{truncate(track['name'], 200)}**")
+            page.append(
+                f"{i + 1}. **{shorten(track['name'], width=200, placeholder='...')}**"
+            )
         else:
-            track_artists = truncate(", ".join(track_artists_list))
+            track_artists = shorten(
+                ", ".join(track_artists_list), width=100, placeholder="..."
+            )
 
             page.append(
-                f"{i + 1}. **{truncate(escape_markdown(item['tracks']['items'][i]['name']))}** - {track_artists}"
+                f"{i + 1}. **{shorten(escape_markdown(item['tracks']['items'][i]['name']), width=100, placeholder='...')}** - {track_artists}"
             )
 
         # Make new page if current page is full
