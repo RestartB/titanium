@@ -133,7 +133,7 @@ class WebSearch(commands.Cog):
                     )
 
                     embed.set_footer(
-                        text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
+                        text=f"@{interaction.user.name} • Page {self.page + 1}/{len(item_list)}",
                         icon_url=interaction.user.display_avatar.url,
                     )
                     embed_list.append(embed)
@@ -176,7 +176,7 @@ class WebSearch(commands.Cog):
                     )
 
                     embed.set_footer(
-                        text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
+                        text=f"@{interaction.user.name} • Page {self.page + 1}/{len(item_list)}",
                         icon_url=interaction.user.display_avatar.url,
                     )
                     embed_list.append(embed)
@@ -248,7 +248,7 @@ class WebSearch(commands.Cog):
                     )
 
                     embed.set_footer(
-                        text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
+                        text=f"@{interaction.user.name} • Page {self.page + 1}/{len(item_list)}",
                         icon_url=interaction.user.display_avatar.url,
                     )
                     embed_list.append(embed)
@@ -285,7 +285,7 @@ class WebSearch(commands.Cog):
                     )
 
                     embed.set_footer(
-                        text=f"@{interaction.user.name} - Page {self.page + 1}/{len(item_list)}",
+                        text=f"@{interaction.user.name} • Page {self.page + 1}/{len(item_list)}",
                         icon_url=interaction.user.display_avatar.url,
                     )
                     embed_list.append(embed)
@@ -314,7 +314,7 @@ class WebSearch(commands.Cog):
                 )
 
                 embed.set_footer(
-                    text=f"@{interaction.user.name} - Page {page}/{len(item_list)}",
+                    text=f"@{interaction.user.name} • Page {page}/{len(item_list)}",
                     icon_url=interaction.user.display_avatar.url,
                 )
                 embed_list.append(embed)
@@ -325,7 +325,7 @@ class WebSearch(commands.Cog):
                     color=Color.red(),
                 )
                 embed.set_footer(
-                    text=f"@{interaction.user.name} - Page 1/{len(item_list)}",
+                    text=f"@{interaction.user.name} • Page 1/{len(item_list)}",
                     icon_url=interaction.user.display_avatar.url,
                 )
 

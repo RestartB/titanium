@@ -224,13 +224,13 @@ class Music(commands.Cog):
                             view = View()
                             view.add_item(google_button)
 
-                            embed.set_footer(text="lrclib.net - Page 1/1")
+                            embed.set_footer(text="lrclib.net • Page 1/1")
 
                             await interaction.edit_original_response(
                                 embed=embed, view=view
                             )
                         else:  # Multiple pages - send embed with page controller
-                            embed.set_footer(text=f"lrclib.net - Page 1/{len(pages)}")
+                            embed.set_footer(text=f"lrclib.net • Page 1/{len(pages)}")
 
                             pages_instance = LyricPages(pages, list_place)
                             await interaction.edit_original_response(
@@ -337,7 +337,7 @@ class Music(commands.Cog):
                         color=Color.random(),
                     )
                     embed.set_footer(
-                        text=f"lrclib.net - Page {self.page + 1}/{len(self.pages)}"
+                        text=f"lrclib.net • Page {self.page + 1}/{len(self.pages)}"
                     )
 
                     await interaction.response.edit_message(embed=embed, view=self)
@@ -367,7 +367,7 @@ class Music(commands.Cog):
                         color=Color.random(),
                     )
                     embed.set_footer(
-                        text=f"lrclib.net - Page {self.page + 1}/{len(self.pages)}"
+                        text=f"lrclib.net • Page {self.page + 1}/{len(self.pages)}"
                     )
 
                     await interaction.response.edit_message(embed=embed, view=self)
@@ -425,7 +425,7 @@ class Music(commands.Cog):
                         color=Color.random(),
                     )
                     embed.set_footer(
-                        text=f"lrclib.net - Page {self.page + 1}/{len(self.pages)}"
+                        text=f"lrclib.net • Page {self.page + 1}/{len(self.pages)}"
                     )
 
                     await interaction.response.edit_message(embed=embed, view=self)
@@ -449,7 +449,7 @@ class Music(commands.Cog):
                         color=Color.random(),
                     )
                     embed.set_footer(
-                        text=f"lrclib.net - Page {self.page + 1}/{len(self.pages)}"
+                        text=f"lrclib.net • Page {self.page + 1}/{len(self.pages)}"
                     )
 
                     await interaction.response.edit_message(embed=embed, view=self)

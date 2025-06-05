@@ -300,7 +300,7 @@ class SongLyricsView(View):
         )
 
         embed.set_footer(
-            text=f"@{interaction.user.name} - Page {page + 1}/{len(self.pages)}, from lrclib.net",
+            text=f"@{interaction.user.name} • Page {page + 1}/{len(self.pages)}, from lrclib.net",
             icon_url=interaction.user.display_avatar.url,
         )
         embed.set_author(
@@ -778,7 +778,7 @@ class AlbumViewPages(View):
         )
 
         embed.set_footer(
-            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
+            text=f"Controlling: @{interaction.user.name} • Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
             icon_url=interaction.user.display_avatar.url,
         )
 
@@ -819,7 +819,7 @@ class AlbumViewPages(View):
         )
 
         embed.set_footer(
-            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
+            text=f"Controlling: @{interaction.user.name} • Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
             icon_url=interaction.user.display_avatar.url,
         )
 
@@ -884,7 +884,7 @@ class AlbumViewPages(View):
         )
 
         embed.set_footer(
-            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
+            text=f"Controlling: @{interaction.user.name} • Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
             icon_url=interaction.user.display_avatar.url,
         )
 
@@ -919,7 +919,7 @@ class AlbumViewPages(View):
         )
 
         embed.set_footer(
-            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
+            text=f"Controlling: @{interaction.user.name} • Page {self.page + 1}/{len(self.pages)}{' • Cached Link' if self.cached else ''}",
             icon_url=interaction.user.display_avatar.url,
         )
 
@@ -1132,7 +1132,7 @@ async def album(
     )
 
     embed.set_footer(
-        text=f"{'Controlling: ' if len(pages) > 1 else ''}@{interaction.user.name} - Page 1/{len(pages)}{' • Cached Link' if cached else ''}",
+        text=f"{'Controlling: ' if len(pages) > 1 else ''}@{interaction.user.name} • Page 1/{len(pages)}{' • Cached Link' if cached else ''}",
         icon_url=interaction.user.display_avatar.url,
     )
 

@@ -41,7 +41,7 @@ class Reviews(commands.Cog):
         )
 
         embed.set_footer(
-            text=f"Controlling: @{interaction.user.name} - Page {current_page + 1}/{page_count}",
+            text=f"Controlling: @{interaction.user.name} • Page {current_page + 1}/{page_count}",
             icon_url=interaction.user.display_avatar.url,
         )
 
@@ -77,7 +77,7 @@ class Reviews(commands.Cog):
         )
 
         embed.set_footer(
-            text=f"Controlling: @{interaction.user.name} - Page {current_page + 1}/{page_count}",
+            text=f"Controlling: @{interaction.user.name} • Page {current_page + 1}/{page_count}",
             icon_url=interaction.user.display_avatar.url,
         )
 

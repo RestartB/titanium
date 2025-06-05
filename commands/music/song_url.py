@@ -725,7 +725,7 @@ class SongURL(commands.Cog):
 
                         embed.set_thumbnail(url=result_info["images"][0]["url"])
                         embed.set_footer(
-                            text=f"@{interaction.user.name} - Page {self.page + 1}/{len(pages)}",
+                            text=f"@{interaction.user.name} • Page {self.page + 1}/{len(pages)}",
                             icon_url=interaction.user.display_avatar.url,
                         )
 
@@ -768,7 +768,7 @@ class SongURL(commands.Cog):
 
                         embed.set_thumbnail(url=result_info["images"][0]["url"])
                         embed.set_footer(
-                            text=f"@{interaction.user.name} - Page {self.page + 1}/{len(pages)}",
+                            text=f"@{interaction.user.name} • Page {self.page + 1}/{len(pages)}",
                             icon_url=interaction.user.display_avatar.url,
                         )
 
@@ -837,7 +837,7 @@ class SongURL(commands.Cog):
 
                         embed.set_thumbnail(url=result_info["images"][0]["url"])
                         embed.set_footer(
-                            text=f"@{interaction.user.name} - Page {self.page + 1}/{len(pages)}",
+                            text=f"@{interaction.user.name} • Page {self.page + 1}/{len(pages)}",
                             icon_url=interaction.user.display_avatar.url,
                         )
 
@@ -871,7 +871,7 @@ class SongURL(commands.Cog):
 
                         embed.set_thumbnail(url=result_info["images"][0]["url"])
                         embed.set_footer(
-                            text=f"@{interaction.user.name} - Page {self.page + 1}/{len(pages)}",
+                            text=f"@{interaction.user.name} • Page {self.page + 1}/{len(pages)}",
                             icon_url=interaction.user.display_avatar.url,
                         )
 
@@ -887,7 +887,7 @@ class SongURL(commands.Cog):
 
                 embed.set_thumbnail(url=result_info["images"][0]["url"])
                 embed.set_footer(
-                    text=f"@{interaction.user.name} - Page 1/{len(pages)}",
+                    text=f"@{interaction.user.name} • Page 1/{len(pages)}",
                     icon_url=interaction.user.display_avatar.url,
                 )
 

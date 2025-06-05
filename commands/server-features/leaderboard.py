@@ -269,7 +269,7 @@ class Leaderboard(commands.Cog):
                             color=Color.random(),
                         )
                         embed.set_footer(
-                            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}",
+                            text=f"Controlling: @{interaction.user.name} • Page {self.page + 1}/{len(self.pages)}",
                             icon_url=interaction.user.display_avatar.url,
                         )
 
@@ -306,7 +306,7 @@ class Leaderboard(commands.Cog):
                             color=Color.random(),
                         )
                         embed.set_footer(
-                            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}",
+                            text=f"Controlling: @{interaction.user.name} • Page {self.page + 1}/{len(self.pages)}",
                             icon_url=interaction.user.display_avatar.url,
                         )
 
@@ -369,7 +369,7 @@ class Leaderboard(commands.Cog):
                             color=Color.red(),
                         )
                         embed.set_footer(
-                            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}",
+                            text=f"Controlling: @{interaction.user.name} • Page {self.page + 1}/{len(self.pages)}",
                             icon_url=interaction.user.display_avatar.url,
                         )
 
@@ -397,7 +397,7 @@ class Leaderboard(commands.Cog):
                             color=Color.random(),
                         )
                         embed.set_footer(
-                            text=f"Controlling: @{interaction.user.name} - Page {self.page + 1}/{len(self.pages)}",
+                            text=f"Controlling: @{interaction.user.name} • Page {self.page + 1}/{len(self.pages)}",
                             icon_url=interaction.user.display_avatar.url,
                         )
 
@@ -409,7 +409,7 @@ class Leaderboard(commands.Cog):
                     color=Color.random(),
                 )
                 embed.set_footer(
-                    text=f"Controlling: @{interaction.user.name} - Page 1/{len(pages)}",
+                    text=f"Controlling: @{interaction.user.name} • Page 1/{len(pages)}",
                     icon_url=interaction.user.display_avatar.url,
                 )
 

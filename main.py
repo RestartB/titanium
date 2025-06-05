@@ -11,14 +11,13 @@ import os
 import random
 import traceback
 from glob import glob
+from textwrap import shorten
 
 import aiohttp
 import asqlite
 import discord
 from discord import Color
 from discord.ext import commands
-
-from utils.truncate import truncate
 
 # Current Running Path
 path = os.getcwd()
@@ -363,7 +362,7 @@ async def on_app_command_error(
                     logging.info("Sending error to webhook.")
                     embed = discord.Embed(
                         title="Error",
-                        description=f"```python\n{truncate(traceback.format_exc(), 4085, '```')}{'```' if len(traceback.format_exc()) < 4085 else ''}",
+                        description=f"```python\n{shorten(traceback.format_exc(), width=4085, placeholder='```')}{'```' if len(traceback.format_exc()) < 4085 else ''}",
                         color=Color.red(),
                     )
 

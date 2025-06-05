@@ -137,23 +137,9 @@ class BotUtils(commands.Cog):
         )
         view.add_item(
             discord.ui.Button(
-                label="Privacy Policy",
-                style=discord.ButtonStyle.url,
-                url="https://github.com/RestartB/titanium/blob/main/Privacy.md",
-            )
-        )
-        view.add_item(
-            discord.ui.Button(
-                label="Terms of Service",
-                style=discord.ButtonStyle.url,
-                url="https://github.com/RestartB/titanium/blob/main/Terms.md",
-            )
-        )
-        view.add_item(
-            discord.ui.Button(
                 label="Support Server",
                 style=discord.ButtonStyle.url,
-                url="https://discord.gg/FKc8gZUmhM",
+                url="https://titaniumbot.me/server",
             )
         )
 
