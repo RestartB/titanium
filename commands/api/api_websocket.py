@@ -1,7 +1,5 @@
-import asyncio
 import json
 from typing import TYPE_CHECKING
-import traceback
 
 import discord
 import websockets
@@ -67,9 +65,7 @@ class APIWebsocket(commands.Cog):
                                 "name": c.name,
                                 "type": str(c.type),
                                 "position": c.position,
-                                "category_id": c.category_id
-                                if c.category
-                                else None,
+                                "category_id": c.category_id if c.category else None,
                                 "category_name": c.category.name
                                 if c.category
                                 else None,
