@@ -26,7 +26,9 @@ class SteamCommands(commands.Cog):
     )
 
     # Steam Search command
-    @steamGroup.command(name="search", description="Search Steam for info about a game.")
+    @steamGroup.command(
+        name="search", description="Search Steam for info about a game."
+    )
     @app_commands.describe(
         game="The name of the game to search for.",
         currency="The currency to display the price in.",
