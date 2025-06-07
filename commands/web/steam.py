@@ -1,4 +1,5 @@
 import html
+from textwrap import shorten
 from urllib.parse import quote
 
 import aiohttp
@@ -24,18 +25,63 @@ class SteamCommands(commands.Cog):
         allowed_installs=installs,
     )
 
-    # Steam Game command
-    @steamGroup.command(name="game", description="Get info about a Steam game.")
+    # Steam Search command
+    @steamGroup.command(name="search", description="Search Steam for info about a game.")
     @app_commands.describe(
         game="The name of the game to search for.",
+        currency="The currency to display the price in.",
         ephemeral="Whether to send the response as ephemeral (only visible to you).",
     )
-    async def steam_game(
-        self, interaction: discord.Interaction, game: str, ephemeral: bool = False
+    @app_commands.choices(
+        currency=[
+            app_commands.Choice(
+                name="British Pounds",
+                value="GB",
+            ),
+            app_commands.Choice(
+                name="Euro",
+                value="BG",
+            ),
+            app_commands.Choice(
+                name="United States Dollar",
+                value="US",
+            ),
+            app_commands.Choice(
+                name="Australian Dollar",
+                value="AU",
+            ),
+            app_commands.Choice(
+                name="Canadian Dollar",
+                value="CA",
+            ),
+            app_commands.Choice(
+                name="New Zealand Dollar",
+                value="NZ",
+            ),
+            app_commands.Choice(
+                name="Indian Rupee",
+                value="IN",
+            ),
+            app_commands.Choice(
+                name="Russian Ruble",
+                value="RU",
+            ),
+            app_commands.Choice(
+                name="Ukrainian Hryvnia",
+                value="UA",
+            ),
+        ],
+    )
+    async def steam_search(
+        self,
+        interaction: discord.Interaction,
+        game: str,
+        currency: app_commands.Choice[str],
+        ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        url = f"https://store.steampowered.com/api/storesearch/?term={quote(game)}&l=english&cc=GB"
+        url = f"https://store.steampowered.com/api/storesearch/?term={quote(game)}&l=english&cc={currency.value}"
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 jr = await response.json()
@@ -70,12 +116,13 @@ class SteamCommands(commands.Cog):
         id_list = []
 
         for i in range(min(5, len(all_items))):
-            name = all_items[i]["name"]
+            name = shorten(all_items[i]["name"], width=100, placeholder="…")
             appid = all_items[i]["id"]
             price_info = all_items[i].get("price")
 
             if price_info and "initial" in price_info and "currency" in price_info:
-                price = f"{price_info['initial'] / 100:.2f} {price_info['currency']}"
+                price_value = price_info["initial"] / 100
+                price = f"{int(price_value) if price_value.is_integer() else f'{price_value:.2f}'} {price_info['currency']}"
             else:
                 price = "Free"
 
@@ -90,6 +137,7 @@ class SteamCommands(commands.Cog):
                 f"ID {appid}",
             ]
             desctext = " | ".join(filter(None, description_items))
+            desctext = shorten(desctext, width=100, placeholder="…")
 
             options.append(
                 discord.SelectOption(
@@ -123,7 +171,7 @@ class SteamCommands(commands.Cog):
                 except Exception:
                     pass
 
-        # Song select dropdown class
+        # Game select dropdown class
         class Dropdown(discord.ui.Select):
             def __init__(self, options: list):
                 super().__init__(
@@ -145,7 +193,7 @@ class SteamCommands(commands.Cog):
                 id = all_items[list_place]["id"]
                 async with aiohttp.ClientSession() as session:
                     async with session.get(
-                        f"https://store.steampowered.com/api/appdetails?appids={id}&cc=BG"
+                        f"https://store.steampowered.com/api/appdetails?appids={id}&cc={currency.value}&l=english"
                     ) as response:
                         response.raise_for_status()
                         game_data = await response.json()
@@ -168,9 +216,12 @@ class SteamCommands(commands.Cog):
                 ):
                     # check for discount
                     if price_info.get("discount_percent", 0) > 0:
-                        price = f"~~{price_info['initial'] / 100:.2f}~~ {price_info['final'] / 100:.2f} {price_info['currency']}"
+                        initial = price_info["initial"] / 100
+                        final = price_info["final"] / 100
+                        price = f"~~{int(initial) if initial.is_integer() else f'{initial:.2f}'}~~ {int(final) if final.is_integer() else f'{final:.2f}'} {price_info['currency']}"
                     else:
-                        price = f"{price_info['initial'] / 100:.2f} {price_info['currency']}"
+                        initial = price_info["initial"] / 100
+                        price = f"{int(initial) if initial.is_integer() else f'{initial:.2f}'} {price_info['currency']}"
                 else:
                     price = "N/A"
 
