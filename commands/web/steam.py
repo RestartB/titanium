@@ -1,6 +1,6 @@
 import html
-from urllib.parse import quote
 from textwrap import shorten
+from urllib.parse import quote
 
 import aiohttp
 import discord
@@ -73,7 +73,11 @@ class SteamCommands(commands.Cog):
         ],
     )
     async def steam_game(
-        self, interaction: discord.Interaction, game: str, currency: app_commands.Choice[str], ephemeral: bool = False
+        self,
+        interaction: discord.Interaction,
+        game: str,
+        currency: app_commands.Choice[str],
+        ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
@@ -117,7 +121,7 @@ class SteamCommands(commands.Cog):
             price_info = all_items[i].get("price")
 
             if price_info and "initial" in price_info and "currency" in price_info:
-                price_value = price_info['initial'] / 100
+                price_value = price_info["initial"] / 100
                 price = f"{int(price_value) if price_value.is_integer() else f'{price_value:.2f}'} {price_info['currency']}"
             else:
                 price = "Free"
@@ -212,11 +216,11 @@ class SteamCommands(commands.Cog):
                 ):
                     # check for discount
                     if price_info.get("discount_percent", 0) > 0:
-                        initial = price_info['initial'] / 100
-                        final = price_info['final'] / 100
+                        initial = price_info["initial"] / 100
+                        final = price_info["final"] / 100
                         price = f"~~{int(initial) if initial.is_integer() else f'{initial:.2f}'}~~ {int(final) if final.is_integer() else f'{final:.2f}'} {price_info['currency']}"
                     else:
-                        initial = price_info['initial'] / 100
+                        initial = price_info["initial"] / 100
                         price = f"{int(initial) if initial.is_integer() else f'{initial:.2f}'} {price_info['currency']}"
                 else:
                     price = "N/A"
@@ -290,6 +294,7 @@ class SteamCommands(commands.Cog):
             embed=embed, view=view, ephemeral=ephemeral, wait=True
         )
         view.msg_id = msg.id
+
 
 async def setup(bot):
     await bot.add_cog(SteamCommands(bot))
