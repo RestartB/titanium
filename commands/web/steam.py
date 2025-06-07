@@ -193,7 +193,7 @@ class SteamCommands(commands.Cog):
                 id = all_items[list_place]["id"]
                 async with aiohttp.ClientSession() as session:
                     async with session.get(
-                        f"https://store.steampowered.com/api/appdetails?appids={id}&cc={currency.value}"
+                        f"https://store.steampowered.com/api/appdetails?appids={id}&cc={currency.value}&l=english"
                     ) as response:
                         response.raise_for_status()
                         game_data = await response.json()
