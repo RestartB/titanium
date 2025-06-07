@@ -1,4 +1,5 @@
 import html
+from urllib.parse import quote
 
 import aiohttp
 import discord
@@ -29,7 +30,7 @@ class SteamCommands(commands.Cog):
     async def server_info(self, interaction: discord.Interaction, game: str):
         await interaction.response.defer()
 
-        url = f"https://store.steampowered.com/api/storesearch/?term={game}&l=english&cc=BG"
+        url = f"https://store.steampowered.com/api/storesearch/?term={quote(game)}&l=english&cc=GB"
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 jr = await response.json()
@@ -39,6 +40,10 @@ class SteamCommands(commands.Cog):
                         title="No Results Found",
                         description=f'No results found for "{game}". Please try a different search term.',
                         color=discord.Color.red(),
+                    )
+                    embed.set_footer(
+                        text=f"@{interaction.user.name}",
+                        icon_url=interaction.user.display_avatar.url,
                     )
                     await interaction.followup.send(embed=embed)
                     return
@@ -221,7 +226,7 @@ class SteamCommands(commands.Cog):
                     view.add_item(website_button)
 
                 embed.set_footer(
-                    text=f"Requested by {interaction.user.name} | App ID: {game_info['steam_appid']}",
+                    text=f"@{interaction.user.name} • App ID: {game_info['steam_appid']}",
                     icon_url=interaction.user.display_avatar.url,
                 )
 
