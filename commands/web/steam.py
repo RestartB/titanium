@@ -25,8 +25,8 @@ class SteamCommands(commands.Cog):
         allowed_installs=installs,
     )
 
-    # Steam Game command
-    @steamGroup.command(name="game", description="Get info about a Steam game.")
+    # Steam Search command
+    @steamGroup.command(name="search", description="Search Steam for info about a game.")
     @app_commands.describe(
         game="The name of the game to search for.",
         currency="The currency to display the price in.",
@@ -72,7 +72,7 @@ class SteamCommands(commands.Cog):
             ),
         ],
     )
-    async def steam_game(
+    async def steam_search(
         self,
         interaction: discord.Interaction,
         game: str,
