@@ -19,16 +19,19 @@ class SteamCommands(commands.Cog):
     installs = discord.app_commands.AppInstallationType(guild=True, user=True)
     steamGroup = app_commands.Group(
         name="steam",
-        description="Steam-related commands.",
+        description="Steam related commands.",
         allowed_contexts=context,
         allowed_installs=installs,
     )
 
     # Steam Game command
-    @steamGroup.command(name="game", description="Get info about a game.")
-    @app_commands.describe()
-    async def server_info(self, interaction: discord.Interaction, game: str):
-        await interaction.response.defer()
+    @steamGroup.command(name="game", description="Get info about a Steam game.")
+    @app_commands.describe(
+        game="The name of the game to search for.",
+        ephemeral="Whether to send the response as ephemeral (only visible to you).",
+    )
+    async def steam_game(self, interaction: discord.Interaction, game: str, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         url = f"https://store.steampowered.com/api/storesearch/?term={quote(game)}&l=english&cc=GB"
         async with aiohttp.ClientSession() as session:
@@ -45,7 +48,7 @@ class SteamCommands(commands.Cog):
                         text=f"@{interaction.user.name}",
                         icon_url=interaction.user.display_avatar.url,
                     )
-                    await interaction.followup.send(embed=embed)
+                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                     return
                 else:
                     all_items = jr["items"]
@@ -234,7 +237,7 @@ class SteamCommands(commands.Cog):
 
         # Send the initial embed with the select menu
         view = GameSelectView(options)
-        msg = await interaction.followup.send(embed=embed, view=view, wait=True)
+        msg = await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral, wait=True)
         view.msg_id = msg.id
 
 
