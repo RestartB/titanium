@@ -69,7 +69,7 @@ class NowPlaying(commands.Cog):
         if member.activity is None:
             embed = discord.Embed(
                 title="No Activity",
-                description=f"{user.mention} is currently not doing any activites.",
+                description=f"{user.mention} is currently not doing any activities.",
                 color=Color.red(),
             )
 
@@ -83,11 +83,11 @@ class NowPlaying(commands.Cog):
                     if len(member.activities) == 1:
                         embed = discord.Embed(
                             title="No Activity",
-                            description=f"{user.mention} is currently not doing any activites.",
+                            description=f"{user.mention} is currently not doing any activities.",
                             color=Color.red(),
                         )
 
-                        await interaction.followup.send(embed=embed)
+                        return await interaction.followup.send(embed=embed)
                     else:
                         pass
                 else:
