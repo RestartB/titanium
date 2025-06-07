@@ -30,7 +30,9 @@ class SteamCommands(commands.Cog):
         game="The name of the game to search for.",
         ephemeral="Whether to send the response as ephemeral (only visible to you).",
     )
-    async def steam_game(self, interaction: discord.Interaction, game: str, ephemeral: bool = False):
+    async def steam_game(
+        self, interaction: discord.Interaction, game: str, ephemeral: bool = False
+    ):
         await interaction.response.defer(ephemeral=ephemeral)
 
         url = f"https://store.steampowered.com/api/storesearch/?term={quote(game)}&l=english&cc=GB"
@@ -237,7 +239,9 @@ class SteamCommands(commands.Cog):
 
         # Send the initial embed with the select menu
         view = GameSelectView(options)
-        msg = await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral, wait=True)
+        msg = await interaction.followup.send(
+            embed=embed, view=view, ephemeral=ephemeral, wait=True
+        )
         view.msg_id = msg.id
 
 
