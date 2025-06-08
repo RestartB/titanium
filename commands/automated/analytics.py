@@ -132,7 +132,7 @@ class Analytics(commands.Cog):
                     embed.description = (
                         f"Titanium has joined **{guild.name}** ({guild.id})."
                     )
-                    embed.thumbnail = guild.icon.url if guild.icon else None
+                    embed.set_thumbnail(url=guild.icon.url if guild.icon else None)
                     embed.timestamp = guild.created_at
                     embed.set_author(
                         name=str(self.bot.user),
@@ -167,7 +167,7 @@ class Analytics(commands.Cog):
                     embed.description = (
                         f"Titanium has left **{guild.name}** ({guild.id})."
                     )
-                    embed.thumbnail = guild.icon.url if guild.icon else None
+                    embed.set_thumbnail(url=guild.icon.url if guild.icon else None)
                     embed.timestamp = guild.created_at
                     embed.set_author(
                         name=str(self.bot.user),
