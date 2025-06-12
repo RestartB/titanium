@@ -1415,7 +1415,7 @@ class Images(commands.Cog):
                 icon_url=interaction.user.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
         if file.size > 10000000:  # 10MB file limit
             embed = discord.Embed(
@@ -1428,7 +1428,7 @@ class Images(commands.Cog):
                 icon_url=interaction.user.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
         # Get image, store in memory
         async with aiohttp.ClientSession() as session:
@@ -1460,8 +1460,7 @@ class Images(commands.Cog):
                 icon_url=interaction.user.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-            return
+            return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         except ImageTooSmallError:
             embed = discord.Embed(
                 title="Error",
@@ -1473,8 +1472,7 @@ class Images(commands.Cog):
                 icon_url=interaction.user.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-            return
+            return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
         # Send resized image
         embed = discord.Embed(
