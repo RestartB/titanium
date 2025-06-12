@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import textwrap
 from io import BytesIO
 
@@ -1354,10 +1355,11 @@ class Images(commands.Cog):
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(
         file="The image to add a caption to.",
-        caption="What you want the caption to say.",
+        caption="What you want the caption to say. Custom Discord emojis are not supported.",
         font="The font to use for the caption.",
         format="The format of the output image.",
         top="Whether to place the caption at the top of the image.",
+        filename="Optional: the name of the file to save the image as. Leave blank to allow Titanium to make one for you.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
@@ -1395,10 +1397,11 @@ class Images(commands.Cog):
         self,
         interaction: discord.Interaction,
         file: discord.Attachment,
-        caption: str,
+        caption: app_commands.Range[str, 1, 200],
         font: app_commands.Choice[str],
         top: bool,
         format: app_commands.Choice[str],
+        filename: str = "",
         spoiler: bool = False,
         ephemeral: bool = False,
     ):
@@ -1429,6 +1432,20 @@ class Images(commands.Cog):
             )
 
             return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+        # Resolve all mentions in caption
+        for mention in re.findall(r"<@(\d{17,19})>", caption):
+            mention: str
+
+            try:
+                print(f"Resolving mention: {mention}")
+                user = await self.bot.fetch_user(
+                    int(mention.replace("<@", "").replace(">", ""))
+                )
+                if user:
+                    caption = caption.replace(f"<@{mention}>", f"@{user.name}")
+            except Exception:
+                pass
 
         # Get image, store in memory
         async with aiohttp.ClientSession() as session:
@@ -1500,7 +1517,7 @@ class Images(commands.Cog):
 
         file_processed = discord.File(
             fp=output_data,
-            filename=f"titanium_{os.path.splitext(file.filename)[0]}.{format.value.lower()}",
+            filename=f"titanium_{os.path.splitext(file.filename)[0] if not filename else filename}.{format.value.lower()}",
             spoiler=spoiler,
         )
 
