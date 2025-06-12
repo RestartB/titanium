@@ -1,5 +1,6 @@
 import asyncio
 import os
+import textwrap
 from io import BytesIO
 
 import aiohttp
@@ -7,8 +8,21 @@ import discord
 import pillow_avif  # noqa: F401
 from discord import Color, app_commands
 from discord.ext import commands
-from PIL import Image, ImageChops, ImageEnhance, ImageOps
+from PIL import Image, ImageChops, ImageEnhance, ImageFont, ImageOps
+from pilmoji import Pilmoji
 from wand.image import Image as WandImage
+
+
+class InvalidFormatError(Exception):
+    pass
+
+
+class ImageTooSmallError(Exception):
+    pass
+
+
+class OperationTooLargeError(Exception):
+    pass
 
 
 class Images(commands.Cog):
@@ -1184,6 +1198,317 @@ class Images(commands.Cog):
             )
 
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+    def _caption_image(
+        self, image_data: BytesIO, caption: str, font: str, format: str, top: bool
+    ) -> tuple[BytesIO, tuple[int, int]]:
+        output_data = BytesIO()
+
+        # Open image
+        with Image.open(image_data) as im:
+            if im.width < 100:
+                raise ImageTooSmallError
+
+            wrapped_text = textwrap.fill(caption, width=(im.width // 13))
+
+            # Load font
+            font_path = os.path.join("content", "fonts", font)
+            font = ImageFont.truetype(font_path, im.width // 11)
+
+            # Decide font size and get text size
+            with Pilmoji(im) as pilmoji:
+                while True:
+                    size = pilmoji.getsize(
+                        wrapped_text, font=font, emoji_scale_factor=0.8
+                    )
+                    if size[0] <= im.width - 20:
+                        break
+                    else:
+                        font = ImageFont.truetype(font_path, font.size - 1)
+
+            TEXT_WIDTH = size[0]
+            TEXT_HEIGHT = size[1]
+
+            # Scale padding based on image width for smaller images
+            if im.width < 500:
+                # For small images, reduce the extra padding
+                padding = max(10, int(im.width * 0.08))  # 8% of width, minimum 10px
+            else:
+                # Regular padding for normal sized images
+                padding = 40
+
+            WHITE_HEIGHT = 10 + TEXT_HEIGHT + padding
+
+            # Check if image is animated
+            is_animated = hasattr(im, "is_animated") and im.is_animated
+
+            if is_animated:
+                if format == "PNG":
+                    raise InvalidFormatError
+
+                frames = []
+
+                # Process each frame
+                for frame in range(im.n_frames):
+                    im.seek(frame)
+                    frame_image = im.copy().convert("RGBA")
+
+                    # Create a new image with white background for this frame
+                    frame_output = Image.new(
+                        "RGBA",
+                        (im.width, im.height + WHITE_HEIGHT),
+                        (255, 255, 255, 255),
+                    )
+                    frame_output.paste(
+                        frame_image, (0, (WHITE_HEIGHT if top else 0)), frame_image
+                    )
+
+                    # Calculate X position for text
+                    x = (frame_output.width - TEXT_WIDTH) // 2
+
+                    # Calculate Y position for text
+                    if top:
+                        y = 10
+                    else:
+                        y = im.height + 10
+
+                    with Pilmoji(frame_output, render_discord_emoji=False) as pilmoji:
+                        # Draw the caption text
+                        pilmoji.text(
+                            (x, y),
+                            wrapped_text,
+                            font=font,
+                            fill=(0, 0, 0, 255),
+                            align="center",
+                            emoji_scale_factor=0.8,
+                        )
+
+                    if frame_output.height > 4000:
+                        raise OperationTooLargeError
+
+                    frames.append(frame_output)
+
+                # Save as animated GIF
+                frames[0].save(
+                    output_data,
+                    format=format,
+                    save_all=True,
+                    append_images=frames[1:],
+                    duration=getattr(im, "info", {}).get("duration", 100),
+                    loop=0,
+                )
+                output_size = frames[0].size
+            else:
+                im = im.convert("RGBA")
+
+                # Create a new image with white background
+                output_image = Image.new(
+                    "RGBA",
+                    (im.width, im.height + WHITE_HEIGHT),
+                    (255, 255, 255, 255),
+                )
+                output_image.paste(im, (0, (WHITE_HEIGHT if top else 0)))
+
+                # Calculate X position for text
+                x = (output_image.width - TEXT_WIDTH) // 2
+
+                # Calculate Y position for text
+                if top:
+                    y = 10
+                else:
+                    y = im.height + 10
+
+                with Pilmoji(output_image, render_discord_emoji=False) as pilmoji:
+                    # Draw the caption text
+                    pilmoji.text(
+                        (x, y),
+                        wrapped_text,
+                        font=font,
+                        fill=(0, 0, 0, 255),
+                        align="center",
+                        emoji_scale_factor=0.8,
+                    )
+
+                # Save image
+                if format == "PNG":
+                    output_image.save(output_data, format="PNG")
+                elif format == "GIF":
+                    output_image.save(output_data, format="GIF")
+                elif format == "AVIF":
+                    output_image.save(
+                        output_data,
+                        format="AVIF",
+                        append_images=[output_image],
+                        save_all=True,
+                        duration=500,
+                        loop=0,
+                    )
+
+                output_size = output_image.size
+
+            output_data.seek(0)
+            return output_data, output_size
+
+    # Convert image command
+    @imageGroup.command(name="caption", description="Add a caption to an image.")
+    @app_commands.checks.cooldown(1, 10)
+    @app_commands.describe(
+        file="The image to add a caption to.",
+        caption="What you want the caption to say.",
+        font="The font to use for the caption.",
+        format="The format of the output image.",
+        top="Whether to place the caption at the top of the image.",
+        spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
+    @app_commands.choices(
+        font=[
+            app_commands.Choice(
+                name="Futura Condensed",
+                value="futura.otf",
+            ),
+            app_commands.Choice(
+                name="Impact",
+                value="impact.ttf",
+            ),
+            app_commands.Choice(
+                name="Figtree",
+                value="figtree.ttf",
+            ),
+        ],
+        format=[
+            app_commands.Choice(
+                name=".png (can't be favourited, very good quality, static only)",
+                value="PNG",
+            ),
+            app_commands.Choice(
+                name=".avif (can be favourited, very good quality)",
+                value="AVIF",
+            ),
+            app_commands.Choice(
+                name=".gif (can be favourited, bad quality, best compatibility)",
+                value="GIF",
+            ),
+        ],
+    )
+    async def caption_image(
+        self,
+        interaction: discord.Interaction,
+        file: discord.Attachment,
+        caption: str,
+        font: app_commands.Choice[str],
+        top: bool,
+        format: app_commands.Choice[str],
+        spoiler: bool = False,
+        ephemeral: bool = False,
+    ):
+        await interaction.response.defer(ephemeral=ephemeral)
+
+        if file.content_type.split("/")[0] != "image":  # If file is not an image
+            embed = discord.Embed(
+                title="Error",
+                description="Your file is not an image.",
+                color=Color.red(),
+            )
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+        if file.size > 10000000:  # 10MB file limit
+            embed = discord.Embed(
+                title="Error",
+                description="Your file is too large. Please ensure it is smaller than 10MB.",
+                color=Color.red(),
+            )
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+        # Get image, store in memory
+        async with aiohttp.ClientSession() as session:
+            async with session.get(file.url) as request:
+                image_data = BytesIO()
+
+                async for chunk in request.content.iter_chunked(8192):
+                    image_data.write(chunk)
+
+                image_data.seek(0)
+
+        try:
+            output_data, output_size = await asyncio.to_thread(
+                self._caption_image,
+                image_data=image_data,
+                caption=caption,
+                font=font.value,
+                format=format.value,
+                top=top,
+            )
+        except InvalidFormatError:
+            embed = discord.Embed(
+                title="Error",
+                description="Animated images can only be captioned in GIF or AVIF format.",
+                color=Color.red(),
+            )
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
+        except ImageTooSmallError:
+            embed = discord.Embed(
+                title="Error",
+                description="Your image is not wide enough to add a caption. Please ensure it is at least 100 pixels wide - you can resize images with the </image resize:1294677927899955200> command.",
+                color=Color.red(),
+            )
+            embed.set_footer(
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
+
+        # Send resized image
+        embed = discord.Embed(
+            title="Image Generated",
+            description=f"**Size: **`{output_size[0]}x{output_size[1]}`\n**Format: **`.{format.value.lower()}`",
+            color=Color.green(),
+        )
+        embed.set_footer(
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+
+        if ephemeral:
+            embed.add_field(
+                name="Alert",
+                value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
+                inline=False,
+            )
+        else:
+            embed.add_field(
+                name="Tip",
+                value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
+                inline=False,
+            )
+
+        file_processed = discord.File(
+            fp=output_data,
+            filename=f"titanium_{os.path.splitext(file.filename)[0]}.{format.value.lower()}",
+            spoiler=spoiler,
+        )
+
+        await interaction.followup.send(
+            embed=embed, file=file_processed, ephemeral=ephemeral
+        )
 
 
 async def setup(bot):
