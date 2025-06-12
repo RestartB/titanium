@@ -37,8 +37,11 @@ class ViewTimeout(commands.Cog):
                 except Exception:
                     item.disabled = True
 
-            # Edit the message
-            await response.edit(view=view)
+            try:
+                # Edit the message
+                await response.edit(view=view)
+            except discord.errors.HTTPException:
+                pass
 
             # Send an error
             embed = discord.Embed(
