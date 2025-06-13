@@ -207,6 +207,8 @@ class SongLyricSelection(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
+
+        self.view.stop()
         request_url = f"https://lrclib.net/api/get/{self.values[0]}"
 
         async with aiohttp.ClientSession() as session:
@@ -300,7 +302,7 @@ class SongLyricsView(View):
         )
 
         embed.set_footer(
-            text=f"@{interaction.user.name} • Page {page + 1}/{len(self.pages)}, from lrclib.net",
+            text=f"@{interaction.user.name} • Page {page + 1}/{len(self.pages)} • lrclib.net",
             icon_url=interaction.user.display_avatar.url,
         )
         embed.set_author(

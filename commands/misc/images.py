@@ -1438,7 +1438,6 @@ class Images(commands.Cog):
             mention: str
 
             try:
-                print(f"Resolving mention: {mention}")
                 user = await self.bot.fetch_user(
                     int(mention.replace("<@", "").replace(">", ""))
                 )
