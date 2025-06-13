@@ -263,7 +263,7 @@ class Music(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
-        search="The song you're seaching for.",
+        search="The song you're seaching for. Can be a search term or Spotify song link.",
         ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.",
     )
     @app_commands.checks.cooldown(1, 10)
