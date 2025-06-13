@@ -288,8 +288,10 @@ class Music(commands.Cog):
         if url == "":
             url = f"https://lrclib.net/api/search?track_name={quote(search)}"
 
+        headers = {"User-Agent": "Titanium Discord Bot (https://titaniumbot.me)"}
+
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
+            async with session.get(url, headers=headers) as response:
                 if response.status != 200:
                     embed = discord.Embed(
                         title="Error",

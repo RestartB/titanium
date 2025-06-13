@@ -1,6 +1,6 @@
 from io import BytesIO
 from textwrap import shorten
-from urllib.parse import quote_plus
+from urllib.parse import quote, quote_plus
 
 import aiohttp
 import discord
@@ -150,11 +150,11 @@ class SongMenuView(View):
     async def lyrics(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
 
-        search = f"{self.item['name']} {' '.join(artist['name'] for artist in self.item['artists'])}"
-        request_url = f"https://lrclib.net/api/search?q={search}"
+        url = f"https://lrclib.net/api/search?track_name={quote(self.item['name'])}&artist_name={quote(self.item['artists'][0]['name'])}"
+        headers = {"User-Agent": "Titanium Discord Bot (https://titaniumbot.me)"}
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(request_url) as response:
+            async with session.get(url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
                     if data != []:
