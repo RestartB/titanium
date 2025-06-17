@@ -210,26 +210,30 @@ class QuoteView(View):
 
     @discord.ui.button(label="", style=discord.ButtonStyle.gray, custom_id="theme")
     async def theme(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Try to get member if available
-        user = interaction.guild.get_member(self.user_id)
+        user = None
+
+        if interaction.guild is not None:
+            # Try to get member if available
+            user = interaction.guild.get_member(self.user_id)
+
         if user is None:
             user = interaction.client.get_user(self.user_id)
 
-            if user is None:
-                try:
-                    user = await interaction.client.fetch_user(self.user_id)
-                except discord.NotFound:
-                    embed = discord.Embed(
-                        title="Error",
-                        description="Couldn't find the user. Please try again later.",
-                        color=discord.Color.red(),
-                    )
+        if user is None:
+            try:
+                user = await interaction.client.fetch_user(self.user_id)
+            except discord.NotFound:
+                embed = discord.Embed(
+                    title="Error",
+                    description="Couldn't find the user. Please try again later.",
+                    color=discord.Color.red(),
+                )
 
-                    await interaction.followup.send(
-                        embed=embed,
-                        ephemeral=True,
-                    )
-                    return
+                await interaction.followup.send(
+                    embed=embed,
+                    ephemeral=True,
+                )
+                return
 
         if self.custom_quote:
             # Try to get member if available
@@ -321,26 +325,30 @@ class QuoteView(View):
 
     @discord.ui.button(label="", style=discord.ButtonStyle.gray, custom_id="bw")
     async def bw(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Try to get member if available
-        user = interaction.guild.get_member(self.user_id)
+        user = None
+
+        if interaction.guild is not None:
+            # Try to get member if available
+            user = interaction.guild.get_member(self.user_id)
+
         if user is None:
             user = interaction.client.get_user(self.user_id)
 
-            if user is None:
-                try:
-                    user = await interaction.client.fetch_user(self.user_id)
-                except discord.NotFound:
-                    embed = discord.Embed(
-                        title="Error",
-                        description="Couldn't find the user. Please try again later.",
-                        color=discord.Color.red(),
-                    )
+        if user is None:
+            try:
+                user = await interaction.client.fetch_user(self.user_id)
+            except discord.NotFound:
+                embed = discord.Embed(
+                    title="Error",
+                    description="Couldn't find the user. Please try again later.",
+                    color=discord.Color.red(),
+                )
 
-                    await interaction.followup.send(
-                        embed=embed,
-                        ephemeral=True,
-                    )
-                    return
+                await interaction.followup.send(
+                    embed=embed,
+                    ephemeral=True,
+                )
+                return
 
         if self.custom_quote:
             # Try to get member if available
@@ -434,41 +442,30 @@ class QuoteView(View):
         label="", emoji="🔄", style=discord.ButtonStyle.gray, custom_id="reload"
     )
     async def reload(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Try to get member if available
-        user = interaction.guild.get_member(self.user_id)
+        user = None
+
+        if interaction.guild is not None:
+            # Try to get member if available
+            user = interaction.guild.get_member(self.user_id)
+
         if user is None:
             user = interaction.client.get_user(self.user_id)
 
-            if user is None:
-                try:
-                    user = await interaction.client.fetch_user(self.user_id)
-                except discord.NotFound:
-                    embed = discord.Embed(
-                        title="Error",
-                        description="Couldn't find the user. Please try again later.",
-                        color=discord.Color.red(),
-                    )
+        if user is None:
+            try:
+                user = await interaction.client.fetch_user(self.user_id)
+            except discord.NotFound:
+                embed = discord.Embed(
+                    title="Error",
+                    description="Couldn't find the user. Please try again later.",
+                    color=discord.Color.red(),
+                )
 
-                    view = QuoteView(
-                        user_id=self.user_id,
-                        content=self.content,
-                        output_format=self.output_format,
-                        allowed_ids=self.allowed_ids,
-                        og_msg=self.og_msg,
-                        nickname=self.nickname,
-                        fade=self.fade,
-                        light_mode=self.light_mode,
-                        bw_mode=self.bw_mode,
-                        custom_quote=self.custom_quote,
-                        custom_quote_user_id=self.custom_quote_user_id,
-                        bot=self.bot,
-                    )
-
-                    await interaction.followup.send(
-                        embed=embed,
-                        ephemeral=True,
-                    )
-                    return
+                await interaction.followup.send(
+                    embed=embed,
+                    ephemeral=True,
+                )
+                return
 
         if self.custom_quote:
             # Try to get member if available
