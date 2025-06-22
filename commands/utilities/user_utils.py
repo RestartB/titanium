@@ -36,10 +36,14 @@ class UserUtils(commands.Cog):
         # Temp fix! See below for info.
         user = await interaction.client.fetch_user(user.id)
 
-        try:
-            member = await interaction.guild.fetch_member(user.id)
-            in_guild = True
-        except discord.errors.NotFound:
+        if interaction.is_guild_integration():
+            try:
+                member = await interaction.guild.fetch_member(user.id)
+                in_guild = True
+            except (discord.errors.NotFound, AttributeError):
+                member = user
+                in_guild = False
+        else:
             member = user
             in_guild = False
 
