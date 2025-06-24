@@ -66,13 +66,56 @@ async def create_quote_image(
     custom_quote: bool = False,
     custom_quote_user: discord.User = None,
     bot: bool = False,
-) -> BytesIO:
+) -> tuple[BytesIO, bool]:
     image_data = BytesIO()
 
     content = html.escape(content)
 
-    # Find Discord emojis in content
-    discord_emojis = re.findall(r"&lt;a?:\w+:\d+&gt;", content)
+    # Multiline code blocks
+    content = re.sub(r"```(.*?)```", r"<code>\1</code>", content, flags=re.DOTALL)
+
+    raw_lines = content.splitlines()
+    processed_lines = []
+    has_spoilers = False
+
+    # Process markdown formatting
+    for line in raw_lines:
+        # 4chan Greentext
+        if line.startswith("&gt;"):
+            line = f"<span style='color: green;'>{line}</span>"
+
+        # Remove header characters
+        line = line.lstrip("### ").lstrip("## ").lstrip("# ")
+
+        # Bold
+        line = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", line)
+
+        # Underline
+        line = re.sub(r"__(.*?)__", r"<u>\1</u>", line)
+
+        # Strikethrough
+        line = re.sub(r"~~(.*?)~~", r"<s>\1</s>", line)
+
+        # Italics
+        line = re.sub(r"(?<!\*)\*([^*]+?)\*(?!\*)", r"<em>\1</em>", line)
+        line = re.sub(r"(?<!_)_([^_]+?)_(?!_)", r"<em>\1</em>", line)
+
+        # Code
+        line = re.sub(r"`([^`]+?)`", r"<code>\1</code>", line)
+        line = re.sub(r"```(.*?)```", r"<code>\1</code>", line)
+
+        # Check for spoilers
+        spoilers = re.findall(r"\|\|(.*?)\|\|", line)
+        if spoilers:
+            line = re.sub(r"\|\|(.*?)\|\|", r"\1", line)
+            has_spoilers = True
+
+        # Discord emojis
+        discord_emojis = re.findall(r"&lt;a?:\w+:\d+&gt;", line)
+
+        processed_lines.append(line)
+
+    content = "<br>".join(processed_lines)
 
     # Replace Discord emojis with image tags
     for emoji in discord_emojis:
@@ -139,7 +182,7 @@ async def create_quote_image(
             )
 
     image_data.seek(0)
-    return image_data
+    return image_data, has_spoilers
 
 
 # Quotes view
@@ -253,7 +296,7 @@ class QuoteView(View):
         else:
             custom_quote_user = None
 
-        image_data = await create_quote_image(
+        image_data, has_spoilers = await create_quote_image(
             user=user,
             content=self.content,
             output_format=self.output_format,
@@ -269,6 +312,7 @@ class QuoteView(View):
         file = discord.File(
             fp=image_data,
             filename=f"titanium_quote.{self.output_format.lower()}",
+            spoiler=has_spoilers,
         )
 
         view = QuoteView(
@@ -368,7 +412,7 @@ class QuoteView(View):
         else:
             custom_quote_user = None
 
-        image_data = await create_quote_image(
+        image_data, has_spoilers = await create_quote_image(
             user=user,
             content=self.content,
             output_format=self.output_format,
@@ -384,6 +428,7 @@ class QuoteView(View):
         file = discord.File(
             fp=image_data,
             filename=f"titanium_quote.{self.output_format.lower()}",
+            spoiler=has_spoilers,
         )
 
         view = QuoteView(
@@ -485,7 +530,7 @@ class QuoteView(View):
         else:
             custom_quote_user = None
 
-        image_data = await create_quote_image(
+        image_data, has_spoilers = await create_quote_image(
             user=user,
             content=self.content,
             output_format=self.output_format,
@@ -501,6 +546,7 @@ class QuoteView(View):
         file = discord.File(
             fp=image_data,
             filename=f"titanium_quote.{self.output_format.lower()}",
+            spoiler=has_spoilers,
         )
 
         view = QuoteView(
@@ -632,7 +678,7 @@ class Quotes(commands.Cog):
 
             return
 
-        image_data = await create_quote_image(
+        image_data, has_spoilers = await create_quote_image(
             user=message.author,
             content=message.content,
             output_format="PNG",
@@ -643,6 +689,7 @@ class Quotes(commands.Cog):
         file = discord.File(
             fp=image_data,
             filename="titanium_quote.png",
+            spoiler=has_spoilers,
         )
 
         view = QuoteView(
@@ -730,7 +777,7 @@ class Quotes(commands.Cog):
                 value="PNG",
             )
 
-        image_data = await create_quote_image(
+        image_data, has_spoilers = await create_quote_image(
             user=user,
             content=content,
             output_format=format.value,
@@ -745,6 +792,7 @@ class Quotes(commands.Cog):
         file = discord.File(
             fp=image_data,
             filename=f"titanium_quote.{format.value.lower()}",
+            spoiler=has_spoilers,
         )
 
         view = QuoteView(
