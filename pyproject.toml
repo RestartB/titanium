@@ -5,12 +5,12 @@ description = "Titanium Discord Bot"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "aiohttp==3.12.6",
+    "aiohttp==3.12.13",
     "asqlite==2.0.0",
     "colorthief==0.2.1",
     "discord-py==2.5.2",
     "pillow-avif-plugin==1.5.2",
-    "pillow==11.2.1",
+    "pillow==11.3.0",
     "psutil==7.0.0",
     "py-cpuinfo==9.0.0",
     "pygit2==1.18.0",
