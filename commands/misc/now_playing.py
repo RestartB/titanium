@@ -166,7 +166,7 @@ class NowPlaying(commands.Cog):
                     embed = discord.Embed(
                         title=f"{activity_type}{(' to' if activity_type == 'Listening' else '')}",
                         description=activity.name,
-                        color=Color.random()
+                        color=Color.random(),
                     )
 
                     embed.set_author(
@@ -206,7 +206,9 @@ class NowPlaying(commands.Cog):
                         dominant_color = color_thief.get_color()
 
                         embed.color = Color.from_rgb(
-                            r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]
+                            r=dominant_color[0],
+                            g=dominant_color[1],
+                            b=dominant_color[2],
                         )
 
                         await interaction.edit_original_response(embed=embed)
