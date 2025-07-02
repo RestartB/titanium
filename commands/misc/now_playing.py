@@ -186,25 +186,26 @@ class NowPlaying(commands.Cog):
                     # Send Embed
                     await interaction.followup.send(embed=embed, view=view)
 
-                # Get image, store in memory
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(activity.large_image_url) as request:
-                        image_data = BytesIO()
+                if activity.large_image_url is not None:
+                    # Get image, store in memory
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(activity.large_image_url) as request:
+                            image_data = BytesIO()
 
-                        async for chunk in request.content.iter_chunked(10):
-                            image_data.write(chunk)
+                            async for chunk in request.content.iter_chunked(10):
+                                image_data.write(chunk)
 
-                        image_data.seek(0)  # Reset buffer position to start
+                            image_data.seek(0)  # Reset buffer position to start
 
-                # Get dominant colour for embed
-                color_thief = ColorThief(image_data)
-                dominant_color = color_thief.get_color()
+                    # Get dominant colour for embed
+                    color_thief = ColorThief(image_data)
+                    dominant_color = color_thief.get_color()
 
-                embed.color = Color.from_rgb(
-                    r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]
-                )
+                    embed.color = Color.from_rgb(
+                        r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]
+                    )
 
-                await interaction.edit_original_response(embed=embed)
+                    await interaction.edit_original_response(embed=embed)
 
 
 async def setup(bot):
