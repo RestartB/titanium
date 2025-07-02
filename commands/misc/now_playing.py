@@ -1,3 +1,5 @@
+import logging
+import traceback
 from io import BytesIO
 from urllib.parse import quote_plus
 
@@ -164,6 +166,7 @@ class NowPlaying(commands.Cog):
                     embed = discord.Embed(
                         title=f"{activity_type}{(' to' if activity_type == 'Listening' else '')}",
                         description=activity.name,
+                        color=Color.random()
                     )
 
                     embed.set_author(
@@ -187,25 +190,29 @@ class NowPlaying(commands.Cog):
                     await interaction.followup.send(embed=embed, view=view)
 
                 if activity.large_image_url is not None:
-                    # Get image, store in memory
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(activity.large_image_url) as request:
-                            image_data = BytesIO()
+                    try:
+                        # Get image, store in memory
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(activity.large_image_url) as request:
+                                image_data = BytesIO()
 
-                            async for chunk in request.content.iter_chunked(10):
-                                image_data.write(chunk)
+                                async for chunk in request.content.iter_chunked(10):
+                                    image_data.write(chunk)
 
-                            image_data.seek(0)  # Reset buffer position to start
+                                image_data.seek(0)  # Reset buffer position to start
 
-                    # Get dominant colour for embed
-                    color_thief = ColorThief(image_data)
-                    dominant_color = color_thief.get_color()
+                        # Get dominant colour for embed
+                        color_thief = ColorThief(image_data)
+                        dominant_color = color_thief.get_color()
 
-                    embed.color = Color.from_rgb(
-                        r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]
-                    )
+                        embed.color = Color.from_rgb(
+                            r=dominant_color[0], g=dominant_color[1], b=dominant_color[2]
+                        )
 
-                    await interaction.edit_original_response(embed=embed)
+                        await interaction.edit_original_response(embed=embed)
+                    except Exception:
+                        logging.error("[NOW PLAYING] Error processing image:")
+                        logging.error(traceback.format_exc())
 
 
 async def setup(bot):
