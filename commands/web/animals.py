@@ -96,12 +96,7 @@ class Animals(commands.Cog):
             icon_url=interaction.user.display_avatar.url,
         )
 
-        view_instance = ImageView()
-
-        await interaction.followup.send(
-            embed=embed, ephemeral=ephemeral, view=view_instance
-        )
-        view_instance.message = await interaction.original_response()
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Dog command
     # noinspection SpellCheckingInspection
@@ -138,12 +133,7 @@ class Animals(commands.Cog):
             icon_url=interaction.user.display_avatar.url,
         )
 
-        view_instance = ImageView()
-
-        await interaction.followup.send(
-            embed=embed, ephemeral=ephemeral, view=view_instance
-        )
-        view_instance.message = await interaction.original_response()
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Sand Cat command
     # noinspection SpellCheckingInspection
