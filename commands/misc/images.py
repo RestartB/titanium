@@ -99,6 +99,7 @@ class Images(commands.Cog):
         target_x="Set a target width for the image. Defaults to the original length.",
         target_y="Set a target height for the image. Defaults to the original length.",
         scale="Scale the resolution by a certain amount. Overrides target_x and target_y if set.",
+        filename="Optional: the name of the file to save the image as. Leave blank to allow Titanium to make one for you.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
@@ -110,6 +111,7 @@ class Images(commands.Cog):
         scale: float = None,
         target_x: int = None,
         target_y: int = None,
+        filename: str = "",
         spoiler: bool = False,
         ephemeral: bool = False,
     ):
@@ -215,7 +217,7 @@ class Images(commands.Cog):
 
                         file_processed = discord.File(
                             fp=resized_image_data,
-                            filename=f"titanium_{os.path.splitext(file.filename)[0]}.{os.path.splitext(file.filename)[1][1:]}",
+                            filename=f"titanium_{os.path.splitext(file.filename)[0] if not filename else filename}.{os.path.splitext(file.filename)[1][1:]}",
                             spoiler=spoiler,
                         )
                         embed.set_image(url=f"attachment://{file_processed.filename}")
@@ -308,6 +310,7 @@ class Images(commands.Cog):
     @app_commands.describe(
         file="The static image to convert.",
         mode="The mode to use when generating the image.",
+        filename="Optional: the name of the file to save the image as. Leave blank to allow Titanium to make one for you.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
@@ -328,6 +331,7 @@ class Images(commands.Cog):
         interaction: discord.Interaction,
         file: discord.Attachment,
         mode: app_commands.Choice[str] = None,
+        filename: str = "",
         spoiler: bool = False,
         ephemeral: bool = False,
     ):
@@ -387,7 +391,7 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=output_data,
-                    filename=f"titanium_{os.path.splitext(file.filename)[0]}.{'avif' if mode.value == 'quality' else 'gif'}",
+                    filename=f"titanium_{os.path.splitext(file.filename)[0] if not filename else filename}.{'avif' if mode.value == 'quality' else 'gif'}",
                     spoiler=spoiler,
                 )
 
@@ -407,25 +411,9 @@ class Images(commands.Cog):
 
                 await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         elif file.content_type.split("/")[0] == "video":  # If file is a video
-            commands = await self.bot.tree.fetch_commands()
-
-            for command in commands:
-                if command.name == "video":
-                    try:
-                        if (
-                            command.options[0].type
-                            == discord.AppCommandOptionType.subcommand
-                        ):
-                            for option in command.options:
-                                if option.name == "to-gif":
-                                    mention = option.mention
-                                    break
-                    except IndexError:
-                        pass
-
             embed = discord.Embed(
                 title="Error",
-                description=f"I think you attached a **video.** To convert a video to GIF, use the {mention} command.",
+                description="I think you attached a **video.** To convert a video to GIF, use the </video to-gif-webp:1335422637899513967> command.",
                 color=Color.red(),
             )
             embed.set_footer(
@@ -587,6 +575,7 @@ class Images(commands.Cog):
         file="The static image to deepfry.",
         intensity="The intensity of the deepfry effect. (1% to 100%)",
         red_filter="Whether to apply a red filter to the image. (recommended: true)",
+        filename="Optional: the name of the file to save the image as. Leave blank to allow Titanium to make one for you.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
@@ -597,6 +586,7 @@ class Images(commands.Cog):
         file: discord.Attachment,
         intensity: app_commands.Range[int, 1, 100],
         red_filter: bool,
+        filename: str = "",
         spoiler: bool = False,
         ephemeral: bool = False,
     ):
@@ -652,7 +642,7 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=deepfried_data,
-                    filename=f"titanium_{os.path.splitext(file.filename)[0]}.png",
+                    filename=f"titanium_{os.path.splitext(file.filename)[0] if not filename else filename}.png",
                     spoiler=spoiler,
                 )
                 embed.set_image(url=f"attachment://{file_processed.filename}")
@@ -904,6 +894,7 @@ class Images(commands.Cog):
         colour="The colour of the speech bubble.",
         direction="The direction of the speech bubble.",
         format="The format of the output image.",
+        filename="Optional: the name of the file to save the image as. Leave blank to allow Titanium to make one for you.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
@@ -954,6 +945,7 @@ class Images(commands.Cog):
         colour: app_commands.Choice[str],
         direction: app_commands.Choice[str],
         format: app_commands.Choice[str],
+        filename: str = "",
         spoiler: bool = False,
         ephemeral: bool = False,
     ):
@@ -1009,7 +1001,7 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=output_data,
-                    filename=f"titanium_{os.path.splitext(file.filename)[0]}.{format.value.lower()}",
+                    filename=f"titanium_{os.path.splitext(file.filename)[0] if not filename else filename}.{format.value.lower()}",
                     spoiler=spoiler,
                 )
 
@@ -1079,6 +1071,7 @@ class Images(commands.Cog):
     @app_commands.describe(
         file="The image to convert.",
         format="The format of the output image.",
+        filename="Optional: the name of the file to save the image as. Leave blank to allow Titanium to make one for you.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
@@ -1119,6 +1112,7 @@ class Images(commands.Cog):
         interaction: discord.Interaction,
         file: discord.Attachment,
         format: app_commands.Choice[str],
+        filename: str = "",
         spoiler: bool = False,
         ephemeral: bool = False,
     ):
@@ -1168,7 +1162,7 @@ class Images(commands.Cog):
 
                 file_processed = discord.File(
                     fp=output_data,
-                    filename=f"titanium_{os.path.splitext(file.filename)[0]}.{format.value.lower()}",
+                    filename=f"titanium_{os.path.splitext(file.filename)[0] if not filename else filename}.{format.value.lower()}",
                     spoiler=spoiler,
                 )
 

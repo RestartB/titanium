@@ -738,6 +738,8 @@ class Quotes(commands.Cog):
         nickname="Optional: whether to show the user's nickname. Defaults to false.",
         light_mode="Optional: whether to start with light mode. Defaults to false.",
         bw_mode="Optional: whether to start with black and white mode. Defaults to false.",
+        filename="Optional: the name of the file to save the image as. Leave blank to allow Titanium to make one for you.",
+        spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
     )
     @app_commands.choices(
         format=[
@@ -768,6 +770,8 @@ class Quotes(commands.Cog):
         nickname: bool = False,
         light_mode: bool = False,
         bw_mode: bool = False,
+        filename: str = "",
+        spoiler: bool = False,
     ):
         await interaction.response.defer()
 
@@ -791,8 +795,8 @@ class Quotes(commands.Cog):
 
         file = discord.File(
             fp=image_data,
-            filename=f"titanium_quote.{format.value.lower()}",
-            spoiler=has_spoilers,
+            filename=f"titanium_{filename if filename else 'quote'}.{format.value.lower()}",
+            spoiler=(spoiler if spoiler else has_spoilers),
         )
 
         view = QuoteView(

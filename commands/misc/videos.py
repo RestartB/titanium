@@ -51,6 +51,7 @@ class Videos(commands.Cog):
     @app_commands.describe(file="The file to convert.")
     @app_commands.describe(
         mode="Optional: the mode to use when converting. Defaults to high FPS.",
+        filename="Optional: the name of the file to save the image as. Leave blank to allow Titanium to make one for you.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
@@ -60,6 +61,7 @@ class Videos(commands.Cog):
         interaction: discord.Interaction,
         file: discord.Attachment,
         mode: app_commands.Choice[str] = None,
+        filename: str = "",
         spoiler: bool = False,
         ephemeral: bool = False,
     ):
@@ -196,7 +198,7 @@ class Videos(commands.Cog):
 
                             file_processed = discord.File(
                                 fp=tmp_output.name,
-                                filename=f"titanium_{os.path.splitext(file.filename)[0]}.{'gif' if mode.value == 'compatibility' else 'webp'}",
+                                filename=f"titanium_{filename if filename else os.path.splitext(file.filename)[0]}.{'gif' if mode.value == 'compatibility' else 'webp'}",
                                 spoiler=spoiler,
                             )
 
@@ -220,25 +222,9 @@ class Videos(commands.Cog):
 
                 await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         elif file.content_type.split("/")[0] == "image":  # If file is an image
-            commands = await self.bot.tree.fetch_commands()
-
-            for command in commands:
-                if command.name == "image":
-                    try:
-                        if (
-                            command.options[0].type
-                            == discord.AppCommandOptionType.subcommand
-                        ):
-                            for option in command.options:
-                                if option.name == "to-gif":
-                                    mention = option.mention
-                                    break
-                    except IndexError:
-                        pass
-
             embed = discord.Embed(
                 title="Error",
-                description=f"I think you attached an **image.** To convert an image to GIF, use the {mention} command, or right click on a message, select apps, then click **Convert to GIF.**",
+                description="I think you attached an **image.** To convert an image to GIF, use the </image to-gif-avif:1294677927899955200> command, or right click on a message, select apps, then click **Convert to GIF.**",
                 color=Color.red(),
             )
             embed.set_footer(
