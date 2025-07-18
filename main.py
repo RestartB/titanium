@@ -406,10 +406,9 @@ async def on_app_command_error(
         await interaction.response.defer(ephemeral=True)
 
         embed = discord.Embed(title="Cooldown", description=error, color=Color.red())
-        msg = await interaction.followup.send(embed=embed)
+        msg = await interaction.followup.send(embed=embed, wait=True)
 
         await asyncio.sleep(5)
-
         await msg.delete()
     # Missing Perms
     elif isinstance(error, discord.app_commands.errors.MissingPermissions):
@@ -418,10 +417,9 @@ async def on_app_command_error(
         embed = discord.Embed(
             title="Missing Permissions", description=error, color=Color.red()
         )
-        msg = await interaction.followup.send(embed=embed)
+        msg = await interaction.followup.send(embed=embed, wait=True)
 
         await asyncio.sleep(5)
-
         await msg.delete()
 
 
