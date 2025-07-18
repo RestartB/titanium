@@ -313,18 +313,21 @@ class CogUtils(commands.Cog):
         name="send-message", description="Admin Only: send debug message."
     )
     async def send_message(
-        self, interaction: discord.Interaction, message: str, channel_id: str
+        self, interaction: discord.Interaction, message: str, channel_id: str, embed: bool = False
     ):
         channel = self.bot.get_channel(int(channel_id))
 
-        embed = discord.Embed(
-            title="Message from Bot Admin",
-            description=message,
+        if embed:
+            embed = discord.Embed(
+                title="Message from Bot Admin",
+                description=message,
             color=Color.random(),
-        )
-        embed.timestamp = datetime.datetime.now()
+            )
+            embed.timestamp = datetime.datetime.now()
 
-        await channel.send(embed=embed)
+            await channel.send(embed=embed)
+        else:
+            await channel.send(message)
 
         await interaction.followup.send(
             f"Message sent to channel ID {channel_id}.\n\nContent: {message}",
