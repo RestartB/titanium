@@ -37,8 +37,11 @@ class GuildModCaseManager:
 
     async def delete_case(self, case_id: int):
         case = await self.get_case_by_id(case_id)
+
         if case:
             await self.session.delete(case)
             await self.session.commit()
+
             return True
+
         return False

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -14,7 +15,10 @@ class ModCases(Base):
     proof_msg_id = Column(Integer)
     proof_channel_id = Column(Integer)
     proof_text = Column(String)
-    date_created = Column(DateTime)
+    time_created = Column(DateTime)
+    time_updated = Column(DateTime)
+    time_expires = Column(DateTime, nullable=True)
+    description = Column(String(length=512), nullable=True)
     comments = relationship("ModCaseComments", back_populates="case")
 
 
@@ -25,7 +29,7 @@ class ModCaseComments(Base):
     case_id = Column(Integer, ForeignKey("mod_cases.id"))
     user_id = Column(Integer)
     comment = Column(String(length=512))
-    date_created = Column(DateTime)
+    time_created = Column(DateTime)
     case = relationship("ModCases", back_populates="comments")
 
 
@@ -38,7 +42,13 @@ class ScheduledTasks(Base):
     channel_id = Column(Integer)
     role_id = Column(Integer)
     message_id = Column(Integer)
-    date_scheduled = Column(DateTime)
+    time_scheduled = Column(DateTime)
+
+
+class ServerPrefixes(Base):
+    __tablename__ = "server_prefixes"
+    guild_id = Column(Integer, primary_key=True)
+    prefixes = Column(ARRAY(String(length=4)))
 
 
 # -- Engine --
