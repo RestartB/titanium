@@ -9,8 +9,11 @@ from glob import glob
 
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
 
 from lib.sql import init_db
+
+load_dotenv()
 
 # Current Running Path
 path = os.getcwd()
@@ -50,7 +53,7 @@ rootLogger.handlers[0].setFormatter(formatter)
 rootLogger.addHandler(handler)
 discordLogger.addHandler(handler)
 
-logging.info("Welcome to Titanium v2.")
+logging.info("Welcome to Titanium - v2")
 logging.info("https://github.com/restartb/titanium\n")
 
 # SQL path check
@@ -107,4 +110,13 @@ class TitaniumBot(commands.Bot):
         logging.info("[INIT] Loading cogs complete.\n")
 
 
-bot = TitaniumBot(intents=intents, command_prefix="", help_command=None)
+bot = TitaniumBot(intents=intents, command_prefix="t!")
+
+if __name__ == "__main__":
+    logging.info("[INIT] Starting Titanium bot...")
+    try:
+        bot.run(os.getenv("BOT_TOKEN"))
+    except discord.LoginFailure:
+        logging.error("[INIT] Invalid bot token provided. Please check your .env file.")
+    except Exception as e:
+        logging.error(f"[INIT] An error occurred while starting the bot: {e}")
