@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from discord import Guild
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,6 +34,25 @@ class GuildModCaseManager:
 
         result = await self.session.execute(stmt)
         case = result.scalar_one_or_none()
+
+        return case
+
+    async def create_case(
+        self, type, user_id: int, reason: str, duration: timedelta = None
+    ):
+        case = ModCases(
+            guild_id=self.guild.id,
+            user_id=user_id,
+            proof_msg_id=None,
+            proof_channel_id=None,
+            proof_text=None,
+            time_created=datetime.now(timezone.utc),
+            time_expires=datetime.now(timezone.utc) + duration if duration else None,
+            description=reason,
+        )
+
+        self.session.add(case)
+        await self.session.commit()
 
         return case
 

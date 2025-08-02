@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+from ...lib.cases.case_manager import GuildModCaseManager
 from ...lib.duration import DurationConverter
 from ...lib.embeds.dm_notifs import (
     banned_dm,
@@ -33,7 +34,6 @@ class Misc(commands.Cog):
         self,
         ctx: commands.Context[commands.Bot],
         member: discord.Member,
-        duration: DurationConverter,
         reason: str,
     ) -> None:
         await defer(ctx)
@@ -52,11 +52,34 @@ class Misc(commands.Cog):
         # Add member to punishing list
         self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
 
-        # Create case logic here
+        # Create case
+        case = await GuildModCaseManager.create_case(
+            type="warn", guild_id=ctx.guild.id, user_id=member.id, reason=reason
+        )
+
+        # Send DM
+        dm_success = True
+        dm_error = ""
+
+        try:
+            await member.send(embed=warned_dm(ctx, case), view=jump_button(ctx))
+        except discord.Forbidden:
+            dm_success = False
+            dm_error = "User has DMs disabled."
+        except discord.HTTPException:
+            dm_success = False
+            dm_error = "Failed to send DM."
 
         # Send confirmation message
-        embed = warned(member, reason, duration)
-        await reply(embed=embed)
+        await reply(
+            embed=warned(
+                user=member,
+                creator=ctx.author,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+        )
 
     @commands.hybrid_command(name="mute")
     async def mute(
@@ -82,11 +105,48 @@ class Misc(commands.Cog):
         # Add member to punishing list
         self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
 
-        # Create case logic here
+        # Time out user
+        try:
+            await member.timeout(until=duration, reason=reason)
+        except discord.Forbidden:
+            return await reply(embed=forbidden(member))
+        except discord.HTTPException:
+            return await reply(embed=http_exception(member))
+        except discord.NotFound:
+            return await reply(embed=not_found(member))
+
+        # Create case
+        case = await GuildModCaseManager.create_case(
+            type="mute",
+            guild_id=ctx.guild.id,
+            user_id=member.id,
+            reason=reason,
+            duration=duration,
+        )
+
+        # Send DM
+        dm_success = True
+        dm_error = ""
+
+        try:
+            await member.send(embed=muted_dm(ctx, case), view=jump_button(ctx))
+        except discord.Forbidden:
+            dm_success = False
+            dm_error = "User has DMs disabled."
+        except discord.HTTPException:
+            dm_success = False
+            dm_error = "Failed to send DM."
 
         # Send confirmation message
-        embed = muted(member, reason, duration)
-        await reply(embed=embed)
+        await reply(
+            embed=muted(
+                user=member,
+                creator=ctx.author,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+        )
 
     @commands.hybrid_command(name="kick")
     async def kick(
@@ -112,11 +172,48 @@ class Misc(commands.Cog):
         # Add member to punishing list
         self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
 
-        # Create case logic here
+        # Kick user
+        try:
+            await member.kick(reason=reason)
+        except discord.Forbidden:
+            return await reply(embed=forbidden(member))
+        except discord.HTTPException:
+            return await reply(embed=http_exception(member))
+        except discord.NotFound:
+            return await reply(embed=not_found(member))
+
+        # Create case
+        case = await GuildModCaseManager.create_case(
+            type="kick",
+            guild_id=ctx.guild.id,
+            user_id=member.id,
+            reason=reason,
+            duration=duration,
+        )
+
+        # Send DM
+        dm_success = True
+        dm_error = ""
+
+        try:
+            await member.send(embed=kicked_dm(ctx, case), view=jump_button(ctx))
+        except discord.Forbidden:
+            dm_success = False
+            dm_error = "User has DMs disabled."
+        except discord.HTTPException:
+            dm_success = False
+            dm_error = "Failed to send DM."
 
         # Send confirmation message
-        embed = kicked(member, reason)
-        await reply(embed=embed)
+        await reply(
+            embed=kicked(
+                user=member,
+                creator=ctx.author,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+        )
 
     @commands.hybrid_command(name="ban")
     async def ban(
@@ -143,6 +240,7 @@ class Misc(commands.Cog):
         # Add member to punishing list
         self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
 
+        # Ban user
         try:
             await member.ban(reason=reason, delete_message_days=delete_message_days)
         except discord.Forbidden:
@@ -152,13 +250,21 @@ class Misc(commands.Cog):
         except discord.NotFound:
             return await reply(embed=not_found(member))
 
+        # Create case
+        case = await GuildModCaseManager.create_case(
+            type="ban",
+            guild_id=ctx.guild.id,
+            user_id=member.id,
+            reason=reason,
+            duration=duration,
+        )
+
         # Send DM
         dm_success = True
         dm_error = ""
 
         try:
-            dm_embed = banned_dm(ctx, member, duration)
-            await member.send(embed=dm_embed, view=jump_button(ctx))
+            await member.send(embed=banned_dm(ctx, case), view=jump_button(ctx))
         except discord.Forbidden:
             dm_success = False
             dm_error = "User has DMs disabled."
@@ -167,5 +273,12 @@ class Misc(commands.Cog):
             dm_error = "Failed to send DM."
 
         # Send confirmation message
-        embed = banned(member, reason, duration, dm_success, dm_error)
-        await reply(embed=embed)
+        await reply(
+            embed=banned(
+                user=member,
+                creator=ctx.author,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+        )

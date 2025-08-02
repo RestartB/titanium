@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from discord.ext import commands
 
@@ -45,7 +45,7 @@ class DurationConverter(commands.Converter):
 
 
 def duration_to_timestring(time: datetime) -> str:
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     delta = time - now
 
     seconds = delta.total_seconds()

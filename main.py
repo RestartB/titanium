@@ -2,7 +2,7 @@
 # Made by Restart, 2025
 
 # Imports
-import datetime
+from datetime import datetime, timezone
 import logging
 import logging.handlers
 import os
@@ -110,12 +110,12 @@ class TitaniumBot(commands.Bot):
 
     async def on_resumed(self):
         self.connected = True
-        self.last_resume = datetime.datetime.now()
+        self.last_resume = datetime.now(timezone.utc)
 
     async def on_disconnect(self):
         if self.connected:
             self.connected = False
-            self.last_disconnect = datetime.datetime.now()
+            self.last_disconnect = datetime.now(timezone.utc)
 
 
 bot = TitaniumBot(intents=intents, command_prefix="", help_command=None)
