@@ -145,6 +145,26 @@ class TitaniumBot(commands.Bot):
 
 bot = TitaniumBot(intents=intents, command_prefix="t!")
 
+
+@bot.event
+async def on_command_error(ctx: commands.Context, error: commands.CommandError):
+    if isinstance(error, commands.CommandNotFound):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Command Not Found",
+            description=f"The command `{ctx.invoked_with}` does not exist.",
+            color=discord.Color.red(),
+        )
+        await ctx.reply(embed=embed)
+    else:
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Command Error",
+            description="An error occurred while executing the command. Please try again later.",
+            color=discord.Color.red(),
+        )
+        await ctx.reply(embed=embed)
+        logging.error(f"Error in command {ctx.command}: {error}")
+
+
 if __name__ == "__main__":
     logging.info("[INIT] Starting Titanium bot...")
     try:
