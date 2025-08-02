@@ -10,8 +10,9 @@ from glob import glob
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+from sqlalchemy import select
 
-from lib.sql import init_db
+from lib.sql import ServerPrefixes, get_session, init_db
 
 load_dotenv()
 
@@ -126,6 +127,7 @@ class TitaniumBot(commands.Bot):
         except discord.HTTPException as e:
             logging.error(f"[INIT] Failed to fetch emojis: {e}")
             raise
+        logging.info("[INIT] Custom emojis loaded.\n")
 
         logging.info("[INIT] Loading cogs...")
         # Find all cogs in command dir
@@ -143,7 +145,27 @@ class TitaniumBot(commands.Bot):
         logging.info("[INIT] Loading cogs complete.\n")
 
 
-bot = TitaniumBot(intents=intents, command_prefix="t!")
+async def get_prefix(bot: TitaniumBot, message: discord.Message):
+    base = [bot.user.mention if bot.user else ""]
+
+    if message.guild:
+        async with get_session() as session:
+            stmt = select(ServerPrefixes.prefixes).where(
+                ServerPrefixes.guild_id == message.guild.id,
+            )
+
+            result = await session.execute(stmt)
+            prefixes = result.scalar_one_or_none()
+
+            if prefixes:
+                (base.append(prefix) for prefix in prefixes)
+    else:
+        base.append("t!")
+
+    return base
+
+
+bot = TitaniumBot(intents=intents, command_prefix=get_prefix)
 
 
 @bot.event

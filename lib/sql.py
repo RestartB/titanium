@@ -2,7 +2,16 @@ import os
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    text,
+)
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base, relationship
@@ -23,6 +32,7 @@ class ModCases(Base):
     time_updated = Column(DateTime)
     time_expires = Column(DateTime, nullable=True)
     description = Column(String(length=512), nullable=True)
+    resolved = Column(Boolean, default=False)
     comments = relationship("ModCaseComments", back_populates="case")
 
 
@@ -52,7 +62,9 @@ class ScheduledTasks(Base):
 class ServerPrefixes(Base):
     __tablename__ = "server_prefixes"
     guild_id = Column(BigInteger, primary_key=True)
-    prefixes = Column(ARRAY(String(length=4)))
+    prefixes = Column(
+        ARRAY(String(length=4)), default=["t!"], server_default=text("ARRAY['t!']")
+    )
 
 
 # -- Engine --
