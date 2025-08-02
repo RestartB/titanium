@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -53,7 +55,7 @@ class ServerPrefixes(Base):
 
 # -- Engine --
 engine = create_async_engine(
-    "sqlite+aiosqlite:///titanium.db",
+    "postgresql+asyncpg://username:password@localhost:5432/titanium",
     echo=True,
     pool_size=20,
     max_overflow=30,
@@ -69,13 +71,10 @@ async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
-        await conn.execute("PRAGMA foreign_keys = ON;")
-        await conn.execute("PRAGMA journal_mode = WAL;")
-
         await conn.commit()
 
 
+@asynccontextmanager
 async def get_session():
     async with async_session() as session:
         try:

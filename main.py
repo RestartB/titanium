@@ -2,7 +2,6 @@
 # Made by Restart, 2025
 
 # Imports
-from datetime import datetime, timezone
 import logging
 import logging.handlers
 import os
@@ -10,6 +9,8 @@ from glob import glob
 
 import discord
 from discord.ext import commands
+
+from lib.sql import init_db
 
 # Current Running Path
 path = os.getcwd()
@@ -83,13 +84,14 @@ class TitaniumBot(commands.Bot):
     guild_installs = 0
     guild_member_count = 0
 
-    connect_time: datetime.datetime
-
     punishing: dict[int, list[int]] = {}
 
     async def setup_hook(self):
-        logging.info("[INIT] Loading cogs...")
+        logging.info("[INIT] Initializing database...")
+        await init_db()
+        logging.info("[INIT] Database initialized.\n")
 
+        logging.info("[INIT] Loading cogs...")
         # Find all cogs in command dir
         for filename in glob(
             os.path.join("commands", "**"), recursive=True, include_hidden=False
@@ -102,20 +104,7 @@ class TitaniumBot(commands.Bot):
                     logging.debug(f"[INIT] Loading normal cog: {filename}...")
                     await bot.load_extension(filename)
                     logging.debug(f"[INIT] Loaded normal cog: {filename}")
-
         logging.info("[INIT] Loading cogs complete.\n")
-
-    async def on_connect(self):
-        self.connected = True
-
-    async def on_resumed(self):
-        self.connected = True
-        self.last_resume = datetime.now(timezone.utc)
-
-    async def on_disconnect(self):
-        if self.connected:
-            self.connected = False
-            self.last_disconnect = datetime.now(timezone.utc)
 
 
 bot = TitaniumBot(intents=intents, command_prefix="", help_command=None)
