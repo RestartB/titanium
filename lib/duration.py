@@ -1,7 +1,8 @@
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from discord.ext import commands
+from sqlalchemy import Column
 
 
 class DurationConverter(commands.Converter):
@@ -44,8 +45,8 @@ class DurationConverter(commands.Converter):
         return timedelta(seconds=total_seconds)
 
 
-def duration_to_timestring(time: datetime) -> str:
-    now = datetime.now(timezone.utc)
+def duration_to_timestring(time: datetime | Column[datetime]) -> str:
+    now = datetime.now()
     delta = time - now
 
     seconds = delta.total_seconds()

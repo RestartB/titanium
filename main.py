@@ -94,10 +94,43 @@ class TitaniumBot(commands.Bot):
         await init_db()
         logging.info("[INIT] Database initialized.\n")
 
+        logging.info("[INIT] Getting custom emojis...")
+        try:
+            success_emoji = os.getenv("SUCCESS_EMOJI")
+            if success_emoji is not None:
+                self.success_emoji = await self.fetch_application_emoji(
+                    int(success_emoji)
+                )
+            else:
+                self.success_emoji = "✅"
+
+            error_emoji = os.getenv("ERROR_EMOJI")
+            if error_emoji is not None:
+                self.error_emoji = await self.fetch_application_emoji(int(error_emoji))
+            else:
+                self.error_emoji = "❌"
+
+            loading_emoji = os.getenv("LOADING_EMOJI")
+            if loading_emoji is not None:
+                self.loading_emoji = await self.fetch_application_emoji(
+                    int(loading_emoji)
+                )
+            else:
+                self.loading_emoji = "⏳"
+
+            warn_emoji = os.getenv("WARN_EMOJI")
+            if warn_emoji is not None:
+                self.warn_emoji = await self.fetch_application_emoji(int(warn_emoji))
+            else:
+                self.warn_emoji = "⚠️"
+        except discord.HTTPException as e:
+            logging.error(f"[INIT] Failed to fetch emojis: {e}")
+            raise
+
         logging.info("[INIT] Loading cogs...")
         # Find all cogs in command dir
         for filename in glob(
-            os.path.join("commands", "**"), recursive=True, include_hidden=False
+            os.path.join("cogs", "**"), recursive=True, include_hidden=False
         ):
             if not os.path.isdir(filename):
                 # Determine if file is a python file
@@ -115,7 +148,12 @@ bot = TitaniumBot(intents=intents, command_prefix="t!")
 if __name__ == "__main__":
     logging.info("[INIT] Starting Titanium bot...")
     try:
-        bot.run(os.getenv("BOT_TOKEN"))
+        token = os.getenv("BOT_TOKEN")
+
+        if token is None:
+            raise discord.LoginFailure("No bot token provided in .env file.")
+
+        bot.run(token, log_handler=None)
     except discord.LoginFailure:
         logging.error("[INIT] Invalid bot token provided. Please check your .env file.")
     except Exception as e:

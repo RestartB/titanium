@@ -1,17 +1,19 @@
 import logging
 import traceback
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
 
-from ...main import TitaniumBot
+if TYPE_CHECKING:
+    from ...main import TitaniumBot
 
 
-class AdminCog(commands.Cog):
-    def __init__(self, bot: TitaniumBot):
+class AdminCogsCog(commands.Cog):
+    def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
-    @commands.hybrid_command(name="sync")
+    @commands.hybrid_command(name="sync", hidden=True)
     @commands.is_owner()
     async def warn(
         self,
@@ -27,7 +29,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title="Commands Synced",
+                    title=f"{str(self.bot.success_emoji)} Commands Synced",
                     description=f"Synced {len(tree)} commands.",
                     color=discord.Color.green(),
                 ),
@@ -39,9 +41,13 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title="Failed to Sync",
+                    title=f"{str(self.bot.error_emoji)} Failed to sync",
                     description=f"```python\n{traceback.format_exc()}```",
                     color=discord.Color.green(),
                 ),
                 ephemeral=True,
             )
+
+
+async def setup(bot: "TitaniumBot") -> None:
+    await bot.add_cog(AdminCogsCog(bot))

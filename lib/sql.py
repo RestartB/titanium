@@ -1,6 +1,8 @@
+import os
 from contextlib import asynccontextmanager
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from dotenv import load_dotenv
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base, relationship
@@ -11,11 +13,11 @@ Base = declarative_base()
 # -- Tables --
 class ModCases(Base):
     __tablename__ = "mod_cases"
-    id = Column(Integer, primary_key=True)
-    guild_id = Column(Integer)
-    user_id = Column(Integer)
-    proof_msg_id = Column(Integer)
-    proof_channel_id = Column(Integer)
+    id = Column(BigInteger, primary_key=True)
+    guild_id = Column(BigInteger)
+    user_id = Column(BigInteger)
+    proof_msg_id = Column(BigInteger)
+    proof_channel_id = Column(BigInteger)
     proof_text = Column(String)
     time_created = Column(DateTime)
     time_updated = Column(DateTime)
@@ -26,10 +28,10 @@ class ModCases(Base):
 
 class ModCaseComments(Base):
     __tablename__ = "mod_case_comments"
-    id = Column(Integer, primary_key=True)
-    guild_id = Column(Integer)
-    case_id = Column(Integer, ForeignKey("mod_cases.id"))
-    user_id = Column(Integer)
+    id = Column(BigInteger, primary_key=True)
+    guild_id = Column(BigInteger)
+    case_id = Column(BigInteger, ForeignKey("mod_cases.id"))
+    user_id = Column(BigInteger)
     comment = Column(String(length=512))
     time_created = Column(DateTime)
     case = relationship("ModCases", back_populates="comments")
@@ -39,24 +41,25 @@ class ScheduledTasks(Base):
     __tablename__ = "scheduled_tasks"
     id = Column(Integer, primary_key=True)
     type = Column(String)
-    guild_id = Column(Integer)
-    user_id = Column(Integer)
-    channel_id = Column(Integer)
-    role_id = Column(Integer)
-    message_id = Column(Integer)
+    guild_id = Column(BigInteger)
+    user_id = Column(BigInteger)
+    channel_id = Column(BigInteger)
+    role_id = Column(BigInteger)
+    message_id = Column(BigInteger)
     time_scheduled = Column(DateTime)
 
 
 class ServerPrefixes(Base):
     __tablename__ = "server_prefixes"
-    guild_id = Column(Integer, primary_key=True)
+    guild_id = Column(BigInteger, primary_key=True)
     prefixes = Column(ARRAY(String(length=4)))
 
 
 # -- Engine --
+load_dotenv()
 engine = create_async_engine(
-    "postgresql+asyncpg://username:password@localhost:5432/titanium",
-    echo=True,
+    os.getenv("DATABASE_URL", ""),
+    echo=False,
     pool_size=20,
     max_overflow=30,
     pool_timeout=30,

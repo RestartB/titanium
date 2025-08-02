@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta, timezone
+from typing import Annotated
 
 from discord import Guild
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from ..duration import DurationConverter
 from ..sql import ModCases
 
 
@@ -38,7 +40,11 @@ class GuildModCaseManager:
         return case
 
     async def create_case(
-        self, type, user_id: int, reason: str, duration: timedelta = None
+        self,
+        type,
+        user_id: int,
+        reason: str,
+        duration: Annotated[timedelta, DurationConverter] = timedelta(0),
     ):
         case = ModCases(
             guild_id=self.guild.id,
@@ -46,8 +52,10 @@ class GuildModCaseManager:
             proof_msg_id=None,
             proof_channel_id=None,
             proof_text=None,
-            time_created=datetime.now(timezone.utc),
-            time_expires=datetime.now(timezone.utc) + duration if duration else None,
+            time_created=datetime.now(),
+            time_expires=datetime.now() + duration
+            if duration != timedelta(0)
+            else None,
             description=reason,
         )
 
