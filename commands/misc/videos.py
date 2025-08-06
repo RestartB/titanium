@@ -224,7 +224,7 @@ class Videos(commands.Cog):
         elif file.content_type.split("/")[0] == "image":  # If file is an image
             embed = discord.Embed(
                 title="Error",
-                description="I think you attached an **image.** To convert an image to GIF, use the </image to-gif-avif:1294677927899955200> command, or right click on a message, select apps, then click **Convert to GIF.**",
+                description="I think you attached an **image.** To convert an image to GIF, use the </image convert:1294677927899955200> command, or right click on a message, select apps, then click **Convert to GIF.**",
                 color=Color.red(),
             )
             embed.set_footer(

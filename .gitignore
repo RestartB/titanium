@@ -15,6 +15,7 @@ TEST_*.py
 
 # IDEs
 config.cfg
+.env
 .replit
 .idea
 .nova

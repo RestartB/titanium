@@ -262,41 +262,44 @@ class Images(commands.Cog):
 
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
-    def _to_gif(
+    def _convert_image(
         self,
         image_data: BytesIO,
-        mode: str,
+        format: str,
     ) -> tuple[BytesIO, tuple[int, int]]:
         output_data = BytesIO()
 
-        # Open image
-        with Image.open(image_data) as im:
-            if mode == "quality":
-                with Image.open(image_data) as im2:
-                    # Convert image to GIF
-                    im.save(
-                        output_data,
-                        format="AVIF",
-                        append_images=[im2],
-                        save_all=True,
-                        duration=500,
-                        loop=0,
-                    )
-                    output_size = im.size
-            else:
-                # Convert to GIF with wand
-                with WandImage(blob=image_data.getvalue()) as wand_image:
-                    # Set GIF optimization options
-                    wand_image.compression_quality = 80
-                    wand_image.quantum_operator = "dither"
+        if format == "GIF":
+            # Convert to GIF with wand
+            with WandImage(blob=image_data.getvalue()) as wand_image:
+                # Set GIF optimization options
+                wand_image.compression_quality = 80
+                wand_image.quantum_operator = "dither"
 
-                    # Convert to GIF format
-                    wand_image.format = "gif"
+                # Convert to GIF format
+                wand_image.format = "gif"
 
-                    # Write to output BytesIO
-                    output_data.write(wand_image.make_blob("gif"))
+                # Write to output BytesIO
+                output_data.write(wand_image.make_blob("gif"))
 
-                    output_size = (wand_image.width, wand_image.height)
+                output_size = (wand_image.width, wand_image.height)
+        elif format == "AVIF*":
+            with Image.open(image_data) as im:
+                # Convert image to GIF
+                im.save(
+                    output_data,
+                    format="AVIF",
+                    append_images=[im],
+                    save_all=True,
+                    duration=500,
+                    loop=0,
+                )
+                output_size = im.size
+        else:
+            # Convert with pillow
+            with Image.open(image_data) as im:
+                im.save(output_data, format=format)
+                output_size = im.size
 
         output_data.seek(0)
         return output_data, output_size
@@ -304,50 +307,87 @@ class Images(commands.Cog):
     # Image to GIF command
     @imageGroup.command(
         name="to-gif-avif",
-        description="Convert an image to GIF or AVIF for bookmarking.",
+        description="Moved to the /image convert command.",
+    )
+    async def gif_image(
+        self,
+        interaction: discord.Interaction,
+    ):
+        await interaction.response.defer(ephemeral=True)
+
+        embed = discord.Embed(
+            title="Command Moved",
+            description="This command's features have been moved to the </image convert:1294677927899955200> command.",
+            color=Color.blue(),
+        )
+
+        embed.set_footer(
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+    # Convert image command
+    @imageGroup.command(
+        name="convert", description="Convert an image to a different format."
     )
     @app_commands.checks.cooldown(1, 10)
     @app_commands.describe(
-        file="The static image to convert.",
-        mode="The mode to use when generating the image.",
+        file="The image to convert.",
+        format="The format of the output image.",
         filename="Optional: the name of the file to save the image as. Leave blank to allow Titanium to make one for you.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.choices(
-        mode=[
+        format=[
             app_commands.Choice(
-                name="Quality (.avif, 16 million colours) (recommended)",
-                value="quality",
+                name=".jpg / .jpeg",
+                value="JPEG",
             ),
             app_commands.Choice(
-                name="Compatibility (.gif, limited colours) (not recommended)",
-                value="compatibility",
+                name=".png",
+                value="PNG",
             ),
-        ]
+            app_commands.Choice(
+                name=".webp",
+                value="WEBP",
+            ),
+            app_commands.Choice(
+                name=".gif (can be starred)",
+                value="GIF",
+            ),
+            app_commands.Choice(
+                name=".avif",
+                value="AVIF",
+            ),
+            app_commands.Choice(
+                name=".avif (can be starred)",
+                value="AVIF*",
+            ),
+            app_commands.Choice(
+                name=".bmp",
+                value="BMP",
+            ),
+            app_commands.Choice(
+                name=".tiff",
+                value="TIFF",
+            ),
+        ],
     )
-    async def gif_image(
+    async def convert_image(
         self,
         interaction: discord.Interaction,
         file: discord.Attachment,
-        mode: app_commands.Choice[str] = None,
+        format: app_commands.Choice[str],
         filename: str = "",
         spoiler: bool = False,
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        if mode is None:
-            mode = app_commands.Choice(
-                name="Quality (.avif, 16 million colours) (recommended)",
-                value="quality",
-            )
-
-        if (
-            file.content_type.split("/")[0] == "image"
-            and file.content_type.split("/")[1] != "gif"
-            and file.content_type.split("/")[1] != "apng"
-        ):  # Check if file is a static image
+        if file.content_type.split("/")[0] == "image":  # Check if file is an image
             if file.size < 20000000:  # 20MB file limit
                 # Get image, store in memory
                 async with aiohttp.ClientSession() as session:
@@ -360,15 +400,15 @@ class Images(commands.Cog):
                         image_data.seek(0)
 
                 output_data, output_size = await asyncio.to_thread(
-                    self._to_gif,
+                    self._convert_image,
                     image_data=image_data,
-                    mode=mode.value,
+                    format=format.value,
                 )
 
                 # Send resized image
                 embed = discord.Embed(
                     title="Image Converted",
-                    description=f"**Size: **`{output_size[0]}x{output_size[1]}`\n**Format: **`.{'avif' if mode.value == 'quality' else 'gif'}`",
+                    description=f"**Size: **`{output_size[0]}x{output_size[1]}`\n**Format: **`.{format.value.lower().rstrip('*')}`",
                     color=Color.green(),
                 )
                 embed.set_footer(
@@ -385,13 +425,13 @@ class Images(commands.Cog):
                 else:
                     embed.add_field(
                         name="Tip",
-                        value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To bypass this, please download the image, resend it, then star that. Run the command in a channel where you have permissions to avoid this.",
+                        value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
                         inline=False,
                     )
 
                 file_processed = discord.File(
                     fp=output_data,
-                    filename=f"titanium_{os.path.splitext(file.filename)[0] if not filename else filename}.{'avif' if mode.value == 'quality' else 'gif'}",
+                    filename=f"titanium_{os.path.splitext(file.filename)[0] if not filename else filename}.{format.value.lower()}",
                     spoiler=spoiler,
                 )
 
@@ -410,22 +450,10 @@ class Images(commands.Cog):
                 )
 
                 await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-        elif file.content_type.split("/")[0] == "video":  # If file is a video
+        else:  # If file is not an image
             embed = discord.Embed(
                 title="Error",
-                description="I think you attached a **video.** To convert a video to GIF, use the </video to-gif-webp:1335422637899513967> command.",
-                color=Color.red(),
-            )
-            embed.set_footer(
-                text=f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
-            )
-
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-        else:  # If file is not a static image
-            embed = discord.Embed(
-                title="Error",
-                description="Your file is not a static image.",
+                description="Your file is not an image.",
                 color=Color.red(),
             )
             embed.set_footer(
@@ -476,9 +504,9 @@ class Images(commands.Cog):
                                     image_data.seek(0)
 
                             output_data, output_size = await asyncio.to_thread(
-                                self._to_gif,
+                                self._convert_image,
                                 image_data=image_data,
-                                mode="compatibility",
+                                format="GIF",
                             )
 
                             # Add converted file to list
@@ -1024,167 +1052,6 @@ class Images(commands.Cog):
             embed = discord.Embed(
                 title="Error",
                 description="Your file is not a static image.",
-                color=Color.red(),
-            )
-            embed.set_footer(
-                text=f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
-            )
-
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-
-    def _convert_image(
-        self,
-        image_data: BytesIO,
-        format: str,
-    ) -> tuple[BytesIO, tuple[int, int]]:
-        output_data = BytesIO()
-
-        if format == "GIF":
-            # Convert to GIF with wand
-            with WandImage(blob=image_data.getvalue()) as wand_image:
-                # Set GIF optimization options
-                wand_image.compression_quality = 80
-                wand_image.quantum_operator = "dither"
-
-                # Convert to GIF format
-                wand_image.format = "gif"
-
-                # Write to output BytesIO
-                output_data.write(wand_image.make_blob("gif"))
-
-                output_size = (wand_image.width, wand_image.height)
-        else:
-            # Convert with pillow
-            with Image.open(image_data) as im:
-                im.save(output_data, format=format)
-                output_size = im.size
-
-        output_data.seek(0)
-        return output_data, output_size
-
-    # Convert image command
-    @imageGroup.command(
-        name="convert", description="Convert an image to a different format."
-    )
-    @app_commands.checks.cooldown(1, 10)
-    @app_commands.describe(
-        file="The image to convert.",
-        format="The format of the output image.",
-        filename="Optional: the name of the file to save the image as. Leave blank to allow Titanium to make one for you.",
-        spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
-        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
-    )
-    @app_commands.choices(
-        format=[
-            app_commands.Choice(
-                name=".jpg / .jpeg",
-                value="JPEG",
-            ),
-            app_commands.Choice(
-                name=".png",
-                value="PNG",
-            ),
-            app_commands.Choice(
-                name=".webp",
-                value="WEBP",
-            ),
-            app_commands.Choice(
-                name=".gif",
-                value="GIF",
-            ),
-            app_commands.Choice(
-                name=".avif",
-                value="AVIF",
-            ),
-            app_commands.Choice(
-                name=".bmp",
-                value="BMP",
-            ),
-            app_commands.Choice(
-                name=".tiff",
-                value="TIFF",
-            ),
-        ],
-    )
-    async def convert_image(
-        self,
-        interaction: discord.Interaction,
-        file: discord.Attachment,
-        format: app_commands.Choice[str],
-        filename: str = "",
-        spoiler: bool = False,
-        ephemeral: bool = False,
-    ):
-        await interaction.response.defer(ephemeral=ephemeral)
-
-        if file.content_type.split("/")[0] == "image":  # Check if file is an image
-            if file.size < 20000000:  # 20MB file limit
-                # Get image, store in memory
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(file.url) as request:
-                        image_data = BytesIO()
-
-                        async for chunk in request.content.iter_chunked(8192):
-                            image_data.write(chunk)
-
-                        image_data.seek(0)
-
-                output_data, output_size = await asyncio.to_thread(
-                    self._convert_image,
-                    image_data=image_data,
-                    format=format.value,
-                )
-
-                # Send resized image
-                embed = discord.Embed(
-                    title="Image Converted",
-                    description=f"**Size: **`{output_size[0]}x{output_size[1]}`\n**Format: **`.{format.value.lower()}`",
-                    color=Color.green(),
-                )
-                embed.set_footer(
-                    text=f"@{interaction.user.name}",
-                    icon_url=interaction.user.display_avatar.url,
-                )
-
-                if ephemeral:
-                    embed.add_field(
-                        name="Alert",
-                        value="This message is ephemeral, so the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
-                        inline=False,
-                    )
-                else:
-                    embed.add_field(
-                        name="Tip",
-                        value="If the message shows `Only you can see this message` below, the image will expire after 1 view. To keep using the image and not lose it, please download it, then resend it.",
-                        inline=False,
-                    )
-
-                file_processed = discord.File(
-                    fp=output_data,
-                    filename=f"titanium_{os.path.splitext(file.filename)[0] if not filename else filename}.{format.value.lower()}",
-                    spoiler=spoiler,
-                )
-
-                await interaction.followup.send(
-                    embed=embed, file=file_processed, ephemeral=ephemeral
-                )
-            else:  # If file is too large
-                embed = discord.Embed(
-                    title="Error",
-                    description="Your file is too large. Please ensure it is smaller than 20MB.",
-                    color=Color.red(),
-                )
-                embed.set_footer(
-                    text=f"@{interaction.user.name}",
-                    icon_url=interaction.user.display_avatar.url,
-                )
-
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-        else:  # If file is not an image
-            embed = discord.Embed(
-                title="Error",
-                description="Your file is not an image.",
                 color=Color.red(),
             )
             embed.set_footer(
