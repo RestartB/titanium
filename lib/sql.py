@@ -23,8 +23,10 @@ Base = declarative_base()
 class ModCases(Base):
     __tablename__ = "mod_cases"
     id = Column(BigInteger, primary_key=True)
+    type = Column(String(length=32))
     guild_id = Column(BigInteger)
     user_id = Column(BigInteger)
+    creator_user_id = Column(BigInteger)
     proof_msg_id = Column(BigInteger)
     proof_channel_id = Column(BigInteger)
     proof_text = Column(String)
