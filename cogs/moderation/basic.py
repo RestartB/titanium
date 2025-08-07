@@ -2,6 +2,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Annotated
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from discord.ui import View
 
@@ -46,6 +47,9 @@ class ModerationBasicCog(commands.Cog):
         name="warn", description="Warn a member for a specified reason."
     )
     @commands.guild_only()
+    @app_commands.describe(
+        member="The member to warn.", reason="The reason for the warning."
+    )
     async def warn(
         self,
         ctx: commands.Context[commands.Bot],
@@ -123,6 +127,11 @@ class ModerationBasicCog(commands.Cog):
         description="Mute a member for a specified duration.",
     )
     @commands.guild_only()
+    @app_commands.describe(
+        member="The member to mute.",
+        duration="The duration of the mute (e.g., 10m, 1h, 2h30m).",
+        reason="The reason for the mute.",
+    )
     async def mute(
         self,
         ctx: commands.Context[commands.Bot],
@@ -210,6 +219,7 @@ class ModerationBasicCog(commands.Cog):
 
     @commands.hybrid_command(name="unmute", description="Unmute a member.")
     @commands.guild_only()
+    @app_commands.describe(member="The member to unmute.")
     async def unmute(
         self,
         ctx: commands.Context[commands.Bot],
@@ -296,6 +306,9 @@ class ModerationBasicCog(commands.Cog):
 
     @commands.hybrid_command(name="kick", description="Kick a member from the server.")
     @commands.guild_only()
+    @app_commands.describe(
+        member="The member to kick.", reason="The reason for the kick."
+    )
     async def kick(
         self,
         ctx: commands.Context[commands.Bot],
@@ -377,13 +390,19 @@ class ModerationBasicCog(commands.Cog):
 
     @commands.hybrid_command(name="ban", description="Ban a member from the server.")
     @commands.guild_only()
+    @app_commands.describe(
+        member="The member to ban.",
+        duration="The duration of the ban (e.g., 10m, 1h, 2h30m).",
+        reason="The reason for the ban.",
+        delete_message_days="Number of days of messages to delete (0-7).",
+    )
     async def ban(
         self,
         ctx: commands.Context[commands.Bot],
         member: discord.Member,
         duration: Annotated[timedelta, DurationConverter],
         reason: str,
-        delete_message_days: int = 0,
+        delete_message_days: app_commands.Range[int, 0, 7] = 0,
     ) -> None:
         await defer(ctx)
 
@@ -469,6 +488,7 @@ class ModerationBasicCog(commands.Cog):
         name="unban", description="Unban a member from the server."
     )
     @commands.guild_only()
+    @app_commands.describe(user="The user to unban.")
     async def unban(
         self,
         ctx: commands.Context[commands.Bot],
