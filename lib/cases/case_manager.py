@@ -10,7 +10,7 @@ from ..duration import DurationConverter
 from ..sql import ModCases
 
 
-class CaseNotFound(Exception):
+class CaseNotFoundException(Exception):
     """Exception raised when a case is not found."""
 
 
@@ -42,7 +42,7 @@ class GuildModCaseManager:
         case = result.scalar_one_or_none()
 
         if not case:
-            raise CaseNotFound("Case not found")
+            raise CaseNotFoundException("Case not found")
 
         return case
 
@@ -76,10 +76,9 @@ class GuildModCaseManager:
             proof_channel_id=None,
             proof_text=None,
             time_created=datetime.now(),
-            time_updated=datetime.now(),
-            time_expires=datetime.now() + duration
-            if duration != timedelta(0)
-            else None,
+            time_expires=(
+                datetime.now() + duration if duration != timedelta(0) else None
+            ),
             description=reason,
         )
 
@@ -97,7 +96,7 @@ class GuildModCaseManager:
         case = await self.get_case_by_id(case_id)
 
         if not case:
-            raise CaseNotFound("Case not found")
+            raise CaseNotFoundException("Case not found")
 
         case.description = reason  # pyright: ignore[reportAttributeAccessIssue]
 
@@ -113,7 +112,7 @@ class GuildModCaseManager:
         case = await self.get_case_by_id(case_id)
 
         if not case:
-            raise CaseNotFound("Case not found")
+            raise CaseNotFoundException("Case not found")
 
         case.resolved = True  # pyright: ignore[reportAttributeAccessIssue]
         case.time_updated = datetime.now()  # pyright: ignore[reportAttributeAccessIssue]

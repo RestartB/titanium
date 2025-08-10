@@ -45,9 +45,10 @@ class DurationConverter(commands.Converter):
         return timedelta(seconds=total_seconds)
 
 
-def duration_to_timestring(time: datetime | Column[datetime]) -> str:
-    now = datetime.now()
-    delta = time - now
+def duration_to_timestring(
+    start: datetime | Column[datetime], end: datetime | Column[datetime]
+) -> str:
+    delta = end - start
 
     seconds = delta.total_seconds()
     string = ""

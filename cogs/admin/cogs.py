@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
+from lib.hybrid_adapters import defer, stop_loading
+
 if TYPE_CHECKING:
     from ...main import TitaniumBot
 
@@ -13,13 +15,18 @@ class AdminCogsCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
-    @commands.hybrid_command(name="sync", hidden=True)
+    @commands.group(name="admin")
+    @commands.is_owner()
+    async def admin_group(self, ctx: commands.Context[commands.Bot]) -> None:
+        pass
+
+    @admin_group.command(name="sync", hidden=True)
     @commands.is_owner()
     async def warn(
         self,
         ctx: commands.Context[commands.Bot],
     ) -> None:
-        await ctx.defer(ephemeral=True)
+        await defer(self.bot, ctx, ephemeral=True)
 
         # Sync commands
         logging.info("[SYNC] Syncing commands...")
@@ -35,6 +42,7 @@ class AdminCogsCog(commands.Cog):
                 ),
                 ephemeral=True,
             )
+            await ctx.message.remove_reaction(self.bot.loading_emoji, ctx.me)
         except discord.HTTPException:
             logging.error("[SYNC] Failed to sync commands.")
             logging.error(traceback.format_exc())
@@ -47,6 +55,39 @@ class AdminCogsCog(commands.Cog):
                 ),
                 ephemeral=True,
             )
+            await ctx.message.remove_reaction(self.bot.loading_emoji, ctx.me)
+        finally:
+            await stop_loading(self.bot, ctx)
+
+    @admin_group.command(name="reload", hidden=True)
+    @commands.is_owner()
+    async def reload_cogs(self, ctx: commands.Context[commands.Bot], cog: str) -> None:
+        await defer(self.bot, ctx, ephemeral=True)
+
+        try:
+            await self.bot.reload_extension(f"cogs.{cog}")
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{str(self.bot.success_emoji)} Reloaded",
+                    description=f"Successfully reloaded `{cog}`.",
+                    color=discord.Color.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            logging.error(f"Error reloading {cog}: {e}")
+            logging.error(traceback.format_exc())
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} Error Reloading",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    color=discord.Color.red(),
+                ),
+                ephemeral=True,
+            )
+        finally:
+            await stop_loading(self.bot, ctx)
 
 
 async def setup(bot: "TitaniumBot") -> None:

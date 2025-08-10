@@ -5,6 +5,7 @@
 import logging
 import logging.handlers
 import os
+import traceback
 from glob import glob
 
 import discord
@@ -57,15 +58,7 @@ discordLogger.addHandler(handler)
 logging.info("Welcome to Titanium - v2")
 logging.info("https://github.com/restartb/titanium\n")
 
-# SQL path check
-logging.info("[INIT] Checking SQL path...")
-basedir = os.path.dirname("user-content/sql/")
-
-if not os.path.exists(basedir):
-    logging.info("[INIT] Path not present. Creating path...")
-    os.makedirs(basedir)
-
-# SQL path check
+# Temp path check
 logging.info("[INIT] Checking temp path...")
 basedir = os.path.dirname("user-content/tmp/")
 
@@ -146,7 +139,7 @@ class TitaniumBot(commands.Bot):
 
 
 async def get_prefix(bot: TitaniumBot, message: discord.Message):
-    base = [bot.user.mention if bot.user else ""]
+    base = ["t!", bot.user.mention if bot.user else ""]
 
     if message.guild:
         async with get_session() as session:
@@ -159,6 +152,8 @@ async def get_prefix(bot: TitaniumBot, message: discord.Message):
 
             if prefixes:
                 (base.append(prefix) for prefix in prefixes)
+            else:
+                base.append("t!")
     else:
         base.append("t!")
 
@@ -170,13 +165,16 @@ bot = TitaniumBot(intents=intents, command_prefix=get_prefix)
 
 @bot.event
 async def on_command_error(ctx: commands.Context, error: commands.CommandError):
-    if isinstance(error, commands.CommandNotFound):
+    if isinstance(error, commands.CommandNotFound) or isinstance(
+        error, commands.NotOwner
+    ):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Not Found",
             description=f"The command `{ctx.invoked_with}` does not exist.",
             color=discord.Color.red(),
         )
         await ctx.reply(embed=embed)
+        await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     else:
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Error",
@@ -184,7 +182,12 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             color=discord.Color.red(),
         )
         await ctx.reply(embed=embed)
+        await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
+
         logging.error(f"Error in command {ctx.command}: {error}")
+        logging.error(
+            "".join(traceback.format_exception(type(error), error, error.__traceback__))
+        )
 
 
 if __name__ == "__main__":

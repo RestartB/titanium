@@ -19,7 +19,7 @@ def warned(
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.success_emoji)} Warned - `{case.id}`",
-        description=f"**Target:** {user.mention}\n**Duration:** {duration_to_timestring(case.time_expires)}\n**Reason:** {case.description or 'No reason provided.'}",
+        description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
 
@@ -45,7 +45,7 @@ def muted(
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.success_emoji)} Muted - `{case.id}`",
-        description=f"**Target:** {user.mention}\n**Duration:** {duration_to_timestring(case.time_expires)}\n**Reason:** {case.description or 'No reason provided.'}",
+        description=f"**Target:** {user.mention}\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
 
@@ -121,7 +121,7 @@ def kicked(
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.success_emoji)} Kicked - `{case.id}`",
-        description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
+        description=f"**Target:** @{user.name} (`{user.id}`)\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
 
@@ -147,7 +147,7 @@ def banned(
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.success_emoji)} Banned - `{case.id}`",
-        description=f"**Target:** {user.mention}\n**Duration:** {duration_to_timestring(case.time_expires)}\n**Reason:** {case.description or 'No reason provided.'}",
+        description=f"**Target:** @{user.name} (`{user.id}`)\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
 
@@ -173,7 +173,7 @@ def unbanned(
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.success_emoji)} Unbanned - `{case.id}`",
-        description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
+        description=f"**Target:** @{user.name} (`{user.id}`)\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
 
@@ -221,15 +221,6 @@ def already_banned(
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"{user.mention} is already banned.",
-        color=Color.red(),
-    )
-    return embed
-
-
-def not_in_guild(bot: "TitaniumBot", user: Member | User) -> Embed:
-    embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
-        description=f"@{user.name} is not in this server.",
         color=Color.red(),
     )
     return embed

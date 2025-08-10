@@ -31,7 +31,7 @@ class ModCases(Base):
     proof_channel_id = Column(BigInteger)
     proof_text = Column(String)
     time_created = Column(DateTime)
-    time_updated = Column(DateTime)
+    time_updated = Column(DateTime, nullable=True)
     time_expires = Column(DateTime, nullable=True)
     description = Column(String(length=512), nullable=True)
     resolved = Column(Boolean, default=False)
