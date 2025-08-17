@@ -1,10 +1,11 @@
 from datetime import datetime
 
 
-class AntiSpamMessage:
+class AutomodMessage:
     user_id: int
     message_id: int
     channel_id: int
+    content: str
     mention_count: int
     word_count: int
     newline_count: int

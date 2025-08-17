@@ -13,7 +13,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from sqlalchemy import select
 
-from lib.classes.antispam_message import AntiSpamMessage
+from lib.classes.automod_message import AutomodMessage
 from lib.sql import ServerAutomodSettings, ServerPrefixes, get_session, init_db
 
 load_dotenv()
@@ -83,7 +83,7 @@ class TitaniumBot(commands.Bot):
     guild_member_count = 0
 
     server_automod_configs: dict[int, ServerAutomodSettings] = {}
-    antispam_messages: dict[int, dict[int, list[AntiSpamMessage]]] = {}
+    automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
 
     punishing: dict[int, list[int]] = {}
 

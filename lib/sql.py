@@ -106,8 +106,8 @@ class AutomodRule(Base):
     rule_type = Column(String(length=32))
     antispam_type = Column(String(length=32), nullable=True)
     words = Column(ARRAY(String(length=100)), server_default=ARRAY([]))
+    occurrences = Column(Integer)
     threshold = Column(Integer)
-    msg_count = Column(Integer)
     duration = Column(Integer)
     actions = relationship(
         "AutomodAction",
