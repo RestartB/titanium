@@ -95,6 +95,16 @@ class TitaniumBot(commands.Bot):
         await init_db()
         logging.info("[INIT] Database initialized.\n")
 
+        logging.info("[INIT] Getting server configs...")
+        async with get_session() as session:
+            stmt = select(ServerAutomodSettings)
+            result = await session.execute(stmt)
+            configs = result.scalars().all()
+
+            for config in configs:
+                self.server_automod_configs[config.guild_id] = config
+        logging.info("[INIT] Server configs loaded.")
+
         logging.info("[INIT] Getting custom emojis...")
         try:
             success_emoji = os.getenv("SUCCESS_EMOJI")
