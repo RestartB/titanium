@@ -1,4 +1,3 @@
-import re
 from datetime import timedelta
 from typing import TYPE_CHECKING, Annotated
 
@@ -44,12 +43,7 @@ class ModerationBasicCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
-    @commands.hybrid_group(name="mod", description="Moderation commands.")
-    @commands.guild_only()
-    async def mod_group(self, ctx: commands.Context[commands.Bot]) -> None:
-        pass
-
-    @mod_group.command(name="warn", description="Warn a member for a specified reason.")
+    @commands.command(name="warn", description="Warn a member for a specified reason.")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @app_commands.default_permissions(manage_guild=True)
@@ -125,7 +119,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @mod_group.command(
+    @commands.command(
         name="mute",
         alias=["timeout", "silence"],
         description="Mute a member for a specified duration.",
@@ -167,13 +161,28 @@ class ModerationBasicCog(commands.Cog):
         self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
 
         try:
+            if ctx.interaction:
+                processed_reason = reason
+                processed_duration = duration
+            else:
+                # Process duration
+                try:
+                    processed_duration = await DurationConverter().convert(
+                        ctx, duration
+                    )
+                except commands.BadArgument:
+                    processed_duration = timedelta(seconds=0)
+                    processed_reason = duration + " " + reason if reason else duration
+
             # Check if user is already timed out
             if member.is_timed_out():
                 return await ctx.reply(embed=already_muted(self.bot, member))
 
             # Time out user
             try:
-                await member.timeout(duration, reason=f"@{ctx.author.name}: {reason}")
+                await member.timeout(
+                    processed_duration, reason=f"@{ctx.author.name}: {processed_reason}"
+                )
             except discord.Forbidden:
                 return await ctx.reply(embed=forbidden(self.bot, member))
             except discord.HTTPException:
@@ -187,8 +196,8 @@ class ModerationBasicCog(commands.Cog):
                     type="mute",
                     user_id=member.id,
                     creator_user_id=ctx.author.id,
-                    reason=reason,
-                    duration=duration,
+                    reason=processed_reason,
+                    duration=processed_duration,
                 )
 
             # Send DM
@@ -225,7 +234,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @mod_group.command(name="unmute", description="Unmute a member.")
+    @commands.command(name="unmute", description="Unmute a member.")
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @app_commands.default_permissions(moderate_members=True)
@@ -315,7 +324,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @mod_group.command(name="kick", description="Kick a member from the server.")
+    @commands.command(name="kick", description="Kick a member from the server.")
     @commands.guild_only()
     @commands.has_permissions(kick_members=True)
     @app_commands.default_permissions(kick_members=True)
@@ -403,7 +412,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @mod_group.command(name="ban", description="Ban a user from the server.")
+    @commands.command(name="ban", description="Ban a user from the server.")
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @app_commands.default_permissions(ban_members=True)
@@ -411,7 +420,6 @@ class ModerationBasicCog(commands.Cog):
         user="The user to ban.",
         duration="The duration of the ban (e.g., 10m, 1h, 2h30m).",
         reason="The reason for the ban.",
-        delete_message_days="Number of days of messages to delete (0-7). Add -d (days) when using prefix commands to set this.",
     )
     async def ban(
         self,
@@ -420,7 +428,6 @@ class ModerationBasicCog(commands.Cog):
         duration: str,
         *,
         reason: str = "",
-        delete_message_days: int = 0,
     ) -> None:
         await defer(self.bot, ctx)
 
@@ -438,41 +445,20 @@ class ModerationBasicCog(commands.Cog):
         # Add member to punishing list
         self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
 
-        if ctx.interaction:
-            processed_days = delete_message_days
-            processed_reason = reason
-            processed_duration = duration
-        else:
-            # Process duration
-            try:
-                processed_duration = await DurationConverter().convert(ctx, duration)
-            except commands.BadArgument:
-                processed_duration = timedelta(seconds=0)
-                processed_reason = duration + " " + reason if reason else duration
-
-            # Process date flag
-            match = re.search(r"(?:^-d\s*(\d)|\s(-d)\s*(\d)$)", processed_reason)
-            if match:
-                # Extract the digit from whichever group matched
-                delete_days = int(match.group(1) or match.group(3))
-
-                if delete_days < 0 or delete_days > 7:
-                    embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} Invalid Delete Days",
-                        description="Delete message days must be between 0 and 7.",
-                        color=discord.Color.red(),
-                    )
-                    return await ctx.reply(embed=embed)
-
-                processed_days = delete_days
-                # Remove the -d flag from either position
-                processed_reason = re.sub(
-                    r"(?:^-d\s*\d\s*|\s-d\s*\d$)", "", processed_reason
-                ).strip()
-            else:
-                processed_days = 0
-
         try:
+            if ctx.interaction:
+                processed_reason = reason
+                processed_duration = duration
+            else:
+                # Process duration
+                try:
+                    processed_duration = await DurationConverter().convert(
+                        ctx, duration
+                    )
+                except commands.BadArgument:
+                    processed_duration = timedelta(seconds=0)
+                    processed_reason = duration + " " + reason if reason else duration
+
             # Check if user is already banned
             try:
                 await ctx.guild.fetch_ban(user)
@@ -485,7 +471,6 @@ class ModerationBasicCog(commands.Cog):
                 await ctx.guild.ban(
                     user=user,
                     reason=f"@{ctx.author.name}: {processed_reason}",
-                    delete_message_days=processed_days,
                 )
             except discord.Forbidden:
                 return await ctx.reply(embed=forbidden(self.bot, user))
@@ -538,7 +523,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @mod_group.command(name="unban", description="Unban a member from the server.")
+    @commands.command(name="unban", description="Unban a member from the server.")
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @app_commands.default_permissions(ban_members=True)

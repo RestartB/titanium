@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from discord import Color, Embed, Member, User
 
 from ..duration import duration_to_timestring
-from ..sql import ModCases
+from ..sql import ModCase
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -13,7 +13,7 @@ def warned(
     bot: "TitaniumBot",
     user: Member | User,
     creator: Member | User,
-    case: ModCases,
+    case: ModCase,
     dm_success: bool,
     dm_error: str,
 ) -> Embed:
@@ -39,7 +39,7 @@ def muted(
     bot: "TitaniumBot",
     user: Member | User,
     creator: Member | User,
-    case: ModCases,
+    case: ModCase,
     dm_success: bool,
     dm_error: str,
 ) -> Embed:
@@ -77,7 +77,7 @@ def unmuted(
     bot: "TitaniumBot",
     user: Member | User,
     creator: Member | User,
-    case: ModCases,
+    case: ModCase,
     dm_success: bool,
     dm_error: str,
 ) -> Embed:
@@ -115,7 +115,7 @@ def kicked(
     bot: "TitaniumBot",
     user: Member | User,
     creator: Member | User,
-    case: ModCases,
+    case: ModCase,
     dm_success: bool,
     dm_error: str,
 ) -> Embed:
@@ -141,7 +141,7 @@ def banned(
     bot: "TitaniumBot",
     user: Member | User,
     creator: Member | User,
-    case: ModCases,
+    case: ModCase,
     dm_success: bool,
     dm_error: str,
 ) -> Embed:
@@ -167,7 +167,7 @@ def unbanned(
     bot: "TitaniumBot",
     user: Member | User,
     creator: Member | User,
-    case: ModCases,
+    case: ModCase,
     dm_success: bool,
     dm_error: str,
 ) -> Embed:

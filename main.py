@@ -13,7 +13,8 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from sqlalchemy import select
 
-from lib.sql import ServerPrefixes, get_session, init_db
+from lib.classes.antispam_message import AntiSpamMessage
+from lib.sql import ServerAutomodSettings, ServerPrefixes, get_session, init_db
 
 load_dotenv()
 
@@ -81,7 +82,13 @@ class TitaniumBot(commands.Bot):
     guild_installs = 0
     guild_member_count = 0
 
+    server_automod_configs: dict[int, ServerAutomodSettings] = {}
+    antispam_messages: dict[int, dict[int, list[AntiSpamMessage]]] = {}
+
     punishing: dict[int, list[int]] = {}
+
+    malicious_links: list[str] = []
+    phishing_links: list[str] = []
 
     async def setup_hook(self):
         logging.info("[INIT] Initializing database...")

@@ -4,7 +4,7 @@ from discord import Color, Embed, User
 from sqlalchemy import Column
 
 from ..duration import duration_to_timestring
-from ..sql import ModCases
+from ..sql import ModCase
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 def case_embed(
     bot: "TitaniumBot",
-    case: ModCases,
+    case: ModCase,
     creator: User | int | Column[int],
     target: User | int | Column[int],
 ) -> Embed:

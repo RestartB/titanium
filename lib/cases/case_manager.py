@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..duration import DurationConverter
-from ..sql import ModCases
+from ..sql import ModCase
 
 
 class CaseNotFoundException(Exception):
@@ -19,11 +19,11 @@ class GuildModCaseManager:
         self.guild = guild
         self.session = session
 
-    async def get_cases(self) -> Sequence[ModCases]:
+    async def get_cases(self) -> Sequence[ModCase]:
         stmt = (
-            select(ModCases)
-            .where(ModCases.guild_id == self.guild.id)
-            .options(selectinload(ModCases.comments))
+            select(ModCase)
+            .where(ModCase.guild_id == self.guild.id)
+            .options(selectinload(ModCase.comments))
         )
 
         result = await self.session.execute(stmt)
@@ -31,11 +31,11 @@ class GuildModCaseManager:
 
         return cases
 
-    async def get_case_by_id(self, case_id: int | Column[int]) -> ModCases:
+    async def get_case_by_id(self, case_id: int | Column[int]) -> ModCase:
         stmt = (
-            select(ModCases)
-            .where(ModCases.id == case_id, ModCases.guild_id == self.guild.id)
-            .options(selectinload(ModCases.comments))
+            select(ModCase)
+            .where(ModCase.id == case_id, ModCase.guild_id == self.guild.id)
+            .options(selectinload(ModCase.comments))
         )
 
         result = await self.session.execute(stmt)
@@ -46,12 +46,12 @@ class GuildModCaseManager:
 
         return case
 
-    async def get_cases_by_user(self, user_id: int) -> Sequence[ModCases]:
+    async def get_cases_by_user(self, user_id: int) -> Sequence[ModCase]:
         stmt = (
-            select(ModCases)
-            .where(ModCases.user_id == user_id, ModCases.guild_id == self.guild.id)
-            .options(selectinload(ModCases.comments))
-            .order_by(ModCases.time_created.desc())
+            select(ModCase)
+            .where(ModCase.user_id == user_id, ModCase.guild_id == self.guild.id)
+            .options(selectinload(ModCase.comments))
+            .order_by(ModCase.time_created.desc())
         )
 
         result = await self.session.execute(stmt)
@@ -66,8 +66,8 @@ class GuildModCaseManager:
         creator_user_id: int,
         reason: str,
         duration: Annotated[timedelta, DurationConverter] = timedelta(0),
-    ) -> ModCases:
-        case = ModCases(
+    ) -> ModCase:
+        case = ModCase(
             guild_id=self.guild.id,
             type=type,
             user_id=user_id,
@@ -92,7 +92,7 @@ class GuildModCaseManager:
         case_id: int,
         reason: str,
         duration: Annotated[timedelta, DurationConverter] = timedelta(0),
-    ) -> ModCases:
+    ) -> ModCase:
         case = await self.get_case_by_id(case_id)
 
         if not case:
@@ -108,7 +108,7 @@ class GuildModCaseManager:
         await self.session.commit()
         return case
 
-    async def close_case(self, case_id: int | Column[int]) -> ModCases:
+    async def close_case(self, case_id: int | Column[int]) -> ModCase:
         case = await self.get_case_by_id(case_id)
 
         if not case:
