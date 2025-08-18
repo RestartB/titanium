@@ -62,7 +62,7 @@ rootLogger.handlers[0].setFormatter(formatter)
 rootLogger.addHandler(handler)
 discordLogger.addHandler(handler)
 
-logging.info("Welcome to Titanium - v2")
+logging.info("Welcome to Titanium • v2")
 logging.info("https://github.com/restartb/titanium\n")
 
 # Temp path check

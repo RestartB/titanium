@@ -35,7 +35,9 @@ class BasicCommandsCog(commands.Cog):
         else:
             prefix_str = "`t!`"
 
-        prefix_str = prefix_str + (f", {self.bot.user.mention}" if prefix_str else self.bot.user.mention)
+        prefix_str = prefix_str + (
+            f", {self.bot.user.mention}" if prefix_str else self.bot.user.mention
+        )
 
         embed = Embed(
             title="Command Prefixes",

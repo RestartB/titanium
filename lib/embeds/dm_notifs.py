@@ -15,7 +15,7 @@ def warned_dm(
     bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
 ) -> Embed:
     return Embed(
-        title=f"{str(bot.warn_emoji)} You got warned - {case.id}",
+        title=f"{str(bot.warn_emoji)} You got warned • {case.id}",
         description=f"A moderator has warned you in **{ctx.guild.name if ctx.guild else ''}.**\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.red(),
     )
@@ -25,7 +25,7 @@ def muted_dm(
     bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
 ) -> Embed:
     return Embed(
-        title=f"{str(bot.warn_emoji)} You got muted - {case.id}",
+        title=f"{str(bot.warn_emoji)} You got muted • {case.id}",
         description=f"A moderator has muted you in **{ctx.guild.name if ctx.guild else ''}.**\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.red(),
     )
@@ -35,7 +35,7 @@ def unmuted_dm(
     bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
 ) -> Embed:
     return Embed(
-        title=f"{str(bot.success_emoji)} You got unmuted - {case.id}",
+        title=f"{str(bot.success_emoji)} You got unmuted • {case.id}",
         description=f"A moderator has unmuted you in **{ctx.guild.name if ctx.guild else ''}!",
         color=Color.green(),
     )
@@ -45,7 +45,7 @@ def kicked_dm(
     bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
 ) -> Embed:
     return Embed(
-        title=f"{str(bot.warn_emoji)} You got kicked - {case.id}",
+        title=f"{str(bot.warn_emoji)} You got kicked • {case.id}",
         description=f"A moderator has kicked you from **{ctx.guild.name if ctx.guild else ''}.**\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.red(),
     )
@@ -55,7 +55,7 @@ def banned_dm(
     bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
 ) -> Embed:
     return Embed(
-        title=f"{str(bot.warn_emoji)} You got banned - {case.id}",
+        title=f"{str(bot.warn_emoji)} You got banned • {case.id}",
         description=f"A moderator has banned you from **{ctx.guild.name if ctx.guild else ''}.**\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.red(),
     )
@@ -65,7 +65,7 @@ def unbanned_dm(
     bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
 ) -> Embed:
     return Embed(
-        title=f"{str(bot.success_emoji)} You got unbanned - {case.id}",
+        title=f"{str(bot.success_emoji)} You got unbanned • {case.id}",
         description=f"A moderator has unbanned you from **{ctx.guild.name if ctx.guild else ''}!",
         color=Color.green(),
     )

@@ -29,7 +29,7 @@ class BadLinkFetcherCog(commands.Cog):
                     ]
 
                     logging.info(
-                        f"Updated malicious links - {len(self.bot.malicious_links)} links fetched."
+                        f"Updated malicious links • {len(self.bot.malicious_links)} links fetched."
                     )
                 else:
                     logging.error("Failed to fetch malicious links:", response.status)
@@ -47,7 +47,7 @@ class BadLinkFetcherCog(commands.Cog):
                     self.bot.phishing_links = (await response.text()).splitlines()
 
                     logging.info(
-                        f"Updated phishing links - {len(self.bot.phishing_links)} links fetched."
+                        f"Updated phishing links • {len(self.bot.phishing_links)} links fetched."
                     )
                 else:
                     logging.error("Failed to fetch phishing links:", response.status)

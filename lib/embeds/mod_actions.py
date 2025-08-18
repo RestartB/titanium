@@ -18,7 +18,7 @@ def warned(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Warned - `{case.id}`",
+        title=f"{str(bot.success_emoji)} Warned • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
@@ -44,7 +44,7 @@ def muted(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Muted - `{case.id}`",
+        title=f"{str(bot.success_emoji)} Muted • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
@@ -82,7 +82,7 @@ def unmuted(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Unmuted - `{case.id}`",
+        title=f"{str(bot.success_emoji)} Unmuted • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
@@ -120,7 +120,7 @@ def kicked(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Kicked - `{case.id}`",
+        title=f"{str(bot.success_emoji)} Kicked • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
@@ -146,7 +146,7 @@ def banned(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Banned - `{case.id}`",
+        title=f"{str(bot.success_emoji)} Banned • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
@@ -172,7 +172,7 @@ def unbanned(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Unbanned - `{case.id}`",
+        title=f"{str(bot.success_emoji)} Unbanned • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Reason:** {case.description or 'No reason provided.'}",
         color=Color.green(),
     )
