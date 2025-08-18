@@ -14,7 +14,13 @@ from dotenv import load_dotenv
 from sqlalchemy import select
 
 from lib.classes.automod_message import AutomodMessage
-from lib.sql import ServerAutomodSettings, ServerPrefixes, get_session, init_db
+from lib.sql import (
+    ServerAutomodSettings,
+    ServerPrefixes,
+    ServerSettings,
+    get_session,
+    init_db,
+)
 
 load_dotenv()
 
@@ -82,6 +88,8 @@ class TitaniumBot(commands.Bot):
     guild_installs = 0
     guild_member_count = 0
 
+    server_configs: dict[int, ServerSettings] = {}
+    server_prefixes: dict[int, ServerPrefixes] = {}
     server_automod_configs: dict[int, ServerAutomodSettings] = {}
     automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
 
@@ -97,12 +105,29 @@ class TitaniumBot(commands.Bot):
 
         logging.info("[INIT] Getting server configs...")
         async with get_session() as session:
+            # Server settings
+            stmt = select(ServerSettings)
+            result = await session.execute(stmt)
+            configs = result.scalars().all()
+
+            for config in configs:
+                self.server_configs[config.guild_id] = config
+
+            # Automod settings
             stmt = select(ServerAutomodSettings)
             result = await session.execute(stmt)
             configs = result.scalars().all()
 
             for config in configs:
                 self.server_automod_configs[config.guild_id] = config
+
+            # Server prefixes
+            stmt = select(ServerPrefixes)
+            result = await session.execute(stmt)
+            configs = result.scalars().all()
+
+            for config in configs:
+                self.server_prefixes[config.guild_id] = config
         logging.info("[INIT] Server configs loaded.")
 
         logging.info("[INIT] Getting custom emojis...")
@@ -156,25 +181,19 @@ class TitaniumBot(commands.Bot):
 
 
 async def get_prefix(bot: TitaniumBot, message: discord.Message):
-    base = ["t!", bot.user.mention if bot.user else ""]
+    base = []
 
     if message.guild:
-        async with get_session() as session:
-            stmt = select(ServerPrefixes.prefixes).where(
-                ServerPrefixes.guild_id == message.guild.id,
-            )
+        prefixes: ServerPrefixes = bot.server_prefixes.get(message.guild.id)
 
-            result = await session.execute(stmt)
-            prefixes = result.scalar_one_or_none()
-
-            if prefixes:
-                (base.append(prefix) for prefix in prefixes)
-            else:
-                base.append("t!")
+        if prefixes and prefixes.prefixes is not None:
+            base.extend(prefixes.prefixes)
+        else:
+            base.append("t!")
     else:
         base.append("t!")
 
-    return base
+    return commands.when_mentioned_or(*base)(bot, message)
 
 
 bot = TitaniumBot(intents=intents, command_prefix=get_prefix)
@@ -187,7 +206,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     ):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Not Found",
-            description=f"The command `{ctx.command}` does not exist.",
+            description=f"The command `{ctx.invoked_with}` does not exist.",
             color=discord.Color.red(),
         )
         await ctx.reply(embed=embed)

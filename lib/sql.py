@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -81,6 +82,7 @@ class ServerAutomodSettings(Base):
         primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='spam_detection')",
         back_populates="server",
         cascade="all, delete-orphan",
+        overlaps="badword_detection_rules",
     )
     malicious_link_detection = Column(Boolean, default=False)
     malicious_link_rules = relationship(
@@ -88,6 +90,7 @@ class ServerAutomodSettings(Base):
         primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='malicious_link')",
         back_populates="server",
         cascade="all, delete-orphan",
+        overlaps="badword_detection_rules,spam_detection_rules",
     )
     phishing_link_detection = Column(Boolean, default=False)
     phishing_link_rules = relationship(
@@ -95,6 +98,7 @@ class ServerAutomodSettings(Base):
         primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='phishing_link')",
         back_populates="server",
         cascade="all, delete-orphan",
+        overlaps="badword_detection_rules,malicious_link_rules,spam_detection_rules",
     )
 
 
@@ -105,7 +109,7 @@ class AutomodRule(Base):
     user_id = Column(BigInteger)
     rule_type = Column(String(length=32))
     antispam_type = Column(String(length=32), nullable=True)
-    words = Column(ARRAY(String(length=100)), server_default=ARRAY([]))
+    words = Column(ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]"))
     occurrences = Column(Integer)
     threshold = Column(Integer)
     duration = Column(Integer)
@@ -115,7 +119,10 @@ class AutomodRule(Base):
         cascade="all, delete-orphan",
         order_by="AutomodAction.order",
     )
-    server = relationship("ServerAutomodSettings", back_populates="automod_rules")
+    server = relationship(
+        "ServerAutomodSettings",
+        overlaps="badword_detection_rules,spam_detection_rules,malicious_link_rules,phishing_link_rules",
+    )
 
 
 class AutomodAction(Base):
@@ -127,7 +134,7 @@ class AutomodAction(Base):
     duration = Column(BigInteger, nullable=True)
     reason = Column(String(length=512), nullable=True)
     order = Column(Integer, default=0)
-    antispam_rule = relationship("AntispamRule", back_populates="actions")
+    rule = relationship("AutomodRule", back_populates="actions")
 
 
 class ServerLimits(Base):
@@ -148,7 +155,10 @@ class ServerPrefixes(Base):
     __tablename__ = "server_prefixes"
     guild_id = Column(BigInteger, primary_key=True)
     prefixes = Column(
-        ARRAY(String(length=4)), default=["t!"], server_default=ARRAY(["t!"])
+        ARRAY(String(length=5)),
+        default=["t!"],
+        server_default=text("ARRAY['t!']::varchar[]"),
+        nullable=False,
     )
 
 

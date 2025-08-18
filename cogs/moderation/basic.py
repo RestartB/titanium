@@ -43,7 +43,7 @@ class ModerationBasicCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
-    @commands.command(name="warn", description="Warn a member for a specified reason.")
+    @commands.hybrid_command(name="warn", description="Warn a member for a specified reason.")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @app_commands.default_permissions(manage_guild=True)
@@ -119,7 +119,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @commands.command(
+    @commands.hybrid_command(
         name="mute",
         alias=["timeout", "silence"],
         description="Mute a member for a specified duration.",
@@ -234,7 +234,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @commands.command(name="unmute", description="Unmute a member.")
+    @commands.hybrid_command(name="unmute", description="Unmute a member.")
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @app_commands.default_permissions(moderate_members=True)
@@ -324,7 +324,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @commands.command(name="kick", description="Kick a member from the server.")
+    @commands.hybrid_command(name="kick", description="Kick a member from the server.")
     @commands.guild_only()
     @commands.has_permissions(kick_members=True)
     @app_commands.default_permissions(kick_members=True)
@@ -412,7 +412,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @commands.command(name="ban", description="Ban a user from the server.")
+    @commands.hybrid_command(name="ban", description="Ban a user from the server.")
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @app_commands.default_permissions(ban_members=True)
@@ -523,7 +523,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @commands.command(name="unban", description="Unban a member from the server.")
+    @commands.hybrid_command(name="unban", description="Unban a member from the server.")
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @app_commands.default_permissions(ban_members=True)
