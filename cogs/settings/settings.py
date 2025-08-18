@@ -191,8 +191,6 @@ class ServerSettingsCog(commands.Cog):
             if prefixes.prefixes is None:
                 prefixes.prefixes = ["t!"]
 
-            print(prefixes.prefixes)
-
             if prefix.lower() not in prefixes.prefixes:
                 return await interaction.followup.send(
                     embed=Embed(
