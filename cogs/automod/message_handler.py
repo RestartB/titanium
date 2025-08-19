@@ -1,11 +1,23 @@
 import re
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
+from discord.ui import View
 
+from lib.cases.case_manager import GuildModCaseManager
 from lib.classes.automod_message import AutomodMessage
-from lib.sql import AutomodAction, AutomodRule
+from lib.embeds.dm_notifs import banned_dm, jump_button, kicked_dm, muted_dm, warned_dm
+from lib.embeds.mod_actions import (
+    banned,
+    forbidden,
+    http_exception,
+    kicked,
+    muted,
+    warned,
+)
+from lib.sql import AutomodAction, AutomodRule, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -19,11 +31,18 @@ class AutomodMonitorCog(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         # Check for server ID in config list
-        if not message.guild or message.guild.id not in self.bot.server_automod_configs:
+        if (
+            not message.guild
+            or message.guild.id not in self.bot.server_configs
+            or message.guild.id not in self.bot.server_automod_configs
+        ):
             return
 
         triggers: list[AutomodRule] = []
-        punishments: list[tuple[str, int | None]] = []
+        punishments: list[AutomodAction] = []
+
+        if not self.bot.server_configs[message.guild.id].automod_enabled:
+            return
 
         config = self.bot.server_automod_configs[message.guild.id]
 
@@ -89,12 +108,7 @@ class AutomodMonitorCog(commands.Cog):
                         triggers.append(rule)
                         for action in rule.actions:
                             action: AutomodAction
-                            punishments.append(
-                                [
-                                    action.action_type,
-                                    action.duration if action.duration else None,
-                                ]
-                            )
+                            punishments.append(action)
 
         # Malicious link check
         if config.malicious_link_detection:
@@ -120,12 +134,7 @@ class AutomodMonitorCog(commands.Cog):
                     triggers.append(rule)
                     for action in rule.actions:
                         action: AutomodAction
-                        punishments.append(
-                            [
-                                action.action_type,
-                                action.duration if action.duration else None,
-                            ]
-                        )
+                        punishments.append(action)
 
         # Phishing link check
         if config.phishing_link_detection:
@@ -154,12 +163,7 @@ class AutomodMonitorCog(commands.Cog):
                     triggers.append(rule)
                     for action in rule.actions:
                         action: AutomodAction
-                        punishments.append(
-                            [
-                                action.action_type,
-                                action.duration if action.duration else None,
-                            ]
-                        )
+                        punishments.append(action)
 
         # Bad word detection
         if config.badword_detection:
@@ -186,12 +190,199 @@ class AutomodMonitorCog(commands.Cog):
                     triggers.append(rule)
                     for action in rule.actions:
                         action: AutomodAction
-                        punishments.append(
-                            [
-                                action.action_type,
-                                action.duration if action.duration else None,
-                            ]
-                        )
+                        punishments.append(action)
+
+        # Get list of punishment types
+        punishment_types = list(set(action.action_type for action in punishments))
+        embeds = []
+
+        for punishment in punishments:
+            if str(punishment.action_type) == "warn":
+                async with get_session() as session:
+                    manager = GuildModCaseManager(message.guild, session)
+
+                    case = await manager.create_case(
+                        type="warn",
+                        user_id=message.author.id,
+                        creator_user_id=self.bot.user.id,
+                        reason=f"Automod: {punishment.rule.rule_type}",
+                    )
+
+                # Send DM
+                dm_success = True
+                dm_error = ""
+
+                try:
+                    await message.author.send(
+                        embed=warned_dm(self.bot, message, case),
+                        view=View().add_item(jump_button(message)),
+                    )
+                except discord.Forbidden:
+                    dm_success = False
+                    dm_error = "User has DMs disabled."
+                except discord.HTTPException:
+                    dm_success = False
+                    dm_error = "Failed to send DM."
+
+                embeds.append(
+                    warned(
+                        self.bot,
+                        message.author,
+                        self.bot.user,
+                        case,
+                        dm_success=dm_success,
+                        dm_error=dm_error,
+                    )
+                )
+            elif str(punishment.action_type) == "mute":
+                # Check if user is already timed out
+                if message.author.is_timed_out():
+                    continue
+
+                async with get_session() as session:
+                    manager = GuildModCaseManager(message.guild, session)
+
+                    case = await manager.create_case(
+                        type="mute",
+                        user_id=message.author.id,
+                        creator_user_id=self.bot.user.id,
+                        reason=f"Automod: {punishment.rule.rule_type}",
+                        duration=timedelta(seconds=punishment.rule.duration),
+                    )
+
+                # Time out user
+                try:
+                    await message.author.timeout(
+                        timedelta(seconds=punishment.rule.duration),
+                        reason=f"Automod: {punishment.rule.rule_type}",
+                    )
+                except discord.Forbidden:
+                    embeds.append(embed=forbidden(self.bot, self.bot.user))
+                except discord.HTTPException:
+                    embeds.append(embed=http_exception(self.bot, self.bot.user))
+
+                # Send DM
+                dm_success = True
+                dm_error = ""
+
+                try:
+                    await message.author.send(
+                        embed=muted_dm(self.bot, message, case),
+                        view=View().add_item(jump_button(message)),
+                    )
+                except discord.Forbidden:
+                    dm_success = False
+                    dm_error = "User has DMs disabled."
+                except discord.HTTPException:
+                    dm_success = False
+                    dm_error = "Failed to send DM."
+
+                embeds.append(
+                    muted(
+                        self.bot,
+                        message.author,
+                        self.bot.user,
+                        case,
+                        dm_success=dm_success,
+                        dm_error=dm_error,
+                    )
+                )
+            elif (
+                str(punishment.action_type) == "kick" and "ban" not in punishment_types
+            ):
+                async with get_session() as session:
+                    manager = GuildModCaseManager(message.guild, session)
+
+                    case = await manager.create_case(
+                        type="kick",
+                        user_id=message.author.id,
+                        creator_user_id=self.bot.user.id,
+                        reason=f"Automod: {punishment.rule.rule_type}",
+                    )
+
+                # Time out user
+                try:
+                    await message.author.kick(
+                        reason=f"Automod: {punishment.rule.rule_type}",
+                    )
+                except discord.Forbidden:
+                    embeds.append(embed=forbidden(self.bot, self.bot.user))
+                except discord.HTTPException:
+                    embeds.append(embed=http_exception(self.bot, self.bot.user))
+
+                # Send DM
+                dm_success = True
+                dm_error = ""
+
+                try:
+                    await message.author.send(
+                        embed=kicked_dm(self.bot, message, case),
+                        view=View().add_item(jump_button(message)),
+                    )
+                except discord.Forbidden:
+                    dm_success = False
+                    dm_error = "User has DMs disabled."
+                except discord.HTTPException:
+                    dm_success = False
+                    dm_error = "Failed to send DM."
+
+                embeds.append(
+                    kicked(
+                        self.bot,
+                        message.author,
+                        self.bot.user,
+                        case,
+                        dm_success=dm_success,
+                        dm_error=dm_error,
+                    )
+                )
+            elif str(punishment.action_type) == "ban":
+                async with get_session() as session:
+                    manager = GuildModCaseManager(message.guild, session)
+
+                    case = await manager.create_case(
+                        type="ban",
+                        user_id=message.author.id,
+                        creator_user_id=self.bot.user.id,
+                        reason=f"Automod: {punishment.rule.rule_type}",
+                    )
+
+                # Time out user
+                try:
+                    await message.author.ban(
+                        reason=f"Automod: {punishment.rule.rule_type}",
+                    )
+                except discord.Forbidden:
+                    embeds.append(embed=forbidden(self.bot, self.bot.user))
+                except discord.HTTPException:
+                    embeds.append(embed=http_exception(self.bot, self.bot.user))
+
+                # Send DM
+                dm_success = True
+                dm_error = ""
+
+                try:
+                    await message.author.send(
+                        embed=banned_dm(self.bot, message, case),
+                        view=View().add_item(jump_button(message)),
+                    )
+                except discord.Forbidden:
+                    dm_success = False
+                    dm_error = "User has DMs disabled."
+                except discord.HTTPException:
+                    dm_success = False
+                    dm_error = "Failed to send DM."
+
+                embeds.append(
+                    banned(
+                        self.bot,
+                        message.author,
+                        self.bot.user,
+                        case,
+                        dm_success=dm_success,
+                        dm_error=dm_error,
+                    )
+                )
 
 
 async def setup(bot: "TitaniumBot") -> None:
