@@ -28,7 +28,7 @@ class ServerSettingsCog(commands.Cog):
         )
 
     settings_group = app_commands.Group(
-        name="settings", description="Manage server settings."
+        name="settings", description="Manage server settings.", guild_only=True
     )
     prefix_group = app_commands.Group(
         name="prefix",
