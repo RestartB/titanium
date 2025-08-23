@@ -10,6 +10,43 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+def cases(
+    bot: "TitaniumBot",
+    cases: list[ModCase],
+    total: int,
+    current_page: int,
+    total_pages: int,
+    target: User,
+    user: User,
+) -> Embed:
+    embed = Embed(
+        title="Cases",
+        description=f"You have **{total} cases** against your user."
+        if target.id == user.id
+        else f"Found **{total} cases** for this user.",
+        color=Color.blue(),
+    )
+
+    embed.set_author(
+        name=target.name,
+        icon_url=target.display_avatar.url,
+    )
+
+    for case in cases:
+        embed.add_field(
+            name=f"`{case.id}` • {str(bot.error_emoji) if bool(case.resolved) else str(bot.success_emoji)} {'Closed' if case.resolved else 'Open'}",
+            value=f"-# Created <t:{int(case.time_created.timestamp())}:f>\n{case.description}",
+            inline=False,
+        )
+
+    embed.set_footer(
+        text=f"@{user.name}{f' • Page {current_page}/{total_pages}' if total_pages > 1 else ''}",
+        icon_url=user.display_avatar.url,
+    )
+
+    return embed
+
+
 def case_embed(
     bot: "TitaniumBot",
     case: ModCase,

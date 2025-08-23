@@ -1,8 +1,7 @@
-from datetime import timedelta
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING
 
 import discord
-from discord import app_commands
+from discord import Message, app_commands
 from discord.ext import commands
 from discord.ui import View
 
@@ -58,7 +57,10 @@ class ModerationBasicCog(commands.Cog):
         member: discord.Member,
         *,
         reason: str = "",
-    ) -> None:
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user:
+            return
+
         await defer(self.bot, ctx)
 
         # Check if member is in guild
@@ -123,7 +125,7 @@ class ModerationBasicCog(commands.Cog):
 
     @commands.hybrid_command(
         name="mute",
-        alias=["timeout"],
+        alias=["timeout"],  # pyright: ignore[reportCallIssue]
         description="Mute a member for a specified duration.",
     )
     @commands.guild_only()
@@ -138,10 +140,13 @@ class ModerationBasicCog(commands.Cog):
         self,
         ctx: commands.Context[commands.Bot],
         member: discord.Member,
-        duration: Annotated[timedelta, DurationConverter],
+        duration: str = "",
         *,
         reason: str = "",
-    ) -> None:
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user:
+            return
+
         await defer(self.bot, ctx)
 
         # Check if guild for type checking
@@ -163,18 +168,28 @@ class ModerationBasicCog(commands.Cog):
         self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
 
         try:
+            processed_reason = reason
+            processed_duration = None
+
             if ctx.interaction:
-                processed_reason = reason
-                processed_duration = duration
+                if duration:
+                    try:
+                        processed_duration = await DurationConverter().convert(
+                            ctx, duration
+                        )
+                    except commands.BadArgument:
+                        raise commands.BadArgument("Invalid duration format.")
             else:
-                # Process duration
-                try:
-                    processed_duration = await DurationConverter().convert(
-                        ctx, duration
-                    )
-                except commands.BadArgument:
-                    processed_duration = timedelta(seconds=0)
-                    processed_reason = duration + " " + reason if reason else duration
+                if duration:
+                    # Process duration
+                    try:
+                        processed_duration = await DurationConverter().convert(
+                            ctx, duration
+                        )
+                    except commands.BadArgument:
+                        processed_reason = (
+                            duration + " " + reason if reason else duration
+                        )
 
             # Check if user is already timed out
             if member.is_timed_out():
@@ -247,7 +262,10 @@ class ModerationBasicCog(commands.Cog):
         self,
         ctx: commands.Context[commands.Bot],
         member: discord.Member,
-    ) -> None:
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user:
+            return
+
         await defer(self.bot, ctx)
 
         # Check if guild for type checking
@@ -341,7 +359,10 @@ class ModerationBasicCog(commands.Cog):
         member: discord.Member,
         *,
         reason: str = "",
-    ) -> None:
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user:
+            return
+
         await defer(self.bot, ctx)
 
         # Check if guild for type checking
@@ -432,7 +453,10 @@ class ModerationBasicCog(commands.Cog):
         duration: str,
         *,
         reason: str = "",
-    ) -> None:
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user:
+            return
+
         await defer(self.bot, ctx)
 
         # Check if guild for type checking
@@ -450,18 +474,28 @@ class ModerationBasicCog(commands.Cog):
         self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
 
         try:
+            processed_reason = reason
+            processed_duration = None
+
             if ctx.interaction:
-                processed_reason = reason
-                processed_duration = duration
+                if duration:
+                    try:
+                        processed_duration = await DurationConverter().convert(
+                            ctx, duration
+                        )
+                    except commands.BadArgument:
+                        raise commands.BadArgument("Invalid duration format.")
             else:
-                # Process duration
-                try:
-                    processed_duration = await DurationConverter().convert(
-                        ctx, duration
-                    )
-                except commands.BadArgument:
-                    processed_duration = timedelta(seconds=0)
-                    processed_reason = duration + " " + reason if reason else duration
+                if duration:
+                    # Process duration
+                    try:
+                        processed_duration = await DurationConverter().convert(
+                            ctx, duration
+                        )
+                    except commands.BadArgument:
+                        processed_reason = (
+                            duration + " " + reason if reason else duration
+                        )
 
             # Check if user is already banned
             try:
@@ -538,7 +572,10 @@ class ModerationBasicCog(commands.Cog):
         self,
         ctx: commands.Context[commands.Bot],
         user: discord.User,
-    ) -> None:
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user:
+            return
+
         await defer(self.bot, ctx)
 
         # Check if guild for type checking

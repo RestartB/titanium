@@ -210,7 +210,29 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             color=discord.Color.red(),
         )
         await ctx.reply(embed=embed)
-        await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
+
+        if not ctx.interaction:
+            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
+    elif isinstance(error, commands.errors.MissingPermissions):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Missing Permissions",
+            description=error,
+            color=discord.Color.red(),
+        )
+        await ctx.reply(embed=embed)
+
+        if not ctx.interaction:
+            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
+    elif isinstance(error, commands.errors.NoPrivateMessage):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Server Only Command",
+            description="This command can only be used in servers.",
+            color=discord.Color.red(),
+        )
+        await ctx.reply(embed=embed)
+
+        if not ctx.interaction:
+            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     else:
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Error",
@@ -218,7 +240,9 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             color=discord.Color.red(),
         )
         await ctx.reply(embed=embed)
-        await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
+
+        if not ctx.interaction:
+            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
 
         logging.error(f"Error in command {ctx.command}: {error}")
         logging.error(
@@ -236,16 +260,18 @@ async def on_app_command_error(
             description="The command does not exist.",
             color=discord.Color.red(),
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
     else:
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Error",
             description="An error occurred while executing the command. Please try again later.",
             color=discord.Color.red(),
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.edit_original_response(embed=embed, view=None)
 
-        logging.error(f"Error in command {interaction.command.name}: {error}")
+        logging.error(
+            f"Error in command {interaction.command.name if interaction.command else 'unknown'}: {error}"
+        )
         logging.error(
             "".join(traceback.format_exception(type(error), error, error.__traceback__))
         )

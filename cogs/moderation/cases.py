@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from discord import Color, Embed, app_commands
+from discord import Color, Embed, Message, User, app_commands
 from discord.ext import commands
 
 from lib.cases.case_manager import CaseNotFoundException, GuildModCaseManager
@@ -18,6 +18,35 @@ class ModerationCasesCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
+    @commands.hybrid_command(
+        name="cases", aliases=["warns"], description="View your moderation cases."
+    )
+    @commands.guild_only()
+    @app_commands.describe(
+        user="The user to search for, you can only provide this if you have the 'Manage Server' permission."
+    )
+    async def cases(
+        self, ctx: commands.Context[commands.Bot], user: User | None = None
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user or isinstance(ctx.author, User):
+            return
+
+        await defer(self.bot, ctx)
+
+        if user:
+            if ctx.channel.permissions_for(ctx.author).manage_guild:
+                pass
+            else:
+                return await ctx.reply(
+                    embed=Embed(
+                        title=f"{str(self.bot.error_emoji)} Permission Denied",
+                        description="You do not have permission to view cases for other users. Please ensure you have the 'Manage Server' permission.",
+                        color=Color.red(),
+                    )
+                )
+        else:
+            pass
+
     @commands.hybrid_group(
         name="case", fallback="view", description="View and manage moderation cases."
     )
@@ -27,7 +56,10 @@ class ModerationCasesCog(commands.Cog):
     @app_commands.describe(case_id="The case ID to search for.")
     async def case_group(
         self, ctx: commands.Context[commands.Bot], case_id: int
-    ) -> None:
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user:
+            return
+
         await defer(self.bot, ctx)
 
         try:
@@ -61,7 +93,10 @@ class ModerationCasesCog(commands.Cog):
     @app_commands.describe(case_id="The case ID to delete.")
     async def view_case(
         self, ctx: commands.Context[commands.Bot], case_id: int
-    ) -> None:
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user:
+            return
+
         await defer(self.bot, ctx)
 
         try:

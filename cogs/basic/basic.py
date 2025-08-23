@@ -13,6 +13,8 @@ class BasicCommandsCog(commands.Cog):
 
     @commands.hybrid_command(name="ping", description="Get the bot's ping.")
     async def ping(self, ctx: commands.Context[commands.Bot]) -> None:
+        await ctx.defer()
+
         await ctx.reply(
             embed=Embed(
                 title="Pong!",
@@ -24,7 +26,13 @@ class BasicCommandsCog(commands.Cog):
     @commands.hybrid_command(
         name="prefixes", description="Get the bot's command prefixes."
     )
+    @commands.guild_only()
     async def prefixes(self, ctx: commands.Context[commands.Bot]) -> None:
+        if not ctx.guild or not self.bot.user:
+            return
+
+        await ctx.defer()
+
         prefix_str = ""
         if self.bot.server_prefixes.get(ctx.guild.id):
             for i, prefix in enumerate(self.bot.server_prefixes[ctx.guild.id].prefixes):

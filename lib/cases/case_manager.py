@@ -65,7 +65,7 @@ class GuildModCaseManager:
         user_id: int,
         creator_user_id: int,
         reason: str,
-        duration: Annotated[timedelta, DurationConverter] = timedelta(0),
+        duration: Annotated[timedelta, DurationConverter] | None = None,
     ) -> ModCase:
         case = ModCase(
             guild_id=self.guild.id,
@@ -76,11 +76,11 @@ class GuildModCaseManager:
             proof_channel_id=None,
             proof_text=None,
             time_created=datetime.now(),
-            time_expires=(
-                datetime.now() + duration if duration != timedelta(0) else None
-            ),
             description=reason,
         )
+
+        if duration:
+            case.time_expires = datetime.now() + duration
 
         self.session.add(case)
         await self.session.commit()

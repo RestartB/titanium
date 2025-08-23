@@ -20,13 +20,13 @@ class ConfirmView(View):
         self.confirm.emoji = bot.success_emoji
 
     @button(label="Confirm", style=ButtonStyle.green)
-    async def confirm(self, button: Button, interaction: Interaction):
+    async def confirm(self, interaction: Interaction, button: Button):
         self.value = True
         self.interaction = interaction
         self.stop()
 
     @button(label="Cancel", style=ButtonStyle.gray)
-    async def cancel(self, button: Button, interaction: Interaction):
+    async def cancel(self, interaction: Interaction, button: Button):
         self.value = False
         self.interaction = interaction
         self.stop()

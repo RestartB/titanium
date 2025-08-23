@@ -51,11 +51,22 @@ class ServerSettingsCog(commands.Cog):
         description="View an overview of this server's settings.",
     )
     async def overview(self, interaction: Interaction) -> None:
+        if not interaction.guild or not interaction.guild_id or not self.bot.user:
+            return
+
         await interaction.response.defer(ephemeral=True)
 
-        server_settings: ServerSettings = self.bot.server_configs.get(
-            interaction.guild_id
-        )
+        async with get_session() as session:
+            server_settings: ServerSettings = await session.get(
+                ServerSettings, interaction.guild_id
+            )
+
+            if not server_settings:
+                server_settings = ServerSettings(guild_id=interaction.guild_id)
+                session.add(server_settings)
+                await session.commit()
+
+            self.bot.server_configs[interaction.guild_id] = server_settings
 
         embed = Embed(
             title="Settings",
@@ -99,9 +110,13 @@ class ServerSettingsCog(commands.Cog):
         await interaction.followup.send(embed=embed, ephemeral=True)
 
     @prefix_group.command(name="add", description="Add a command prefix.")
+    @app_commands.guild_only()
     async def add_prefix(
         self, interaction: Interaction, prefix: app_commands.Range[str, 1, 5]
     ) -> None:
+        if not interaction.guild or not interaction.guild_id or not self.bot.user:
+            return
+
         await interaction.response.defer(ephemeral=True)
 
         if len(prefix) > 5:
@@ -152,6 +167,9 @@ class ServerSettingsCog(commands.Cog):
     async def prefix_autocomplete(
         self, interaction: Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
+        if interaction.guild_id is None:
+            return []
+
         prefixes = self.bot.server_prefixes.get(interaction.guild_id)
         if prefixes and prefixes.prefixes is not None:
             return [
@@ -165,10 +183,14 @@ class ServerSettingsCog(commands.Cog):
         name="remove",
         description="Remove a command prefix.",
     )
+    @app_commands.guild_only()
     @app_commands.autocomplete(prefix=prefix_autocomplete)
     async def remove_prefix(
         self, interaction: Interaction, prefix: app_commands.Range[str, 1, 5]
     ) -> None:
+        if not interaction.guild or not interaction.guild_id or not self.bot.user:
+            return
+
         await interaction.response.defer(ephemeral=True)
 
         if len(prefix) > 5:
@@ -217,7 +239,11 @@ class ServerSettingsCog(commands.Cog):
         )
 
     @mod_group.command(name="enable", description="Enable the moderation module.")
+    @app_commands.guild_only()
     async def enable_moderation(self, interaction: Interaction) -> None:
+        if not interaction.guild or not interaction.guild_id or not self.bot.user:
+            return
+
         await interaction.response.defer(ephemeral=True)
 
         async with get_session() as session:
@@ -253,7 +279,11 @@ class ServerSettingsCog(commands.Cog):
         )
 
     @mod_group.command(name="disable", description="Disable the moderation module.")
+    @app_commands.guild_only()
     async def disable_moderation(self, interaction: Interaction) -> None:
+        if not interaction.guild or not interaction.guild_id or not self.bot.user:
+            return
+
         await interaction.response.defer(ephemeral=True)
 
         async with get_session() as session:

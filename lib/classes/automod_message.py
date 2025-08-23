@@ -1,6 +1,8 @@
+from dataclasses import dataclass
 from datetime import datetime
 
 
+@dataclass
 class AutomodMessage:
     user_id: int
     message_id: int

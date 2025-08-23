@@ -1,11 +1,11 @@
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 from dotenv import load_dotenv
 from sqlalchemy import (
     BigInteger,
     Boolean,
-    Column,
     DateTime,
     ForeignKey,
     Integer,
@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import Mapped, MappedColumn, declarative_base, relationship
 
 Base = declarative_base()
 
@@ -22,19 +22,19 @@ Base = declarative_base()
 # -- Tables --
 class ModCase(Base):
     __tablename__ = "mod_cases"
-    id = Column(BigInteger, primary_key=True)
-    type = Column(String(length=32))
-    guild_id = Column(BigInteger)
-    user_id = Column(BigInteger)
-    creator_user_id = Column(BigInteger)
-    proof_msg_id = Column(BigInteger)
-    proof_channel_id = Column(BigInteger)
-    proof_text = Column(String)
-    time_created = Column(DateTime)
-    time_updated = Column(DateTime, nullable=True)
-    time_expires = Column(DateTime, nullable=True)
-    description = Column(String(length=512), nullable=True)
-    resolved = Column(Boolean, default=False)
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    type: Mapped[str] = MappedColumn(String(length=32))
+    guild_id: Mapped[int] = MappedColumn(BigInteger)
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    creator_user_id: Mapped[int] = MappedColumn(BigInteger)
+    proof_msg_id: Mapped[int] = MappedColumn(BigInteger)
+    proof_channel_id: Mapped[int] = MappedColumn(BigInteger)
+    proof_text: Mapped[str] = MappedColumn(String)
+    time_created: Mapped[datetime] = MappedColumn(DateTime)
+    time_updated: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
+    time_expires: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
+    description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+    resolved: Mapped[bool] = MappedColumn(Boolean, default=False)
     comments = relationship(
         "ModCaseComment", back_populates="case", cascade="all, delete-orphan"
     )
@@ -45,20 +45,20 @@ class ModCase(Base):
 
 class ModCaseComment(Base):
     __tablename__ = "mod_case_comments"
-    id = Column(BigInteger, primary_key=True)
-    guild_id = Column(BigInteger)
-    case_id = Column(BigInteger, ForeignKey("mod_cases.id"))
-    user_id = Column(BigInteger)
-    comment = Column(String(length=512))
-    time_created = Column(DateTime)
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    guild_id: Mapped[int] = MappedColumn(BigInteger)
+    case_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("mod_cases.id"))
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    comment: Mapped[str] = MappedColumn(String(length=512))
+    time_created: Mapped[datetime] = MappedColumn(DateTime)
     case = relationship("ModCase", back_populates="comments")
 
 
 class ServerSettings(Base):
     __tablename__ = "server_settings"
-    guild_id = Column(BigInteger, primary_key=True)
-    moderation_enabled = Column(Boolean, default=True)
-    automod_enabled = Column(Boolean, default=True)
+    guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    moderation_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
+    automod_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
     automod_settings = relationship(
         "ServerAutomodSettings", cascade="all, delete-orphan"
     )
@@ -66,17 +66,17 @@ class ServerSettings(Base):
 
 class ServerAutomodSettings(Base):
     __tablename__ = "server_automod_settings"
-    guild_id = Column(
+    guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("server_settings.guild_id"), primary_key=True
     )
-    badword_detection = Column(Boolean, default=False)
+    badword_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     badword_detection_rules = relationship(
         "AutomodRule",
         primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='badword_detection')",
         back_populates="server",
         cascade="all, delete-orphan",
     )
-    spam_detection = Column(Boolean, default=False)
+    spam_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     spam_detection_rules = relationship(
         "AutomodRule",
         primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='spam_detection')",
@@ -84,7 +84,7 @@ class ServerAutomodSettings(Base):
         cascade="all, delete-orphan",
         overlaps="badword_detection_rules",
     )
-    malicious_link_detection = Column(Boolean, default=False)
+    malicious_link_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     malicious_link_rules = relationship(
         "AutomodRule",
         primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='malicious_link')",
@@ -92,7 +92,7 @@ class ServerAutomodSettings(Base):
         cascade="all, delete-orphan",
         overlaps="badword_detection_rules,spam_detection_rules",
     )
-    phishing_link_detection = Column(Boolean, default=False)
+    phishing_link_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     phishing_link_rules = relationship(
         "AutomodRule",
         primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='phishing_link')",
@@ -104,15 +104,19 @@ class ServerAutomodSettings(Base):
 
 class AutomodRule(Base):
     __tablename__ = "automod_rules"
-    id = Column(BigInteger, primary_key=True)
-    guild_id = Column(BigInteger, ForeignKey("server_automod_settings.guild_id"))
-    user_id = Column(BigInteger)
-    rule_type = Column(String(length=32))
-    antispam_type = Column(String(length=32), nullable=True)
-    words = Column(ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]"))
-    occurrences = Column(Integer)
-    threshold = Column(Integer)
-    duration = Column(Integer)
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("server_automod_settings.guild_id")
+    )
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    rule_type: Mapped[str] = MappedColumn(String(length=32))
+    antispam_type: Mapped[str] = MappedColumn(String(length=32), nullable=True)
+    words: Mapped[list[str]] = MappedColumn(
+        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
+    )
+    occurrences: Mapped[int] = MappedColumn(Integer)
+    threshold: Mapped[int] = MappedColumn(Integer)
+    duration: Mapped[int] = MappedColumn(Integer)
     actions = relationship(
         "AutomodAction",
         back_populates="rule",
@@ -127,34 +131,34 @@ class AutomodRule(Base):
 
 class AutomodAction(Base):
     __tablename__ = "automod_actions"
-    id = Column(BigInteger, primary_key=True)
-    rule_id = Column(BigInteger, ForeignKey("automod_rules.id"))
-    rule_type = Column(String(length=32))
-    action_type = Column(String(length=32))
-    duration = Column(BigInteger, nullable=True)
-    reason = Column(String(length=512), nullable=True)
-    order = Column(Integer, default=0)
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    rule_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("automod_rules.id"))
+    rule_type: Mapped[str] = MappedColumn(String(length=32))
+    action_type: Mapped[str] = MappedColumn(String(length=32))
+    duration: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    reason: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+    order: Mapped[int] = MappedColumn(Integer, default=0)
     rule = relationship("AutomodRule", back_populates="actions")
 
 
 class ServerLimits(Base):
     __tablename__ = "server_limits"
-    id = Column(Integer, primary_key=True)
-    BadWordList = Column(Integer, default=10)
-    BadWordListSize = Column(Integer, default=1500)
-    MessageSpamRules = Column(Integer, default=5)
-    MentionSpamRules = Column(Integer, default=5)
-    WordSpamRules = Column(Integer, default=5)
-    NewLineSpamRules = Column(Integer, default=5)
-    LinkSpamRules = Column(Integer, default=5)
-    AttachmentSpamRules = Column(Integer, default=5)
-    EmojiSpamRules = Column(Integer, default=5)
+    id: Mapped[int] = MappedColumn(Integer, primary_key=True)
+    BadWordList: Mapped[int] = MappedColumn(Integer, default=10)
+    BadWordListSize: Mapped[int] = MappedColumn(Integer, default=1500)
+    MessageSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    MentionSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    WordSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    NewLineSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    LinkSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    AttachmentSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    EmojiSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
 
 
 class ServerPrefixes(Base):
     __tablename__ = "server_prefixes"
-    guild_id = Column(BigInteger, primary_key=True)
-    prefixes = Column(
+    guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    prefixes: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=5)),
         default=["t!"],
         server_default=text("ARRAY['t!']::varchar[]"),
@@ -164,16 +168,18 @@ class ServerPrefixes(Base):
 
 class ScheduledTask(Base):
     __tablename__ = "scheduled_tasks"
-    id = Column(BigInteger, primary_key=True)
-    type = Column(String)
-    guild_id = Column(BigInteger)
-    user_id = Column(BigInteger)
-    channel_id = Column(BigInteger)
-    role_id = Column(BigInteger)
-    message_id = Column(BigInteger)
-    case_id = Column(BigInteger, ForeignKey("mod_cases.id"), nullable=True)
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    type: Mapped[str] = MappedColumn(String)
+    guild_id: Mapped[int] = MappedColumn(BigInteger)
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    channel_id: Mapped[int] = MappedColumn(BigInteger)
+    role_id: Mapped[int] = MappedColumn(BigInteger)
+    message_id: Mapped[int] = MappedColumn(BigInteger)
+    case_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("mod_cases.id"), nullable=True
+    )
     case = relationship("ModCase", back_populates="scheduled_tasks", uselist=False)
-    time_scheduled = Column(DateTime)
+    time_scheduled: Mapped[datetime] = MappedColumn(DateTime)
 
 
 # -- Engine --
