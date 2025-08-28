@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from discord import ButtonStyle, Color, Embed
+from discord import ButtonStyle, Color, Embed, Message
 from discord.ext import commands
 from discord.ui import Button
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def warned_dm(
-    bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
+    bot: "TitaniumBot", ctx: commands.Context["TitaniumBot"] | Message, case: ModCase
 ) -> Embed:
     return Embed(
         title=f"{str(bot.warn_emoji)} You got warned • {case.id}",
@@ -22,7 +22,7 @@ def warned_dm(
 
 
 def muted_dm(
-    bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
+    bot: "TitaniumBot", ctx: commands.Context["TitaniumBot"] | Message, case: ModCase
 ) -> Embed:
     return Embed(
         title=f"{str(bot.warn_emoji)} You got muted • {case.id}",
@@ -32,7 +32,7 @@ def muted_dm(
 
 
 def unmuted_dm(
-    bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
+    bot: "TitaniumBot", ctx: commands.Context["TitaniumBot"] | Message, case: ModCase
 ) -> Embed:
     return Embed(
         title=f"{str(bot.success_emoji)} You got unmuted • {case.id}",
@@ -42,7 +42,7 @@ def unmuted_dm(
 
 
 def kicked_dm(
-    bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
+    bot: "TitaniumBot", ctx: commands.Context["TitaniumBot"] | Message, case: ModCase
 ) -> Embed:
     return Embed(
         title=f"{str(bot.warn_emoji)} You got kicked • {case.id}",
@@ -52,7 +52,7 @@ def kicked_dm(
 
 
 def banned_dm(
-    bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
+    bot: "TitaniumBot", ctx: commands.Context["TitaniumBot"] | Message, case: ModCase
 ) -> Embed:
     return Embed(
         title=f"{str(bot.warn_emoji)} You got banned • {case.id}",
@@ -62,7 +62,7 @@ def banned_dm(
 
 
 def unbanned_dm(
-    bot: "TitaniumBot", ctx: commands.Context[commands.Bot], case: ModCase
+    bot: "TitaniumBot", ctx: commands.Context["TitaniumBot"] | Message, case: ModCase
 ) -> Embed:
     return Embed(
         title=f"{str(bot.success_emoji)} You got unbanned • {case.id}",
@@ -71,7 +71,7 @@ def unbanned_dm(
     )
 
 
-def jump_button(ctx: commands.Context[commands.Bot]) -> Button:
+def jump_button(ctx: commands.Context["TitaniumBot"] | Message) -> Button:
     if ctx.guild is None:
         return Button(
             style=ButtonStyle.gray,

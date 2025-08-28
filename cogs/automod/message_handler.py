@@ -35,6 +35,9 @@ class AutomodMonitorCog(commands.Cog):
             not message.guild
             or message.guild.id not in self.bot.server_configs
             or message.guild.id not in self.bot.server_automod_configs
+            or not message.author
+            or not isinstance(message.author, discord.Member)
+            or not self.bot.user
         ):
             return
 
@@ -257,9 +260,9 @@ class AutomodMonitorCog(commands.Cog):
                         reason=f"Automod: {punishment.rule.rule_type}",
                     )
                 except discord.Forbidden:
-                    embeds.append(embed=forbidden(self.bot, self.bot.user))
+                    embeds.append(forbidden(self.bot, self.bot.user))
                 except discord.HTTPException:
-                    embeds.append(embed=http_exception(self.bot, self.bot.user))
+                    embeds.append(http_exception(self.bot, self.bot.user))
 
                 # Send DM
                 dm_success = True
@@ -306,9 +309,9 @@ class AutomodMonitorCog(commands.Cog):
                         reason=f"Automod: {punishment.rule.rule_type}",
                     )
                 except discord.Forbidden:
-                    embeds.append(embed=forbidden(self.bot, self.bot.user))
+                    embeds.append(forbidden(self.bot, self.bot.user))
                 except discord.HTTPException:
-                    embeds.append(embed=http_exception(self.bot, self.bot.user))
+                    embeds.append(http_exception(self.bot, self.bot.user))
 
                 # Send DM
                 dm_success = True
@@ -353,9 +356,9 @@ class AutomodMonitorCog(commands.Cog):
                         reason=f"Automod: {punishment.rule.rule_type}",
                     )
                 except discord.Forbidden:
-                    embeds.append(embed=forbidden(self.bot, self.bot.user))
+                    embeds.append(forbidden(self.bot, self.bot.user))
                 except discord.HTTPException:
-                    embeds.append(embed=http_exception(self.bot, self.bot.user))
+                    embeds.append(http_exception(self.bot, self.bot.user))
 
                 # Send DM
                 dm_success = True

@@ -53,7 +53,7 @@ class ModerationBasicCog(commands.Cog):
     )
     async def warn(
         self,
-        ctx: commands.Context[commands.Bot],
+        ctx: commands.Context["TitaniumBot"],
         member: discord.Member,
         *,
         reason: str = "",
@@ -138,7 +138,7 @@ class ModerationBasicCog(commands.Cog):
     )
     async def mute(
         self,
-        ctx: commands.Context[commands.Bot],
+        ctx: commands.Context["TitaniumBot"],
         member: discord.Member,
         duration: str = "",
         *,
@@ -260,7 +260,7 @@ class ModerationBasicCog(commands.Cog):
     @app_commands.describe(member="The member to unmute.")
     async def unmute(
         self,
-        ctx: commands.Context[commands.Bot],
+        ctx: commands.Context["TitaniumBot"],
         member: discord.Member,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
@@ -355,7 +355,7 @@ class ModerationBasicCog(commands.Cog):
     )
     async def kick(
         self,
-        ctx: commands.Context[commands.Bot],
+        ctx: commands.Context["TitaniumBot"],
         member: discord.Member,
         *,
         reason: str = "",
@@ -448,7 +448,7 @@ class ModerationBasicCog(commands.Cog):
     )
     async def ban(
         self,
-        ctx: commands.Context[commands.Bot],
+        ctx: commands.Context["TitaniumBot"],
         user: discord.User,
         duration: str,
         *,
@@ -570,7 +570,7 @@ class ModerationBasicCog(commands.Cog):
     @app_commands.describe(user="The user to unban.")
     async def unban(
         self,
-        ctx: commands.Context[commands.Bot],
+        ctx: commands.Context["TitaniumBot"],
         user: discord.User,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:

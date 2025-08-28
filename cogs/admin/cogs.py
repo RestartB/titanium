@@ -8,7 +8,7 @@ from discord.ext import commands
 from lib.hybrid_adapters import defer, stop_loading
 
 if TYPE_CHECKING:
-    from ...main import TitaniumBot
+    from main import TitaniumBot
 
 
 class AdminCogsCog(commands.Cog):
@@ -17,14 +17,14 @@ class AdminCogsCog(commands.Cog):
 
     @commands.group(name="admin")
     @commands.is_owner()
-    async def admin_group(self, ctx: commands.Context[commands.Bot]) -> None:
+    async def admin_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
         pass
 
     @admin_group.command(name="sync", hidden=True)
     @commands.is_owner()
     async def warn(
         self,
-        ctx: commands.Context[commands.Bot],
+        ctx: commands.Context["TitaniumBot"],
     ) -> None:
         await defer(self.bot, ctx, ephemeral=True)
 
@@ -61,7 +61,7 @@ class AdminCogsCog(commands.Cog):
 
     @admin_group.command(name="reload", hidden=True)
     @commands.is_owner()
-    async def reload_cogs(self, ctx: commands.Context[commands.Bot], cog: str) -> None:
+    async def reload_cogs(self, ctx: commands.Context["TitaniumBot"], cog: str) -> None:
         await defer(self.bot, ctx, ephemeral=True)
 
         try:

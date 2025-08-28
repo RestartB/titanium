@@ -26,7 +26,7 @@ class ModerationCasesCog(commands.Cog):
         user="The user to search for, you can only provide this if you have the 'Manage Server' permission."
     )
     async def cases(
-        self, ctx: commands.Context[commands.Bot], user: User | None = None
+        self, ctx: commands.Context["TitaniumBot"], user: User | None = None
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or isinstance(ctx.author, User):
             return
@@ -55,7 +55,7 @@ class ModerationCasesCog(commands.Cog):
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(case_id="The case ID to search for.")
     async def case_group(
-        self, ctx: commands.Context[commands.Bot], case_id: int
+        self, ctx: commands.Context["TitaniumBot"], case_id: int
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
@@ -92,7 +92,7 @@ class ModerationCasesCog(commands.Cog):
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(case_id="The case ID to delete.")
     async def view_case(
-        self, ctx: commands.Context[commands.Bot], case_id: int
+        self, ctx: commands.Context["TitaniumBot"], case_id: int
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return

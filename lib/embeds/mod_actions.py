@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from discord import Color, Embed, Member, User
+from discord import ClientUser, Color, Embed, Member, User
 
 from ..duration import duration_to_timestring
 from ..sql import ModCase
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 def warned(
     bot: "TitaniumBot",
     user: Member | User,
-    creator: Member | User,
+    creator: Member | User | ClientUser,
     case: ModCase,
     dm_success: bool,
     dm_error: str,
@@ -38,7 +38,7 @@ def warned(
 def muted(
     bot: "TitaniumBot",
     user: Member | User,
-    creator: Member | User,
+    creator: Member | User | ClientUser,
     case: ModCase,
     dm_success: bool,
     dm_error: str,
@@ -63,7 +63,7 @@ def muted(
 
 def already_muted(
     bot: "TitaniumBot",
-    user: Member | User,
+    user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
@@ -76,7 +76,7 @@ def already_muted(
 def unmuted(
     bot: "TitaniumBot",
     user: Member | User,
-    creator: Member | User,
+    creator: Member | User | ClientUser,
     case: ModCase,
     dm_success: bool,
     dm_error: str,
@@ -101,7 +101,7 @@ def unmuted(
 
 def already_unmuted(
     bot: "TitaniumBot",
-    user: Member | User,
+    user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
@@ -114,7 +114,7 @@ def already_unmuted(
 def kicked(
     bot: "TitaniumBot",
     user: Member | User,
-    creator: Member | User,
+    creator: Member | User | ClientUser,
     case: ModCase,
     dm_success: bool,
     dm_error: str,
@@ -140,7 +140,7 @@ def kicked(
 def banned(
     bot: "TitaniumBot",
     user: Member | User,
-    creator: Member | User,
+    creator: Member | User | ClientUser,
     case: ModCase,
     dm_success: bool,
     dm_error: str,
@@ -166,7 +166,7 @@ def banned(
 def unbanned(
     bot: "TitaniumBot",
     user: Member | User,
-    creator: Member | User,
+    creator: Member | User | ClientUser,
     case: ModCase,
     dm_success: bool,
     dm_error: str,
@@ -193,7 +193,7 @@ def unbanned(
 def done(
     bot: "TitaniumBot",
     user: Member | User,
-    creator: Member | User,
+    creator: Member | User | ClientUser,
     dm_success: bool,
     dm_error: str,
 ) -> Embed:
@@ -216,7 +216,7 @@ def done(
 
 def already_banned(
     bot: "TitaniumBot",
-    user: Member | User,
+    user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
@@ -226,7 +226,7 @@ def already_banned(
     return embed
 
 
-def already_punishing(bot: "TitaniumBot", user: Member | User) -> Embed:
+def already_punishing(bot: "TitaniumBot", user: Member | User | ClientUser) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"{user.mention} is already being punished. Please wait.",
@@ -235,7 +235,7 @@ def already_punishing(bot: "TitaniumBot", user: Member | User) -> Embed:
     return embed
 
 
-def forbidden(bot: "TitaniumBot", user: Member | User) -> Embed:
+def forbidden(bot: "TitaniumBot", user: Member | User | ClientUser) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"Titanium does not have permission to perform this action on {user.mention}.",
@@ -244,7 +244,7 @@ def forbidden(bot: "TitaniumBot", user: Member | User) -> Embed:
     return embed
 
 
-def http_exception(bot: "TitaniumBot", user: Member | User) -> Embed:
+def http_exception(bot: "TitaniumBot", user: Member | User | ClientUser) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"An error occurred while trying to perform this action on {user.mention}.",

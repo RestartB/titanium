@@ -2,6 +2,7 @@
 # Made by Restart, 2025
 
 # Imports
+import datetime
 import logging
 import logging.handlers
 import os
@@ -13,16 +14,16 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from sqlalchemy import select
 
-from lib.classes.automod_message import AutomodMessage
-from lib.sql import (
+load_dotenv()
+
+from lib.classes.automod_message import AutomodMessage  # noqa: E402
+from lib.sql import (  # noqa: E402
     ServerAutomodSettings,
     ServerPrefixes,
     ServerSettings,
     get_session,
     init_db,
 )
-
-load_dotenv()
 
 # Current Running Path
 path = os.getcwd()
@@ -87,6 +88,8 @@ class TitaniumBot(commands.Bot):
     user_installs = 0
     guild_installs = 0
     guild_member_count = 0
+
+    connect_time: datetime.datetime
 
     server_configs: dict[int, ServerSettings] = {}
     server_prefixes: dict[int, ServerPrefixes] = {}
@@ -179,6 +182,18 @@ class TitaniumBot(commands.Bot):
                     logging.debug(f"[INIT] Loaded normal cog: {filename}")
         logging.info("[INIT] Loading cogs complete.\n")
 
+    async def on_connect(self):
+        self.connected = True
+
+    async def on_resumed(self):
+        self.connected = True
+        self.last_resume = datetime.datetime.now()
+
+    async def on_disconnect(self):
+        if self.connected:
+            self.connected = False
+            self.last_disconnect = datetime.datetime.now()
+
 
 async def get_prefix(bot: TitaniumBot, message: discord.Message):
     base = []
@@ -197,6 +212,11 @@ async def get_prefix(bot: TitaniumBot, message: discord.Message):
 
 
 bot = TitaniumBot(intents=intents, command_prefix=get_prefix)
+
+
+@bot.event
+async def on_ready():
+    logging.info(f"[INIT] Bot is ready and connected as {bot.user}.\n")
 
 
 @bot.event
@@ -285,6 +305,7 @@ if __name__ == "__main__":
         if token is None:
             raise discord.LoginFailure("No bot token provided in .env file.")
 
+        bot.connect_time = datetime.datetime.now()
         bot.run(token, log_handler=None)
     except discord.LoginFailure:
         logging.error("[INIT] Invalid bot token provided. Please check your .env file.")

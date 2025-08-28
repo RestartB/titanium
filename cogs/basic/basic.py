@@ -12,7 +12,7 @@ class BasicCommandsCog(commands.Cog):
         self.bot = bot
 
     @commands.hybrid_command(name="ping", description="Get the bot's ping.")
-    async def ping(self, ctx: commands.Context[commands.Bot]) -> None:
+    async def ping(self, ctx: commands.Context["TitaniumBot"]) -> None:
         await ctx.defer()
 
         await ctx.reply(
@@ -23,11 +23,23 @@ class BasicCommandsCog(commands.Cog):
             )
         )
 
+    @commands.hybrid_command(name="info", description="Get information about the bot.")
+    async def info(self, ctx: commands.Context["TitaniumBot"]) -> None:
+        await ctx.defer()
+
+        await ctx.reply(
+            embed=Embed(
+                title="Titanium",
+                description="This is a development version of Titanium. For more information, please go to https://github.com/RestartB/titanium/tree/v2.",
+                color=Color.light_gray(),
+            )
+        )
+
     @commands.hybrid_command(
         name="prefixes", description="Get the bot's command prefixes."
     )
     @commands.guild_only()
-    async def prefixes(self, ctx: commands.Context[commands.Bot]) -> None:
+    async def prefixes(self, ctx: commands.Context["TitaniumBot"]) -> None:
         if not ctx.guild or not self.bot.user:
             return
 
