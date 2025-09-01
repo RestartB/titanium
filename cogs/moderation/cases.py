@@ -6,7 +6,7 @@ from discord.ext import commands
 from lib.cases.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.embeds.cases import case_deleted, case_embed, case_not_found
 from lib.embeds.general import cancelled
-from lib.hybrid_adapters import defer, stop_loading
+from lib.helpers.hybrid_adapters import defer, stop_loading
 from lib.sql import get_session
 from lib.views.confirm import ConfirmView
 

@@ -8,17 +8,23 @@ import logging.handlers
 import os
 import traceback
 from glob import glob
+from typing import Optional
 
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import selectinload
+
+from lib.classes.automod_message import AutomodMessage
 
 load_dotenv()
 
-from lib.classes.automod_message import AutomodMessage  # noqa: E402
 from lib.sql import (  # noqa: E402
+    AutomodRule,
     ServerAutomodSettings,
+    ServerLimits,
     ServerPrefixes,
     ServerSettings,
     get_session,
@@ -90,10 +96,11 @@ class TitaniumBot(commands.Bot):
     guild_member_count = 0
 
     connect_time: datetime.datetime
+    last_disconnect: Optional[datetime.datetime]
+    last_resume: Optional[datetime.datetime]
 
     server_configs: dict[int, ServerSettings] = {}
     server_prefixes: dict[int, ServerPrefixes] = {}
-    server_automod_configs: dict[int, ServerAutomodSettings] = {}
     automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
 
     punishing: dict[int, list[int]] = {}
@@ -101,37 +108,113 @@ class TitaniumBot(commands.Bot):
     malicious_links: list[str] = []
     phishing_links: list[str] = []
 
+    async def refresh_all_caches(self) -> None:
+        logging.info("[CACHE] Refreshing server config caches...")
+
+        async with get_session() as session:
+            # Settings
+            stmt = select(ServerSettings).options(
+                selectinload(ServerSettings.automod_settings).options(
+                    selectinload(ServerAutomodSettings.badword_detection_rules).options(
+                        selectinload(AutomodRule.actions)
+                    ),
+                    selectinload(ServerAutomodSettings.spam_detection_rules).options(
+                        selectinload(AutomodRule.actions)
+                    ),
+                    selectinload(ServerAutomodSettings.malicious_link_rules).options(
+                        selectinload(AutomodRule.actions)
+                    ),
+                    selectinload(ServerAutomodSettings.phishing_link_rules).options(
+                        selectinload(AutomodRule.actions)
+                    ),
+                )
+            )
+            result = await session.execute(stmt)
+            configs = result.scalars().all()
+            self.server_configs.clear()
+
+            for config in configs:
+                self.server_configs[config.guild_id] = config
+
+            # Server prefixes
+            stmt = select(ServerPrefixes)
+            result = await session.execute(stmt)
+            prefix_configs = result.scalars().all()
+            self.server_prefixes.clear()
+
+            for config in prefix_configs:
+                self.server_prefixes[config.guild_id] = config
+
+        logging.info("[CACHE] Server configs refreshed.")
+
+    async def refresh_guild_config_cache(self, guild_id: int) -> None:
+        logging.info(f"[CACHE] Refreshing server config cache for guild {guild_id}...")
+        async with get_session() as session:
+            # Settings
+            stmt = (
+                select(ServerSettings)
+                .where(ServerSettings.guild_id == guild_id)
+                .options(
+                    selectinload(ServerSettings.automod_settings).options(
+                        selectinload(
+                            ServerAutomodSettings.badword_detection_rules
+                        ).options(selectinload(AutomodRule.actions)),
+                        selectinload(
+                            ServerAutomodSettings.spam_detection_rules
+                        ).options(selectinload(AutomodRule.actions)),
+                        selectinload(
+                            ServerAutomodSettings.malicious_link_rules
+                        ).options(selectinload(AutomodRule.actions)),
+                        selectinload(ServerAutomodSettings.phishing_link_rules).options(
+                            selectinload(AutomodRule.actions)
+                        ),
+                    )
+                )
+            )
+            result = await session.execute(stmt)
+            config = result.scalar()
+            if config:
+                self.server_configs[config.guild_id] = config
+
+            # Server prefixes
+            stmt = select(ServerPrefixes).where(ServerPrefixes.guild_id == guild_id)
+            result = await session.execute(stmt)
+            prefix_config = result.scalar()
+            if prefix_config:
+                self.server_prefixes[prefix_config.guild_id] = prefix_config
+
+        logging.info(f"[CACHE] Server config cache for guild {guild_id} refreshed.")
+
+    async def init_guild(self, guild_id: int) -> None:
+        logging.info(f"[INIT] Initializing guild {guild_id}...")
+
+        async with get_session() as session:
+            stmt = insert(ServerSettings).values(guild_id=guild_id)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
+            stmt = insert(ServerAutomodSettings).values(guild_id=guild_id)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
+            stmt = insert(ServerPrefixes).values(guild_id=guild_id, prefixes=["t!"])
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
+            stmt = insert(ServerLimits).values(id=guild_id)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["id"])
+            await session.execute(stmt)
+
+        await self.refresh_guild_config_cache(guild_id)
+
+        logging.info(f"[INIT] Guild {guild_id} initialized.")
+
     async def setup_hook(self):
         logging.info("[INIT] Initializing database...")
         await init_db()
         logging.info("[INIT] Database initialized.\n")
 
-        logging.info("[INIT] Getting server configs...")
-        async with get_session() as session:
-            # Server settings
-            stmt = select(ServerSettings)
-            result = await session.execute(stmt)
-            configs = result.scalars().all()
-
-            for config in configs:
-                self.server_configs[config.guild_id] = config
-
-            # Automod settings
-            stmt = select(ServerAutomodSettings)
-            result = await session.execute(stmt)
-            configs = result.scalars().all()
-
-            for config in configs:
-                self.server_automod_configs[config.guild_id] = config
-
-            # Server prefixes
-            stmt = select(ServerPrefixes)
-            result = await session.execute(stmt)
-            configs = result.scalars().all()
-
-            for config in configs:
-                self.server_prefixes[config.guild_id] = config
-        logging.info("[INIT] Server configs loaded.")
+        await self.refresh_all_caches()
 
         logging.info("[INIT] Getting custom emojis...")
         try:
@@ -211,7 +294,7 @@ async def get_prefix(bot: TitaniumBot, message: discord.Message):
     return commands.when_mentioned_or(*base)(bot, message)
 
 
-bot = TitaniumBot(intents=intents, command_prefix=get_prefix)
+bot = TitaniumBot(intents=intents, command_prefix=get_prefix, case_insensitive=True)
 
 
 @bot.event
@@ -306,6 +389,9 @@ if __name__ == "__main__":
             raise discord.LoginFailure("No bot token provided in .env file.")
 
         bot.connect_time = datetime.datetime.now()
+        bot.last_disconnect = None
+        bot.last_resume = None
+
         bot.run(token, log_handler=None)
     except discord.LoginFailure:
         logging.error("[INIT] Invalid bot token provided. Please check your .env file.")

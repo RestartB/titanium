@@ -31,7 +31,7 @@ from lib.embeds.mod_actions import (
     unmuted,
     warned,
 )
-from lib.hybrid_adapters import defer, stop_loading
+from lib.helpers.hybrid_adapters import defer, stop_loading
 from lib.sql import get_session
 
 if TYPE_CHECKING:

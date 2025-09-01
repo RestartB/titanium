@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from discord import ButtonStyle, Color, Embed, Message
+from discord import ButtonStyle, Color, Embed, Guild, Message
 from discord.ext import commands
 from discord.ui import Button
 
@@ -71,18 +71,11 @@ def unbanned_dm(
     )
 
 
-def jump_button(ctx: commands.Context["TitaniumBot"] | Message) -> Button:
-    if ctx.guild is None:
-        return Button(
-            style=ButtonStyle.gray,
-            disabled=True,
-            label="Server Link Unavailable",
-        )
-
-    string = f"Sent from {ctx.guild.name}"
+def jump_button(guild: Guild) -> Button:
+    string = f"Sent from {guild.name}"
 
     return Button(
         style=ButtonStyle.url,
         label=(string if len(string) <= 80 else string[:77] + "..."),
-        url=f"https://discord.com/channels/{ctx.guild.id}",
+        url=f"https://discord.com/channels/{guild.id}",
     )
