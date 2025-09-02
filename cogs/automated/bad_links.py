@@ -12,6 +12,15 @@ class BadLinkFetcherCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
+        # Start tasks
+        self.malicious_update.start()
+        self.phishing_update.start()
+
+    def cog_unload(self) -> None:
+        # Stop tasks on unload
+        self.malicious_update.cancel()
+        self.phishing_update.cancel()
+
     # Malicious update task
     @tasks.loop(hours=6)
     async def malicious_update(self) -> None:
