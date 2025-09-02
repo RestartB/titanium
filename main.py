@@ -4,7 +4,6 @@
 # Imports
 import datetime
 import logging
-import logging.handlers
 import os
 import traceback
 from glob import glob
@@ -18,7 +17,9 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from lib.classes.automod_message import AutomodMessage
+from lib.setup_logger import setup_logging
 
+# load the env variables
 load_dotenv()
 
 from lib.sql import (  # noqa: E402
@@ -34,40 +35,8 @@ from lib.sql import (  # noqa: E402
 # Current Running Path
 path = os.getcwd()
 
-# Create Root Logger
-dt_fmt = "%Y-%m-%d %H:%M:%S"
-logging.basicConfig(
-    level=logging.INFO,
-    format="[{asctime}] [{levelname:<8}] {name}: {message}",
-    datefmt=dt_fmt,
-    style="{",
-)
-
-# Get loggers
-rootLogger = logging.getLogger()
-
-discordLogger = logging.getLogger("discord")
-discordLogger.setLevel(logging.INFO)
-
-# Make file handler
-(os.mkdir("logs") if not os.path.exists("logs") else None)
-handler = logging.handlers.RotatingFileHandler(
-    filename="logs/titanium.log",
-    encoding="utf-8",
-    maxBytes=20 * 1024 * 1024,  # 20 MiB
-    backupCount=5,  # Rotate through 5 files
-)
-
-# Set formatter, apply to file and console handlers
-formatter = logging.Formatter(
-    "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
-)
-handler.setFormatter(formatter)
-rootLogger.handlers[0].setFormatter(formatter)
-
-# Add loggers to file handler
-rootLogger.addHandler(handler)
-discordLogger.addHandler(handler)
+# setup the logging
+setup_logging()
 
 logging.info("Welcome to Titanium • v2")
 logging.info("https://github.com/restartb/titanium\n")
@@ -91,9 +60,9 @@ intents.presences = True
 
 
 class TitaniumBot(commands.Bot):
-    user_installs = 0
-    guild_installs = 0
-    guild_member_count = 0
+    user_installs: int = 0
+    guild_installs: int = 0
+    guild_member_count: int = 0
 
     connect_time: datetime.datetime
     last_disconnect: Optional[datetime.datetime]
