@@ -219,7 +219,7 @@ class TitaniumBot(commands.Bot):
         logging.info("[INIT] Getting custom emojis...")
         try:
             success_emoji = os.getenv("SUCCESS_EMOJI")
-            if success_emoji and success_emoji.strip() != "": 
+            if success_emoji and success_emoji.strip() != "":
                 self.success_emoji = await self.fetch_application_emoji(
                     int(success_emoji)
                 )

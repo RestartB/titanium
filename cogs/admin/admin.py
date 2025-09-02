@@ -19,8 +19,9 @@ class AdminCog(commands.Cog):
     @commands.group(name="admin", hidden=True, invoke_without_command=True)
     @commands.is_owner()
     async def admin_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.send_help(ctx.command) # send group help if does not match nay subcommands.
-        
+        await ctx.send_help(
+            ctx.command
+        )  # send group help if does not match nay subcommands.
 
     @admin_group.command(name="clear", hidden=True)
     @commands.is_owner()
@@ -120,10 +121,11 @@ class AdminCog(commands.Cog):
         finally:
             await stop_loading(self.bot, ctx)
 
-
     @admin_group.command(name="unload", hidden=True)
     @commands.is_owner()
-    async def unload_cog(self, ctx: commands.Context["TitaniumBot"], cog_name: str) -> None:
+    async def unload_cog(
+        self, ctx: commands.Context["TitaniumBot"], cog_name: str
+    ) -> None:
         # As it is a prefix command no need of defer.
         try:
             await ctx.bot.unload_extension(f"cogs.{cog_name}")
