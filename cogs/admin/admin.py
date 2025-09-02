@@ -12,14 +12,16 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class AdminCogsCog(commands.Cog):
+class AdminCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
     @commands.group(name="admin", hidden=True, invoke_without_command=True)
     @commands.is_owner()
     async def admin_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        pass
+        await ctx.send_help(
+            ctx.command
+        )  # send group help if does not match nay subcommands.
 
     @admin_group.command(name="clear", hidden=True)
     @commands.is_owner()
@@ -119,6 +121,33 @@ class AdminCogsCog(commands.Cog):
         finally:
             await stop_loading(self.bot, ctx)
 
+    @admin_group.command(name="unload", hidden=True)
+    @commands.is_owner()
+    async def unload_cog(
+        self, ctx: commands.Context["TitaniumBot"], cog_name: str
+    ) -> None:
+        # As it is a prefix command no need of defer.
+        try:
+            await ctx.bot.unload_extension(f"cogs.{cog_name}")
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Unloaded",
+                    description=f"Successfully unloaded `{cog_name}` cog.",
+                    color=discord.Color.green(),
+                )
+            )
+        except Exception as exc:
+            logging.error(f"Error unloading {cog_name}: {exc}")
+            logging.error(traceback.format_exc())
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Unloading",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    color=discord.Color.red(),
+                )
+            )
+
 
 async def setup(bot: "TitaniumBot") -> None:
-    await bot.add_cog(AdminCogsCog(bot))
+    await bot.add_cog(AdminCog(bot))

@@ -219,7 +219,7 @@ class TitaniumBot(commands.Bot):
         logging.info("[INIT] Getting custom emojis...")
         try:
             success_emoji = os.getenv("SUCCESS_EMOJI")
-            if success_emoji is not None:
+            if success_emoji and success_emoji.strip() != "":
                 self.success_emoji = await self.fetch_application_emoji(
                     int(success_emoji)
                 )
@@ -227,13 +227,13 @@ class TitaniumBot(commands.Bot):
                 self.success_emoji = "✅"
 
             error_emoji = os.getenv("ERROR_EMOJI")
-            if error_emoji is not None:
+            if error_emoji and error_emoji.strip() != "":
                 self.error_emoji = await self.fetch_application_emoji(int(error_emoji))
             else:
                 self.error_emoji = "❌"
 
             loading_emoji = os.getenv("LOADING_EMOJI")
-            if loading_emoji is not None:
+            if loading_emoji and loading_emoji.strip() != "":
                 self.loading_emoji = await self.fetch_application_emoji(
                     int(loading_emoji)
                 )
@@ -241,7 +241,7 @@ class TitaniumBot(commands.Bot):
                 self.loading_emoji = "⏳"
 
             warn_emoji = os.getenv("WARN_EMOJI")
-            if warn_emoji is not None:
+            if warn_emoji and warn_emoji.strip() != "":
                 self.warn_emoji = await self.fetch_application_emoji(int(warn_emoji))
             else:
                 self.warn_emoji = "⚠️"
