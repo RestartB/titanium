@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
+    __slots__: tuple[str] = ()
+
     feedback_type = discord.ui.Label(
         text="Feedback Type",
         description="Select feedback type.",
