@@ -33,7 +33,7 @@ class UtilityCog(commands.Cog):
 
         if banner:
             e.set_author(
-                name=f"{user.name}'s Banner!",
+                name=f"@{user.name}'s Banner",
                 icon_url=user.avatar.url if user.avatar else user.default_avatar.url,
             )
             e.set_image(url=banner)
@@ -63,9 +63,12 @@ class UtilityCog(commands.Cog):
         total_members = ctx.guild.member_count
         bot_count = sum(member.bot for member in ctx.guild.members)
 
-        await ctx.reply(
-            f"👨‍👩‍👧‍👦 **Total Members: {total_members} | 🤖 Bot Count: {bot_count}**"
+        e = Embed(
+            color=Color.blue(),
+            title="👨‍👩‍👧‍👦 Member Counts",
+            description=f"👨‍👩‍👧‍👦 Total Members: **{total_members}** | 🤖 Bot Count: **{bot_count}**",
         )
+        await ctx.reply(embed=e)
 
     @commands.hybrid_command(
         name="base64", description="Convert text to base64 or decode base64 to text."
@@ -92,20 +95,22 @@ class UtilityCog(commands.Cog):
                 encoded = base64.b64encode(text.encode("utf-8")).decode("utf-8")
                 e = Embed(
                     color=Color.blue(),
-                    description=f"🔒 **Base64 Encoded!**\n\n```{encoded[:3000]}```",
+                    title="🔒 Base64 Encoded",
+                    description=f"```{encoded[:3000]}```",
                 )
                 await ctx.reply(embed=e)
             elif mode.lower() == "decode":
                 decoded = base64.b64decode(text.encode("utf-8")).decode("utf-8")
                 e = Embed(
                     color=Color.blue(),
-                    description=f"🔒 **Base64 Decoded!**\n\n```{decoded[:3000]}```",
+                    title="🔒 Base64 Decoded",
+                    description=f"```{decoded[:3000]}```",
                 )
                 await ctx.reply(embed=e)
             else:
                 e = Embed(
                     color=Color.red(),
-                    title=f"{str(self.bot.error_emoji)} Error!",
+                    title=f"{str(self.bot.error_emoji)} Error",
                     description="Invalid mode. Use 'Encode' or 'Decode'.",
                 )
                 await ctx.reply(embed=e)
@@ -113,7 +118,7 @@ class UtilityCog(commands.Cog):
         except Exception as e:
             e = Embed(
                 color=Color.red(),
-                title=f"{str(self.bot.error_emoji)} Error!",
+                title=f"{str(self.bot.error_emoji)} Error",
                 description=f"{mode.capitalize()} failed due to: {e}",
             )
             await ctx.reply(embed=e)
