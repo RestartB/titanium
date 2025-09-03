@@ -17,12 +17,18 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
         description="Select feedback type.",
         component=discord.ui.Select(
             options=[
-                discord.SelectOption(label="Bug Report", value="Bug Report"),
-                discord.SelectOption(label="Feature Request", value="Feature Request"),
                 discord.SelectOption(
-                    label="Suggestion Changes", value="Suggestion Changes"
+                    emoji="🐞", label="Bug Report", value="🐞 Bug Report"
                 ),
-                discord.SelectOption(label="Others", value="Others"),
+                discord.SelectOption(
+                    emoji="✨", label="Feature Request", value="✨ Feature Request"
+                ),
+                discord.SelectOption(
+                    emoji="💡",
+                    label="Suggested Changes",
+                    value="💡 Suggested Changes",
+                ),
+                discord.SelectOption(emoji="📝", label="Other", value="📝 Other"),
             ],
         ),
     )
