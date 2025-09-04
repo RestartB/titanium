@@ -1,8 +1,7 @@
 import base64
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
-import discord
-from discord import Color, Embed, app_commands, Optional
+from discord import Color, Embed, app_commands
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -38,49 +37,55 @@ class UtilityCog(commands.Cog):
         )
         await ctx.reply(embed=e)
 
-    @commands.hybrid_command(
-        name="base64", description="Convert text to base64 or decode base64 to text."
-    )
+    @commands.hybrid_group(name="base64", description="Base64 encoding and decoding.")
+    async def base64_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
+        await ctx.send_help(ctx.command)
+
+    @base64_group.command(name="encode", description="Convert text to Base64.")
     @app_commands.describe(
-        text="Text to encode or decode.",
-        mode="Choose 'encode' to convert text to base64, 'decode' to convert base64 to text.",
+        text="Text to encode to Base64.",
     )
-    async def base64(
+    async def base64_encode(
         self,
         ctx: commands.Context["TitaniumBot"],
-        *,
         text: str,
-        mode: Literal["Encode", "Decode"] = "Encode",
     ) -> None:
         """
-        Encode text to base64 or decode base64 to text.
+        Encode text to Base64.
         """
 
         await ctx.defer()
 
-        if mode.lower() == "encode":
-            encoded = base64.b64encode(text.encode("utf-8")).decode("utf-8")
-            e = Embed(
-                color=Color.blue(),
-                title="🔒 Base64 Encoded",
-                description=f"```{encoded[:3000]}```",
-            )
-            await ctx.reply(embed=e)
-        elif mode.lower() == "decode":
-            decoded = base64.b64decode(text.encode("utf-8")).decode("utf-8")
-            e = Embed(
-                color=Color.blue(),
-                title="🔒 Base64 Decoded",
-                description=f"```{decoded[:3000]}```",
-            )
-            await ctx.reply(embed=e)
-        else:
-            e = Embed(
-                color=Color.red(),
-                title=f"{str(self.bot.error_emoji)} Error",
-                description="Invalid mode. Use 'Encode' or 'Decode'.",
-            )
-            await ctx.reply(embed=e)
+        encoded = base64.b64encode(text.encode("utf-8")).decode("utf-8")
+        e = Embed(
+            color=Color.blue(),
+            title="🔒 Base64 Encoded",
+            description=f"```{encoded[:3000]}```",
+        )
+        await ctx.reply(embed=e)
+
+    @base64_group.command(name="decode", description="Convert text from Base64.")
+    @app_commands.describe(
+        base_64="Base64 to convert to text.",
+    )
+    async def base64_decode(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        base_64: str,
+    ) -> None:
+        """
+        Decode Base64 to text.
+        """
+
+        await ctx.defer()
+
+        decoded = base64.b64decode(base_64.encode("utf-8")).decode("utf-8")
+        e = Embed(
+            color=Color.blue(),
+            title="🔒 Base64 Decoded",
+            description=f"```{decoded[:3000]}```",
+        )
+        await ctx.reply(embed=e)
 
 
 async def setup(bot: "TitaniumBot") -> None:
