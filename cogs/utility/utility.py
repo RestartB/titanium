@@ -1,7 +1,7 @@
 import base64
 from typing import TYPE_CHECKING
 
-from discord import Color, Embed, app_commands
+from discord import Color, Embed, Interaction, app_commands
 from discord.ext import commands
 
 from lib.views.feedback_modal import FeedbackModal
@@ -13,6 +13,16 @@ if TYPE_CHECKING:
 class UtilityCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot: "TitaniumBot" = bot
+
+    @app_commands.command(
+        name="feedback", description="Share any suggestions or feedback."
+    )
+    async def feedback(self, interaction: Interaction["TitaniumBot"]) -> None:
+        """
+        This command allows you to provide feedback or share your suggestions or maybe any bug/issue with the bot's developers.
+        """
+        modal = FeedbackModal()
+        await interaction.response.send_modal(modal)
 
     @commands.hybrid_command(
         name="membercount",
