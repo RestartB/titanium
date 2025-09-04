@@ -1,6 +1,6 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
-from discord import Color, Embed, User
+from discord import Color, Embed, Member, User
 from sqlalchemy import Column
 
 from ..duration import duration_to_timestring
@@ -12,12 +12,12 @@ if TYPE_CHECKING:
 
 def cases(
     bot: "TitaniumBot",
-    cases: list[ModCase],
+    cases: list[ModCase] | Sequence[ModCase],
     total: int,
     current_page: int,
     total_pages: int,
-    target: User,
-    user: User,
+    target: User | Member,
+    user: User | Member,
 ) -> Embed:
     embed = Embed(
         title="Cases",

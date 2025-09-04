@@ -32,6 +32,8 @@ class BasicCommandsCog(commands.Cog):
                 title="Titanium",
                 description="This is a development version of Titanium. For more information, please go to https://github.com/RestartB/titanium/tree/v2.",
                 color=Color.light_gray(),
+            ).set_thumbnail(
+                url=self.bot.user.display_avatar.url if self.bot.user else None
             )
         )
 
