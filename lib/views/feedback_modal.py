@@ -1,11 +1,11 @@
 import logging
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
-from discord import Color, Embed
+from discord import Color, Embed, Webhook
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -78,25 +78,30 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
         )
         await interaction.followup.send(embed=e, ephemeral=True)
 
-    async def _send_notification(self, webhook_url: str) -> bool:
-        """Send notification to feedback webhook."""
-
+    def _build_embed(self) -> Embed:
+        """Build the Feedback notification embed"""
         e = Embed(
             title="📩 New Feedback",
             description=f"**Feedback Type:** `{self.feedback_type.component.values[0]}`\n**User ID:** `{self.interaction.user.id}`\n**Server ID:** `{self.interaction.guild.id if self.interaction.guild else 'Not Available'}`\n\n**Feedback Content:** {self.feedback_content.component.value}",
             color=Color.blurple(),
         )
         e.timestamp = datetime.now()
+        return e
+    
+    async def _send_notification(self, webhook_url: str) -> bool:
+        """Send notification to feedback webhook."""
 
-        payload: dict[str, Any] = {
-            "username": self.interaction.user.display_name,
-            "avatar_url": self.interaction.user.display_avatar.url,
-            "content": None,
-            "embeds": [e.to_dict()],
-        }
+        e = self._build_embed()
+
         async with aiohttp.ClientSession() as session:
-            async with session.post(webhook_url, json=payload) as response:
-                if response.status != 204:  # 204 = success for webhook
-                    logging.error(f"Feedback webhook error: {response.status}")
-                    return False
-        return True
+            webhook = Webhook.from_url(webhook_url, session=session)
+            try:
+                await webhook.send(
+                    username=self.interaction.user.display_name,
+                    avatar_url=self.interaction.user.display_avatar.url,
+                    embed=e,
+                )
+                return True
+            except Exception as e:
+                logging.error(f"Feedback webhook error: {e}")
+                return False
