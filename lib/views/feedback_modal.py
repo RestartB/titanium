@@ -3,7 +3,6 @@ import os
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-import aiohttp
 import discord
 from discord import Color, Embed, Webhook
 
@@ -93,15 +92,14 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
 
         e = self._build_embed()
 
-        async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url(webhook_url, session=session)
-            try:
-                await webhook.send(
-                    username=self.interaction.user.display_name,
-                    avatar_url=self.interaction.user.display_avatar.url,
-                    embed=e,
-                )
-                return True
-            except Exception as e:
-                logging.error(f"Feedback webhook error: {e}")
-                return False
+        webhook = Webhook.from_url(webhook_url, client=self.interaction.client)
+        try:
+            await webhook.send(
+                username=self.interaction.user.display_name,
+                avatar_url=self.interaction.user.display_avatar.url,
+                embed=e,
+            )
+            return True
+        except Exception as e:
+            logging.error(f"Feedback webhook error: {e}")
+            return False
