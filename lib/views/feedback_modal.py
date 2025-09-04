@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
-    __slots__: tuple[str] = ("interaction")
+    __slots__: tuple[str] = "interaction"
 
     feedback_type = discord.ui.Label(
         text="Feedback Type",
@@ -86,7 +86,7 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
         )
         e.timestamp = datetime.now()
         return e
-    
+
     async def _send_notification(self, webhook_url: str) -> bool:
         """Send notification to feedback webhook."""
 
