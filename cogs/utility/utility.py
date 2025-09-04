@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 from discord import Color, Embed, app_commands
 from discord.ext import commands
 
+from lib.views.feedback_modal import FeedbackModal
+
 if TYPE_CHECKING:
     from main import TitaniumBot
 
