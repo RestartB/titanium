@@ -1,8 +1,9 @@
 import discord
-import discord.ext
 from discord import app_commands
 from discord.ext import commands
 from discord.ui import View
+
+import logging
 
 
 class UserUtils(commands.Cog):
@@ -33,7 +34,6 @@ class UserUtils(commands.Cog):
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        # Temp fix! See below for info.
         user = await interaction.client.fetch_user(user.id)
 
         if interaction.is_guild_integration():
@@ -53,13 +53,9 @@ class UserUtils(commands.Cog):
         )
         embed.set_author(
             name=f"{member.display_name} (@{member.name})",
-            icon_url=member.display_avatar.url,
+            icon_url=member.avatar.url if member.avatar else member.default_avatar.url,
         )
 
-        # FIXME - Temp fix!
-        # We need to use the user object to get the banner. This should work with the member object...
-        # ... but discord.py has a bug where the banner always returns None with member. This is a workaround.
-        # This can be changed to display_banner when discord.py fixes the bug. Conclusion: fuck discord.py.
         if user.banner is not None:
             embed.set_image(url=user.banner.url)
 
@@ -150,9 +146,10 @@ class UserUtils(commands.Cog):
             color=user.accent_color,
         )
 
-        embed.set_image(url=user.display_avatar.url)
+        embed.set_image(url=user.avatar.url if user.avatar else user.default_avatar.url)
         embed.set_author(
-            name=f"{user.display_name} (@{user.name})", icon_url=user.display_avatar.url
+            name=f"{user.display_name} (@{user.name})",
+            icon_url=user.avatar.url if user.avatar else user.default_avatar.url,
         )
         embed.set_footer(
             text=f"@{interaction.user.name}",
@@ -164,13 +161,59 @@ class UserUtils(commands.Cog):
             discord.ui.Button(
                 label="Open in Browser",
                 style=discord.ButtonStyle.url,
-                url=user.display_avatar.url,
+                url=user.avatar.url if user.avatar else user.default_avatar.url,
                 row=0,
             )
         )
 
         # Send Embed
         await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+
+    # Server PFP command
+    @app_commands.command(name="server-pfp", description="Show a user's server PFP.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    @app_commands.guild_only()
+    @app_commands.describe(user="The target user.")
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def server_pfp(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member,
+        ephemeral: bool = False,
+    ):
+        await interaction.response.defer(ephemeral=ephemeral)
+
+        embed = discord.Embed(
+            title="Server PFP",
+            color=user.accent_color,
+        )
+        embed.set_author(
+            name=f"{user.display_name} (@{user.name})",
+            icon_url=user.avatar.url if user.avatar else user.default_avatar.url,
+        )
+        embed.set_footer(
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+
+        if user.guild_avatar is not None:
+            embed.set_image(url=user.guild_avatar.url)
+            view = View()
+            view.add_item(
+                discord.ui.Button(
+                    label="Open in Browser",
+                    style=discord.ButtonStyle.url,
+                    url=user.guild_avatar.url,
+                    row=0,
+                )
+            )
+            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+        else:
+            embed.description = "This user does not have a server PFP."
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Banner command
     @userGroup.command(name="banner", description="Show a user's banner.")
