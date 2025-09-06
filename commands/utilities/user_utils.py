@@ -3,8 +3,6 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ui import View
 
-import logging
-
 
 class UserUtils(commands.Cog):
     def __init__(self, bot):
