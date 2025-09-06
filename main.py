@@ -279,7 +279,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Not Found",
             description=f"The command `{ctx.invoked_with}` does not exist.",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
 
@@ -289,7 +289,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Missing Permissions",
             description=error,
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
 
@@ -299,7 +299,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Server Only Command",
             description="This command can only be used in servers.",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
 
@@ -309,7 +309,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Error",
             description="An error occurred while executing the command. Please try again later.",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
 
@@ -330,14 +330,14 @@ async def on_app_command_error(
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Not Found",
             description="The command does not exist.",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
     else:
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Error",
             description="An error occurred while executing the command. Please try again later.",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
         )
         await interaction.edit_original_response(embed=embed, view=None)
 

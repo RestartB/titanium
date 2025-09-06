@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Sequence
 
-from discord import Color, Embed, Member, Message, User, app_commands
+from discord import Colour, Embed, Member, Message, User, app_commands
 from discord.ext import commands
 
 from lib.cases.case_manager import CaseNotFoundException, GuildModCaseManager
@@ -70,7 +70,7 @@ class ModerationCasesCog(commands.Cog):
                             embed=Embed(
                                 title="No Cases Found",
                                 description="This user has no moderation cases.",
-                                color=Color.red(),
+                                colour=Colour.red(),
                             )
                         )
 
@@ -84,7 +84,7 @@ class ModerationCasesCog(commands.Cog):
                         embed=Embed(
                             title=f"{str(self.bot.error_emoji)} Permission Denied",
                             description="You do not have permission to view cases for other users. Please ensure you have the 'Manage Server' permission.",
-                            color=Color.red(),
+                            colour=Colour.red(),
                         )
                     )
             else:
@@ -96,7 +96,7 @@ class ModerationCasesCog(commands.Cog):
                         embed=Embed(
                             title="No Cases Found",
                             description="You have no moderation cases.",
-                            color=Color.red(),
+                            colour=Colour.red(),
                         )
                     )
 
@@ -183,7 +183,7 @@ class ModerationCasesCog(commands.Cog):
                     Embed(
                         title="Are you sure?",
                         description="This will delete the case and cannot be undone.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                 )
 

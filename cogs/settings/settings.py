@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from discord import (
     ButtonStyle,
-    Color,
+    Colour,
     Embed,
     Interaction,
     SeparatorSpacing,
@@ -119,7 +119,7 @@ class ServerSettingsCog(commands.Cog):
             embed=Embed(
                 title="Server Settings",
                 description="To change bot settings, please use slash commands.",
-                color=Color.blue(),
+                colour=Colour.blue(),
             )
         )
 
@@ -182,7 +182,7 @@ class ServerSettingsCog(commands.Cog):
                 embed=Embed(
                     title=f"{str(self.bot.error_emoji)} Invalid Prefix",
                     description="The prefix must be between 1 and 5 characters long.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 ),
                 ephemeral=True,
             )
@@ -202,7 +202,7 @@ class ServerSettingsCog(commands.Cog):
                     embed=Embed(
                         title=f"{str(self.bot.error_emoji)} Already Exists",
                         description=f"The `{prefix.lower()}` prefix has already been added.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     ),
                     ephemeral=True,
                 )
@@ -216,7 +216,7 @@ class ServerSettingsCog(commands.Cog):
             embed=Embed(
                 title=f"{str(self.bot.success_emoji)} Added",
                 description=f"Added the `{prefix.lower()}` prefix.",
-                color=Color.green(),
+                colour=Colour.green(),
             ),
             ephemeral=True,
         )
@@ -255,7 +255,7 @@ class ServerSettingsCog(commands.Cog):
                 embed=Embed(
                     title=f"{str(self.bot.error_emoji)} Invalid Prefix",
                     description="The prefix must be between 1 and 5 characters long.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 ),
                 ephemeral=True,
             )
@@ -275,7 +275,7 @@ class ServerSettingsCog(commands.Cog):
                     embed=Embed(
                         title=f"{str(self.bot.error_emoji)} Not Found",
                         description=f"The `{prefix.lower()}` prefix does not exist.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     ),
                     ephemeral=True,
                 )
@@ -289,7 +289,7 @@ class ServerSettingsCog(commands.Cog):
             embed=Embed(
                 title=f"{str(self.bot.success_emoji)} Removed",
                 description=f"Removed the `{prefix.lower()}` prefix.",
-                color=Color.green(),
+                colour=Colour.green(),
             ),
             ephemeral=True,
         )
@@ -314,7 +314,7 @@ class ServerSettingsCog(commands.Cog):
                     embed=Embed(
                         title=f"{str(self.bot.error_emoji)} Already Enabled",
                         description="Moderation module is already enabled.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     ),
                     ephemeral=True,
                 )
@@ -328,7 +328,7 @@ class ServerSettingsCog(commands.Cog):
             embed=Embed(
                 title=f"{str(self.bot.success_emoji)} Enabled",
                 description="Moderation module has been enabled.",
-                color=Color.green(),
+                colour=Colour.green(),
             ),
             ephemeral=True,
         )
@@ -353,7 +353,7 @@ class ServerSettingsCog(commands.Cog):
                     embed=Embed(
                         title=f"{str(self.bot.error_emoji)} Already Disabled",
                         description="Moderation module is already disabled.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     ),
                     ephemeral=True,
                 )
@@ -367,7 +367,7 @@ class ServerSettingsCog(commands.Cog):
             embed=Embed(
                 title=f"{str(self.bot.success_emoji)} Disabled",
                 description="Moderation module has been disabled.",
-                color=Color.green(),
+                colour=Colour.green(),
             ),
             ephemeral=True,
         )

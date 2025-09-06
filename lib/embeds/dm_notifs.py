@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from discord import ButtonStyle, Color, Embed, Guild, Message
+from discord import ButtonStyle, Colour, Embed, Guild, Message
 from discord.ext import commands
 from discord.ui import Button
 
@@ -17,7 +17,7 @@ def warned_dm(
     return Embed(
         title=f"{str(bot.warn_emoji)} You got warned • {case.id}",
         description=f"A moderator has warned you in **{ctx.guild.name if ctx.guild else ''}.**\n**Reason:** {case.description or 'No reason provided.'}",
-        color=Color.red(),
+        colour=Colour.red(),
     )
 
 
@@ -27,7 +27,7 @@ def muted_dm(
     return Embed(
         title=f"{str(bot.warn_emoji)} You got muted • {case.id}",
         description=f"A moderator has muted you in **{ctx.guild.name if ctx.guild else ''}.**\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
-        color=Color.red(),
+        colour=Colour.red(),
     )
 
 
@@ -37,7 +37,7 @@ def unmuted_dm(
     return Embed(
         title=f"{str(bot.success_emoji)} You got unmuted • {case.id}",
         description=f"A moderator has unmuted you in **{ctx.guild.name if ctx.guild else ''}!",
-        color=Color.green(),
+        colour=Colour.green(),
     )
 
 
@@ -47,7 +47,7 @@ def kicked_dm(
     return Embed(
         title=f"{str(bot.warn_emoji)} You got kicked • {case.id}",
         description=f"A moderator has kicked you from **{ctx.guild.name if ctx.guild else ''}.**\n**Reason:** {case.description or 'No reason provided.'}",
-        color=Color.red(),
+        colour=Colour.red(),
     )
 
 
@@ -57,7 +57,7 @@ def banned_dm(
     return Embed(
         title=f"{str(bot.warn_emoji)} You got banned • {case.id}",
         description=f"A moderator has banned you from **{ctx.guild.name if ctx.guild else ''}.**\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
-        color=Color.red(),
+        colour=Colour.red(),
     )
 
 
@@ -67,7 +67,7 @@ def unbanned_dm(
     return Embed(
         title=f"{str(bot.success_emoji)} You got unbanned • {case.id}",
         description=f"A moderator has unbanned you from **{ctx.guild.name if ctx.guild else ''}!",
-        color=Color.green(),
+        colour=Colour.green(),
     )
 
 

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from discord import ClientUser, Color, Embed, Member, User
+from discord import ClientUser, Colour, Embed, Member, User
 
 from ..duration import duration_to_timestring
 from ..sql import ModCase
@@ -20,7 +20,7 @@ def warned(
     embed = Embed(
         title=f"{str(bot.success_emoji)} Warned • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
-        color=Color.green(),
+        colour=Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -46,7 +46,7 @@ def muted(
     embed = Embed(
         title=f"{str(bot.success_emoji)} Muted • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
-        color=Color.green(),
+        colour=Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -68,7 +68,7 @@ def already_muted(
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"{user.mention} is already muted.",
-        color=Color.red(),
+        colour=Colour.red(),
     )
     return embed
 
@@ -84,7 +84,7 @@ def unmuted(
     embed = Embed(
         title=f"{str(bot.success_emoji)} Unmuted • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
-        color=Color.green(),
+        colour=Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -106,7 +106,7 @@ def already_unmuted(
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"{user.mention} is not muted.",
-        color=Color.red(),
+        colour=Colour.red(),
     )
     return embed
 
@@ -122,7 +122,7 @@ def kicked(
     embed = Embed(
         title=f"{str(bot.success_emoji)} Kicked • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Reason:** {case.description or 'No reason provided.'}",
-        color=Color.green(),
+        colour=Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -148,7 +148,7 @@ def banned(
     embed = Embed(
         title=f"{str(bot.success_emoji)} Banned • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
-        color=Color.green(),
+        colour=Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -174,7 +174,7 @@ def unbanned(
     embed = Embed(
         title=f"{str(bot.success_emoji)} Unbanned • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Reason:** {case.description or 'No reason provided.'}",
-        color=Color.green(),
+        colour=Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -199,7 +199,7 @@ def done(
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.success_emoji)} Done",
-        color=Color.green(),
+        colour=Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -221,7 +221,7 @@ def already_banned(
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"{user.mention} is already banned.",
-        color=Color.red(),
+        colour=Colour.red(),
     )
     return embed
 
@@ -230,7 +230,7 @@ def already_punishing(bot: "TitaniumBot", user: Member | User | ClientUser) -> E
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"{user.mention} is already being punished. Please wait.",
-        color=Color.red(),
+        colour=Colour.red(),
     )
     return embed
 
@@ -239,7 +239,7 @@ def forbidden(bot: "TitaniumBot", user: Member | User | ClientUser) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"Titanium does not have permission to perform this action on {user.mention}.",
-        color=Color.red(),
+        colour=Colour.red(),
     )
     return embed
 
@@ -248,6 +248,6 @@ def http_exception(bot: "TitaniumBot", user: Member | User | ClientUser) -> Embe
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"An error occurred while trying to perform this action on {user.mention}.",
-        color=Color.red(),
+        colour=Colour.red(),
     )
     return embed

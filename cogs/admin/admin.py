@@ -33,7 +33,7 @@ class AdminCog(commands.Cog):
             await ctx.reply(
                 embed=discord.Embed(
                     title=f"{str(self.bot.success_emoji)} Console Cleared",
-                    color=discord.Color.green(),
+                    colour=discord.Colour.green(),
                 ),
                 ephemeral=True,
             )
@@ -45,7 +45,7 @@ class AdminCog(commands.Cog):
                 embed=discord.Embed(
                     title=f"{str(self.bot.error_emoji)} Error Clearing Console",
                     description=f"```python\n{traceback.format_exc()}```",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 ),
                 ephemeral=True,
             )
@@ -70,7 +70,7 @@ class AdminCog(commands.Cog):
                 embed=discord.Embed(
                     title=f"{str(self.bot.success_emoji)} Commands Synced",
                     description=f"Synced {len(tree)} commands.",
-                    color=discord.Color.green(),
+                    colour=discord.Colour.green(),
                 ),
                 ephemeral=True,
             )
@@ -83,7 +83,7 @@ class AdminCog(commands.Cog):
                 embed=discord.Embed(
                     title=f"{str(self.bot.error_emoji)} Failed to sync",
                     description=f"```python\n{traceback.format_exc()}```",
-                    color=discord.Color.green(),
+                    colour=discord.Colour.green(),
                 ),
                 ephemeral=True,
             )
@@ -102,7 +102,7 @@ class AdminCog(commands.Cog):
                 embed=discord.Embed(
                     title=f"{str(self.bot.success_emoji)} Reloaded",
                     description=f"Successfully reloaded `{cog}`.",
-                    color=discord.Color.green(),
+                    colour=discord.Colour.green(),
                 ),
                 ephemeral=True,
             )
@@ -114,7 +114,7 @@ class AdminCog(commands.Cog):
                 embed=discord.Embed(
                     title=f"{str(self.bot.error_emoji)} Error Reloading",
                     description=f"```python\n{traceback.format_exc()}```",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 ),
                 ephemeral=True,
             )
@@ -133,7 +133,7 @@ class AdminCog(commands.Cog):
                 embed=discord.Embed(
                     title=f"{self.bot.success_emoji} Unloaded",
                     description=f"Successfully unloaded `{cog_name}` cog.",
-                    color=discord.Color.green(),
+                    colour=discord.Colour.green(),
                 )
             )
         except Exception as exc:
@@ -144,7 +144,7 @@ class AdminCog(commands.Cog):
                 embed=discord.Embed(
                     title=f"{self.bot.error_emoji} Error Unloading",
                     description=f"```python\n{traceback.format_exc()}```",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
             )
 

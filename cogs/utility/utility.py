@@ -1,7 +1,7 @@
 import base64
 from typing import TYPE_CHECKING
 
-from discord import Color, Embed, Interaction, app_commands
+from discord import Colour, Embed, Interaction, app_commands
 from discord.ext import commands
 
 from lib.views.feedback_modal import FeedbackModal
@@ -43,7 +43,7 @@ class UtilityCog(commands.Cog):
         bot_count = sum(member.bot for member in ctx.guild.members)
 
         e = Embed(
-            color=Color.blue(),
+            colour=Colour.blue(),
             title="👨‍👩‍👧‍👦 Member Counts",
             description=f"👨‍👩‍👧‍👦 Total Members: **{total_members}** | 🤖 Bot Count: **{bot_count}**",
         )
@@ -70,7 +70,7 @@ class UtilityCog(commands.Cog):
 
         encoded = base64.b64encode(text.encode("utf-8")).decode("utf-8")
         e = Embed(
-            color=Color.blue(),
+            colour=Colour.blue(),
             title="🔒 Base64 Encoded",
             description=f"```{encoded[:3000]}```",
         )
@@ -93,7 +93,7 @@ class UtilityCog(commands.Cog):
 
         decoded = base64.b64decode(base_64.encode("utf-8")).decode("utf-8")
         e = Embed(
-            color=Color.blue(),
+            colour=Colour.blue(),
             title="🔒 Base64 Decoded",
             description=f"```{decoded[:3000]}```",
         )

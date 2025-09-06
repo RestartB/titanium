@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Sequence
 
-from discord import Color, Embed, Member, User
+from discord import Colour, Embed, Member, User
 from sqlalchemy import Column
 
 from ..duration import duration_to_timestring
@@ -24,7 +24,7 @@ def cases(
         description=f"You have **{total} cases** against your user."
         if target.id == user.id
         else f"Found **{total} cases** for this user.",
-        color=Color.blue(),
+        colour=Colour.blue(),
     )
 
     embed.set_author(
@@ -64,7 +64,7 @@ def case_embed(
         **Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else "Permanent"}
         **Reason:** {case.description or "No reason provided."}
         """,
-        color=Color.blue(),
+        colour=Colour.blue(),
     )
 
     if isinstance(creator, int) or isinstance(creator, Column):
@@ -83,7 +83,7 @@ def case_not_found(bot: "TitaniumBot", case: str) -> Embed:
     return Embed(
         title=f"{str(bot.error_emoji)} Case Not Found",
         description=f"Couldn't find a case with the ID `{case}` in this server.",
-        color=Color.red(),
+        colour=Colour.red(),
     )
 
 
@@ -91,5 +91,5 @@ def case_deleted(bot: "TitaniumBot", case_id: int) -> Embed:
     return Embed(
         title=f"{str(bot.success_emoji)} Case Deleted",
         description=f"Case `{case_id}` has been successfully deleted.",
-        color=Color.green(),
+        colour=Colour.green(),
     )

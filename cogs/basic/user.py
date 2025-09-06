@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from discord import ButtonStyle, Color, Embed, Member, Optional, User, app_commands
+from discord import ButtonStyle, Colour, Embed, Member, Optional, User, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
 
@@ -21,18 +21,17 @@ class UserCommandsCog(commands.Cog):
         if not user:
             user = ctx.author
 
-        embed = Embed(color=Color.blue())
+        embed = Embed(colour=user.accent_colour)
         embed.set_author(
-            name=f"@{user.name}'s Profile Picture",
-            icon_url=user.avatar.url if user.avatar else user.default_avatar.url,
+            name=f"@{user.name}'s PFP",
+            icon_url=user.display_avatar.url,
         )
 
-        pfp = user.avatar.url if user.avatar else user.default_avatar.url
-        embed.set_image(url=pfp)
+        embed.set_image(url=user.display_avatar.url)
 
-        png_url = pfp + "?format=png"
-        jpg_url = pfp + "?format=jpg"
-        webp_url = pfp + "?format=webp"
+        png_url = user.display_avatar.url + "?format=png"
+        jpg_url = user.display_avatar.url + "?format=jpg"
+        webp_url = user.display_avatar.url + "?format=webp"
         formats = {"PNG": png_url, "JPG": jpg_url, "WEBP": webp_url}
 
         view = View()
@@ -41,7 +40,7 @@ class UserCommandsCog(commands.Cog):
                 Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link)
             )
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, view=view)
 
     @commands.hybrid_command(
         name="server-pfp", description="Get a user's server profile picture."
@@ -58,10 +57,10 @@ class UserCommandsCog(commands.Cog):
         if not user:
             raise Exception("Member object not returned")
 
-        embed = Embed(color=Color.blue())
+        embed = Embed(colour=user.accent_colour)
         embed.set_author(
-            name=f"@{user.name}'s Server Profile Picture",
-            icon_url=user.avatar.url if user.avatar else user.default_avatar.url,
+            name=f"@{user.name}'s Server PFP",
+            icon_url=user.display_avatar.url,
         )
 
         if user.guild_avatar:
@@ -103,12 +102,12 @@ class UserCommandsCog(commands.Cog):
         user_obj = await ctx.bot.fetch_user(user.id)
         banner = user_obj.banner.url if user_obj.banner else None
 
-        e = Embed(color=Color.blue())
+        e = Embed(colour=user.accent_colour)
 
         if banner:
             e.set_author(
                 name=f"@{user.name}'s Banner",
-                icon_url=user.avatar.url if user.avatar else user.default_avatar.url,
+                icon_url=user.display_avatar.url,
             )
             e.set_image(url=banner)
 
@@ -130,7 +129,7 @@ class UserCommandsCog(commands.Cog):
             e.description = (
                 f"{str(self.bot.error_emoji)} This user does not have a banner."
             )
-            e.color = Color.red()
+            e.colour = Colour.red()
 
             await ctx.reply(embed=e)
 

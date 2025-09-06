@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from discord import Color, Embed
+from discord import Colour, Embed
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ class BasicCommandsCog(commands.Cog):
             embed=Embed(
                 title="Pong!",
                 description=f"Latency: `{self.bot.latency * 1000:.2f}ms`",
-                color=Color.green(),
+                colour=Colour.green(),
             )
         )
 
@@ -31,7 +31,7 @@ class BasicCommandsCog(commands.Cog):
             embed=Embed(
                 title="Titanium",
                 description="This is a development version of Titanium. For more information, please go to https://github.com/RestartB/titanium/tree/v2.",
-                color=Color.light_gray(),
+                colour=Colour.light_gray(),
             ).set_thumbnail(
                 url=self.bot.user.display_avatar.url if self.bot.user else None
             )
@@ -64,7 +64,7 @@ class BasicCommandsCog(commands.Cog):
         embed = Embed(
             title="Command Prefixes",
             description=f"**{self.bot.user.name} will respond to the following prefixes in this server:**\n{prefix_str}",
-            color=Color.green(),
+            colour=Colour.green(),
         )
 
         embed.set_author(

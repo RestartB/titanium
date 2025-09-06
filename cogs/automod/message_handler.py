@@ -36,8 +36,10 @@ class AutomodMonitorCog(commands.Cog):
         self.new_message_queue.shutdown(immediate=True)
 
     async def queue_worker(self):
+        logging.info("Automod message handler started.")
         while True:
             try:
+                await self.bot.wait_until_ready()
                 message = await self.new_message_queue.get()
             except asyncio.QueueShutDown:
                 return
@@ -45,7 +47,7 @@ class AutomodMonitorCog(commands.Cog):
             try:
                 await self.message_handler(message)
             except Exception:
-                logging.error("Error processing message in automod")
+                logging.error("Error processing message in automod:")
                 logging.error(traceback.format_exc())
             finally:
                 self.new_message_queue.task_done()
@@ -59,12 +61,14 @@ class AutomodMonitorCog(commands.Cog):
             or not isinstance(message.author, discord.Member)
             or not self.bot.user
         ):
+            logging.debug("Automod initial checks failed, skipping message")
             return
 
         triggers: list[AutomodRule] = []
         punishments: list[AutomodAction] = []
 
         if not self.bot.server_configs[message.guild.id].automod_enabled:
+            logging.debug("Automod is not enabled, skipping message")
             return
 
         config = self.bot.server_configs[message.guild.id].automod_settings
@@ -370,6 +374,8 @@ class AutomodMonitorCog(commands.Cog):
 
                 if embeds:
                     await message.channel.send(embeds=embeds)
+
+        logging.debug(f"Processed message from {message.author}: {message.id}")
 
     # Listen for messages
     @commands.Cog.listener()
