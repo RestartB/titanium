@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class BasicCommandsCog(commands.Cog):
+class UserCommandsCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
@@ -136,4 +136,4 @@ class BasicCommandsCog(commands.Cog):
 
 
 async def setup(bot: "TitaniumBot") -> None:
-    await bot.add_cog(BasicCommandsCog(bot))
+    await bot.add_cog(UserCommandsCog(bot))
