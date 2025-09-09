@@ -39,6 +39,8 @@ if TYPE_CHECKING:
 
 
 class ModerationBasicCog(commands.Cog):
+    """Basic moderation commands"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
@@ -96,7 +98,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await member.send(
                     embed=warned_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
@@ -224,7 +226,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await member.send(
                     embed=muted_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
@@ -252,7 +254,9 @@ class ModerationBasicCog(commands.Cog):
             await stop_loading(self.bot, ctx)
 
     @commands.hybrid_command(
-        name="unmute", alias=["untimeout"], description="Unmute a member."
+        name="unmute",
+        alias=["untimeout"],  # pyright: ignore[reportCallIssue]
+        description="Unmute a member.",
     )
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
@@ -319,7 +323,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await member.send(
                     embed=unmuted_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
@@ -410,7 +414,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await member.send(
                     embed=kicked_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
@@ -534,7 +538,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await user.send(
                     embed=banned_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
@@ -627,7 +631,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await user.send(
                     embed=unbanned_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False

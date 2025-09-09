@@ -40,8 +40,8 @@ def muted(
     user: Member | User,
     creator: Member | User | ClientUser,
     case: ModCase,
-    dm_success: bool,
-    dm_error: str,
+    dm_success: bool = True,
+    dm_error: str = "",
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.success_emoji)} Muted • `{case.id}`",

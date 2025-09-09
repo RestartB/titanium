@@ -103,6 +103,7 @@ class AutomodConfigModel(BaseModel):
 
 
 class APICog(commands.Cog):
+    """API server for dashboard, website and status page"""
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
         self.app = None

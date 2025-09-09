@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Annotated, Sequence
+from typing import Annotated, Literal, Optional, Sequence
 
 from discord import Guild
 from sqlalchemy import Column, select
@@ -61,11 +61,12 @@ class GuildModCaseManager:
 
     async def create_case(
         self,
-        type: str,
+        type: Literal["ban", "kick", "mute", "warn"],
         user_id: int,
         creator_user_id: int,
-        reason: str,
+        reason: Optional[str],
         duration: Annotated[timedelta, DurationConverter] | None = None,
+        external: bool = False,
     ) -> ModCase:
         case = ModCase(
             guild_id=self.guild.id,
@@ -77,6 +78,7 @@ class GuildModCaseManager:
             proof_text=None,
             time_created=datetime.now(),
             description=reason,
+            external=external,
         )
 
         if duration:
@@ -90,20 +92,25 @@ class GuildModCaseManager:
     async def update_case(
         self,
         case_id: int,
-        reason: str,
-        duration: Annotated[timedelta, DurationConverter] = timedelta(0),
+        reason: Optional[str],
+        resolved: Optional[bool],
+        duration: Annotated[timedelta, DurationConverter] | None = None,
     ) -> ModCase:
         case = await self.get_case_by_id(case_id)
 
         if not case:
             raise CaseNotFoundException("Case not found")
 
-        case.description = reason  # pyright: ignore[reportAttributeAccessIssue]
+        if reason:
+            case.description = reason
 
-        if duration != timedelta(0):
-            case.time_expires = datetime.now() + duration  # pyright: ignore[reportAttributeAccessIssue]
+        if resolved:
+            case.resolved = True
 
-        case.time_updated = datetime.now()  # pyright: ignore[reportAttributeAccessIssue]
+        if duration:
+            case.time_expires = datetime.now() + duration
+
+        case.time_updated = datetime.now()
 
         await self.session.commit()
         return case
@@ -114,8 +121,8 @@ class GuildModCaseManager:
         if not case:
             raise CaseNotFoundException("Case not found")
 
-        case.resolved = True  # pyright: ignore[reportAttributeAccessIssue]
-        case.time_updated = datetime.now()  # pyright: ignore[reportAttributeAccessIssue]
+        case.resolved = True
+        case.time_updated = datetime.now()
 
         await self.session.commit()
         return case

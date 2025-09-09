@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 
 class BasicCommandsCog(commands.Cog):
+    """Basic commands"""
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 

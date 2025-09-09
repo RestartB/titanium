@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 
 class AutomodMonitorCog(commands.Cog):
+    """Monitors new messages for automod triggers and creates cases/punishments"""
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
         self.new_message_queue: asyncio.Queue[discord.Message] = asyncio.Queue()

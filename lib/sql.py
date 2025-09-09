@@ -33,6 +33,7 @@ class ModCase(Base):
     time_updated: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
     time_expires: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
     description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+    external: Mapped[bool] = MappedColumn(Boolean, default=False)
     resolved: Mapped[bool] = MappedColumn(Boolean, default=False)
     comments: Mapped[list["ModCaseComment"]] = relationship(
         "ModCaseComment", back_populates="case", cascade="all, delete-orphan"
