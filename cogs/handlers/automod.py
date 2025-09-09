@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 
 
 class AutomodMonitorCog(commands.Cog):
+    """Monitors new messages for automod triggers and creates cases/punishments"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
         self.new_message_queue: asyncio.Queue[discord.Message] = asyncio.Queue()
@@ -237,7 +239,7 @@ class AutomodMonitorCog(commands.Cog):
                     await message.delete()
                 elif str(punishment.action_type) == "warn":
                     case = await manager.create_case(
-                        type="warn",
+                        action="warn",
                         user_id=message.author.id,
                         creator_user_id=self.bot.user.id,
                         reason=f"Automod: {punishment.reason}",
@@ -267,16 +269,28 @@ class AutomodMonitorCog(commands.Cog):
                     # Time out user
                     try:
                         await message.author.timeout(
-                            timedelta(seconds=punishment.duration),
+                            (
+                                timedelta(seconds=punishment.duration)
+                                if punishment.duration > 0
+                                and timedelta(
+                                    seconds=punishment.duration
+                                ).total_seconds()
+                                <= 2419200
+                                else timedelta(seconds=2419200)
+                            ),
                             reason=f"Automod: {punishment.reason}",
                         )
 
                         case = await manager.create_case(
-                            type="mute",
+                            action="mute",
                             user_id=message.author.id,
                             creator_user_id=self.bot.user.id,
                             reason=f"Automod: {punishment.reason}",
-                            duration=timedelta(seconds=punishment.duration),
+                            duration=(
+                                timedelta(seconds=punishment.duration)
+                                if punishment.duration > 0
+                                else None
+                            ),
                         )
 
                         dm_success, dm_error = await send_dm(
@@ -311,7 +325,7 @@ class AutomodMonitorCog(commands.Cog):
                         )
 
                         case = await manager.create_case(
-                            type="kick",
+                            action="kick",
                             user_id=message.author.id,
                             creator_user_id=self.bot.user.id,
                             reason=f"Automod: {punishment.reason}",
@@ -345,10 +359,15 @@ class AutomodMonitorCog(commands.Cog):
                         )
 
                         case = await manager.create_case(
-                            type="ban",
+                            action="ban",
                             user_id=message.author.id,
                             creator_user_id=self.bot.user.id,
                             reason=f"Automod: {punishment.reason}",
+                            duration=(
+                                timedelta(seconds=punishment.duration)
+                                if punishment.duration > 0
+                                else None
+                            ),
                         )
 
                         dm_success, dm_error = await send_dm(

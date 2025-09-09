@@ -62,6 +62,7 @@ class ModToggleButton(Button["SettingsView"]):
 
 
 class SettingsView(LayoutView):
+    """Settings quick option commands"""
     def __init__(
         self, interaction: Interaction, bot: "TitaniumBot", settings: ServerSettings
     ) -> None:

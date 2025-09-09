@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 
 class StatsUpdateCog(commands.Cog):
+    """Automatic task to update bot stats for server count, member count and user install count"""
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 

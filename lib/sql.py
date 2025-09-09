@@ -33,6 +33,7 @@ class ModCase(Base):
     time_updated: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
     time_expires: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
     description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+    external: Mapped[bool] = MappedColumn(Boolean, default=False)
     resolved: Mapped[bool] = MappedColumn(Boolean, default=False)
     comments: Mapped[list["ModCaseComment"]] = relationship(
         "ModCaseComment", back_populates="case", cascade="all, delete-orphan"
@@ -191,6 +192,7 @@ class ScheduledTask(Base):
     case_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("mod_cases.id"), nullable=True
     )
+    duration: Mapped[int] = MappedColumn(BigInteger, nullable=True) # for refresh_mute - how long we need to extend mute by
     case: Mapped["ModCase"] = relationship(
         "ModCase", back_populates="scheduled_tasks", uselist=False
     )

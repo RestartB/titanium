@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import discord
@@ -39,6 +40,8 @@ if TYPE_CHECKING:
 
 
 class ModerationBasicCog(commands.Cog):
+    """Basic moderation commands"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
@@ -83,7 +86,7 @@ class ModerationBasicCog(commands.Cog):
                 manager = GuildModCaseManager(ctx.guild, session)
 
                 case = await manager.create_case(
-                    type="warn",
+                    action="warn",
                     user_id=member.id,
                     creator_user_id=ctx.author.id,
                     reason=reason,
@@ -96,7 +99,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await member.send(
                     embed=warned_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
@@ -198,7 +201,13 @@ class ModerationBasicCog(commands.Cog):
             # Time out user
             try:
                 await member.timeout(
-                    processed_duration, reason=f"@{ctx.author.name}: {processed_reason}"
+                    (
+                        processed_duration
+                        if processed_duration
+                        and processed_duration.total_seconds() <= 2419200
+                        else timedelta(seconds=2419200)
+                    ),
+                    reason=f"@{ctx.author.name}: {processed_reason}",
                 )
             except discord.Forbidden:
                 return await ctx.reply(embed=forbidden(self.bot, member))
@@ -210,7 +219,7 @@ class ModerationBasicCog(commands.Cog):
                 manager = GuildModCaseManager(ctx.guild, session)
 
                 case = await manager.create_case(
-                    type="mute",
+                    action="mute",
                     user_id=member.id,
                     creator_user_id=ctx.author.id,
                     reason=processed_reason,
@@ -224,7 +233,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await member.send(
                     embed=muted_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
@@ -252,7 +261,9 @@ class ModerationBasicCog(commands.Cog):
             await stop_loading(self.bot, ctx)
 
     @commands.hybrid_command(
-        name="unmute", alias=["untimeout"], description="Unmute a member."
+        name="unmute",
+        alias=["untimeout"],  # pyright: ignore[reportCallIssue]
+        description="Unmute a member.",
     )
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
@@ -319,7 +330,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await member.send(
                     embed=unmuted_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
@@ -397,7 +408,7 @@ class ModerationBasicCog(commands.Cog):
                 manager = GuildModCaseManager(ctx.guild, session)
 
                 case = await manager.create_case(
-                    type="kick",
+                    action="kick",
                     user_id=member.id,
                     creator_user_id=ctx.author.id,
                     reason=reason,
@@ -410,7 +421,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await member.send(
                     embed=kicked_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
@@ -520,7 +531,7 @@ class ModerationBasicCog(commands.Cog):
                 manager = GuildModCaseManager(ctx.guild, session)
 
                 case = await manager.create_case(
-                    type="ban",
+                    action="ban",
                     user_id=user.id,
                     creator_user_id=ctx.author.id,
                     reason=processed_reason,
@@ -534,7 +545,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await user.send(
                     embed=banned_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
@@ -627,7 +638,7 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await user.send(
                     embed=unbanned_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx)),
+                    view=View().add_item(jump_button(ctx.guild)),
                 )
             except discord.Forbidden:
                 dm_success = False
