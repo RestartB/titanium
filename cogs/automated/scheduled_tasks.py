@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import traceback
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import discord
@@ -59,8 +60,8 @@ class ScheduledTasksCog(commands.Cog):
     async def task_handler(self, task: ScheduledTask) -> None:
         """Handles a task from the queue worker"""
 
-        if task.type == "unmute":
-            # Auto unmute task
+        if task.type == "refresh_mute":
+            # Mute refresh task
             guild = self.bot.get_guild(task.guild_id)
             if not guild:
                 return
@@ -69,12 +70,10 @@ class ScheduledTasksCog(commands.Cog):
             if not member:
                 return
 
-            try:
-                await member.timeout(None, reason=f"{task.case_id} - Mute expired")
-            except Exception:
-                logging.error(
-                    f"Failed to auto unmute {member.name} ({member.id}) in guild {guild.name} ({guild.id})"
-                )
+            await member.timeout(
+                discord.utils.utcnow() + timedelta(seconds=task.duration),
+                reason=f"{task.case_id} - continuing mute",
+            )
         elif task.type == "unban":
             # Auto unban task
             guild = self.bot.get_guild(task.guild_id)

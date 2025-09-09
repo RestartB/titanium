@@ -192,6 +192,7 @@ class ScheduledTask(Base):
     case_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("mod_cases.id"), nullable=True
     )
+    duration: Mapped[int] = MappedColumn(BigInteger, nullable=True) # for refresh_mute - how long we need to extend mute by
     case: Mapped["ModCase"] = relationship(
         "ModCase", back_populates="scheduled_tasks", uselist=False
     )
