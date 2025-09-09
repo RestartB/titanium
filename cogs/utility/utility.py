@@ -1,9 +1,11 @@
+import asyncio
 import base64
 from typing import TYPE_CHECKING
 
-from discord import Colour, Embed, Interaction, app_commands
+from discord import Colour, Embed, File, Interaction, app_commands
 from discord.ext import commands
 
+from lib.helpers.qrcode import generate_qrcode
 from lib.views.feedback_modal import FeedbackModal
 
 if TYPE_CHECKING:
@@ -98,6 +100,29 @@ class UtilityCog(commands.Cog):
             description=f"```{decoded[:3000]}```",
         )
         await ctx.reply(embed=e)
+
+    @commands.hybrid_command(
+        name="qrcode", description="Generate a QR code from a string."
+    )
+    @app_commands.describe(data="Data to be included in the QR code.")
+    async def qrcode(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        *,
+        data: commands.Range[str, 1, 1000],
+    ) -> None:
+        """Generate a QR code from any string."""
+        await ctx.defer()
+
+        file: File = await asyncio.to_thread(generate_qrcode, data)
+
+        embed = Embed(
+            title=f"{str(self.bot.success_emoji)} QR Code Generated",
+            description=f"QR code generated for:\n```{data}```",
+            color=Colour.green(),
+        )
+        embed.set_image(url="attachment://titanium_qrcode.png")
+        await ctx.reply(embed=embed, file=file)
 
 
 async def setup(bot: "TitaniumBot") -> None:
