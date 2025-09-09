@@ -102,31 +102,26 @@ class UtilityCog(commands.Cog):
         await ctx.reply(embed=e)
 
     @commands.hybrid_command(
-        name="qrcode", description="Generate a QR code from any data."
+        name="qrcode", description="Generate a QR code from a string."
     )
-    @app_commands.describe(data="Data to be added in the QR code.")
-    async def _qrcode(self, ctx: commands.Context["TitaniumBot"], *, data: str) -> None:
-        """Generate QR code from any data."""
+    @app_commands.describe(data="Data to be included in the QR code.")
+    async def qrcode(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        *,
+        data: commands.Range[str, 1, 1000],
+    ) -> None:
+        """Generate a QR code from any string."""
         await ctx.defer()
-
-        MAX_QR_LENGTH: int = 1000
-        if len(data) > MAX_QR_LENGTH:
-            return await ctx.reply(
-                embed=Embed(
-                    title=f"{str(self.bot.error_emoji)} Error",
-                    description=f"Data too long for QR code. Max {MAX_QR_LENGTH} chars allowed.",
-                    colour=Colour.red(),
-                ),
-            )
 
         file: File = await asyncio.to_thread(generate_qrcode, data)
 
         embed = Embed(
-            title="QR Code Generated",
-            description=f"Here’s your QR code for:\n```{data}```",
-            color=Colour.blurple(),
+            title=f"{str(self.bot.success_emoji)} QR Code Generated",
+            description=f"QR code generated for:\n```{data}```",
+            color=Colour.green(),
         )
-        embed.set_image(url="attachment://qrcode.png")
+        embed.set_image(url="attachment://titanium_qrcode.png")
         await ctx.reply(embed=embed, file=file)
 
 

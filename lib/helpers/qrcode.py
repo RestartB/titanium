@@ -22,4 +22,4 @@ def generate_qrcode(data: str) -> discord.File:
     img.save(buffer, format="PNG")
     buffer.seek(0)
 
-    return discord.File(buffer, filename="qrcode.png")
+    return discord.File(buffer, filename="titanium_qrcode.png")
