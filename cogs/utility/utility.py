@@ -2,7 +2,7 @@ import asyncio
 import base64
 from typing import TYPE_CHECKING
 
-from discord import Colour, Embed, Interaction, app_commands
+from discord import Colour, Embed, File, Interaction, app_commands
 from discord.ext import commands
 
 from lib.helpers.qrcode import generate_qrcode
@@ -105,11 +105,11 @@ class UtilityCog(commands.Cog):
         name="qrcode", description="Generate a QR code from any data."
     )
     @app_commands.describe(data="Data to be added in the QR code.")
-    async def _qrcode(self, ctx: commands.Context, *, data: str) -> None:
+    async def _qrcode(self, ctx: commands.Context["TitaniumBot"], *, data: str) -> None:
         """Generate QR code from any data."""
         await ctx.defer()
 
-        MAX_QR_LENGTH = 1000
+        MAX_QR_LENGTH: int = 1000
         if len(data) > MAX_QR_LENGTH:
             return await ctx.reply(
                 embed=Embed(
@@ -119,7 +119,7 @@ class UtilityCog(commands.Cog):
                 ),
             )
 
-        file = await asyncio.to_thread(generate_qrcode, data)
+        file: File = await asyncio.to_thread(generate_qrcode, data)
 
         embed = Embed(
             title="QR Code Generated",
