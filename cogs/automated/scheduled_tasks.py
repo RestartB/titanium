@@ -74,6 +74,20 @@ class ScheduledTasksCog(commands.Cog):
                 discord.utils.utcnow() + timedelta(seconds=task.duration),
                 reason=f"{task.case_id} - continuing mute",
             )
+        elif task.type == "perma_mute_refresh":
+            # Perma mute refresh task
+            guild = self.bot.get_guild(task.guild_id)
+            if not guild:
+                return
+
+            member = guild.get_member(task.user_id)
+            if not member:
+                return
+
+            await member.timeout(
+                discord.utils.utcnow() + timedelta(days=28),
+                reason=f"{task.case_id} - continuing mute",
+            )
         elif task.type == "unban":
             # Auto unban task
             guild = self.bot.get_guild(task.guild_id)
@@ -83,7 +97,7 @@ class ScheduledTasksCog(commands.Cog):
             try:
                 await guild.unban(
                     discord.Object(id=task.user_id),
-                    reason=f"{task.case_id} - Ban expired",
+                    reason=f"{task.case_id} - ban expired",
                 )
             except Exception:
                 logging.error(

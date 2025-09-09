@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import discord
@@ -85,7 +86,7 @@ class ModerationBasicCog(commands.Cog):
                 manager = GuildModCaseManager(ctx.guild, session)
 
                 case = await manager.create_case(
-                    type="warn",
+                    action="warn",
                     user_id=member.id,
                     creator_user_id=ctx.author.id,
                     reason=reason,
@@ -200,7 +201,13 @@ class ModerationBasicCog(commands.Cog):
             # Time out user
             try:
                 await member.timeout(
-                    processed_duration, reason=f"@{ctx.author.name}: {processed_reason}"
+                    (
+                        processed_duration
+                        if processed_duration
+                        and processed_duration.total_seconds() <= 2419200
+                        else timedelta(seconds=2419200)
+                    ),
+                    reason=f"@{ctx.author.name}: {processed_reason}",
                 )
             except discord.Forbidden:
                 return await ctx.reply(embed=forbidden(self.bot, member))
@@ -212,7 +219,7 @@ class ModerationBasicCog(commands.Cog):
                 manager = GuildModCaseManager(ctx.guild, session)
 
                 case = await manager.create_case(
-                    type="mute",
+                    action="mute",
                     user_id=member.id,
                     creator_user_id=ctx.author.id,
                     reason=processed_reason,
@@ -401,7 +408,7 @@ class ModerationBasicCog(commands.Cog):
                 manager = GuildModCaseManager(ctx.guild, session)
 
                 case = await manager.create_case(
-                    type="kick",
+                    action="kick",
                     user_id=member.id,
                     creator_user_id=ctx.author.id,
                     reason=reason,
@@ -524,7 +531,7 @@ class ModerationBasicCog(commands.Cog):
                 manager = GuildModCaseManager(ctx.guild, session)
 
                 case = await manager.create_case(
-                    type="ban",
+                    action="ban",
                     user_id=user.id,
                     creator_user_id=ctx.author.id,
                     reason=processed_reason,

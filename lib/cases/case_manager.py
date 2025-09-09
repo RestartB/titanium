@@ -88,8 +88,22 @@ class GuildModCaseManager:
         await self.session.commit()
 
         if duration and action == "mute":
+            # Schedule mute refreshes
             await self._schedule_mute_refreshes(case, duration)
+        elif duration is None and action == "mute":
+            # Permanent mute, schedule refresh every 27 days
+            self.session.add(
+                ScheduledTask(
+                    guild_id=self.guild.id,
+                    user_id=user_id,
+                    case_id=case.id,
+                    type="perma_mute_refresh",
+                    time_scheduled=datetime.now() + timedelta(days=27),
+                )
+            )
+            await self.session.commit()
         elif duration and action == "ban":
+            # Schedule unban
             self.session.add(
                 ScheduledTask(
                     guild_id=self.guild.id,

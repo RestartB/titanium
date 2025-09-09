@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 class ModMonitorCog(commands.Cog):
     """Monitors external moderation actions and creates Titanium cases for them"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
@@ -51,7 +52,7 @@ class ModMonitorCog(commands.Cog):
 
                     # Create a case
                     case = await case_manager.create_case(
-                        type="mute",
+                        action="mute",
                         user_id=after.id,
                         creator_user_id=entry.user_id,
                         reason=entry.reason,
@@ -92,7 +93,7 @@ class ModMonitorCog(commands.Cog):
 
                 # Create a case
                 case = await case_manager.create_case(
-                    type="kick",
+                    action="kick",
                     user_id=member.id,
                     creator_user_id=entry.user_id,
                     reason=entry.reason,
@@ -130,7 +131,7 @@ class ModMonitorCog(commands.Cog):
 
                 # Create a case
                 case = await case_manager.create_case(
-                    type="ban",
+                    action="ban",
                     user_id=user.id,
                     creator_user_id=entry.user_id,
                     reason=entry.reason,
