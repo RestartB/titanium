@@ -108,8 +108,8 @@ class UtilityCog(commands.Cog):
     async def _qrcode(self, ctx: commands.Context, *, data: str) -> None:
         """Generate QR code from any data."""
         await ctx.defer()
-        
-        MAX_QR_LENGTH = 1000  
+
+        MAX_QR_LENGTH = 1000
         if len(data) > MAX_QR_LENGTH:
             return await ctx.reply(
                 embed=Embed(
@@ -118,7 +118,7 @@ class UtilityCog(commands.Cog):
                     colour=Colour.red(),
                 ),
             )
-                    
+
         file = await asyncio.to_thread(generate_qrcode, data)
 
         embed = Embed(
