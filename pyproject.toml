@@ -8,6 +8,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "discord-py>=2.6.0",
     "dotenv>=0.9.9",
+    "humanize>=4.13.0",
     "pydantic>=2.11.7",
     "qrcode[pil]>=8.2",
     "sqlalchemy[asyncio]>=2.0.41",

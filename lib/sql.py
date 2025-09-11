@@ -19,43 +19,6 @@ Base = declarative_base()
 
 
 # -- Tables --
-class ModCase(Base):
-    __tablename__ = "mod_cases"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    type: Mapped[str] = MappedColumn(String(length=32))
-    guild_id: Mapped[int] = MappedColumn(BigInteger)
-    user_id: Mapped[int] = MappedColumn(BigInteger)
-    creator_user_id: Mapped[int] = MappedColumn(BigInteger)
-    proof_msg_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    proof_channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    proof_text: Mapped[str] = MappedColumn(String, nullable=True)
-    time_created: Mapped[datetime] = MappedColumn(DateTime)
-    time_updated: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
-    time_expires: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
-    description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
-    external: Mapped[bool] = MappedColumn(Boolean, default=False)
-    resolved: Mapped[bool] = MappedColumn(Boolean, default=False)
-    comments: Mapped[list["ModCaseComment"]] = relationship(
-        "ModCaseComment", back_populates="case", cascade="all, delete-orphan"
-    )
-    scheduled_tasks: Mapped[list["ScheduledTask"]] = relationship(
-        "ScheduledTask", back_populates="case", cascade="all, delete-orphan"
-    )
-
-
-class ModCaseComment(Base):
-    __tablename__ = "mod_case_comments"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    guild_id: Mapped[int] = MappedColumn(BigInteger)
-    case_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("mod_cases.id"))
-    user_id: Mapped[int] = MappedColumn(BigInteger)
-    comment: Mapped[str] = MappedColumn(String(length=512))
-    time_created: Mapped[datetime] = MappedColumn(DateTime)
-    case: Mapped["ModCase"] = relationship(
-        "ModCase", back_populates="comments", uselist=False
-    )
-
-
 class ServerSettings(Base):
     __tablename__ = "server_settings"
     guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
@@ -66,6 +29,38 @@ class ServerSettings(Base):
         cascade="all, delete-orphan",
         back_populates="server_settings",
         uselist=False,
+    )
+    logging_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    logging_settings: Mapped["ServerLoggingSettings"] = relationship(
+        "ServerLoggingSettings",
+        cascade="all, delete-orphan",
+        back_populates="server_settings",
+        uselist=False,
+    )
+
+
+class ServerLimits(Base):
+    __tablename__ = "server_limits"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    BadWordList: Mapped[int] = MappedColumn(Integer, default=10)
+    BadWordListSize: Mapped[int] = MappedColumn(Integer, default=1500)
+    MessageSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    MentionSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    WordSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    NewLineSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    LinkSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    AttachmentSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    EmojiSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+
+
+class ServerPrefixes(Base):
+    __tablename__ = "server_prefixes"
+    guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    prefixes: Mapped[list[str]] = MappedColumn(
+        ARRAY(String(length=5)),
+        default=["t!"],
+        server_default=text("ARRAY['t!']::varchar[]"),
+        nullable=False,
     )
 
 
@@ -118,12 +113,12 @@ class AutomodRule(Base):
     )
     rule_type: Mapped[str] = MappedColumn(String(length=32))
     antispam_type: Mapped[str] = MappedColumn(String(length=32), nullable=True)
+    rule_name: Mapped[str] = MappedColumn(String(length=100), nullable=True)
     words: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
     )
-    occurrences: Mapped[int] = MappedColumn(Integer)
-    threshold: Mapped[int] = MappedColumn(Integer)
-    duration: Mapped[int] = MappedColumn(Integer)
+    threshold: Mapped[int] = MappedColumn(Integer)  # number of occurrences to trigger
+    duration: Mapped[int] = MappedColumn(Integer)  # duration to look for occurrences
     actions: Mapped[list["AutomodAction"]] = relationship(
         "AutomodAction",
         back_populates="rule",
@@ -155,28 +150,115 @@ class AutomodAction(Base):
     )
 
 
-class ServerLimits(Base):
-    __tablename__ = "server_limits"
+class ServerLoggingSettings(Base):
+    __tablename__ = "server_logging_settings"
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("server_settings.guild_id"), primary_key=True
+    )
+    server_settings: Mapped["ServerSettings"] = relationship(
+        "ServerSettings", back_populates="logging_settings", uselist=False
+    )
+    app_command_perm_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    dc_automod_rule_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    dc_automod_rule_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    dc_automod_rule_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    channel_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    channel_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    channel_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    guild_name_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    guild_afk_channel_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    guild_afk_timeout_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    guild_icon_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    guild_emoji_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    guild_emoji_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    guild_sticker_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    guild_sticker_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    guild_invite_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    guild_invite_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    member_join_url: Mapped[str] = MappedColumn(String, nullable=True)
+    member_leave_url: Mapped[str] = MappedColumn(String, nullable=True)
+    member_nickname_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    member_roles_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    member_ban_url: Mapped[str] = MappedColumn(String, nullable=True)
+    member_unban_url: Mapped[str] = MappedColumn(String, nullable=True)
+    member_kick_url: Mapped[str] = MappedColumn(String, nullable=True)
+    member_timeout_url: Mapped[str] = MappedColumn(String, nullable=True)
+    member_untimeout_url: Mapped[str] = MappedColumn(String, nullable=True)
+    message_edit_url: Mapped[str] = MappedColumn(String, nullable=True)
+    message_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    message_bulk_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    poll_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    poll_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    reaction_clear_url: Mapped[str] = MappedColumn(String, nullable=True)
+    reaction_clear_emoji_url: Mapped[str] = MappedColumn(String, nullable=True)
+    role_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    role_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    role_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    scheduled_event_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    scheduled_event_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    scheduled_event_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    soundboard_sound_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    soundboard_sound_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    soundboard_sound_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    stage_instance_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    stage_instance_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    stage_instance_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    thread_create_url: Mapped[str] = MappedColumn(String, nullable=True)
+    thread_update_url: Mapped[str] = MappedColumn(String, nullable=True)
+    thread_remove_url: Mapped[str] = MappedColumn(String, nullable=True)
+    thread_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    voice_join_url: Mapped[str] = MappedColumn(String, nullable=True)
+    voice_leave_url: Mapped[str] = MappedColumn(String, nullable=True)
+    voice_move_url: Mapped[str] = MappedColumn(String, nullable=True)
+    voice_mute_url: Mapped[str] = MappedColumn(String, nullable=True)
+    voice_unmute_url: Mapped[str] = MappedColumn(String, nullable=True)
+    voice_deafen_url: Mapped[str] = MappedColumn(String, nullable=True)
+    voice_undeafen_url: Mapped[str] = MappedColumn(String, nullable=True)
+    titanium_warn_url: Mapped[str] = MappedColumn(String, nullable=True)
+    titanium_mute_url: Mapped[str] = MappedColumn(String, nullable=True)
+    titanium_unmute_url: Mapped[str] = MappedColumn(String, nullable=True)
+    titanium_kick_url: Mapped[str] = MappedColumn(String, nullable=True)
+    titanium_ban_url: Mapped[str] = MappedColumn(String, nullable=True)
+    titanium_unban_url: Mapped[str] = MappedColumn(String, nullable=True)
+    titanium_case_delete_url: Mapped[str] = MappedColumn(String, nullable=True)
+    titanium_case_comment_url: Mapped[str] = MappedColumn(String, nullable=True)
+    titanium_automod_trigger_url: Mapped[str] = MappedColumn(String, nullable=True)
+
+
+class ModCase(Base):
+    __tablename__ = "mod_cases"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    BadWordList: Mapped[int] = MappedColumn(Integer, default=10)
-    BadWordListSize: Mapped[int] = MappedColumn(Integer, default=1500)
-    MessageSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    MentionSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    WordSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    NewLineSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    LinkSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    AttachmentSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    EmojiSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    type: Mapped[str] = MappedColumn(String(length=32))
+    guild_id: Mapped[int] = MappedColumn(BigInteger)
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    creator_user_id: Mapped[int] = MappedColumn(BigInteger)
+    proof_msg_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    proof_channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    proof_text: Mapped[str] = MappedColumn(String, nullable=True)
+    time_created: Mapped[datetime] = MappedColumn(DateTime)
+    time_updated: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
+    time_expires: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
+    description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+    external: Mapped[bool] = MappedColumn(Boolean, default=False)
+    resolved: Mapped[bool] = MappedColumn(Boolean, default=False)
+    comments: Mapped[list["ModCaseComment"]] = relationship(
+        "ModCaseComment", back_populates="case", cascade="all, delete-orphan"
+    )
+    scheduled_tasks: Mapped[list["ScheduledTask"]] = relationship(
+        "ScheduledTask", back_populates="case", cascade="all, delete-orphan"
+    )
 
 
-class ServerPrefixes(Base):
-    __tablename__ = "server_prefixes"
-    guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    prefixes: Mapped[list[str]] = MappedColumn(
-        ARRAY(String(length=5)),
-        default=["t!"],
-        server_default=text("ARRAY['t!']::varchar[]"),
-        nullable=False,
+class ModCaseComment(Base):
+    __tablename__ = "mod_case_comments"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    guild_id: Mapped[int] = MappedColumn(BigInteger)
+    case_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("mod_cases.id"))
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    comment: Mapped[str] = MappedColumn(String(length=512))
+    time_created: Mapped[datetime] = MappedColumn(DateTime)
+    case: Mapped["ModCase"] = relationship(
+        "ModCase", back_populates="comments", uselist=False
     )
 
 
@@ -192,7 +274,9 @@ class ScheduledTask(Base):
     case_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("mod_cases.id"), nullable=True
     )
-    duration: Mapped[int] = MappedColumn(BigInteger, nullable=True) # for refresh_mute - how long we need to extend mute by
+    duration: Mapped[int] = MappedColumn(
+        BigInteger, nullable=True
+    )  # for refresh_mute - how long we need to extend mute by
     case: Mapped["ModCase"] = relationship(
         "ModCase", back_populates="scheduled_tasks", uselist=False
     )

@@ -7,6 +7,7 @@ from discord.ext import commands
 from discord.ui import View
 
 from lib.cases.case_manager import GuildModCaseManager
+from lib.classes.server_logger import ServerLogger
 from lib.duration import DurationConverter
 from lib.embeds.dm_notifs import (
     banned_dm,
@@ -107,6 +108,15 @@ class ModerationBasicCog(commands.Cog):
             except discord.HTTPException:
                 dm_success = False
                 dm_error = "Failed to send DM."
+
+            server_logger = ServerLogger(self.bot, ctx.guild)
+            await server_logger.titanium_warn(
+                target=member,
+                creator=ctx.author,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
 
             # Send confirmation message
             await ctx.reply(
@@ -242,6 +252,15 @@ class ModerationBasicCog(commands.Cog):
                 dm_success = False
                 dm_error = "Failed to send DM."
 
+            server_logger = ServerLogger(self.bot, ctx.guild)
+            await server_logger.titanium_mute(
+                target=member,
+                creator=ctx.author,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+
             # Send confirmation message
             await ctx.reply(
                 embed=muted(
@@ -339,6 +358,15 @@ class ModerationBasicCog(commands.Cog):
                 dm_success = False
                 dm_error = "Failed to send DM."
 
+            server_logger = ServerLogger(self.bot, ctx.guild)
+            await server_logger.titanium_unmute(
+                target=member,
+                creator=ctx.author,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+
             # Send confirmation message
             await ctx.reply(
                 embed=unmuted(
@@ -429,6 +457,15 @@ class ModerationBasicCog(commands.Cog):
             except discord.HTTPException:
                 dm_success = False
                 dm_error = "Failed to send DM."
+
+            server_logger = ServerLogger(self.bot, ctx.guild)
+            await server_logger.titanium_kick(
+                target=member,
+                creator=ctx.author,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
 
             # Send confirmation message
             await ctx.reply(
@@ -554,6 +591,15 @@ class ModerationBasicCog(commands.Cog):
                 dm_success = False
                 dm_error = "Failed to send DM."
 
+            server_logger = ServerLogger(self.bot, ctx.guild)
+            await server_logger.titanium_ban(
+                target=user,
+                creator=ctx.author,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+
             # Send confirmation message
             await ctx.reply(
                 embed=banned(
@@ -646,6 +692,15 @@ class ModerationBasicCog(commands.Cog):
             except discord.HTTPException:
                 dm_success = False
                 dm_error = "Failed to send DM."
+
+            server_logger = ServerLogger(self.bot, ctx.guild)
+            await server_logger.titanium_unban(
+                target=user,
+                creator=ctx.author,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
 
             # Send confirmation message
             await ctx.reply(

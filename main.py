@@ -26,6 +26,7 @@ from lib.sql import (  # noqa: E402
     AutomodRule,
     ServerAutomodSettings,
     ServerLimits,
+    ServerLoggingSettings,
     ServerPrefixes,
     ServerSettings,
     get_session,
@@ -70,6 +71,7 @@ class TitaniumBot(commands.Bot):
 
     server_configs: dict[int, ServerSettings] = {}
     server_prefixes: dict[int, ServerPrefixes] = {}
+    server_limits: dict[int, ServerLimits] = {}
     automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
 
     punishing: dict[int, list[int]] = {}
@@ -82,26 +84,40 @@ class TitaniumBot(commands.Bot):
 
         async with get_session() as session:
             # Settings
-            stmt = select(ServerSettings).options(
-                selectinload(ServerSettings.automod_settings).options(
-                    selectinload(ServerAutomodSettings.badword_detection_rules).options(
-                        selectinload(AutomodRule.actions)
-                    ),
-                    selectinload(ServerAutomodSettings.spam_detection_rules).options(
-                        selectinload(AutomodRule.actions)
-                    ),
-                    selectinload(ServerAutomodSettings.malicious_link_rules).options(
-                        selectinload(AutomodRule.actions)
-                    ),
-                    selectinload(ServerAutomodSettings.phishing_link_rules).options(
-                        selectinload(AutomodRule.actions)
-                    ),
+            stmt = (
+                select(ServerSettings)
+                .options(
+                    selectinload(ServerSettings.automod_settings).options(
+                        selectinload(
+                            ServerAutomodSettings.badword_detection_rules
+                        ).options(selectinload(AutomodRule.actions)),
+                        selectinload(
+                            ServerAutomodSettings.spam_detection_rules
+                        ).options(selectinload(AutomodRule.actions)),
+                        selectinload(
+                            ServerAutomodSettings.malicious_link_rules
+                        ).options(selectinload(AutomodRule.actions)),
+                        selectinload(ServerAutomodSettings.phishing_link_rules).options(
+                            selectinload(AutomodRule.actions)
+                        ),
+                    )
                 )
+                .options(selectinload(ServerSettings.logging_settings))
             )
             result = await session.execute(stmt)
             configs = result.scalars().all()
-            self.server_configs.clear()
 
+            # Force load relationships
+            for config in configs:
+                if config.automod_settings:
+                    _ = config.automod_settings.badword_detection_rules
+                    _ = config.automod_settings.spam_detection_rules
+                    _ = config.automod_settings.malicious_link_rules
+                    _ = config.automod_settings.phishing_link_rules
+                if config.logging_settings:
+                    pass
+
+            self.server_configs.clear()
             for config in configs:
                 self.server_configs[config.guild_id] = config
 
@@ -113,6 +129,15 @@ class TitaniumBot(commands.Bot):
 
             for config in prefix_configs:
                 self.server_prefixes[config.guild_id] = config
+
+            # Server Limits
+            stmt = select(ServerLimits)
+            result = await session.execute(stmt)
+            limits_configs = result.scalars().all()
+            self.server_limits.clear()
+
+            for config in limits_configs:
+                self.server_limits[config.id] = config
 
         logging.info("[CACHE] Server configs refreshed.")
 
@@ -139,10 +164,20 @@ class TitaniumBot(commands.Bot):
                         ),
                     )
                 )
+                .options(selectinload(ServerSettings.logging_settings))
             )
             result = await session.execute(stmt)
             config = result.scalar()
             if config:
+                # Force load relationships
+                if config.automod_settings:
+                    _ = config.automod_settings.badword_detection_rules
+                    _ = config.automod_settings.spam_detection_rules
+                    _ = config.automod_settings.malicious_link_rules
+                    _ = config.automod_settings.phishing_link_rules
+                if config.logging_settings:
+                    pass
+
                 self.server_configs[config.guild_id] = config
 
             # Server prefixes
@@ -151,6 +186,13 @@ class TitaniumBot(commands.Bot):
             prefix_config = result.scalar()
             if prefix_config:
                 self.server_prefixes[prefix_config.guild_id] = prefix_config
+
+            # Server Limits
+            stmt = select(ServerLimits).where(ServerLimits.id == guild_id)
+            result = await session.execute(stmt)
+            limits_config = result.scalar()
+            if limits_config:
+                self.server_limits[limits_config.id] = limits_config
 
         logging.info(f"[CACHE] Server config cache for guild {guild_id} refreshed.")
 
@@ -163,6 +205,10 @@ class TitaniumBot(commands.Bot):
             await session.execute(stmt)
 
             stmt = insert(ServerAutomodSettings).values(guild_id=guild_id)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
+            stmt = insert(ServerLoggingSettings).values(guild_id=guild_id)
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 
@@ -364,5 +410,6 @@ if __name__ == "__main__":
         bot.run(token, log_handler=None)
     except discord.LoginFailure:
         logging.error("[INIT] Invalid bot token provided. Please check your .env file.")
-    except Exception as e:
-        logging.error(f"[INIT] An error occurred while starting the bot: {e}")
+    except Exception:
+        logging.error("[INIT] An error occurred while starting the bot:")
+        logging.error(traceback.format_exc())

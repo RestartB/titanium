@@ -10,6 +10,7 @@ from discord.ext import commands
 
 from lib.cases.case_manager import GuildModCaseManager
 from lib.classes.automod_message import AutomodMessage
+from lib.classes.server_logger import ServerLogger
 from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, warned_dm
 from lib.embeds.mod_actions import (
     banned,
@@ -393,6 +394,14 @@ class AutomodMonitorCog(commands.Cog):
 
                 if embeds:
                     await message.channel.send(embeds=embeds)
+
+        if triggers:
+            server_logger = ServerLogger(self.bot, message.guild)
+            await server_logger.titanium_automod_trigger(
+                rules=triggers,
+                actions=punishments,
+                message=message,
+            )
 
         logging.debug(f"Processed message from {message.author}: {message.id}")
 
