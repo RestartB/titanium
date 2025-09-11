@@ -63,6 +63,7 @@ class ModToggleButton(Button["SettingsView"]):
 
 class SettingsView(LayoutView):
     """Settings quick option commands"""
+
     def __init__(
         self, interaction: Interaction, bot: "TitaniumBot", settings: ServerSettings
     ) -> None:
@@ -153,16 +154,11 @@ class ServerSettingsCog(commands.Cog):
 
         await interaction.response.defer(ephemeral=True)
 
-        async with get_session() as session:
-            server_settings: ServerSettings = await session.get(
-                ServerSettings, interaction.guild_id
-            )
+        await self.bot.refresh_guild_config_cache(interaction.guild_id)
+        server_settings = self.bot.server_configs.get(interaction.guild_id)
 
-            if not server_settings:
-                server_settings = ServerSettings(guild_id=interaction.guild_id)
-                session.add(server_settings)
-
-            self.bot.server_configs[interaction.guild_id] = server_settings
+        if not server_settings:
+            server_settings = await self.bot.init_guild(interaction.guild_id)
 
         view = SettingsView(interaction, self.bot, server_settings)
 

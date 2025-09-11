@@ -71,7 +71,6 @@ class TitaniumBot(commands.Bot):
 
     server_configs: dict[int, ServerSettings] = {}
     server_prefixes: dict[int, ServerPrefixes] = {}
-    server_limits: dict[int, ServerLimits] = {}
     automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
 
     punishing: dict[int, list[int]] = {}
@@ -106,18 +105,8 @@ class TitaniumBot(commands.Bot):
             )
             result = await session.execute(stmt)
             configs = result.scalars().all()
-
-            # Force load relationships
-            for config in configs:
-                if config.automod_settings:
-                    _ = config.automod_settings.badword_detection_rules
-                    _ = config.automod_settings.spam_detection_rules
-                    _ = config.automod_settings.malicious_link_rules
-                    _ = config.automod_settings.phishing_link_rules
-                if config.logging_settings:
-                    pass
-
             self.server_configs.clear()
+
             for config in configs:
                 self.server_configs[config.guild_id] = config
 
@@ -129,15 +118,6 @@ class TitaniumBot(commands.Bot):
 
             for config in prefix_configs:
                 self.server_prefixes[config.guild_id] = config
-
-            # Server Limits
-            stmt = select(ServerLimits)
-            result = await session.execute(stmt)
-            limits_configs = result.scalars().all()
-            self.server_limits.clear()
-
-            for config in limits_configs:
-                self.server_limits[config.id] = config
 
         logging.info("[CACHE] Server configs refreshed.")
 
@@ -169,15 +149,6 @@ class TitaniumBot(commands.Bot):
             result = await session.execute(stmt)
             config = result.scalar()
             if config:
-                # Force load relationships
-                if config.automod_settings:
-                    _ = config.automod_settings.badword_detection_rules
-                    _ = config.automod_settings.spam_detection_rules
-                    _ = config.automod_settings.malicious_link_rules
-                    _ = config.automod_settings.phishing_link_rules
-                if config.logging_settings:
-                    pass
-
                 self.server_configs[config.guild_id] = config
 
             # Server prefixes
@@ -187,16 +158,9 @@ class TitaniumBot(commands.Bot):
             if prefix_config:
                 self.server_prefixes[prefix_config.guild_id] = prefix_config
 
-            # Server Limits
-            stmt = select(ServerLimits).where(ServerLimits.id == guild_id)
-            result = await session.execute(stmt)
-            limits_config = result.scalar()
-            if limits_config:
-                self.server_limits[limits_config.id] = limits_config
-
         logging.info(f"[CACHE] Server config cache for guild {guild_id} refreshed.")
 
-    async def init_guild(self, guild_id: int) -> None:
+    async def init_guild(self, guild_id: int) -> ServerSettings | None:
         logging.info(f"[INIT] Initializing guild {guild_id}...")
 
         async with get_session() as session:
@@ -223,6 +187,7 @@ class TitaniumBot(commands.Bot):
         await self.refresh_guild_config_cache(guild_id)
 
         logging.info(f"[INIT] Guild {guild_id} initialized.")
+        return self.server_configs.get(guild_id)
 
     async def setup_hook(self):
         logging.info("[INIT] Initializing database...")

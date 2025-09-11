@@ -60,6 +60,7 @@ class AutomodMonitorCog(commands.Cog):
         if (
             not message.guild
             or message.guild.id not in self.bot.server_configs
+            or not self.bot.server_configs[message.guild.id].automod_settings
             or not message.author
             or not isinstance(message.author, discord.Member)
             or not self.bot.user
