@@ -205,10 +205,8 @@ class APICog(commands.Cog):
 
     def _sort_channels_in_category(
         self,
-        channels: list[
-            VoiceChannel | StageChannel | ForumChannel | TextChannel | CategoryChannel
-        ],
-    ) -> list[VoiceChannel | StageChannel | ForumChannel | TextChannel]:
+        channels: Sequence[abc.GuildChannel],
+    ) -> Sequence[abc.GuildChannel]:
         non_voice_channels = [
             channel
             for channel in channels
@@ -229,28 +227,29 @@ class APICog(commands.Cog):
 
         return non_voice_channels + voice_channels
 
-    def _sort_loose_channels(self, guild: Guild) -> Sequence[abc.GuildChannel]:
-        loose = [channel for channel in guild.channels if channel.category is None]
-
-        return self._sort_channels_in_category(loose)
-
-    def _sort_categories(self, guild: Guild) -> list[CategoryDict]:
-        categories = guild.categories
-
-        new_categories: list[CategoryDict] = []
-        for category in categories:
-            new_categories.append(
-                {
-                    "id": category.id,
-                    "name": category.name,
-                    "position": category.position,
-                    "channels": self._sort_channels_in_category(category.channels),
-                }
-            )
-
-        sorted_categories = sorted(
-            new_categories, key=lambda c: (c["position"], c["id"])
+    def _sort_channels(self, guild: Guild) -> Sequence[abc.GuildChannel]:
+        loose_channels = self._sort_channels_in_category(
+            [c for c in guild.channels if c.category is None]
         )
+
+        categories = guild.categories
+        sorted_categories = sorted(categories, key=lambda c: (c.position, c.id))
+        category_channels = []
+
+        for category in sorted_categories:
+            sorted_category_channels = self._sort_channels_in_category(
+                category.channels
+            )
+            category_channels.extend(sorted_category_channels)
+
+        for i, channel in enumerate(list(loose_channels) + list(category_channels)):
+            channel.position = i
+
+        return list(loose_channels) + list(category_channels)
+
+    def _sort_categories(self, guild: Guild) -> list[CategoryChannel]:
+        categories = guild.categories
+        sorted_categories = sorted(categories, key=lambda c: (c.position, c.id))
         return sorted_categories
 
     def _serialize_automod_detection_rules(
@@ -413,14 +412,14 @@ class APICog(commands.Cog):
 
         return web.json_response(
             {
-                "id": guild.id,
+                "id": str(guild.id),
                 "name": guild.name,
                 "icon": guild.icon.url if guild.icon else None,
                 "banner": guild.banner.url if guild.banner else None,
                 "member_count": guild.member_count,
                 "roles": [
                     {
-                        "id": role.id,
+                        "id": str(role.id),
                         "name": role.name,
                         "color": role.colour.value,
                         "hoist": role.hoist,
@@ -428,35 +427,23 @@ class APICog(commands.Cog):
                     }
                     for role in guild.roles
                 ],
-                "loose_channels": [
+                "channels": [
                     {
-                        "id": channel.id,
+                        "id": str(channel.id),
                         "name": channel.name,
                         "type": str(channel.type),
                         "position": channel.position,
-                        "category": channel.category_id
+                        "category": str(channel.category_id)
                         if channel.category_id
                         else None,
                     }
-                    for channel in self._sort_loose_channels(guild)
+                    for channel in self._sort_channels(guild)
                 ],
                 "categories": [
                     {
-                        "id": category["id"],
-                        "name": category["name"],
-                        "position": category["position"],
-                        "channels": [
-                            {
-                                "id": channel.id,
-                                "name": channel.name,
-                                "type": str(channel.type),
-                                "position": channel.position,
-                                "category": channel.category_id
-                                if channel.category_id
-                                else None,
-                            }
-                            for channel in category["channels"]
-                        ],
+                        "id": str(category.id),
+                        "name": category.name,
+                        "position": category.position,
                     }
                     for category in self._sort_categories(guild)
                 ],
