@@ -1,9 +1,18 @@
 import asyncio
 import logging
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Sequence, TypedDict
 
 from aiohttp import web
+from discord import (
+    CategoryChannel,
+    ForumChannel,
+    Guild,
+    StageChannel,
+    TextChannel,
+    VoiceChannel,
+    abc,
+)
 from discord.ext import commands
 from pydantic import BaseModel, ValidationError, field_validator, model_validator
 from sqlalchemy import delete
@@ -17,6 +26,13 @@ from lib.sql import (
 
 if TYPE_CHECKING:
     from main import TitaniumBot
+
+
+class CategoryDict(TypedDict):
+    id: int
+    name: str
+    position: int
+    channels: list[VoiceChannel | StageChannel | ForumChannel | TextChannel]
 
 
 class AutomodActionModel(BaseModel):
@@ -102,8 +118,78 @@ class AutomodConfigModel(BaseModel):
     phishing_link_detection: DetectionRulesModel
 
 
+class LoggingConfigModel(BaseModel):
+    enabled: bool
+    app_command_perm_update_id: int
+    dc_automod_rule_create_id: int
+    dc_automod_rule_update_id: int
+    dc_automod_rule_delete_id: int
+    channel_create_id: int
+    channel_update_id: int
+    channel_delete_id: int
+    guild_name_update_id: int
+    guild_afk_channel_update_id: int
+    guild_afk_timeout_update_id: int
+    guild_icon_update_id: int
+    guild_emoji_create_id: int
+    guild_emoji_delete_id: int
+    guild_sticker_create_id: int
+    guild_sticker_delete_id: int
+    guild_invite_create_id: int
+    guild_invite_delete_id: int
+    member_join_id: int
+    member_leave_id: int
+    member_nickname_update_id: int
+    member_roles_update_id: int
+    member_ban_id: int
+    member_unban_id: int
+    member_kick_id: int
+    member_timeout_id: int
+    member_untimeout_id: int
+    message_edit_id: int
+    message_delete_id: int
+    message_bulk_delete_id: int
+    poll_create_id: int
+    poll_delete_id: int
+    reaction_clear_id: int
+    reaction_clear_emoji_id: int
+    role_create_id: int
+    role_update_id: int
+    role_delete_id: int
+    scheduled_event_create_id: int
+    scheduled_event_update_id: int
+    scheduled_event_delete_id: int
+    soundboard_sound_create_id: int
+    soundboard_sound_update_id: int
+    soundboard_sound_delete_id: int
+    stage_instance_create_id: int
+    stage_instance_update_id: int
+    stage_instance_delete_id: int
+    thread_create_id: int
+    thread_update_id: int
+    thread_remove_id: int
+    thread_delete_id: int
+    voice_join_id: int
+    voice_leave_id: int
+    voice_move_id: int
+    voice_mute_id: int
+    voice_unmute_id: int
+    voice_deafen_id: int
+    voice_undeafen_id: int
+    titanium_warn_id: int
+    titanium_mute_id: int
+    titanium_unmute_id: int
+    titanium_kick_id: int
+    titanium_ban_id: int
+    titanium_unban_id: int
+    titanium_case_delete_id: int
+    titanium_case_comment_id: int
+    titanium_automod_trigger_id: int
+
+
 class APICog(commands.Cog):
     """API server for dashboard, website and status page"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
         self.app = None
@@ -117,15 +203,65 @@ class APICog(commands.Cog):
         logging.info(f"[API] Starting API server on {self.host}:{self.port}")
         self.server_task = asyncio.create_task(self.start_server())
 
-    def _serialize_detection_rules(
+    def _sort_channels_in_category(
+        self,
+        channels: list[
+            VoiceChannel | StageChannel | ForumChannel | TextChannel | CategoryChannel
+        ],
+    ) -> list[VoiceChannel | StageChannel | ForumChannel | TextChannel]:
+        non_voice_channels = [
+            channel
+            for channel in channels
+            if not isinstance(
+                channel,
+                (VoiceChannel, StageChannel, CategoryChannel),
+            )
+        ]
+        voice_channels = [
+            channel
+            for channel in channels
+            if isinstance(channel, (VoiceChannel, StageChannel))
+            and not isinstance(channel, CategoryChannel)
+        ]
+
+        non_voice_channels.sort(key=lambda c: (c.position, c.id))
+        voice_channels.sort(key=lambda c: (c.position, c.id))
+
+        return non_voice_channels + voice_channels
+
+    def _sort_loose_channels(self, guild: Guild) -> Sequence[abc.GuildChannel]:
+        loose = [channel for channel in guild.channels if channel.category is None]
+
+        return self._sort_channels_in_category(loose)
+
+    def _sort_categories(self, guild: Guild) -> list[CategoryDict]:
+        categories = guild.categories
+
+        new_categories: list[CategoryDict] = []
+        for category in categories:
+            new_categories.append(
+                {
+                    "id": category.id,
+                    "name": category.name,
+                    "position": category.position,
+                    "channels": self._sort_channels_in_category(category.channels),
+                }
+            )
+
+        sorted_categories = sorted(
+            new_categories, key=lambda c: (c["position"], c["id"])
+        )
+        return sorted_categories
+
+    def _serialize_automod_detection_rules(
         self, enabled: bool, rules: list[AutomodRule]
     ) -> dict:
         return {
             "enabled": enabled,
-            "rules": [self._serialize_rule(rule) for rule in rules],
+            "rules": [self._serialize_automod_rule(rule) for rule in rules],
         }
 
-    def _serialize_rule(self, rule: AutomodRule) -> dict:
+    def _serialize_automod_rule(self, rule: AutomodRule) -> dict:
         return {
             "id": rule.id,
             "rule_type": rule.rule_type,
@@ -133,10 +269,12 @@ class APICog(commands.Cog):
             "occurrences": rule.occurrences,
             "threshold": rule.threshold,
             "duration": rule.duration,
-            "actions": [self._serialize_action(action) for action in rule.actions],
+            "actions": [
+                self._serialize_automod_action(action) for action in rule.actions
+            ],
         }
 
-    def _serialize_action(self, action: AutomodAction) -> dict:
+    def _serialize_automod_action(self, action: AutomodAction) -> dict:
         return {
             "id": action.id,
             "type": action.action_type,
@@ -216,6 +354,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/ping", self.ping)
         self.app.router.add_get("/status", self.status)
         self.app.router.add_get("/stats", self.stats)
+        self.app.router.add_get("/{guild_id}/info", self.server_info)
         self.app.router.add_get("/{guild_id}/module/{module_name}", self.module_get)
         self.app.router.add_put("/{guild_id}/module/{module_name}", self.module_update)
 
@@ -260,6 +399,67 @@ class APICog(commands.Cog):
                 "server_count": self.bot.guild_installs,
                 "server_member_count": self.bot.guild_member_count,
                 "user_count": self.bot.user_installs,
+            }
+        )
+
+    async def server_info(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id:
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        return web.json_response(
+            {
+                "id": guild.id,
+                "name": guild.name,
+                "icon": guild.icon.url if guild.icon else None,
+                "banner": guild.banner.url if guild.banner else None,
+                "member_count": guild.member_count,
+                "roles": [
+                    {
+                        "id": role.id,
+                        "name": role.name,
+                        "color": role.colour.value,
+                        "hoist": role.hoist,
+                        "position": role.position,
+                    }
+                    for role in guild.roles
+                ],
+                "loose_channels": [
+                    {
+                        "id": channel.id,
+                        "name": channel.name,
+                        "type": str(channel.type),
+                        "position": channel.position,
+                        "category": channel.category_id
+                        if channel.category_id
+                        else None,
+                    }
+                    for channel in self._sort_loose_channels(guild)
+                ],
+                "categories": [
+                    {
+                        "id": category["id"],
+                        "name": category["name"],
+                        "position": category["position"],
+                        "channels": [
+                            {
+                                "id": channel.id,
+                                "name": channel.name,
+                                "type": str(channel.type),
+                                "position": channel.position,
+                                "category": channel.category_id
+                                if channel.category_id
+                                else None,
+                            }
+                            for channel in category["channels"]
+                        ],
+                    }
+                    for category in self._sort_categories(guild)
+                ],
             }
         )
 
@@ -314,7 +514,7 @@ class APICog(commands.Cog):
 
             return web.json_response(
                 {
-                    detection_type: self._serialize_detection_rules(
+                    detection_type: self._serialize_automod_detection_rules(
                         getattr(config, f"{detection_type}", False),
                         getattr(config, f"{detection_type}_rules", []),
                     )
@@ -326,6 +526,29 @@ class APICog(commands.Cog):
                     ]
                 }
             )
+        elif module_name == "logging":
+            config = self.bot.server_configs[guild.id]
+
+            if not config.logging_settings:
+                default_values = {}
+                for field_name, field_info in LoggingConfigModel.model_fields.items():
+                    if field_name == "enabled":
+                        default_values[field_name] = config.logging_enabled
+                    else:
+                        default_values[field_name] = 0
+
+                return web.json_response(default_values)
+
+            logging_settings = config.logging_settings
+            response_data = {}
+
+            for field_name in LoggingConfigModel.model_fields.keys():
+                if field_name == "enabled":
+                    response_data[field_name] = config.logging_enabled
+                else:
+                    response_data[field_name] = getattr(logging_settings, field_name, 0)
+
+            return web.json_response(response_data)
         else:
             return web.json_response({"error": "Module not found"}, status=404)
 
@@ -367,7 +590,7 @@ class APICog(commands.Cog):
 
                 return web.json_response(
                     {
-                        detection_type: self._serialize_detection_rules(
+                        detection_type: self._serialize_automod_detection_rules(
                             getattr(config, f"{detection_type}", False),
                             getattr(config, f"{detection_type}_rules", []),
                         )
