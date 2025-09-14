@@ -1,7 +1,9 @@
 import os
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
 
+import shortuuid
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -11,17 +13,23 @@ from sqlalchemy import (
     String,
     text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Mapped, MappedColumn, declarative_base, relationship
 
 Base = declarative_base()
 
 
+def generate_short_uuid():
+    return shortuuid.ShortUUID().random(length=8)
+
+
 # -- Tables --
 class ServerSettings(Base):
     __tablename__ = "server_settings"
     guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    loading_reaction: Mapped[bool] = MappedColumn(Boolean, default=True)
+    reply_ping: Mapped[bool] = MappedColumn(Boolean, default=True)
     moderation_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
     automod_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
     automod_settings: Mapped["ServerAutomodSettings"] = relationship(
@@ -107,7 +115,9 @@ class ServerAutomodSettings(Base):
 
 class AutomodRule(Base):
     __tablename__ = "automod_rules"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("server_automod_settings.guild_id")
     )
@@ -123,7 +133,6 @@ class AutomodRule(Base):
         "AutomodAction",
         back_populates="rule",
         cascade="all, delete-orphan",
-        order_by="AutomodAction.order",
     )
     server: Mapped["ServerAutomodSettings"] = relationship(
         "ServerAutomodSettings",
@@ -139,12 +148,13 @@ class AutomodAction(Base):
         BigInteger,
         ForeignKey("server_automod_settings.guild_id"),
     )
-    rule_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("automod_rules.id"))
+    rule_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("automod_rules.id")
+    )
     rule_type: Mapped[str] = MappedColumn(String(length=32))
     action_type: Mapped[str] = MappedColumn(String(length=32))
     duration: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     reason: Mapped[str] = MappedColumn(String(length=512), nullable=True)
-    order: Mapped[int] = MappedColumn(Integer, default=0)
     rule: Mapped["AutomodRule"] = relationship(
         "AutomodRule", back_populates="actions", uselist=False
     )
@@ -227,7 +237,9 @@ class ServerLoggingSettings(Base):
 
 class ModCase(Base):
     __tablename__ = "mod_cases"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    id: Mapped[str] = MappedColumn(
+        String(length=8), primary_key=True, default=generate_short_uuid
+    )
     type: Mapped[str] = MappedColumn(String(length=32))
     guild_id: Mapped[int] = MappedColumn(BigInteger)
     user_id: Mapped[int] = MappedColumn(BigInteger)
@@ -253,7 +265,7 @@ class ModCaseComment(Base):
     __tablename__ = "mod_case_comments"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(BigInteger)
-    case_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("mod_cases.id"))
+    case_id: Mapped[str] = MappedColumn(String(length=8), ForeignKey("mod_cases.id"))
     user_id: Mapped[int] = MappedColumn(BigInteger)
     comment: Mapped[str] = MappedColumn(String(length=512))
     time_created: Mapped[datetime] = MappedColumn(DateTime)
@@ -271,8 +283,8 @@ class ScheduledTask(Base):
     channel_id: Mapped[int] = MappedColumn(BigInteger)
     role_id: Mapped[int] = MappedColumn(BigInteger)
     message_id: Mapped[int] = MappedColumn(BigInteger)
-    case_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("mod_cases.id"), nullable=True
+    case_id: Mapped[str] = MappedColumn(
+        String(length=8), ForeignKey("mod_cases.id"), nullable=True
     )
     duration: Mapped[int] = MappedColumn(
         BigInteger, nullable=True

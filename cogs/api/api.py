@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import uuid
 from typing import TYPE_CHECKING, Optional, Sequence, TypedDict
 
 from aiohttp import web
@@ -36,11 +37,9 @@ class CategoryDict(TypedDict):
 
 
 class AutomodActionModel(BaseModel):
-    id: Optional[int] = None
     type: str
     duration: Optional[int] = None
     reason: Optional[str] = None
-    order: int
 
     @field_validator("type")
     def validate_action_type(cls, v):
@@ -62,16 +61,15 @@ class AutomodActionModel(BaseModel):
             action_type=self.type,
             duration=self.duration,
             reason=self.reason,
-            order=self.order,
         )
 
 
 class AutomodRuleModel(BaseModel):
-    id: Optional[int] = None
+    id: Optional[str] = None
     rule_type: str
+    rule_name: str = ""
     words: Optional[list[str]] = []
     antispam_type: Optional[str] = None
-    occurrences: int
     threshold: int
     duration: int
     actions: list[AutomodActionModel]
@@ -88,13 +86,20 @@ class AutomodRuleModel(BaseModel):
             raise ValueError(f"Rule type must be one of: {valid_types}")
         return v
 
+    @field_validator("id")
+    def validate_id(cls, v):
+        if v == "":
+            return None
+        return v
+
     def to_sqlalchemy(self, guild_id: int) -> AutomodRule:
         rule = AutomodRule(
+            id=self.id,
             guild_id=guild_id,
             rule_type=self.rule_type,
+            rule_name=self.rule_name,
             words=self.words or [],
             antispam_type=self.antispam_type,
-            occurrences=self.occurrences,
             threshold=self.threshold,
             duration=self.duration,
         )
@@ -106,20 +111,14 @@ class AutomodRuleModel(BaseModel):
         return rule
 
 
-class DetectionRulesModel(BaseModel):
-    enabled: bool
-    rules: list[AutomodRuleModel]
-
-
 class AutomodConfigModel(BaseModel):
-    badword_detection: DetectionRulesModel
-    spam_detection: DetectionRulesModel
-    malicious_link_detection: DetectionRulesModel
-    phishing_link_detection: DetectionRulesModel
+    badword_detection: list[AutomodRuleModel]
+    spam_detection: list[AutomodRuleModel]
+    malicious_link_detection: list[AutomodRuleModel]
+    phishing_link_detection: list[AutomodRuleModel]
 
 
 class LoggingConfigModel(BaseModel):
-    enabled: bool
     app_command_perm_update_id: int
     dc_automod_rule_create_id: int
     dc_automod_rule_update_id: int
@@ -252,20 +251,11 @@ class APICog(commands.Cog):
         sorted_categories = sorted(categories, key=lambda c: (c.position, c.id))
         return sorted_categories
 
-    def _serialize_automod_detection_rules(
-        self, enabled: bool, rules: list[AutomodRule]
-    ) -> dict:
-        return {
-            "enabled": enabled,
-            "rules": [self._serialize_automod_rule(rule) for rule in rules],
-        }
-
     def _serialize_automod_rule(self, rule: AutomodRule) -> dict:
         return {
-            "id": rule.id,
+            "id": str(rule.id),
             "rule_type": rule.rule_type,
             "words": rule.words,
-            "occurrences": rule.occurrences,
             "threshold": rule.threshold,
             "duration": rule.duration,
             "actions": [
@@ -275,11 +265,9 @@ class APICog(commands.Cog):
 
     def _serialize_automod_action(self, action: AutomodAction) -> dict:
         return {
-            "id": action.id,
             "type": action.action_type,
             "duration": action.duration,
             "reason": action.reason,
-            "order": action.order,
         }
 
     async def _apply_automod_config(
@@ -295,15 +283,27 @@ class APICog(commands.Cog):
                 if not automod_settings:
                     raise ValueError("Automod settings not found")
 
-            automod_settings.badword_detection = config.badword_detection.enabled
-            automod_settings.spam_detection = config.spam_detection.enabled
-            automod_settings.malicious_link_detection = (
-                config.malicious_link_detection.enabled
-            )
-            automod_settings.phishing_link_detection = (
-                config.phishing_link_detection.enabled
-            )
+            for detection_config in [
+                config.badword_detection,
+                config.spam_detection,
+                config.malicious_link_detection,
+                config.phishing_link_detection,
+            ]:
+                for rule_model in detection_config:
+                    in_use = True
+                    while in_use:
+                        if rule_model.id is None:
+                            rule_model.id = str(uuid.uuid4())
 
+                        existing_rule = await session.get(AutomodRule, rule_model.id)
+                        if existing_rule and existing_rule.guild_id != guild_id:
+                            rule_model.id = str(uuid.uuid4())
+                        else:
+                            in_use = False
+
+            await session.execute(
+                delete(AutomodAction).where(AutomodAction.guild_id == guild_id)
+            )
             await session.execute(
                 delete(AutomodRule).where(AutomodRule.guild_id == guild_id)
             )
@@ -314,7 +314,7 @@ class APICog(commands.Cog):
                 config.malicious_link_detection,
                 config.phishing_link_detection,
             ]:
-                for rule_model in detection_config.rules:
+                for rule_model in detection_config:
                     automod_rule = rule_model.to_sqlalchemy(guild_id)
                     session.add(automod_rule)
 
@@ -354,6 +354,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/status", self.status)
         self.app.router.add_get("/stats", self.stats)
         self.app.router.add_get("/{guild_id}/info", self.server_info)
+        self.app.router.add_get("/{guild_id}/settings", self.server_settings)
         self.app.router.add_get("/{guild_id}/module/{module_name}", self.module_get)
         self.app.router.add_put("/{guild_id}/module/{module_name}", self.module_update)
 
@@ -447,6 +448,57 @@ class APICog(commands.Cog):
                     }
                     for category in self._sort_categories(guild)
                 ],
+                "emojis": [
+                    {
+                        "id": str(emoji.id),
+                        "name": emoji.name,
+                        "url": emoji.url,
+                    }
+                    for emoji in guild.emojis
+                ],
+            }
+        )
+
+    async def server_settings(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id:
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        config = self.bot.server_configs.get(guild.id)
+        prefixes = self.bot.server_prefixes.get(guild.id)
+
+        if not config or not prefixes:
+            await self.bot.refresh_guild_config_cache(guild.id)
+            config = self.bot.server_configs.get(guild.id)
+            prefixes = self.bot.server_prefixes.get(guild.id)
+
+            if not config or not prefixes:
+                await self.bot.init_guild(guild.id)
+                config = self.bot.server_configs.get(guild.id)
+                prefixes = self.bot.server_prefixes.get(guild.id)
+
+                if not config or not prefixes:
+                    return web.json_response(
+                        {"error": "Failed to retrieve server configuration"},
+                        status=500,
+                    )
+
+        return web.json_response(
+            {
+                "modules": {
+                    "moderation": config.moderation_enabled,
+                    "automod": config.automod_enabled,
+                    "logging": config.logging_enabled,
+                },
+                "settings": {
+                    "loading_reaction": config.loading_reaction,
+                    "reply_ping": config.reply_ping,
+                },
+                "prefixes": prefixes.prefixes,
             }
         )
 
@@ -480,31 +532,19 @@ class APICog(commands.Cog):
             if not config:
                 return web.json_response(
                     {
-                        "badword_detection": {
-                            "enabled": False,
-                            "rules": [],
-                        },
-                        "spam_detection": {
-                            "enabled": False,
-                            "rules": [],
-                        },
-                        "malicious_link_detection": {
-                            "enabled": False,
-                            "rules": [],
-                        },
-                        "phishing_link_detection": {
-                            "enabled": False,
-                            "rules": [],
-                        },
+                        "badword_detection": [],
+                        "spam_detection": [],
+                        "malicious_link_detection": [],
+                        "phishing_link_detection": [],
                     }
                 )
 
             return web.json_response(
                 {
-                    detection_type: self._serialize_automod_detection_rules(
-                        getattr(config, f"{detection_type}", False),
-                        getattr(config, f"{detection_type}_rules", []),
-                    )
+                    detection_type: [
+                        self._serialize_automod_rule(rule)
+                        for rule in getattr(config, f"{detection_type}_rules", [])
+                    ]
                     for detection_type in [
                         "badword_detection",
                         "spam_detection",
@@ -519,10 +559,7 @@ class APICog(commands.Cog):
             if not config.logging_settings:
                 default_values = {}
                 for field_name, field_info in LoggingConfigModel.model_fields.items():
-                    if field_name == "enabled":
-                        default_values[field_name] = config.logging_enabled
-                    else:
-                        default_values[field_name] = 0
+                    default_values[field_name] = None
 
                 return web.json_response(default_values)
 
@@ -530,10 +567,7 @@ class APICog(commands.Cog):
             response_data = {}
 
             for field_name in LoggingConfigModel.model_fields.keys():
-                if field_name == "enabled":
-                    response_data[field_name] = config.logging_enabled
-                else:
-                    response_data[field_name] = getattr(logging_settings, field_name, 0)
+                response_data[field_name] = getattr(logging_settings, field_name, None)
 
             return web.json_response(response_data)
         else:
@@ -575,20 +609,7 @@ class APICog(commands.Cog):
                         {"error": "Failed to update configuration"}, status=500
                     )
 
-                return web.json_response(
-                    {
-                        detection_type: self._serialize_automod_detection_rules(
-                            getattr(config, f"{detection_type}", False),
-                            getattr(config, f"{detection_type}_rules", []),
-                        )
-                        for detection_type in [
-                            "badword_detection",
-                            "spam_detection",
-                            "malicious_link_detection",
-                            "phishing_link_detection",
-                        ]
-                    }
-                )
+                return web.Response(status=204)
             except ValidationError as e:
                 return web.json_response(
                     {"error": "Validation failed", "details": e.errors()}, status=400

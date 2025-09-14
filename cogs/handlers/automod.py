@@ -56,6 +56,7 @@ class AutomodMonitorCog(commands.Cog):
                 self.new_message_queue.task_done()
 
     async def message_handler(self, message: discord.Message):
+        logging.debug(f"Processing message from {message.author}: {message.id}")
         # Check for server ID in config list
         if (
             not message.guild
@@ -63,6 +64,7 @@ class AutomodMonitorCog(commands.Cog):
             or not self.bot.server_configs[message.guild.id].automod_settings
             or not message.author
             or not isinstance(message.author, discord.Member)
+            or message.author.bot
             or not self.bot.user
         ):
             logging.debug("Automod initial checks failed, skipping message")
@@ -113,121 +115,118 @@ class AutomodMonitorCog(commands.Cog):
         current_state.reverse()
 
         # Check for any spam detection
-        if config.spam_detection:
-            if len(config.spam_detection_rules) > 0:
-                for rule in config.spam_detection_rules:
-                    rule: AutomodRule
+        if len(config.spam_detection_rules) > 0:
+            for rule in config.spam_detection_rules:
+                rule: AutomodRule
 
-                    latest_timestamp = current_state[0].timestamp
-                    filtered_messages = [
-                        m
-                        for m in current_state
-                        if (latest_timestamp - m.timestamp).total_seconds()
-                        < rule.duration
-                    ]
+                latest_timestamp = current_state[0].timestamp
+                filtered_messages = [
+                    m
+                    for m in current_state
+                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
+                ]
 
-                    if str(rule.antispam_type) == "message_spam":
-                        count = len(list(filtered_messages))
-                    elif str(rule.antispam_type) == "mention_spam":
-                        count = sum(m.mention_count for m in filtered_messages)
-                    elif str(rule.antispam_type) == "word_spam":
-                        count = sum(m.word_count for m in filtered_messages)
-                    elif str(rule.antispam_type) == "newline_spam":
-                        count = sum(m.newline_count for m in filtered_messages)
-                    elif str(rule.antispam_type) == "link_spam":
-                        count = sum(m.link_count for m in filtered_messages)
-                    elif str(rule.antispam_type) == "attachment_spam":
-                        count = sum(m.attachment_count for m in filtered_messages)
-                    elif str(rule.antispam_type) == "emoji_spam":
-                        count = sum(m.emoji_count for m in filtered_messages)
-                    else:
-                        continue
+                if str(rule.antispam_type) == "message_spam":
+                    count = len(list(filtered_messages))
+                elif str(rule.antispam_type) == "mention_spam":
+                    count = sum(m.mention_count for m in filtered_messages)
+                elif str(rule.antispam_type) == "word_spam":
+                    count = sum(m.word_count for m in filtered_messages)
+                elif str(rule.antispam_type) == "newline_spam":
+                    count = sum(m.newline_count for m in filtered_messages)
+                elif str(rule.antispam_type) == "link_spam":
+                    count = sum(m.link_count for m in filtered_messages)
+                elif str(rule.antispam_type) == "attachment_spam":
+                    count = sum(m.attachment_count for m in filtered_messages)
+                elif str(rule.antispam_type) == "emoji_spam":
+                    count = sum(m.emoji_count for m in filtered_messages)
+                else:
+                    continue
 
-                    if count > rule.threshold:
-                        triggers.append(rule)
-                        for action in rule.actions:
-                            action: AutomodAction
-                            punishments.append(action)
+                if count > rule.threshold:
+                    triggers.append(rule)
+                    for action in rule.actions:
+                        action: AutomodAction
+                        punishments.append(action)
 
         # Malicious link check
-        if config.malicious_link_detection:
-            for rule in config.malicious_link_rules:
-                rule: AutomodRule
+        for rule in config.malicious_link_rules:
+            rule: AutomodRule
 
-                latest_timestamp = current_state[0].timestamp
-                filtered_messages = [
-                    m
-                    for m in current_state
-                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                ]
-                spotted = 0
+            latest_timestamp = current_state[0].timestamp
+            filtered_messages = [
+                m
+                for m in current_state
+                if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
+            ]
+            spotted = 0
 
-                for filtered_msg in filtered_messages:
-                    if any(
-                        link in filtered_msg.content
-                        for link in self.bot.malicious_links
-                    ):
-                        spotted += 1
+            for filtered_msg in filtered_messages:
+                if any(
+                    link in filtered_msg.content for link in self.bot.malicious_links
+                ):
+                    spotted += 1
 
-                if spotted > rule.threshold:
-                    triggers.append(rule)
-                    for action in rule.actions:
-                        action: AutomodAction
-                        punishments.append(action)
+            if spotted > rule.threshold:
+                triggers.append(rule)
+                for action in rule.actions:
+                    action: AutomodAction
+                    punishments.append(action)
 
         # Phishing link check
-        if config.phishing_link_detection:
-            for rule in config.phishing_link_rules:
-                rule: AutomodRule
+        for rule in config.phishing_link_rules:
+            rule: AutomodRule
 
-                latest_timestamp = current_state[0].timestamp
-                filtered_messages = [
-                    m
-                    for m in current_state
-                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                ]
-                spotted = 0
+            latest_timestamp = current_state[0].timestamp
+            filtered_messages = [
+                m
+                for m in current_state
+                if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
+            ]
+            spotted = 0
 
-                for filtered_msg in filtered_messages:
-                    if any(
-                        f"http://{link}" in filtered_msg.content
-                        for link in self.bot.phishing_links
-                    ) or any(
-                        f"https://{link}" in filtered_msg.content
-                        for link in self.bot.phishing_links
-                    ):
-                        spotted += 1
+            for filtered_msg in filtered_messages:
+                if any(
+                    f"http://{link}" in filtered_msg.content
+                    for link in self.bot.phishing_links
+                ) or any(
+                    f"https://{link}" in filtered_msg.content
+                    for link in self.bot.phishing_links
+                ):
+                    spotted += 1
 
-                if spotted > rule.threshold:
-                    triggers.append(rule)
-                    for action in rule.actions:
-                        action: AutomodAction
-                        punishments.append(action)
+            if spotted > rule.threshold:
+                triggers.append(rule)
+                for action in rule.actions:
+                    action: AutomodAction
+                    punishments.append(action)
 
         # Bad word detection
-        if config.badword_detection:
-            for rule in config.badword_detection_rules:
-                rule: AutomodRule
+        for rule in config.badword_detection_rules:
+            rule: AutomodRule
 
-                latest_timestamp = current_state[0].timestamp
-                filtered_messages = [
-                    m
-                    for m in current_state
-                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                ]
-                spotted = 0
+            if not rule.words:
+                continue
 
-                for filtered_msg in filtered_messages:
-                    content_list = filtered_msg.content.lower().split()
+            latest_timestamp = current_state[0].timestamp
+            filtered_messages = [
+                m
+                for m in current_state
+                if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
+            ]
+            spotted = 0
 
-                    if any(word in content_list for word in rule.words):
-                        spotted += 1
+            for filtered_msg in filtered_messages:
+                content_list = filtered_msg.content.lower().split()
 
-                if spotted >= rule.threshold:
-                    triggers.append(rule)
-                    for action in rule.actions:
-                        action: AutomodAction
-                        punishments.append(action)
+                if any(word.lower() in content_list for word in rule.words):
+                    spotted += 1
+
+            if spotted >= rule.threshold:
+                triggers.append(rule)
+                for action in rule.actions:
+                    action: AutomodAction
+                    punishments.append(action)
 
         # Get list of punishment types
         punishment_types = list(set(action.action_type for action in punishments))
