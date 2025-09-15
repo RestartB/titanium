@@ -300,7 +300,7 @@ async def get_prefix(bot: TitaniumBot, message: discord.Message):
     return commands.when_mentioned_or(*base)(bot, message)
 
 
-bot = TitaniumBot(intents=intents, command_prefix=get_prefix, case_insensitive=True, max_messages=1)
+bot = TitaniumBot(intents=intents, command_prefix=get_prefix, case_insensitive=True)
 
 
 @bot.event
