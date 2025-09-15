@@ -99,7 +99,7 @@ class AutomodMonitorCog(commands.Cog):
                     )
                 ),
                 attachment_count=len(message.attachments),
-                emoji_count=0,
+                emoji_count=0,  # FIXME: implement this
                 timestamp=message.created_at,
             )
         )
@@ -131,7 +131,9 @@ class AutomodMonitorCog(commands.Cog):
                 elif str(rule.antispam_type) == "mention_spam":
                     count = sum(m.mention_count for m in filtered_messages)
                 elif str(rule.antispam_type) == "word_spam":
-                    count = sum(m.word_count for m in filtered_messages)
+                    count = sum(
+                        m.word_count for m in filtered_messages
+                    )  # FIXME: seems to trigger at 6 words if you set threshold to 5
                 elif str(rule.antispam_type) == "newline_spam":
                     count = sum(m.newline_count for m in filtered_messages)
                 elif str(rule.antispam_type) == "link_spam":
@@ -143,7 +145,7 @@ class AutomodMonitorCog(commands.Cog):
                 else:
                     continue
 
-                if count > rule.threshold:
+                if count >= rule.threshold:
                     triggers.append(rule)
                     for action in rule.actions:
                         action: AutomodAction
@@ -167,7 +169,7 @@ class AutomodMonitorCog(commands.Cog):
                 ):
                     spotted += 1
 
-            if spotted > rule.threshold:
+            if spotted >= rule.threshold:
                 triggers.append(rule)
                 for action in rule.actions:
                     action: AutomodAction
@@ -195,7 +197,7 @@ class AutomodMonitorCog(commands.Cog):
                 ):
                     spotted += 1
 
-            if spotted > rule.threshold:
+            if spotted >= rule.threshold:
                 triggers.append(rule)
                 for action in rule.actions:
                     action: AutomodAction

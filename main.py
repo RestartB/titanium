@@ -24,6 +24,7 @@ load_dotenv()
 
 from lib.sql import (  # noqa: E402
     AutomodRule,
+    AvailableWebhook,
     ServerAutomodSettings,
     ServerLimits,
     ServerLoggingSettings,
@@ -71,6 +72,7 @@ class TitaniumBot(commands.Bot):
 
     server_configs: dict[int, ServerSettings] = {}
     server_prefixes: dict[int, ServerPrefixes] = {}
+    available_webhooks: dict[int, list[AvailableWebhook]] = {}
     automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
 
     punishing: dict[int, list[int]] = {}
@@ -119,6 +121,18 @@ class TitaniumBot(commands.Bot):
             for config in prefix_configs:
                 self.server_prefixes[config.guild_id] = config
 
+            # Available webhooks
+            stmt = select(AvailableWebhook)
+            result = await session.execute(stmt)
+            webhook_configs = result.scalars().all()
+            self.available_webhooks.clear()
+
+            for webhook in webhook_configs:
+                if webhook.guild_id not in self.available_webhooks:
+                    self.available_webhooks[webhook.guild_id] = []
+
+                self.available_webhooks[webhook.guild_id].append(webhook)
+
         logging.info("[CACHE] Server configs refreshed.")
 
     async def refresh_guild_config_cache(self, guild_id: int) -> None:
@@ -155,8 +169,20 @@ class TitaniumBot(commands.Bot):
             stmt = select(ServerPrefixes).where(ServerPrefixes.guild_id == guild_id)
             result = await session.execute(stmt)
             prefix_config = result.scalar()
+
             if prefix_config:
                 self.server_prefixes[prefix_config.guild_id] = prefix_config
+
+            # Available webhooks
+            stmt = select(AvailableWebhook).where(AvailableWebhook.guild_id == guild_id)
+            result = await session.execute(stmt)
+            webhook_configs = result.scalars().all()
+
+            for webhook in webhook_configs:
+                if webhook.guild_id not in self.available_webhooks:
+                    self.available_webhooks[webhook.guild_id] = []
+
+                self.available_webhooks[webhook.guild_id].append(webhook)
 
         logging.info(f"[CACHE] Server config cache for guild {guild_id} refreshed.")
 
@@ -274,7 +300,7 @@ async def get_prefix(bot: TitaniumBot, message: discord.Message):
     return commands.when_mentioned_or(*base)(bot, message)
 
 
-bot = TitaniumBot(intents=intents, command_prefix=get_prefix, case_insensitive=True)
+bot = TitaniumBot(intents=intents, command_prefix=get_prefix, case_insensitive=True, max_messages=1)
 
 
 @bot.event

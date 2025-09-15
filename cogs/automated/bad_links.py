@@ -23,6 +23,7 @@ class BadLinkFetcherCog(commands.Cog):
         self.phishing_update.cancel()
 
     # Malicious update task
+    # FIXME: returns no links
     @tasks.loop(hours=6)
     async def malicious_update(self) -> None:
         async with aiohttp.ClientSession() as session:

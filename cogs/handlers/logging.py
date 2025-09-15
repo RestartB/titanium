@@ -1,8 +1,11 @@
+import importlib
+import logging
 from typing import TYPE_CHECKING, Sequence
 
 import discord
 from discord.ext import commands
 
+from lib.classes import server_logger
 from lib.classes.server_logger import ServerLogger
 
 if TYPE_CHECKING:
@@ -14,6 +17,12 @@ class EventLoggingCog(commands.Cog):
 
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
+
+    async def cog_load(self) -> None:
+        importlib.reload(server_logger)
+
+    async def cog_unload(self) -> None:
+        pass
 
     @commands.Cog.listener()
     async def on_automod_rule_create(self, rule: discord.AutoModRule) -> None:
@@ -133,13 +142,27 @@ class EventLoggingCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry) -> None:
-        server_logger = ServerLogger(self.bot, entry.guild)
-        await server_logger.member_kick(entry)
+        if entry.action == discord.AuditLogAction.kick:
+            server_logger = ServerLogger(self.bot, entry.guild)
+            await server_logger.member_kick(entry)
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
         if not payload.guild_id:
             return
+
+        if "content" not in payload.data:
+            logging.info("No content in payload data")
+            return
+
+        if (
+            payload.cached_message
+            and payload.cached_message.content == payload.data["content"]
+        ):
+            logging.info("Message content is the same as cached message")
+            return
+
+        logging.info(payload.data["content"])
 
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:

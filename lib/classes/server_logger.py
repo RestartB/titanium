@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from textwrap import shorten
 from typing import TYPE_CHECKING, Any, Optional, Sequence
@@ -6,7 +7,7 @@ import discord
 from humanize.time import naturaldelta
 
 from lib.embeds.mod_actions import banned, kicked, muted, unbanned, unmuted, warned
-from lib.sql import AutomodAction, AutomodRule, ModCase
+from lib.sql import AutomodAction, AutomodRule, AvailableWebhook, ModCase, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -20,26 +21,74 @@ class ServerLogger:
     ):
         self.bot = bot
         self.guild = guild
-
         self.config = bot.server_configs.get(guild.id)
 
     def _exists_and_enabled(self, entry: str) -> bool:
-        return (
-            self.config
-            and self.config.logging_enabled
-            and self.config.logging_settings
-            and getattr(self.config.logging_settings, entry, None)
-        )
+        if (
+            not self.config
+            or not self.config.logging_enabled
+            or not self.config.logging_settings
+        ):
+            return False
+
+        field_value = getattr(self.config.logging_settings, entry, None)
+        if not field_value:
+            return False
+
+        return True
+
+    async def _find_webhook(self, channel_id: int) -> Optional[str]:
+        if self.guild.id in self.bot.available_webhooks:
+            for webhook in self.bot.available_webhooks[self.guild.id]:
+                if webhook.channel_id == channel_id:
+                    return webhook.webhook_url
+
+        # Get channel
+        if isinstance(self.guild, discord.PartialInviteGuild):
+            self.guild = await self.bot.fetch_guild(self.guild.id)
+
+        channel = self.guild.get_channel(channel_id)
+        if channel is None or isinstance(channel, discord.CategoryChannel):
+            return None
+        try:
+            # Create a webhook
+            webhook = await channel.create_webhook(name="Managed by Titanium")
+
+            async with get_session() as session:
+                session.add(
+                    AvailableWebhook(
+                        guild_id=self.guild.id,
+                        channel_id=channel.id,
+                        webhook_url=webhook.url,
+                    )
+                )
+
+            await self.bot.refresh_guild_config_cache(self.guild.id)
+            return webhook.url
+        except Exception as e:
+            logging.error(f"Failed to create webhook: {e}")
+            return None
 
     async def _send_to_webhook(
-        self, url: str, embed: discord.Embed, view: discord.ui.View | None = None
+        self,
+        url: Optional[str],
+        embed: discord.Embed,
+        view: discord.ui.View | None = None,
     ) -> None:
-        webhook = discord.Webhook.from_url(url, client=self.bot)
+        if url is None:
+            return
 
-        if view:
-            return await webhook.send(embed=embed, view=view)
+        try:
+            webhook = discord.Webhook.from_url(url, client=self.bot)
 
-        return await webhook.send(embed=embed)
+            if view:
+                result = await webhook.send(content="mepw", embed=embed, view=view)
+            else:
+                result = await webhook.send(content="mepw", embed=embed)
+            return result
+        except Exception as e:
+            logging.error(f"Failed to send webhook: {e}")
+            return None
 
     async def _get_audit_log_entry(
         self,
@@ -73,7 +122,7 @@ class ServerLogger:
         pass
 
     async def automod_rule_create(self, rule: discord.AutoModRule) -> None:
-        if not self._exists_and_enabled("dc_automod_rule_create_url"):
+        if not self._exists_and_enabled("dc_automod_rule_create_id"):
             return
 
         embed = discord.Embed(
@@ -88,13 +137,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.dc_automod_rule_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.dc_automod_rule_create_id
+            ),
             embed,
         )
 
     async def automod_rule_delete(self, rule: discord.AutoModRule) -> None:
-        if not self._exists_and_enabled("dc_automod_rule_delete_url"):
+        if not self._exists_and_enabled("dc_automod_rule_delete_id"):
             return
 
         embed = discord.Embed(
@@ -109,13 +161,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.dc_automod_rule_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.dc_automod_rule_delete_id
+            ),
             embed,
         )
 
     async def automod_rule_update(self, rule: discord.AutoModRule) -> None:
-        if not self._exists_and_enabled("dc_automod_rule_update_url"):
+        if not self._exists_and_enabled("dc_automod_rule_update_id"):
             return
 
         embed = discord.Embed(
@@ -130,13 +185,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.dc_automod_rule_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.dc_automod_rule_update_id
+            ),
             embed,
         )
 
     async def channel_create(self, channel: discord.abc.GuildChannel) -> None:
-        if not self._exists_and_enabled("channel_create_url"):
+        if not self._exists_and_enabled("channel_create_id"):
             return
 
         embed = discord.Embed(
@@ -149,13 +207,14 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.channel_create)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.channel_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.channel_create_id),
             embed,
         )
 
     async def channel_delete(self, channel: discord.abc.GuildChannel) -> None:
-        if not self._exists_and_enabled("channel_delete_url"):
+        if not self._exists_and_enabled("channel_delete_id"):
             return
 
         embed = discord.Embed(
@@ -168,8 +227,9 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.channel_delete)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.channel_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.channel_delete_id),
             embed,
         )
 
@@ -178,7 +238,7 @@ class ServerLogger:
         before: discord.abc.GuildChannel,
         after: discord.abc.GuildChannel,
     ) -> None:
-        if not self._exists_and_enabled("channel_update_url"):
+        if not self._exists_and_enabled("channel_update_id"):
             return
 
         changes = []
@@ -206,15 +266,16 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.channel_update)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.channel_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.channel_update_id),
             embed,
         )
 
     async def guild_name_update(
         self, before: discord.Guild, after: discord.Guild
     ) -> None:
-        if not self._exists_and_enabled("guild_name_update_url"):
+        if not self._exists_and_enabled("guild_name_update_id"):
             return
 
         if before.name == after.name:
@@ -231,15 +292,16 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.guild_update)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.guild_name_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.guild_name_update_id),
             embed,
         )
 
     async def guild_afk_channel_update(
         self, before: discord.Guild, after: discord.Guild
     ) -> None:
-        if not self._exists_and_enabled("guild_afk_channel_update_url"):
+        if not self._exists_and_enabled("guild_afk_channel_update_id"):
             return
 
         if before.afk_channel == after.afk_channel:
@@ -256,15 +318,18 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.guild_update)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.guild_afk_channel_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.guild_afk_channel_update_id
+            ),
             embed,
         )
 
     async def guild_afk_timeout_update(
         self, before: discord.Guild, after: discord.Guild
     ) -> None:
-        if not self._exists_and_enabled("guild_afk_timeout_update_url"):
+        if not self._exists_and_enabled("guild_afk_timeout_update_id"):
             return
 
         if before.afk_timeout == after.afk_timeout:
@@ -281,15 +346,18 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.guild_update)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.guild_afk_timeout_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.guild_afk_timeout_update_id
+            ),
             embed,
         )
 
     async def guild_icon_update(
         self, before: discord.Guild, after: discord.Guild
     ) -> None:
-        if not self._exists_and_enabled("guild_icon_update_url"):
+        if not self._exists_and_enabled("guild_icon_update_id"):
             return
 
         if before.icon == after.icon:
@@ -316,8 +384,9 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.guild_update)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.guild_icon_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.guild_icon_update_id),
             embed,
         )
 
@@ -326,7 +395,7 @@ class ServerLogger:
         before: Sequence[discord.Emoji],
         after: Sequence[discord.Emoji],
     ) -> None:
-        if not self._exists_and_enabled("guild_emoji_create_url"):
+        if not self._exists_and_enabled("guild_emoji_create_id"):
             return
 
         before_ids = {e.id for e in before}
@@ -348,8 +417,11 @@ class ServerLogger:
             embeds.append(embed)
 
         for embed in embeds:
+            assert self.config is not None and self.config.logging_settings is not None
             await self._send_to_webhook(
-                self.config.logging_settings.guild_emoji_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+                await self._find_webhook(
+                    self.config.logging_settings.guild_emoji_create_id
+                ),
                 embed,
             )
 
@@ -358,7 +430,7 @@ class ServerLogger:
         before: Sequence[discord.Emoji],
         after: Sequence[discord.Emoji],
     ) -> None:
-        if not self._exists_and_enabled("guild_emoji_delete_url"):
+        if not self._exists_and_enabled("guild_emoji_delete_id"):
             return
 
         after_ids = {e.id for e in after}
@@ -380,8 +452,11 @@ class ServerLogger:
             embeds.append(embed)
 
         for embed in embeds:
+            assert self.config is not None and self.config.logging_settings is not None
             await self._send_to_webhook(
-                self.config.logging_settings.guild_emoji_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+                await self._find_webhook(
+                    self.config.logging_settings.guild_emoji_delete_id
+                ),
                 embed,
             )
 
@@ -390,7 +465,7 @@ class ServerLogger:
         before: Sequence[discord.GuildSticker],
         after: Sequence[discord.GuildSticker],
     ) -> None:
-        if not self._exists_and_enabled("guild_sticker_create_url"):
+        if not self._exists_and_enabled("guild_sticker_create_id"):
             return
 
         before_ids = {e.id for e in before}
@@ -410,8 +485,11 @@ class ServerLogger:
             await self._add_user_footer(embed, log)
 
         for embed in embeds:
+            assert self.config is not None and self.config.logging_settings is not None
             await self._send_to_webhook(
-                self.config.logging_settings.guild_sticker_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+                await self._find_webhook(
+                    self.config.logging_settings.guild_sticker_create_id
+                ),
                 embed,
             )
 
@@ -420,7 +498,7 @@ class ServerLogger:
         before: Sequence[discord.GuildSticker],
         after: Sequence[discord.GuildSticker],
     ) -> None:
-        if not self._exists_and_enabled("guild_sticker_delete_url"):
+        if not self._exists_and_enabled("guild_sticker_delete_id"):
             return
 
         after_ids = {e.id for e in after}
@@ -440,13 +518,16 @@ class ServerLogger:
             await self._add_user_footer(embed, log)
 
         for embed in embeds:
+            assert self.config is not None and self.config.logging_settings is not None
             await self._send_to_webhook(
-                self.config.logging_settings.guild_sticker_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+                await self._find_webhook(
+                    self.config.logging_settings.guild_sticker_delete_id
+                ),
                 embed,
             )
 
     async def guild_invite_create(self, invite: discord.Invite) -> None:
-        if not self._exists_and_enabled("guild_invite_create_url"):
+        if not self._exists_and_enabled("guild_invite_create_id"):
             return
 
         # Channel
@@ -484,13 +565,16 @@ class ServerLogger:
                 else None,
             )
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.guild_invite_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.guild_invite_create_id
+            ),
             embed,
         )
 
     async def guild_invite_delete(self, invite: discord.Invite) -> None:
-        if not self._exists_and_enabled("guild_invite_delete_url"):
+        if not self._exists_and_enabled("guild_invite_delete_id"):
             return
 
         embed = discord.Embed(
@@ -502,13 +586,16 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.invite_delete)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.guild_invite_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.guild_invite_delete_id
+            ),
             embed,
         )
 
     async def member_join(self, member: discord.Member) -> None:
-        if not self._exists_and_enabled("member_join_url"):
+        if not self._exists_and_enabled("member_join_id"):
             return
 
         embed = discord.Embed(
@@ -521,13 +608,14 @@ class ServerLogger:
         )
         embed.set_thumbnail(url=member.display_avatar.url)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.member_join_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.member_join_id),
             embed,
         )
 
     async def member_leave(self, member: discord.Member) -> None:
-        if not self._exists_and_enabled("member_leave_url"):
+        if not self._exists_and_enabled("member_leave_id"):
             return
 
         embed = discord.Embed(
@@ -540,15 +628,16 @@ class ServerLogger:
         )
         embed.set_thumbnail(url=member.display_avatar.url)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.member_leave_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.member_leave_id),
             embed,
         )
 
     async def member_nickname_update(
         self, before: discord.Member, after: discord.Member
     ) -> None:
-        if not self._exists_and_enabled("member_nickname_update_url"):
+        if not self._exists_and_enabled("member_nickname_update_id"):
             return
 
         if before.nick == after.nick:
@@ -570,15 +659,18 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.member_nickname_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.member_nickname_update_id
+            ),
             embed,
         )
 
     async def member_roles_update(
         self, before: discord.Member, after: discord.Member
     ) -> None:
-        if not self._exists_and_enabled("member_roles_update_url"):
+        if not self._exists_and_enabled("member_roles_update_id"):
             return
 
         # Get updated roles
@@ -619,13 +711,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.member_roles_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.member_roles_update_id
+            ),
             embed,
         )
 
     async def member_ban(self, member: discord.User | discord.Member) -> None:
-        if not self._exists_and_enabled("member_ban_url"):
+        if not self._exists_and_enabled("member_ban_id"):
             return
 
         embed = discord.Embed(
@@ -641,13 +736,14 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.ban, target=member)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.member_ban_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.member_ban_id),
             embed,
         )
 
     async def member_unban(self, member: discord.User | discord.Member) -> None:
-        if not self._exists_and_enabled("member_unban_url"):
+        if not self._exists_and_enabled("member_unban_id"):
             return
 
         embed = discord.Embed(
@@ -665,14 +761,15 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.member_unban_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.member_unban_id),
             embed,
         )
 
     # We only get an audit log record for this
     async def member_kick(self, entry: discord.AuditLogEntry) -> None:
-        if not self._exists_and_enabled("member_kick_url"):
+        if not self._exists_and_enabled("member_kick_id"):
             return
 
         if not entry.action == discord.AuditLogAction.kick:
@@ -697,15 +794,16 @@ class ServerLogger:
         embed.set_thumbnail(url=entry.target.display_avatar.url)
         await self._add_user_footer(embed, entry)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.member_kick_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.member_kick_id),
             embed,
         )
 
     async def member_timeout(
         self, before: discord.Member, after: discord.Member
     ) -> None:
-        if not self._exists_and_enabled("member_timeout_url"):
+        if not self._exists_and_enabled("member_timeout_id"):
             return
 
         if before.timed_out_until == after.timed_out_until:
@@ -730,15 +828,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.member_timeout_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.member_timeout_id),
             embed,
         )
 
     async def member_untimeout(
         self, before: discord.Member, after: discord.Member
     ) -> None:
-        if not self._exists_and_enabled("member_untimeout_url"):
+        if not self._exists_and_enabled("member_untimeout_id"):
             return
 
         if before.timed_out_until == after.timed_out_until:
@@ -761,16 +860,14 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.member_untimeout_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.member_untimeout_id),
             embed,
         )
 
     async def message_edit(self, event: discord.RawMessageUpdateEvent) -> None:
-        if not self._exists_and_enabled("message_edit_url"):
-            return
-
-        if "content" not in event.data:
+        if not self._exists_and_enabled("message_edit_id"):
             return
 
         embed = discord.Embed(
@@ -786,13 +883,15 @@ class ServerLogger:
             )
         embed.add_field(name="New Content", value=event.message.content, inline=False)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.message_edit_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.message_edit_id),
             embed,
         )
 
+    # FIXME: doesn't work
     async def message_delete(self, event: discord.RawMessageDeleteEvent) -> None:
-        if not self._exists_and_enabled("message_delete_url"):
+        if not self._exists_and_enabled("message_delete_id"):
             return
 
         embed = discord.Embed(
@@ -812,15 +911,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.message_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.message_delete_id),
             embed,
         )
 
     async def message_bulk_delete(
         self, event: discord.RawBulkMessageDeleteEvent
     ) -> None:
-        if not self._exists_and_enabled("message_bulk_delete_url"):
+        if not self._exists_and_enabled("message_bulk_delete_id"):
             return
 
         embed = discord.Embed(
@@ -835,13 +935,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.message_bulk_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.message_bulk_delete_id
+            ),
             embed,
         )
 
     async def poll_create(self, message: discord.Message) -> None:
-        if not self._exists_and_enabled("poll_create_url"):
+        if not self._exists_and_enabled("poll_create_id"):
             return
 
         if (
@@ -861,13 +964,14 @@ class ServerLogger:
         )
         embed.set_thumbnail(url=message.author.display_avatar.url)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.poll_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.poll_create_id),
             embed,
         )
 
     async def poll_delete(self, message: discord.Message) -> None:
-        if not self._exists_and_enabled("poll_delete_url"):
+        if not self._exists_and_enabled("poll_delete_id"):
             return
 
         if (
@@ -888,15 +992,16 @@ class ServerLogger:
         )
         embed.set_thumbnail(url=message.author.display_avatar.url)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.poll_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.poll_delete_id),
             embed,
         )
 
     async def reaction_clear(
         self, message: discord.Message, reactions: list[discord.Reaction]
     ) -> None:
-        if not self._exists_and_enabled("reaction_clear_url"):
+        if not self._exists_and_enabled("reaction_clear_id"):
             return
 
         if isinstance(message.channel, discord.DMChannel) or isinstance(
@@ -915,13 +1020,14 @@ class ServerLogger:
         )
         embed.set_thumbnail(url=message.author.display_avatar.url)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.reaction_clear_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.reaction_clear_id),
             embed,
         )
 
     async def reaction_clear_emoji(self, reaction: discord.Reaction) -> None:
-        if not self._exists_and_enabled("reaction_clear_emoji_url"):
+        if not self._exists_and_enabled("reaction_clear_emoji_id"):
             return
 
         message = reaction.message
@@ -942,13 +1048,16 @@ class ServerLogger:
         )
         embed.set_thumbnail(url=message.author.display_avatar.url)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.reaction_clear_emoji_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.reaction_clear_emoji_id
+            ),
             embed,
         )
 
     async def role_create(self, role: discord.Role) -> None:
-        if not self._exists_and_enabled("role_create_url"):
+        if not self._exists_and_enabled("role_create_id"):
             return
 
         embed = discord.Embed(
@@ -966,13 +1075,14 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.role_create)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.role_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.role_create_id),
             embed,
         )
 
     async def role_delete(self, role: discord.Role) -> None:
-        if not self._exists_and_enabled("role_delete_url"):
+        if not self._exists_and_enabled("role_delete_id"):
             return
 
         embed = discord.Embed(
@@ -990,13 +1100,14 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.role_delete)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.role_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.role_delete_id),
             embed,
         )
 
     async def role_update(self, before: discord.Role, after: discord.Role) -> None:
-        if not self._exists_and_enabled("role_update_url"):
+        if not self._exists_and_enabled("role_update_id"):
             return
 
         changes = []
@@ -1030,13 +1141,14 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.role_update)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.role_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.role_update_id),
             embed,
         )
 
     async def scheduled_event_create(self, event: discord.ScheduledEvent):
-        if not self._exists_and_enabled("scheduled_event_create_url"):
+        if not self._exists_and_enabled("scheduled_event_create_id"):
             return
 
         embed = discord.Embed(
@@ -1061,13 +1173,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.scheduled_event_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.scheduled_event_create_id
+            ),
             embed,
         )
 
     async def scheduled_event_delete(self, event: discord.ScheduledEvent):
-        if not self._exists_and_enabled("scheduled_event_delete_url"):
+        if not self._exists_and_enabled("scheduled_event_delete_id"):
             return
 
         embed = discord.Embed(
@@ -1092,15 +1207,18 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.scheduled_event_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.scheduled_event_delete_id
+            ),
             embed,
         )
 
     async def scheduled_event_update(
         self, before: discord.ScheduledEvent, after: discord.ScheduledEvent
     ):
-        if not self._exists_and_enabled("scheduled_event_update_url"):
+        if not self._exists_and_enabled("scheduled_event_update_id"):
             return
 
         changes = []
@@ -1137,13 +1255,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.scheduled_event_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.scheduled_event_update_id
+            ),
             embed,
         )
 
     async def soundboard_sound_create(self, sound: discord.SoundboardSound) -> None:
-        if not self._exists_and_enabled("soundboard_sound_create_url"):
+        if not self._exists_and_enabled("soundboard_sound_create_id"):
             return
 
         embed = discord.Embed(
@@ -1163,13 +1284,16 @@ class ServerLogger:
                 name=sound.user.name, icon_url=sound.user.display_avatar.url
             )
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.soundboard_sound_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.soundboard_sound_create_id
+            ),
             embed,
         )
 
     async def soundboard_sound_delete(self, sound: discord.SoundboardSound) -> None:
-        if not self._exists_and_enabled("soundboard_sound_delete_url"):
+        if not self._exists_and_enabled("soundboard_sound_delete_id"):
             return
 
         embed = discord.Embed(
@@ -1189,15 +1313,18 @@ class ServerLogger:
                 name=sound.user.name, icon_url=sound.user.display_avatar.url
             )
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.soundboard_sound_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.soundboard_sound_delete_id
+            ),
             embed,
         )
 
     async def soundboard_sound_update(
         self, before: discord.SoundboardSound, after: discord.SoundboardSound
     ):
-        if not self._exists_and_enabled("soundboard_sound_update_url"):
+        if not self._exists_and_enabled("soundboard_sound_update_id"):
             return
 
         changes = []
@@ -1224,13 +1351,16 @@ class ServerLogger:
                 name=after.user.name, icon_url=after.user.display_avatar.url
             )
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.soundboard_sound_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.soundboard_sound_update_id
+            ),
             embed,
         )
 
     async def stage_instance_create(self, instance: discord.StageInstance) -> None:
-        if not self._exists_and_enabled("stage_instance_create_url"):
+        if not self._exists_and_enabled("stage_instance_create_id"):
             return
 
         embed = discord.Embed(
@@ -1251,13 +1381,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.stage_instance_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.stage_instance_create_id
+            ),
             embed,
         )
 
     async def stage_instance_delete(self, instance: discord.StageInstance) -> None:
-        if not self._exists_and_enabled("stage_instance_delete_url"):
+        if not self._exists_and_enabled("stage_instance_delete_id"):
             return
 
         embed = discord.Embed(
@@ -1278,15 +1411,18 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.stage_instance_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.stage_instance_delete_id
+            ),
             embed,
         )
 
     async def stage_instance_update(
         self, before: discord.StageInstance, after: discord.StageInstance
     ) -> None:
-        if not self._exists_and_enabled("stage_instance_update_url"):
+        if not self._exists_and_enabled("stage_instance_update_id"):
             return
 
         if before.topic == after.topic:
@@ -1309,13 +1445,16 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.stage_instance_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.stage_instance_update_id
+            ),
             embed,
         )
 
     async def thread_create(self, thread: discord.Thread) -> None:
-        if not self._exists_and_enabled("thread_create_url"):
+        if not self._exists_and_enabled("thread_create_id"):
             return
 
         embed = discord.Embed(
@@ -1334,15 +1473,16 @@ class ServerLogger:
             timestamp=discord.utils.utcnow(),
         )
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.thread_create_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.thread_create_id),
             embed,
         )
 
     async def thread_update(
         self, before: discord.Thread, after: discord.Thread
     ) -> None:
-        if not self._exists_and_enabled("thread_update_url"):
+        if not self._exists_and_enabled("thread_update_id"):
             return
 
         changes = []
@@ -1376,13 +1516,14 @@ class ServerLogger:
             timestamp=discord.utils.utcnow(),
         )
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.thread_update_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.thread_update_id),
             embed,
         )
 
     async def thread_remove(self, thread: discord.Thread) -> None:
-        if not self._exists_and_enabled("thread_remove_url"):
+        if not self._exists_and_enabled("thread_remove_id"):
             return
 
         embed = discord.Embed(
@@ -1398,13 +1539,14 @@ class ServerLogger:
             timestamp=discord.utils.utcnow(),
         )
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.thread_remove_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.thread_remove_id),
             embed,
         )
 
     async def thread_delete(self, payload: discord.RawThreadDeleteEvent) -> None:
-        if not self._exists_and_enabled("thread_delete_url"):
+        if not self._exists_and_enabled("thread_delete_id"):
             return
 
         if payload.thread:
@@ -1431,8 +1573,9 @@ class ServerLogger:
                 timestamp=discord.utils.utcnow(),
             )
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.thread_delete_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.thread_delete_id),
             embed,
         )
 
@@ -1442,7 +1585,7 @@ class ServerLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
-        if not self._exists_and_enabled("voice_join_url"):
+        if not self._exists_and_enabled("voice_join_id"):
             return
 
         if before.channel is not None or after.channel is None:
@@ -1460,8 +1603,9 @@ class ServerLogger:
         )
         embed.set_thumbnail(url=member.display_avatar.url)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.voice_join_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.voice_join_id),
             embed,
         )
 
@@ -1471,7 +1615,7 @@ class ServerLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
-        if not self._exists_and_enabled("voice_leave_url"):
+        if not self._exists_and_enabled("voice_leave_id"):
             return
 
         if before.channel is None or after.channel is not None:
@@ -1489,8 +1633,9 @@ class ServerLogger:
         )
         embed.set_thumbnail(url=member.display_avatar.url)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.voice_leave_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.voice_leave_id),
             embed,
         )
 
@@ -1500,7 +1645,7 @@ class ServerLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
-        if not self._exists_and_enabled("voice_move_url"):
+        if not self._exists_and_enabled("voice_move_id"):
             return
 
         if (
@@ -1526,8 +1671,9 @@ class ServerLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.member_move)
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.voice_move_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.voice_move_id),
             embed,
         )
 
@@ -1537,7 +1683,7 @@ class ServerLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
-        if not self._exists_and_enabled("voice_mute_url"):
+        if not self._exists_and_enabled("voice_mute_id"):
             return
 
         if before.mute == after.mute:
@@ -1565,8 +1711,9 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.voice_mute_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.voice_mute_id),
             embed,
         )
 
@@ -1576,7 +1723,7 @@ class ServerLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
-        if not self._exists_and_enabled("voice_unmute_url"):
+        if not self._exists_and_enabled("voice_unmute_id"):
             return
 
         if before.mute == after.mute:
@@ -1604,8 +1751,9 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.voice_unmute_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.voice_unmute_id),
             embed,
         )
 
@@ -1615,7 +1763,7 @@ class ServerLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
-        if not self._exists_and_enabled("voice_deafen_url"):
+        if not self._exists_and_enabled("voice_deafen_id"):
             return
 
         if before.deaf == after.deaf:
@@ -1643,8 +1791,9 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.voice_deafen_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.voice_deafen_id),
             embed,
         )
 
@@ -1654,7 +1803,7 @@ class ServerLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
-        if not self._exists_and_enabled("voice_undeafen_url"):
+        if not self._exists_and_enabled("voice_undeafen_id"):
             return
 
         if before.deaf == after.deaf:
@@ -1682,8 +1831,9 @@ class ServerLogger:
         )
         await self._add_user_footer(embed, log)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.voice_undeafen_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.voice_undeafen_id),
             embed,
         )
 
@@ -1695,11 +1845,12 @@ class ServerLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
-        if not self._exists_and_enabled("titanium_warn_url"):
+        if not self._exists_and_enabled("titanium_warn_id"):
             return
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.titanium_warn_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.titanium_warn_id),
             warned(self.bot, target, creator, case, dm_success, dm_error),
         )
 
@@ -1711,11 +1862,12 @@ class ServerLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
-        if not self._exists_and_enabled("titanium_mute_url"):
+        if not self._exists_and_enabled("titanium_mute_id"):
             return
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.titanium_mute_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.titanium_mute_id),
             muted(self.bot, target, creator, case, dm_success, dm_error),
         )
 
@@ -1727,11 +1879,12 @@ class ServerLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
-        if not self._exists_and_enabled("titanium_unmute_url"):
+        if not self._exists_and_enabled("titanium_unmute_id"):
             return
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.titanium_unmute_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.titanium_unmute_id),
             unmuted(self.bot, target, creator, case, dm_success, dm_error),
         )
 
@@ -1743,11 +1896,12 @@ class ServerLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
-        if not self._exists_and_enabled("titanium_kick_url"):
+        if not self._exists_and_enabled("titanium_kick_id"):
             return
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.titanium_kick_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.titanium_kick_id),
             kicked(self.bot, target, creator, case, dm_success, dm_error),
         )
 
@@ -1759,11 +1913,12 @@ class ServerLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
-        if not self._exists_and_enabled("titanium_ban_url"):
+        if not self._exists_and_enabled("titanium_ban_id"):
             return
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.titanium_ban_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.titanium_ban_id),
             banned(self.bot, target, creator, case, dm_success, dm_error),
         )
 
@@ -1775,18 +1930,19 @@ class ServerLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
-        if not self._exists_and_enabled("titanium_unban_url"):
+        if not self._exists_and_enabled("titanium_unban_id"):
             return
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.titanium_unban_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(self.config.logging_settings.titanium_unban_id),
             unbanned(self.bot, target, creator, case, dm_success, dm_error),
         )
 
     async def titanium_case_comment(
         self, case: ModCase, creator: discord.Member, comment: str
     ) -> None:
-        if not self._exists_and_enabled("titanium_case_comment_url"):
+        if not self._exists_and_enabled("titanium_case_comment_id"):
             return
 
         try:
@@ -1802,8 +1958,11 @@ class ServerLogger:
 
         embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.titanium_case_comment_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.titanium_case_comment_id
+            ),
             embed=embed,
         )
 
@@ -1813,7 +1972,7 @@ class ServerLogger:
         actions: list[AutomodAction],
         message: discord.Message,
     ) -> None:
-        if not self._exists_and_enabled("titanium_automod_trigger_url"):
+        if not self._exists_and_enabled("titanium_automod_trigger_id"):
             return
 
         if isinstance(message.channel, (discord.DMChannel, discord.GroupChannel)):
@@ -1844,7 +2003,10 @@ class ServerLogger:
             inline=False,
         )
 
+        assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            self.config.logging_settings.titanium_automod_trigger_url,  # pyright: ignore[reportOptionalMemberAccess]
+            await self._find_webhook(
+                self.config.logging_settings.titanium_automod_trigger_id
+            ),
             embed=embed,
         )

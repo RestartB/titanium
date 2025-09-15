@@ -22,6 +22,8 @@ from lib.sql import (
     AutomodAction,
     AutomodRule,
     ServerAutomodSettings,
+    ServerLoggingSettings,
+    ServerSettings,
     get_session,
 )
 
@@ -34,6 +36,34 @@ class CategoryDict(TypedDict):
     name: str
     position: int
     channels: list[VoiceChannel | StageChannel | ForumChannel | TextChannel]
+
+
+class ModuleTypes(TypedDict):
+    moderation: bool
+    automod: bool
+    logging: bool
+
+
+class SettingsDict(TypedDict):
+    loading_reaction: bool
+    reply_ping: bool
+
+
+class ServerSettingsModel(BaseModel):
+    modules: ModuleTypes
+    settings: SettingsDict
+    prefixes: list[str]
+
+    @field_validator("prefixes")
+    def validate_prefixes(cls, v):
+        if not v or len(v) == 0:
+            raise ValueError("At least one prefix is required")
+        if len(v) > 5:
+            raise ValueError("A maximum of 5 prefixes are allowed")
+        for prefix in v:
+            if not (1 <= len(prefix) <= 5):
+                raise ValueError("Each prefix must be between 1 and 5 characters long")
+        return v
 
 
 class AutomodActionModel(BaseModel):
@@ -119,71 +149,71 @@ class AutomodConfigModel(BaseModel):
 
 
 class LoggingConfigModel(BaseModel):
-    app_command_perm_update_id: int
-    dc_automod_rule_create_id: int
-    dc_automod_rule_update_id: int
-    dc_automod_rule_delete_id: int
-    channel_create_id: int
-    channel_update_id: int
-    channel_delete_id: int
-    guild_name_update_id: int
-    guild_afk_channel_update_id: int
-    guild_afk_timeout_update_id: int
-    guild_icon_update_id: int
-    guild_emoji_create_id: int
-    guild_emoji_delete_id: int
-    guild_sticker_create_id: int
-    guild_sticker_delete_id: int
-    guild_invite_create_id: int
-    guild_invite_delete_id: int
-    member_join_id: int
-    member_leave_id: int
-    member_nickname_update_id: int
-    member_roles_update_id: int
-    member_ban_id: int
-    member_unban_id: int
-    member_kick_id: int
-    member_timeout_id: int
-    member_untimeout_id: int
-    message_edit_id: int
-    message_delete_id: int
-    message_bulk_delete_id: int
-    poll_create_id: int
-    poll_delete_id: int
-    reaction_clear_id: int
-    reaction_clear_emoji_id: int
-    role_create_id: int
-    role_update_id: int
-    role_delete_id: int
-    scheduled_event_create_id: int
-    scheduled_event_update_id: int
-    scheduled_event_delete_id: int
-    soundboard_sound_create_id: int
-    soundboard_sound_update_id: int
-    soundboard_sound_delete_id: int
-    stage_instance_create_id: int
-    stage_instance_update_id: int
-    stage_instance_delete_id: int
-    thread_create_id: int
-    thread_update_id: int
-    thread_remove_id: int
-    thread_delete_id: int
-    voice_join_id: int
-    voice_leave_id: int
-    voice_move_id: int
-    voice_mute_id: int
-    voice_unmute_id: int
-    voice_deafen_id: int
-    voice_undeafen_id: int
-    titanium_warn_id: int
-    titanium_mute_id: int
-    titanium_unmute_id: int
-    titanium_kick_id: int
-    titanium_ban_id: int
-    titanium_unban_id: int
-    titanium_case_delete_id: int
-    titanium_case_comment_id: int
-    titanium_automod_trigger_id: int
+    app_command_perm_update_id: Optional[str]
+    dc_automod_rule_create_id: Optional[str]
+    dc_automod_rule_update_id: Optional[str]
+    dc_automod_rule_delete_id: Optional[str]
+    channel_create_id: Optional[str]
+    channel_update_id: Optional[str]
+    channel_delete_id: Optional[str]
+    guild_name_update_id: Optional[str]
+    guild_afk_channel_update_id: Optional[str]
+    guild_afk_timeout_update_id: Optional[str]
+    guild_icon_update_id: Optional[str]
+    guild_emoji_create_id: Optional[str]
+    guild_emoji_delete_id: Optional[str]
+    guild_sticker_create_id: Optional[str]
+    guild_sticker_delete_id: Optional[str]
+    guild_invite_create_id: Optional[str]
+    guild_invite_delete_id: Optional[str]
+    member_join_id: Optional[str]
+    member_leave_id: Optional[str]
+    member_nickname_update_id: Optional[str]
+    member_roles_update_id: Optional[str]
+    member_ban_id: Optional[str]
+    member_unban_id: Optional[str]
+    member_kick_id: Optional[str]
+    member_timeout_id: Optional[str]
+    member_untimeout_id: Optional[str]
+    message_edit_id: Optional[str]
+    message_delete_id: Optional[str]
+    message_bulk_delete_id: Optional[str]
+    poll_create_id: Optional[str]
+    poll_delete_id: Optional[str]
+    reaction_clear_id: Optional[str]
+    reaction_clear_emoji_id: Optional[str]
+    role_create_id: Optional[str]
+    role_update_id: Optional[str]
+    role_delete_id: Optional[str]
+    scheduled_event_create_id: Optional[str]
+    scheduled_event_update_id: Optional[str]
+    scheduled_event_delete_id: Optional[str]
+    soundboard_sound_create_id: Optional[str]
+    soundboard_sound_update_id: Optional[str]
+    soundboard_sound_delete_id: Optional[str]
+    stage_instance_create_id: Optional[str]
+    stage_instance_update_id: Optional[str]
+    stage_instance_delete_id: Optional[str]
+    thread_create_id: Optional[str]
+    thread_update_id: Optional[str]
+    thread_remove_id: Optional[str]
+    thread_delete_id: Optional[str]
+    voice_join_id: Optional[str]
+    voice_leave_id: Optional[str]
+    voice_move_id: Optional[str]
+    voice_mute_id: Optional[str]
+    voice_unmute_id: Optional[str]
+    voice_deafen_id: Optional[str]
+    voice_undeafen_id: Optional[str]
+    titanium_warn_id: Optional[str]
+    titanium_mute_id: Optional[str]
+    titanium_unmute_id: Optional[str]
+    titanium_kick_id: Optional[str]
+    titanium_ban_id: Optional[str]
+    titanium_unban_id: Optional[str]
+    titanium_case_delete_id: Optional[str]
+    titanium_case_comment_id: Optional[str]
+    titanium_automod_trigger_id: Optional[str]
 
 
 class APICog(commands.Cog):
@@ -355,6 +385,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/stats", self.stats)
         self.app.router.add_get("/{guild_id}/info", self.server_info)
         self.app.router.add_get("/{guild_id}/settings", self.server_settings)
+        self.app.router.add_put("/{guild_id}/settings", self.update_server_settings)
         self.app.router.add_get("/{guild_id}/module/{module_name}", self.module_get)
         self.app.router.add_put("/{guild_id}/module/{module_name}", self.module_update)
 
@@ -502,6 +533,70 @@ class APICog(commands.Cog):
             }
         )
 
+    async def update_server_settings(self, request: web.Request) -> web.Response:
+        await self.bot.wait_until_ready()
+
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id:
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        config = self.bot.server_configs.get(guild.id)
+        prefixes = self.bot.server_prefixes.get(guild.id)
+
+        if not config or not prefixes:
+            await self.bot.refresh_guild_config_cache(guild.id)
+            config = self.bot.server_configs.get(guild.id)
+            prefixes = self.bot.server_prefixes.get(guild.id)
+
+            if not config or not prefixes:
+                await self.bot.init_guild(guild.id)
+                config = self.bot.server_configs.get(guild.id)
+                prefixes = self.bot.server_prefixes.get(guild.id)
+
+                if not config or not prefixes:
+                    return web.json_response(
+                        {"error": "Failed to retrieve server configuration"},
+                        status=500,
+                    )
+
+        try:
+            data = await request.json()
+            validated_settings = ServerSettingsModel(**data)
+        except ValidationError as e:
+            return web.json_response(
+                {"error": "Validation failed", "details": e.errors()}, status=400
+            )
+        except ValueError as e:
+            return web.json_response(
+                {"error": "Invalid data", "message": str(e)}, status=400
+            )
+
+        async with get_session() as session:
+            db_config = await session.get(ServerSettings, guild.id)
+            if not db_config:
+                return web.json_response(
+                    {"error": "Failed to retrieve server configuration from DB"},
+                    status=500,
+                )
+
+            db_config.moderation_enabled = validated_settings.modules["moderation"]
+            db_config.automod_enabled = validated_settings.modules["automod"]
+            db_config.logging_enabled = validated_settings.modules["logging"]
+            db_config.loading_reaction = validated_settings.settings["loading_reaction"]
+            db_config.reply_ping = validated_settings.settings["reply_ping"]
+
+            prefixes.prefixes = validated_settings.prefixes
+            session.add(db_config)
+            session.add(prefixes)
+
+        await self.bot.refresh_guild_config_cache(guild.id)
+
+        return web.Response(status=204)
+
     async def module_get(self, request: web.Request) -> web.Response:
         await self.bot.wait_until_ready()
 
@@ -567,7 +662,11 @@ class APICog(commands.Cog):
             response_data = {}
 
             for field_name in LoggingConfigModel.model_fields.keys():
-                response_data[field_name] = getattr(logging_settings, field_name, None)
+                attr = getattr(logging_settings, field_name, None)
+                if attr is not None:
+                    response_data[field_name] = str(attr)
+                else:
+                    response_data[field_name] = None
 
             return web.json_response(response_data)
         else:
@@ -618,6 +717,37 @@ class APICog(commands.Cog):
                 return web.json_response(
                     {"error": "Invalid data", "message": str(e)}, status=400
                 )
+        elif module_name == "logging":
+            try:
+                data = await request.json()
+                validated_config = LoggingConfigModel(**data)
+            except ValidationError as e:
+                return web.json_response(
+                    {"error": "Validation failed", "details": e.errors()}, status=400
+                )
+            except ValueError as e:
+                return web.json_response(
+                    {"error": "Invalid data", "message": str(e)}, status=400
+                )
+
+            async with get_session() as session:
+                db_config = await session.get(ServerLoggingSettings, guild.id)
+                if not db_config:
+                    db_config = ServerLoggingSettings(guild_id=guild.id)
+
+                for field_name in LoggingConfigModel.model_fields.keys():
+                    if getattr(validated_config, field_name) is not None:
+                        setattr(
+                            db_config,
+                            field_name,
+                            int(getattr(validated_config, field_name)),
+                        )
+
+                session.add(db_config)
+                await session.commit()
+
+            await self.bot.refresh_guild_config_cache(guild.id)
+            return web.Response(status=204)
         else:
             return web.json_response({"error": "Module not found"}, status=404)
 
