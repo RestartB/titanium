@@ -25,30 +25,37 @@ def generate_short_uuid():
 
 
 # -- Tables --
-class ServerSettings(Base):
-    __tablename__ = "server_settings"
+class GuildSettings(Base):
+    __tablename__ = "guild_settings"
     guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     loading_reaction: Mapped[bool] = MappedColumn(Boolean, default=True)
     reply_ping: Mapped[bool] = MappedColumn(Boolean, default=True)
     moderation_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
     automod_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
-    automod_settings: Mapped["ServerAutomodSettings"] = relationship(
-        "ServerAutomodSettings",
+    automod_settings: Mapped["GuildAutomodSettings"] = relationship(
+        "GuildAutomodSettings",
         cascade="all, delete-orphan",
-        back_populates="server_settings",
+        back_populates="guild_settings",
         uselist=False,
     )
     logging_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
-    logging_settings: Mapped["ServerLoggingSettings"] = relationship(
-        "ServerLoggingSettings",
+    logging_settings: Mapped["GuildLoggingSettings"] = relationship(
+        "GuildLoggingSettings",
         cascade="all, delete-orphan",
-        back_populates="server_settings",
+        back_populates="guild_settings",
+        uselist=False,
+    )
+    fireboard_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    fireboard_settings: Mapped["GuildFireboardSettings"] = relationship(
+        "GuildFireboardSettings",
+        cascade="all, delete-orphan",
+        back_populates="guild_settings",
         uselist=False,
     )
 
 
-class ServerLimits(Base):
-    __tablename__ = "server_limits"
+class GuildLimits(Base):
+    __tablename__ = "guild_limits"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     BadWordList: Mapped[int] = MappedColumn(Integer, default=10)
     BadWordListSize: Mapped[int] = MappedColumn(Integer, default=1500)
@@ -61,8 +68,8 @@ class ServerLimits(Base):
     EmojiSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
 
 
-class ServerPrefixes(Base):
-    __tablename__ = "server_prefixes"
+class GuildPrefixes(Base):
+    __tablename__ = "guild_prefixes"
     guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     prefixes: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=5)),
@@ -80,42 +87,42 @@ class AvailableWebhook(Base):
     webhook_url: Mapped[str] = MappedColumn(String, nullable=False)
 
 
-class ServerAutomodSettings(Base):
-    __tablename__ = "server_automod_settings"
+class GuildAutomodSettings(Base):
+    __tablename__ = "guild_automod_settings"
     guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("server_settings.guild_id"), primary_key=True
+        BigInteger, ForeignKey("guild_settings.guild_id"), primary_key=True
     )
-    server_settings: Mapped["ServerSettings"] = relationship(
-        "ServerSettings", back_populates="automod_settings", uselist=False
+    guild_settings: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="automod_settings", uselist=False
     )
     badword_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     badword_detection_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
-        primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='badword_detection')",
-        back_populates="server",
+        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='badword_detection')",
+        back_populates="guild",
         cascade="all, delete-orphan",
     )
     spam_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     spam_detection_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
-        primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='spam_detection')",
-        back_populates="server",
+        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='spam_detection')",
+        back_populates="guild",
         cascade="all, delete-orphan",
         overlaps="badword_detection_rules",
     )
     malicious_link_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     malicious_link_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
-        primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='malicious_link')",
-        back_populates="server",
+        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='malicious_link')",
+        back_populates="guild",
         cascade="all, delete-orphan",
         overlaps="badword_detection_rules,spam_detection_rules",
     )
     phishing_link_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     phishing_link_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
-        primaryjoin="and_(ServerAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='phishing_link')",
-        back_populates="server",
+        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='phishing_link')",
+        back_populates="guild",
         cascade="all, delete-orphan",
         overlaps="badword_detection_rules,malicious_link_rules,spam_detection_rules",
     )
@@ -127,7 +134,7 @@ class AutomodRule(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("server_automod_settings.guild_id")
+        BigInteger, ForeignKey("guild_automod_settings.guild_id")
     )
     rule_type: Mapped[str] = MappedColumn(String(length=32))
     antispam_type: Mapped[str] = MappedColumn(String(length=32), nullable=True)
@@ -142,8 +149,8 @@ class AutomodRule(Base):
         back_populates="rule",
         cascade="all, delete-orphan",
     )
-    server: Mapped["ServerAutomodSettings"] = relationship(
-        "ServerAutomodSettings",
+    guild: Mapped["GuildAutomodSettings"] = relationship(
+        "GuildAutomodSettings",
         overlaps="badword_detection_rules,spam_detection_rules,malicious_link_rules,phishing_link_rules",
         uselist=False,
     )
@@ -154,7 +161,7 @@ class AutomodAction(Base):
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(
         BigInteger,
-        ForeignKey("server_automod_settings.guild_id"),
+        ForeignKey("guild_automod_settings.guild_id"),
     )
     rule_id: Mapped[uuid.UUID] = MappedColumn(
         UUID(as_uuid=True), ForeignKey("automod_rules.id")
@@ -168,13 +175,13 @@ class AutomodAction(Base):
     )
 
 
-class ServerLoggingSettings(Base):
-    __tablename__ = "server_logging_settings"
+class GuildLoggingSettings(Base):
+    __tablename__ = "guild_logging_settings"
     guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("server_settings.guild_id"), primary_key=True
+        BigInteger, ForeignKey("guild_settings.guild_id"), primary_key=True
     )
-    server_settings: Mapped["ServerSettings"] = relationship(
-        "ServerSettings", back_populates="logging_settings", uselist=False
+    guild_settings: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="logging_settings", uselist=False
     )
     app_command_perm_update_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     dc_automod_rule_create_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
@@ -241,6 +248,68 @@ class ServerLoggingSettings(Base):
     titanium_case_delete_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     titanium_case_comment_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     titanium_automod_trigger_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+
+
+class GuildFireboardSettings(Base):
+    __tablename__ = "guild_fireboard_settings"
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id"), primary_key=True
+    )
+    guild_settings: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="fireboard_settings", uselist=False
+    )
+    global_ignored_channels: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    global_ignored_roles: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    fireboard_channels: Mapped[list["FireboardChannel"]] = relationship(
+        "FireboardChannel", back_populates="guild", cascade="all, delete-orphan"
+    )
+
+
+class FireboardChannel(Base):
+    __tablename__ = "fireboard_channels"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_fireboard_settings.guild_id")
+    )
+    guild: Mapped["GuildFireboardSettings"] = relationship(
+        "GuildFireboardSettings", back_populates="fireboard_channels", uselist=False
+    )
+    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    reaction: Mapped[str] = MappedColumn(String(), default="🔥")
+    threshold: Mapped[int] = MappedColumn(Integer, default=5)
+    ignore_bots: Mapped[bool] = MappedColumn(Boolean, default=True)
+    ignore_self_reactions: Mapped[bool] = MappedColumn(Boolean, default=True)
+    ignored_roles: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    ignored_users: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    ignored_channels: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    messages: Mapped[list["FireboardMessage"]] = relationship(
+        "FireboardMessage", back_populates="fireboard", cascade="all, delete-orphan"
+    )
+
+
+class FireboardMessage(Base):
+    __tablename__ = "fireboard_messages"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    fireboard_message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    fireboard_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("fireboard_channels.id")
+    )
+    fireboard: Mapped["FireboardChannel"] = relationship(
+        "FireboardChannel", back_populates="messages", uselist=False
+    )
 
 
 class ModCase(Base):

@@ -25,11 +25,14 @@ load_dotenv()
 from lib.sql import (  # noqa: E402
     AutomodRule,
     AvailableWebhook,
-    ServerAutomodSettings,
-    ServerLimits,
-    ServerLoggingSettings,
-    ServerPrefixes,
-    ServerSettings,
+    FireboardChannel,
+    FireboardMessage,
+    GuildAutomodSettings,
+    GuildFireboardSettings,
+    GuildLimits,
+    GuildLoggingSettings,
+    GuildPrefixes,
+    GuildSettings,
     get_session,
     init_db,
 )
@@ -70,10 +73,11 @@ class TitaniumBot(commands.Bot):
     last_disconnect: Optional[datetime.datetime]
     last_resume: Optional[datetime.datetime]
 
-    server_configs: dict[int, ServerSettings] = {}
-    server_prefixes: dict[int, ServerPrefixes] = {}
+    guild_configs: dict[int, GuildSettings] = {}
+    guild_prefixes: dict[int, GuildPrefixes] = {}
     available_webhooks: dict[int, list[AvailableWebhook]] = {}
     automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
+    fireboard_messages: dict[int, list[FireboardMessage]] = {}
 
     punishing: dict[int, list[int]] = {}
 
@@ -81,45 +85,50 @@ class TitaniumBot(commands.Bot):
     phishing_links: list[str] = []
 
     async def refresh_all_caches(self) -> None:
-        logging.info("[CACHE] Refreshing server config caches...")
+        logging.info("[CACHE] Refreshing guild config caches...")
 
         async with get_session() as session:
             # Settings
             stmt = (
-                select(ServerSettings)
+                select(GuildSettings)
                 .options(
-                    selectinload(ServerSettings.automod_settings).options(
+                    selectinload(GuildSettings.automod_settings).options(
                         selectinload(
-                            ServerAutomodSettings.badword_detection_rules
+                            GuildAutomodSettings.badword_detection_rules
                         ).options(selectinload(AutomodRule.actions)),
-                        selectinload(
-                            ServerAutomodSettings.spam_detection_rules
-                        ).options(selectinload(AutomodRule.actions)),
-                        selectinload(
-                            ServerAutomodSettings.malicious_link_rules
-                        ).options(selectinload(AutomodRule.actions)),
-                        selectinload(ServerAutomodSettings.phishing_link_rules).options(
+                        selectinload(GuildAutomodSettings.spam_detection_rules).options(
+                            selectinload(AutomodRule.actions)
+                        ),
+                        selectinload(GuildAutomodSettings.malicious_link_rules).options(
+                            selectinload(AutomodRule.actions)
+                        ),
+                        selectinload(GuildAutomodSettings.phishing_link_rules).options(
                             selectinload(AutomodRule.actions)
                         ),
                     )
                 )
-                .options(selectinload(ServerSettings.logging_settings))
+                .options(selectinload(GuildSettings.logging_settings))
+                .options(
+                    selectinload(GuildSettings.fireboard_settings).options(
+                        selectinload(GuildFireboardSettings.fireboard_channels)
+                    )
+                )
             )
             result = await session.execute(stmt)
             configs = result.scalars().all()
-            self.server_configs.clear()
+            self.guild_configs.clear()
 
             for config in configs:
-                self.server_configs[config.guild_id] = config
+                self.guild_configs[config.guild_id] = config
 
             # Server prefixes
-            stmt = select(ServerPrefixes)
+            stmt = select(GuildPrefixes)
             result = await session.execute(stmt)
             prefix_configs = result.scalars().all()
-            self.server_prefixes.clear()
+            self.guild_prefixes.clear()
 
             for config in prefix_configs:
-                self.server_prefixes[config.guild_id] = config
+                self.guild_prefixes[config.guild_id] = config
 
             # Available webhooks
             stmt = select(AvailableWebhook)
@@ -128,50 +137,63 @@ class TitaniumBot(commands.Bot):
             self.available_webhooks.clear()
 
             for webhook in webhook_configs:
-                if webhook.guild_id not in self.available_webhooks:
-                    self.available_webhooks[webhook.guild_id] = []
+                self.available_webhooks.setdefault(webhook.guild_id, []).append(webhook)
 
-                self.available_webhooks[webhook.guild_id].append(webhook)
+            # Fireboard messages
+            stmt = select(FireboardMessage)
+            result = await session.execute(stmt)
+            fireboard_messages = result.scalars().all()
+            self.fireboard_messages.clear()
 
-        logging.info("[CACHE] Server configs refreshed.")
+            for message in fireboard_messages:
+                self.fireboard_messages.setdefault(message.guild_id, []).append(message)
+
+        logging.info("[CACHE] Guild configs refreshed.")
 
     async def refresh_guild_config_cache(self, guild_id: int) -> None:
-        logging.info(f"[CACHE] Refreshing server config cache for guild {guild_id}...")
+        logging.info(f"[CACHE] Refreshing guild config cache for guild {guild_id}...")
         async with get_session() as session:
             # Settings
             stmt = (
-                select(ServerSettings)
-                .where(ServerSettings.guild_id == guild_id)
+                select(GuildSettings)
+                .where(GuildSettings.guild_id == guild_id)
                 .options(
-                    selectinload(ServerSettings.automod_settings).options(
+                    selectinload(GuildSettings.automod_settings).options(
                         selectinload(
-                            ServerAutomodSettings.badword_detection_rules
+                            GuildAutomodSettings.badword_detection_rules
                         ).options(selectinload(AutomodRule.actions)),
-                        selectinload(
-                            ServerAutomodSettings.spam_detection_rules
-                        ).options(selectinload(AutomodRule.actions)),
-                        selectinload(
-                            ServerAutomodSettings.malicious_link_rules
-                        ).options(selectinload(AutomodRule.actions)),
-                        selectinload(ServerAutomodSettings.phishing_link_rules).options(
+                        selectinload(GuildAutomodSettings.spam_detection_rules).options(
+                            selectinload(AutomodRule.actions)
+                        ),
+                        selectinload(GuildAutomodSettings.malicious_link_rules).options(
+                            selectinload(AutomodRule.actions)
+                        ),
+                        selectinload(GuildAutomodSettings.phishing_link_rules).options(
                             selectinload(AutomodRule.actions)
                         ),
                     )
                 )
-                .options(selectinload(ServerSettings.logging_settings))
+                .options(selectinload(GuildSettings.logging_settings))
+                .options(
+                    selectinload(GuildSettings.fireboard_settings).options(
+                        selectinload(GuildFireboardSettings.fireboard_channels).options(
+                            selectinload(FireboardChannel.messages)
+                        )
+                    )
+                )
             )
             result = await session.execute(stmt)
             config = result.scalar()
             if config:
-                self.server_configs[config.guild_id] = config
+                self.guild_configs[config.guild_id] = config
 
             # Server prefixes
-            stmt = select(ServerPrefixes).where(ServerPrefixes.guild_id == guild_id)
+            stmt = select(GuildPrefixes).where(GuildPrefixes.guild_id == guild_id)
             result = await session.execute(stmt)
             prefix_config = result.scalar()
 
             if prefix_config:
-                self.server_prefixes[prefix_config.guild_id] = prefix_config
+                self.guild_prefixes[prefix_config.guild_id] = prefix_config
 
             # Available webhooks
             stmt = select(AvailableWebhook).where(AvailableWebhook.guild_id == guild_id)
@@ -179,41 +201,48 @@ class TitaniumBot(commands.Bot):
             webhook_configs = result.scalars().all()
 
             for webhook in webhook_configs:
-                if webhook.guild_id not in self.available_webhooks:
-                    self.available_webhooks[webhook.guild_id] = []
+                self.available_webhooks.setdefault(webhook.guild_id, []).append(webhook)
 
-                self.available_webhooks[webhook.guild_id].append(webhook)
+            # Fireboard messages
+            if config and config.fireboard_settings:
+                self.fireboard_messages[guild_id] = []
+                for channel in config.fireboard_settings.fireboard_channels:
+                    self.fireboard_messages[guild_id].extend(channel.messages)
 
-        logging.info(f"[CACHE] Server config cache for guild {guild_id} refreshed.")
+        logging.info(f"[CACHE] Guild config cache for guild {guild_id} refreshed.")
 
-    async def init_guild(self, guild_id: int) -> ServerSettings | None:
+    async def init_guild(self, guild_id: int) -> GuildSettings | None:
         logging.info(f"[INIT] Initializing guild {guild_id}...")
 
         async with get_session() as session:
-            stmt = insert(ServerSettings).values(guild_id=guild_id)
+            stmt = insert(GuildSettings).values(guild_id=guild_id)
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 
-            stmt = insert(ServerAutomodSettings).values(guild_id=guild_id)
+            stmt = insert(GuildAutomodSettings).values(guild_id=guild_id)
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 
-            stmt = insert(ServerLoggingSettings).values(guild_id=guild_id)
+            stmt = insert(GuildLoggingSettings).values(guild_id=guild_id)
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 
-            stmt = insert(ServerPrefixes).values(guild_id=guild_id, prefixes=["t!"])
+            stmt = insert(GuildFireboardSettings).values(guild_id=guild_id)
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 
-            stmt = insert(ServerLimits).values(id=guild_id)
+            stmt = insert(GuildPrefixes).values(guild_id=guild_id, prefixes=["t!"])
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
+            stmt = insert(GuildLimits).values(id=guild_id)
             stmt = stmt.on_conflict_do_nothing(index_elements=["id"])
             await session.execute(stmt)
 
         await self.refresh_guild_config_cache(guild_id)
 
         logging.info(f"[INIT] Guild {guild_id} initialized.")
-        return self.server_configs.get(guild_id)
+        return self.guild_configs.get(guild_id)
 
     async def setup_hook(self):
         logging.info("[INIT] Initializing database...")
@@ -288,7 +317,7 @@ async def get_prefix(bot: TitaniumBot, message: discord.Message):
     base = []
 
     if message.guild:
-        prefixes: ServerPrefixes = bot.server_prefixes.get(message.guild.id)
+        prefixes: GuildPrefixes = bot.guild_prefixes.get(message.guild.id)
 
         if prefixes and prefixes.prefixes is not None:
             base.extend(prefixes.prefixes)
