@@ -10,7 +10,7 @@ from discord.ext import commands
 
 from lib.cases.case_manager import GuildModCaseManager
 from lib.classes.automod_message import AutomodMessage
-from lib.classes.server_logger import ServerLogger
+from lib.classes.guild_logger import GuildLogger
 from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, warned_dm
 from lib.embeds.mod_actions import (
     banned,
@@ -60,8 +60,8 @@ class AutomodMonitorCog(commands.Cog):
         # Check for server ID in config list
         if (
             not message.guild
-            or message.guild.id not in self.bot.server_configs
-            or not self.bot.server_configs[message.guild.id].automod_settings
+            or message.guild.id not in self.bot.guild_configs
+            or not self.bot.guild_configs[message.guild.id].automod_settings
             or not message.author
             or not isinstance(message.author, discord.Member)
             or message.author.bot
@@ -73,11 +73,11 @@ class AutomodMonitorCog(commands.Cog):
         triggers: list[AutomodRule] = []
         punishments: list[AutomodAction] = []
 
-        if not self.bot.server_configs[message.guild.id].automod_enabled:
+        if not self.bot.guild_configs[message.guild.id].automod_enabled:
             logging.debug("Automod is not enabled, skipping message")
             return
 
-        config = self.bot.server_configs[message.guild.id].automod_settings
+        config = self.bot.guild_configs[message.guild.id].automod_settings
 
         self.bot.automod_messages.setdefault(message.guild.id, {}).setdefault(
             message.author.id, []
@@ -398,8 +398,8 @@ class AutomodMonitorCog(commands.Cog):
                     await message.channel.send(embeds=embeds)
 
         if triggers:
-            server_logger = ServerLogger(self.bot, message.guild)
-            await server_logger.titanium_automod_trigger(
+            guild_logger = GuildLogger(self.bot, message.guild)
+            await guild_logger.titanium_automod_trigger(
                 rules=triggers,
                 actions=punishments,
                 message=message,

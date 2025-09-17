@@ -21,9 +21,9 @@ from sqlalchemy import delete
 from lib.sql import (
     AutomodAction,
     AutomodRule,
-    ServerAutomodSettings,
-    ServerLoggingSettings,
-    ServerSettings,
+    GuildAutomodSettings,
+    GuildLoggingSettings,
+    GuildSettings,
     get_session,
 )
 
@@ -49,7 +49,7 @@ class SettingsDict(TypedDict):
     reply_ping: bool
 
 
-class ServerSettingsModel(BaseModel):
+class GuildSettingsModel(BaseModel):
     modules: ModuleTypes
     settings: SettingsDict
     prefixes: list[str]
@@ -302,13 +302,13 @@ class APICog(commands.Cog):
 
     async def _apply_automod_config(
         self, guild_id: int, config: AutomodConfigModel
-    ) -> ServerAutomodSettings | None:
+    ) -> GuildAutomodSettings | None:
         async with get_session() as session:
-            automod_settings = await session.get(ServerAutomodSettings, guild_id)
+            automod_settings = await session.get(GuildAutomodSettings, guild_id)
 
             if not automod_settings:
                 await self.bot.init_guild(guild_id)
-                automod_settings = await session.get(ServerAutomodSettings, guild_id)
+                automod_settings = await session.get(GuildAutomodSettings, guild_id)
 
                 if not automod_settings:
                     raise ValueError("Automod settings not found")
@@ -349,7 +349,7 @@ class APICog(commands.Cog):
                     session.add(automod_rule)
 
         await self.bot.refresh_guild_config_cache(guild_id)
-        config = self.bot.server_configs.get(guild_id)
+        config = self.bot.guild_configs.get(guild_id)
 
         if config is None:
             return None
@@ -383,9 +383,10 @@ class APICog(commands.Cog):
         self.app.router.add_get("/ping", self.ping)
         self.app.router.add_get("/status", self.status)
         self.app.router.add_get("/stats", self.stats)
-        self.app.router.add_get("/{guild_id}/info", self.server_info)
-        self.app.router.add_get("/{guild_id}/settings", self.server_settings)
-        self.app.router.add_put("/{guild_id}/settings", self.update_server_settings)
+        self.app.router.add_get("/user/{user_id}/guilds", self.mutual_guilds)
+        self.app.router.add_get("/{guild_id}/info", self.guild_info)
+        self.app.router.add_get("/{guild_id}/settings", self.guild_settings)
+        self.app.router.add_put("/{guild_id}/settings", self.update_guild_settings)
         self.app.router.add_get("/{guild_id}/module/{module_name}", self.module_get)
         self.app.router.add_put("/{guild_id}/module/{module_name}", self.module_update)
 
@@ -433,7 +434,20 @@ class APICog(commands.Cog):
             }
         )
 
-    async def server_info(self, request: web.Request) -> web.Response:
+    async def mutual_guilds(self, request: web.Request) -> web.Response:
+        user_id = request.match_info.get("user_id")
+        if not user_id:
+            return web.json_response({"error": "user_id required"}, status=400)
+
+        try:
+            user = await self.bot.fetch_user(int(user_id))
+        except Exception:
+            return web.json_response({"error": "user not found"}, status=404)
+
+        mutual_guilds = [str(guild.id) for guild in user.mutual_guilds]
+        return web.json_response(mutual_guilds)
+
+    async def guild_info(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
         if not guild_id:
             return web.json_response({"error": "guild_id required"}, status=400)
@@ -490,7 +504,7 @@ class APICog(commands.Cog):
             }
         )
 
-    async def server_settings(self, request: web.Request) -> web.Response:
+    async def guild_settings(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
         if not guild_id:
             return web.json_response({"error": "guild_id required"}, status=400)
@@ -499,18 +513,18 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        config = self.bot.server_configs.get(guild.id)
-        prefixes = self.bot.server_prefixes.get(guild.id)
+        config = self.bot.guild_configs.get(guild.id)
+        prefixes = self.bot.guild_prefixes.get(guild.id)
 
         if not config or not prefixes:
             await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.server_configs.get(guild.id)
-            prefixes = self.bot.server_prefixes.get(guild.id)
+            config = self.bot.guild_configs.get(guild.id)
+            prefixes = self.bot.guild_prefixes.get(guild.id)
 
             if not config or not prefixes:
                 await self.bot.init_guild(guild.id)
-                config = self.bot.server_configs.get(guild.id)
-                prefixes = self.bot.server_prefixes.get(guild.id)
+                config = self.bot.guild_configs.get(guild.id)
+                prefixes = self.bot.guild_prefixes.get(guild.id)
 
                 if not config or not prefixes:
                     return web.json_response(
@@ -533,7 +547,7 @@ class APICog(commands.Cog):
             }
         )
 
-    async def update_server_settings(self, request: web.Request) -> web.Response:
+    async def update_guild_settings(self, request: web.Request) -> web.Response:
         await self.bot.wait_until_ready()
 
         guild_id = request.match_info.get("guild_id")
@@ -544,18 +558,18 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        config = self.bot.server_configs.get(guild.id)
-        prefixes = self.bot.server_prefixes.get(guild.id)
+        config = self.bot.guild_configs.get(guild.id)
+        prefixes = self.bot.guild_prefixes.get(guild.id)
 
         if not config or not prefixes:
             await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.server_configs.get(guild.id)
-            prefixes = self.bot.server_prefixes.get(guild.id)
+            config = self.bot.guild_configs.get(guild.id)
+            prefixes = self.bot.guild_prefixes.get(guild.id)
 
             if not config or not prefixes:
                 await self.bot.init_guild(guild.id)
-                config = self.bot.server_configs.get(guild.id)
-                prefixes = self.bot.server_prefixes.get(guild.id)
+                config = self.bot.guild_configs.get(guild.id)
+                prefixes = self.bot.guild_prefixes.get(guild.id)
 
                 if not config or not prefixes:
                     return web.json_response(
@@ -565,7 +579,7 @@ class APICog(commands.Cog):
 
         try:
             data = await request.json()
-            validated_settings = ServerSettingsModel(**data)
+            validated_settings = GuildSettingsModel(**data)
         except ValidationError as e:
             return web.json_response(
                 {"error": "Validation failed", "details": e.errors()}, status=400
@@ -576,7 +590,7 @@ class APICog(commands.Cog):
             )
 
         async with get_session() as session:
-            db_config = await session.get(ServerSettings, guild.id)
+            db_config = await session.get(GuildSettings, guild.id)
             if not db_config:
                 return web.json_response(
                     {"error": "Failed to retrieve server configuration from DB"},
@@ -613,16 +627,16 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "Guild not found"}, status=404)
 
-        config = self.bot.server_configs.get(guild.id)
+        config = self.bot.guild_configs.get(guild.id)
         if not config:
             await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.server_configs.get(guild.id)
+            config = self.bot.guild_configs.get(guild.id)
 
             if not config:
                 await self.bot.init_guild(guild.id)
 
         if module_name == "automod":
-            config = self.bot.server_configs[guild.id].automod_settings
+            config = self.bot.guild_configs[guild.id].automod_settings
 
             if not config:
                 return web.json_response(
@@ -649,7 +663,7 @@ class APICog(commands.Cog):
                 }
             )
         elif module_name == "logging":
-            config = self.bot.server_configs[guild.id]
+            config = self.bot.guild_configs[guild.id]
 
             if not config.logging_settings:
                 default_values = {}
@@ -688,10 +702,10 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "Guild not found"}, status=404)
 
-        config = self.bot.server_configs.get(guild.id)
+        config = self.bot.guild_configs.get(guild.id)
         if not config:
             await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.server_configs.get(guild.id)
+            config = self.bot.guild_configs.get(guild.id)
 
             if not config:
                 await self.bot.init_guild(guild.id)
@@ -731,9 +745,9 @@ class APICog(commands.Cog):
                 )
 
             async with get_session() as session:
-                db_config = await session.get(ServerLoggingSettings, guild.id)
+                db_config = await session.get(GuildLoggingSettings, guild.id)
                 if not db_config:
-                    db_config = ServerLoggingSettings(guild_id=guild.id)
+                    db_config = GuildLoggingSettings(guild_id=guild.id)
 
                 for field_name in LoggingConfigModel.model_fields.keys():
                     if getattr(validated_config, field_name) is not None:

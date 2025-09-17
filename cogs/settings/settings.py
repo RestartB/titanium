@@ -20,14 +20,14 @@ from discord.ui import (
 )
 from sqlalchemy.orm.attributes import flag_modified
 
-from lib.sql import ServerPrefixes, ServerSettings, get_session
+from lib.sql import GuildPrefixes, GuildSettings, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
 
 
 class ModToggleButton(Button["SettingsView"]):
-    def __init__(self, bot: "TitaniumBot", settings: ServerSettings) -> None:
+    def __init__(self, bot: "TitaniumBot", settings: GuildSettings) -> None:
         super().__init__(label="\N{BELL}", style=ButtonStyle.green)
 
         self.bot = bot
@@ -49,14 +49,87 @@ class ModToggleButton(Button["SettingsView"]):
         self.settings.moderation_enabled = not self.settings.moderation_enabled
 
         async with get_session() as session:
-            server_settings = await session.get(ServerSettings, interaction.guild_id)
+            guild_settings = await session.get(GuildSettings, interaction.guild_id)
 
-            if not server_settings:
-                server_settings = ServerSettings(guild_id=interaction.guild_id)
-                session.add(server_settings)
+            if not guild_settings:
+                guild_settings = GuildSettings(guild_id=interaction.guild_id)
+                session.add(guild_settings)
 
-            server_settings.moderation_enabled = self.settings.moderation_enabled
+            guild_settings.moderation_enabled = self.settings.moderation_enabled
 
+        await self.bot.refresh_guild_config_cache(interaction.guild_id)
+        self.update_button()
+        await interaction.response.edit_message(view=self.view)
+
+
+class AutomodToggleButton(Button["SettingsView"]):
+    def __init__(self, bot: "TitaniumBot", settings: GuildSettings) -> None:
+        super().__init__(label="\N{BELL}", style=ButtonStyle.green)
+
+        self.bot = bot
+        self.settings = settings
+
+        self.update_button()
+
+    def update_button(self):
+        if self.settings.automod_enabled:
+            self.label = "Enabled"
+            self.emoji = self.bot.success_emoji
+            self.style = ButtonStyle.green
+        else:
+            self.label = "Disabled"
+            self.emoji = self.bot.error_emoji
+            self.style = ButtonStyle.red
+
+    async def callback(self, interaction: Interaction) -> None:
+        self.settings.automod_enabled = not self.settings.automod_enabled
+
+        async with get_session() as session:
+            guild_settings = await session.get(GuildSettings, interaction.guild_id)
+
+            if not guild_settings:
+                guild_settings = GuildSettings(guild_id=interaction.guild_id)
+                session.add(guild_settings)
+
+            guild_settings.automod_enabled = self.settings.automod_enabled
+
+        await self.bot.refresh_guild_config_cache(interaction.guild_id)
+        self.update_button()
+        await interaction.response.edit_message(view=self.view)
+
+
+class LoggingToggleButton(Button["SettingsView"]):
+    def __init__(self, bot: "TitaniumBot", settings: GuildSettings) -> None:
+        super().__init__(label="\N{BELL}", style=ButtonStyle.green)
+
+        self.bot = bot
+        self.settings = settings
+
+        self.update_button()
+
+    def update_button(self):
+        if self.settings.logging_enabled:
+            self.label = "Enabled"
+            self.emoji = self.bot.success_emoji
+            self.style = ButtonStyle.green
+        else:
+            self.label = "Disabled"
+            self.emoji = self.bot.error_emoji
+            self.style = ButtonStyle.red
+
+    async def callback(self, interaction: Interaction) -> None:
+        self.settings.logging_enabled = not self.settings.logging_enabled
+
+        async with get_session() as session:
+            guild_settings = await session.get(GuildSettings, interaction.guild_id)
+
+            if not guild_settings:
+                guild_settings = GuildSettings(guild_id=interaction.guild_id)
+                session.add(guild_settings)
+
+            guild_settings.logging_enabled = self.settings.logging_enabled
+
+        await self.bot.refresh_guild_config_cache(interaction.guild_id)
         self.update_button()
         await interaction.response.edit_message(view=self.view)
 
@@ -65,7 +138,7 @@ class SettingsView(LayoutView):
     """Settings quick option commands"""
 
     def __init__(
-        self, interaction: Interaction, bot: "TitaniumBot", settings: ServerSettings
+        self, interaction: Interaction, bot: "TitaniumBot", settings: GuildSettings
     ) -> None:
         super().__init__()
 
@@ -78,12 +151,12 @@ class SettingsView(LayoutView):
             top_section = Section(accessory=Thumbnail(media=interaction.guild.icon.url))
             top_section.add_item(
                 TextDisplay(
-                    f"## Server Settings\nFor the **{interaction.guild.name}** server."
+                    f"## Server Settings\nFor the **{interaction.guild.name}** server. To manage more settings, please go to the Titanium Dashboard."
                 )
             )
         else:
             top_section = TextDisplay(
-                f"## Server Settings\nFor the **{interaction.guild.name}** server."
+                f"## Server Settings\nFor the **{interaction.guild.name}** server. To manage more settings, please go to the Titanium Dashboard."
             )
 
         container.add_item(top_section)
@@ -92,23 +165,29 @@ class SettingsView(LayoutView):
         mod_section = Section(accessory=ModToggleButton(bot, settings))
         mod_section.add_item(
             TextDisplay(
-                "### Moderation Module\nModerate your server members and create cases."
+                "### Moderation\nModerate your server members and create cases."
             )
         )
         container.add_item(mod_section)
 
-        mod_section = Section(accessory=ModToggleButton(bot, settings))
-        mod_section.add_item(
+        automod_section = Section(accessory=ModToggleButton(bot, settings))
+        automod_section.add_item(
             TextDisplay(
-                "### Auto Moderation Module\nAllow Titanium to moderate your server for you."
+                "### Auto Moderation\nAllow Titanium to moderate your server for you."
             )
         )
-        container.add_item(mod_section)
+        container.add_item(automod_section)
+
+        logging_section = Section(accessory=LoggingToggleButton(bot, settings))
+        logging_section.add_item(
+            TextDisplay("### Logging\nLog various events that happen in your server.")
+        )
+        container.add_item(logging_section)
 
         self.add_item(container)
 
 
-class ServerSettingsCog(commands.Cog):
+class GuildSettingsCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
@@ -155,12 +234,12 @@ class ServerSettingsCog(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         await self.bot.refresh_guild_config_cache(interaction.guild_id)
-        server_settings = self.bot.server_configs.get(interaction.guild_id)
+        guild_settings = self.bot.guild_configs.get(interaction.guild_id)
 
-        if not server_settings:
-            server_settings = await self.bot.init_guild(interaction.guild_id)
+        if not guild_settings:
+            guild_settings = await self.bot.init_guild(interaction.guild_id)
 
-        view = SettingsView(interaction, self.bot, server_settings)
+        view = SettingsView(interaction, self.bot, guild_settings)
 
         await interaction.followup.send(view=view, ephemeral=True)
 
@@ -185,10 +264,10 @@ class ServerSettingsCog(commands.Cog):
             )
 
         async with get_session() as session:
-            prefixes = await session.get(ServerPrefixes, interaction.guild_id)
+            prefixes = await session.get(GuildPrefixes, interaction.guild_id)
 
             if not prefixes:
-                prefixes = ServerPrefixes(guild_id=interaction.guild_id)
+                prefixes = GuildPrefixes(guild_id=interaction.guild_id)
                 session.add(prefixes)
 
             if prefixes.prefixes is None:
@@ -207,7 +286,7 @@ class ServerSettingsCog(commands.Cog):
             prefixes.prefixes.append(prefix.lower())
             flag_modified(prefixes, "prefixes")
 
-            self.bot.server_prefixes[interaction.guild_id] = prefixes
+            self.bot.guild_prefixes[interaction.guild_id] = prefixes
 
         await interaction.followup.send(
             embed=Embed(
@@ -224,7 +303,7 @@ class ServerSettingsCog(commands.Cog):
         if interaction.guild_id is None:
             return []
 
-        prefixes = self.bot.server_prefixes.get(interaction.guild_id)
+        prefixes = self.bot.guild_prefixes.get(interaction.guild_id)
         if prefixes and prefixes.prefixes is not None:
             return [
                 app_commands.Choice(name=prefix, value=prefix)
@@ -258,10 +337,10 @@ class ServerSettingsCog(commands.Cog):
             )
 
         async with get_session() as session:
-            prefixes = await session.get(ServerPrefixes, interaction.guild_id)
+            prefixes = await session.get(GuildPrefixes, interaction.guild_id)
 
             if not prefixes:
-                prefixes = ServerPrefixes(guild_id=interaction.guild_id)
+                prefixes = GuildPrefixes(guild_id=interaction.guild_id)
                 session.add(prefixes)
 
             if prefixes.prefixes is None:
@@ -280,7 +359,7 @@ class ServerSettingsCog(commands.Cog):
             prefixes.prefixes.remove(prefix.lower())
             flag_modified(prefixes, "prefixes")
 
-            self.bot.server_prefixes[interaction.guild_id] = prefixes
+            self.bot.guild_prefixes[interaction.guild_id] = prefixes
 
         await interaction.followup.send(
             embed=Embed(
@@ -300,13 +379,13 @@ class ServerSettingsCog(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         async with get_session() as session:
-            server_settings = await session.get(ServerSettings, interaction.guild_id)
+            guild_settings = await session.get(GuildSettings, interaction.guild_id)
 
-            if not server_settings:
-                server_settings = ServerSettings(guild_id=interaction.guild_id)
-                session.add(server_settings)
+            if not guild_settings:
+                guild_settings = GuildSettings(guild_id=interaction.guild_id)
+                session.add(guild_settings)
 
-            if server_settings.moderation_enabled:
+            if guild_settings.moderation_enabled:
                 await interaction.followup.send(
                     embed=Embed(
                         title=f"{str(self.bot.error_emoji)} Already Enabled",
@@ -317,9 +396,9 @@ class ServerSettingsCog(commands.Cog):
                 )
                 return
 
-            server_settings.moderation_enabled = True
+            guild_settings.moderation_enabled = True
 
-            self.bot.server_configs[interaction.guild_id] = server_settings
+            self.bot.guild_configs[interaction.guild_id] = guild_settings
 
         await interaction.followup.send(
             embed=Embed(
@@ -339,13 +418,13 @@ class ServerSettingsCog(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         async with get_session() as session:
-            server_settings = await session.get(ServerSettings, interaction.guild_id)
+            guild_settings = await session.get(GuildSettings, interaction.guild_id)
 
-            if not server_settings:
-                server_settings = ServerSettings(guild_id=interaction.guild_id)
-                session.add(server_settings)
+            if not guild_settings:
+                guild_settings = GuildSettings(guild_id=interaction.guild_id)
+                session.add(guild_settings)
 
-            if not server_settings.moderation_enabled:
+            if not guild_settings.moderation_enabled:
                 await interaction.followup.send(
                     embed=Embed(
                         title=f"{str(self.bot.error_emoji)} Already Disabled",
@@ -356,9 +435,9 @@ class ServerSettingsCog(commands.Cog):
                 )
                 return
 
-            server_settings.moderation_enabled = False
+            guild_settings.moderation_enabled = False
 
-            self.bot.server_configs[interaction.guild_id] = server_settings
+            self.bot.guild_configs[interaction.guild_id] = guild_settings
 
         await interaction.followup.send(
             embed=Embed(
@@ -371,4 +450,4 @@ class ServerSettingsCog(commands.Cog):
 
 
 async def setup(bot: "TitaniumBot") -> None:
-    await bot.add_cog(ServerSettingsCog(bot))
+    await bot.add_cog(GuildSettingsCog(bot))

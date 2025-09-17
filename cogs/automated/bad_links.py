@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 class BadLinkFetcherCog(commands.Cog):
     """Automatic tasks to fetch and update bad / phishing links"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 

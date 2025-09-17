@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 class AdminCog(commands.Cog):
     """Private bot admin only commands"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 

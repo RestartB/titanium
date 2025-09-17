@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 class ModerationCasesCog(commands.Cog):
     """Moderation case management commands"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 

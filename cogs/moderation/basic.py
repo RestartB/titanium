@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord.ui import View
 
 from lib.cases.case_manager import GuildModCaseManager
-from lib.classes.server_logger import ServerLogger
+from lib.classes.guild_logger import GuildLogger
 from lib.duration import DurationConverter
 from lib.embeds.dm_notifs import (
     banned_dm,
@@ -109,8 +109,8 @@ class ModerationBasicCog(commands.Cog):
                 dm_success = False
                 dm_error = "Failed to send DM."
 
-            server_logger = ServerLogger(self.bot, ctx.guild)
-            await server_logger.titanium_warn(
+            guild_logger = GuildLogger(self.bot, ctx.guild)
+            await guild_logger.titanium_warn(
                 target=member,
                 creator=ctx.author,
                 case=case,
@@ -252,8 +252,8 @@ class ModerationBasicCog(commands.Cog):
                 dm_success = False
                 dm_error = "Failed to send DM."
 
-            server_logger = ServerLogger(self.bot, ctx.guild)
-            await server_logger.titanium_mute(
+            guild_logger = GuildLogger(self.bot, ctx.guild)
+            await guild_logger.titanium_mute(
                 target=member,
                 creator=ctx.author,
                 case=case,
@@ -358,8 +358,8 @@ class ModerationBasicCog(commands.Cog):
                 dm_success = False
                 dm_error = "Failed to send DM."
 
-            server_logger = ServerLogger(self.bot, ctx.guild)
-            await server_logger.titanium_unmute(
+            guild_logger = GuildLogger(self.bot, ctx.guild)
+            await guild_logger.titanium_unmute(
                 target=member,
                 creator=ctx.author,
                 case=case,
@@ -458,8 +458,8 @@ class ModerationBasicCog(commands.Cog):
                 dm_success = False
                 dm_error = "Failed to send DM."
 
-            server_logger = ServerLogger(self.bot, ctx.guild)
-            await server_logger.titanium_kick(
+            guild_logger = GuildLogger(self.bot, ctx.guild)
+            await guild_logger.titanium_kick(
                 target=member,
                 creator=ctx.author,
                 case=case,
@@ -591,8 +591,8 @@ class ModerationBasicCog(commands.Cog):
                 dm_success = False
                 dm_error = "Failed to send DM."
 
-            server_logger = ServerLogger(self.bot, ctx.guild)
-            await server_logger.titanium_ban(
+            guild_logger = GuildLogger(self.bot, ctx.guild)
+            await guild_logger.titanium_ban(
                 target=user,
                 creator=ctx.author,
                 case=case,
@@ -693,8 +693,8 @@ class ModerationBasicCog(commands.Cog):
                 dm_success = False
                 dm_error = "Failed to send DM."
 
-            server_logger = ServerLogger(self.bot, ctx.guild)
-            await server_logger.titanium_unban(
+            guild_logger = GuildLogger(self.bot, ctx.guild)
+            await guild_logger.titanium_unban(
                 target=user,
                 creator=ctx.author,
                 case=case,

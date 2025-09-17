@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 class UserCommandsCog(commands.Cog):
     """User related commands"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 

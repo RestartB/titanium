@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class ServerLogger:
+class GuildLogger:
     """Server logging class, used to log Discord events to server webhooks"""
 
     def __init__(
@@ -21,7 +21,7 @@ class ServerLogger:
     ):
         self.bot = bot
         self.guild = guild
-        self.config = bot.server_configs.get(guild.id)
+        self.config = bot.guild_configs.get(guild.id)
 
     def _exists_and_enabled(self, entry: str) -> bool:
         if (
@@ -29,18 +29,24 @@ class ServerLogger:
             or not self.config.logging_enabled
             or not self.config.logging_settings
         ):
+            logging.info("Logging is disabled")
             return False
 
         field_value = getattr(self.config.logging_settings, entry, None)
         if not field_value:
+            logging.info("This log type is disabled")
             return False
 
+        logging.info("Logging is enabled")
         return True
 
     async def _find_webhook(self, channel_id: int) -> Optional[str]:
         if self.guild.id in self.bot.available_webhooks:
             for webhook in self.bot.available_webhooks[self.guild.id]:
                 if webhook.channel_id == channel_id:
+                    logging.info(
+                        f"Found existing webhook for channel {channel_id} in guild {self.guild.id}"
+                    )
                     return webhook.webhook_url
 
         # Get channel
@@ -82,9 +88,16 @@ class ServerLogger:
             webhook = discord.Webhook.from_url(url, client=self.bot)
 
             if view:
-                result = await webhook.send(content="mepw", embed=embed, view=view)
+                result = await webhook.send(
+                    username=self.bot.user.name if self.bot.user else "Titanium",
+                    avatar_url=self.bot.user.display_avatar.url
+                    if self.bot.user
+                    else None,
+                    embed=embed,
+                    view=view,
+                )
             else:
-                result = await webhook.send(content="mepw", embed=embed)
+                result = await webhook.send(embed=embed)
             return result
         except Exception as e:
             logging.error(f"Failed to send webhook: {e}")
@@ -259,7 +272,7 @@ class ServerLogger:
             title="Channel Updated",
             description=f"**Channel Name:** `#{after.name}` ({after.mention})\n**Channel ID:** `{after.id}`\n\n"
             + "\n".join(changes),
-            color=discord.Color.blue(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -284,7 +297,7 @@ class ServerLogger:
         embed = discord.Embed(
             title="Guild Name Updated",
             description=f"**Old Name:** `{before.name}`\n**New Name:** `{after.name}`",
-            color=discord.Color.blue(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.icon.url if after.icon else None)
@@ -310,7 +323,7 @@ class ServerLogger:
         embed = discord.Embed(
             title="Guild AFK Channel Updated",
             description=f"**Old AFK Channel:** `{before.afk_channel.mention if before.afk_channel else 'None'}`\n**New AFK Channel:** `{after.afk_channel.mention if after.afk_channel else 'None'}`",
-            color=discord.Color.blue(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.icon.url if after.icon else None)
@@ -338,7 +351,7 @@ class ServerLogger:
         embed = discord.Embed(
             title="Guild AFK Timeout Updated",
             description=f"**Old AFK Timeout:** `{before.afk_timeout} seconds`\n**New AFK Timeout:** `{after.afk_timeout} seconds`",
-            color=discord.Color.blue(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.icon.url if after.icon else None)
@@ -365,7 +378,7 @@ class ServerLogger:
 
         embed = discord.Embed(
             title="Guild Icon Updated",
-            color=discord.Color.blue(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.icon.url if after.icon else None)
@@ -649,7 +662,7 @@ class ServerLogger:
             f"**ID:** `{after.id}`\n\n"
             f"**Old Nickname:** `{before.nick}`\n"
             f"**New Nickname:** `{after.nick}`",
-            color=discord.Color.blue(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.display_avatar.url)
@@ -687,7 +700,7 @@ class ServerLogger:
             title="Member Roles Updated",
             description=f"**User:** {after.mention} (`@{after.name}`)\n"
             f"**ID:** `{after.id}`",
-            color=discord.Color.orange(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.display_avatar.url)
@@ -818,7 +831,7 @@ class ServerLogger:
             description=f"**User:** {after.mention} (`@{after.name}`)\n"
             f"**ID:** `{after.id}`\n"
             f"**Timeout Until:** <t:{int(after.timed_out_until.timestamp())}:R>",
-            color=discord.Color.orange(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.display_avatar.url)
@@ -875,6 +888,22 @@ class ServerLogger:
             description=f"**Message ID:** `{event.message_id}`\n"
             f"**Channel:** <#{event.channel_id}>\n"
             f"**Author:** {event.message.author.mention}\n",
+            color=discord.Color.yellow(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        view = discord.ui.View()
+        view.add_item(
+            discord.ui.Button(
+                label="Jump to Message",
+                url=event.message.jump_url,
+                style=discord.ButtonStyle.url,
+            )
+        )
+
+        embed.set_author(
+            name=f"@{event.message.author.name}",
+            icon_url=event.message.author.display_avatar.url,
         )
 
         if event.cached_message:
@@ -887,6 +916,7 @@ class ServerLogger:
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.message_edit_id),
             embed,
+            view,
         )
 
     # FIXME: doesn't work
@@ -898,12 +928,19 @@ class ServerLogger:
             title="Message Deleted",
             description=f"**Message ID:** `{event.message_id}`\n"
             f"**Channel:** <#{event.channel_id}>",
+            color=discord.Color.red(),
+            timestamp=discord.utils.utcnow(),
         )
 
         if event.cached_message and embed.description:
             embed.description += f"\n**Author:** {event.cached_message.author.mention}"
             embed.add_field(
                 name="Content", value=event.cached_message.content, inline=False
+            )
+
+            embed.set_author(
+                name=f"@{event.cached_message.author.name}",
+                icon_url=event.cached_message.author.display_avatar.url,
             )
 
         log = await self._get_audit_log_entry(
@@ -1020,10 +1057,20 @@ class ServerLogger:
         )
         embed.set_thumbnail(url=message.author.display_avatar.url)
 
+        view = discord.ui.View()
+        view.add_item(
+            discord.ui.Button(
+                label="Jump to Message",
+                url=message.jump_url,
+                style=discord.ButtonStyle.url,
+            )
+        )
+
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.reaction_clear_id),
             embed,
+            view,
         )
 
     async def reaction_clear_emoji(self, reaction: discord.Reaction) -> None:
@@ -1048,12 +1095,22 @@ class ServerLogger:
         )
         embed.set_thumbnail(url=message.author.display_avatar.url)
 
+        view = discord.ui.View()
+        view.add_item(
+            discord.ui.Button(
+                label="Jump to Message",
+                url=message.jump_url,
+                style=discord.ButtonStyle.url,
+            )
+        )
+
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(
                 self.config.logging_settings.reaction_clear_emoji_id
             ),
             embed,
+            view,
         )
 
     async def role_create(self, role: discord.Role) -> None:
@@ -1134,7 +1191,7 @@ class ServerLogger:
         embed = discord.Embed(
             title="Role Updated",
             description="\n".join(changes),
-            color=discord.Color.orange(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1246,7 +1303,7 @@ class ServerLogger:
         embed = discord.Embed(
             title="Scheduled Event Updated",
             description="\n".join(changes),
-            color=discord.Color.orange(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1342,7 +1399,7 @@ class ServerLogger:
                 f"**Sound ID:** `{before.id}`\n"
                 "\n".join(changes)
             ),
-            color=discord.Color.orange(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1436,7 +1493,7 @@ class ServerLogger:
                 if after.channel
                 else "**Channel:** Unknown\n"
             ),
-            color=discord.Color.orange(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1512,7 +1569,7 @@ class ServerLogger:
                 if after.parent
                 else "**Channel:** `Unknown`" + "\n".join(changes)
             ),
-            color=discord.Color.orange(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1701,7 +1758,7 @@ class ServerLogger:
                 if after.channel
                 else "**Channel:** `Unknown`"
             ),
-            color=discord.Color.orange(),
+            color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -1954,6 +2011,7 @@ class ServerLogger:
             title=f"Comment added to `{case.id}`{f' (@{user.name})' if user else ''}",
             description=comment,
             color=discord.Color.blue(),
+            timestamp=discord.utils.utcnow(),
         )
 
         embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -1983,6 +2041,7 @@ class ServerLogger:
             description=f"{message.author.mention} (`@{message.author.name}`, `{message.author.id}`) triggered automod in {message.channel.mention}"
             f"({f'`#{message.channel.name}`, ' if not isinstance(message.channel, discord.PartialMessageable) else ''}`{message.channel.id}`).",
             color=discord.Color.blue(),
+            timestamp=discord.utils.utcnow(),
         )
 
         embed.add_field(

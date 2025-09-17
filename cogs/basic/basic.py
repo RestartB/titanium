@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 class BasicCommandsCog(commands.Cog):
     """Basic commands"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
@@ -49,8 +50,8 @@ class BasicCommandsCog(commands.Cog):
         await ctx.defer()
 
         prefix_str = ""
-        if self.bot.server_prefixes.get(ctx.guild.id):
-            for i, prefix in enumerate(self.bot.server_prefixes[ctx.guild.id].prefixes):
+        if self.bot.guild_prefixes.get(ctx.guild.id):
+            for i, prefix in enumerate(self.bot.guild_prefixes[ctx.guild.id].prefixes):
                 if i == 0:
                     prefix_str += f"`{prefix}`"
                 else:

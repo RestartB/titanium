@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 class StatsUpdateCog(commands.Cog):
     """Automatic task to update bot stats for server count, member count and user install count"""
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
@@ -25,7 +26,7 @@ class StatsUpdateCog(commands.Cog):
         await self.bot.wait_until_ready()
 
         # Count members
-        server_members: int = sum(guild.member_count or 0 for guild in self.bot.guilds)
+        guild_members: int = sum(guild.member_count or 0 for guild in self.bot.guilds)
 
         # Get app data
         app_data: discord.AppInfo = await self.bot.application_info()
@@ -37,7 +38,7 @@ class StatsUpdateCog(commands.Cog):
             else 0
         )
         self.bot.guild_installs = app_data.approximate_guild_count
-        self.bot.guild_member_count = server_members
+        self.bot.guild_member_count = guild_members
 
 
 async def setup(bot: "TitaniumBot"):
