@@ -264,19 +264,19 @@ class GuildFireboardSettings(Base):
     global_ignored_roles: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
-    fireboard_channels: Mapped[list["FireboardChannel"]] = relationship(
-        "FireboardChannel", back_populates="guild", cascade="all, delete-orphan"
+    fireboard_boards: Mapped[list["FireboardBoard"]] = relationship(
+        "FireboardBoard", back_populates="guild", cascade="all, delete-orphan"
     )
 
 
-class FireboardChannel(Base):
-    __tablename__ = "fireboard_channels"
+class FireboardBoard(Base):
+    __tablename__ = "fireboard_boards"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_fireboard_settings.guild_id")
     )
     guild: Mapped["GuildFireboardSettings"] = relationship(
-        "GuildFireboardSettings", back_populates="fireboard_channels", uselist=False
+        "GuildFireboardSettings", back_populates="fireboard_boards", uselist=False
     )
     channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     reaction: Mapped[str] = MappedColumn(String(), default="🔥")
@@ -305,10 +305,10 @@ class FireboardMessage(Base):
     message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     fireboard_message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     fireboard_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("fireboard_channels.id")
+        BigInteger, ForeignKey("fireboard_boards.id")
     )
-    fireboard: Mapped["FireboardChannel"] = relationship(
-        "FireboardChannel", back_populates="messages", uselist=False
+    fireboard: Mapped["FireboardBoard"] = relationship(
+        "FireboardBoard", back_populates="messages", uselist=False
     )
 
 

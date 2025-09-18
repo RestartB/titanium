@@ -10,6 +10,10 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+# TODO: implement ignored users/roles/channels
+# TODO: write messages to database
+
+
 class FireboardCog(commands.Cog):
     """Server fireboard system"""
 
@@ -72,7 +76,7 @@ class FireboardCog(commands.Cog):
             or len(
                 self.bot.guild_configs[
                     reaction.message.guild.id
-                ].fireboard_settings.fireboard_channels
+                ].fireboard_settings.fireboard_boards
             )
             == 0
             or user.id == self.bot.user.id
@@ -129,25 +133,22 @@ class FireboardCog(commands.Cog):
                 except (discord.NotFound, discord.Forbidden):
                     continue
 
-        for fireboard_channel in self.bot.guild_configs[
+        for board in self.bot.guild_configs[
             reaction.message.guild.id
-        ].fireboard_settings.fireboard_channels:
-            if (
-                fireboard_channel.id in processed_boards
-                or fireboard_channel.reaction != str(reaction.emoji)
-            ):
+        ].fireboard_settings.fireboard_boards:
+            if board.id in processed_boards or board.reaction != str(reaction.emoji):
                 continue
 
             count = await self._calculate_reaction_count(
                 reaction,
                 reaction.message.author,
-                fireboard_channel.ignore_self_reactions,
-                fireboard_channel.ignore_bots,
+                board.ignore_self_reactions,
+                board.ignore_bots,
             )
 
-            if count >= fireboard_channel.threshold:
-                content = f"{count} {fireboard_channel.reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
-                channel = self.bot.get_channel(fireboard_channel.channel_id)
+            if count >= board.threshold:
+                content = f"{count} {board.reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
+                channel = self.bot.get_channel(board.channel_id)
 
                 if channel is None or isinstance(
                     channel,
@@ -201,7 +202,7 @@ class FireboardCog(commands.Cog):
             or len(
                 self.bot.guild_configs[
                     payload.guild_id
-                ].fireboard_settings.fireboard_channels
+                ].fireboard_settings.fireboard_boards
             )
             == 0
             or isinstance(
@@ -251,7 +252,7 @@ class FireboardCog(commands.Cog):
             or len(
                 self.bot.guild_configs[
                     payload.guild_id
-                ].fireboard_settings.fireboard_channels
+                ].fireboard_settings.fireboard_boards
             )
             == 0
         ):
@@ -285,7 +286,7 @@ class FireboardCog(commands.Cog):
             or len(
                 self.bot.guild_configs[
                     message.guild.id
-                ].fireboard_settings.fireboard_channels
+                ].fireboard_settings.fireboard_boards
             )
             == 0
         ):
@@ -319,7 +320,7 @@ class FireboardCog(commands.Cog):
             or len(
                 self.bot.guild_configs[
                     reaction.message.guild.id
-                ].fireboard_settings.fireboard_channels
+                ].fireboard_settings.fireboard_boards
             )
             == 0
         ):

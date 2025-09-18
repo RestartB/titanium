@@ -42,6 +42,7 @@ class ModuleTypes(TypedDict):
     moderation: bool
     automod: bool
     logging: bool
+    fireboard: bool
 
 
 class SettingsDict(TypedDict):
@@ -384,11 +385,17 @@ class APICog(commands.Cog):
         self.app.router.add_get("/status", self.status)
         self.app.router.add_get("/stats", self.stats)
         self.app.router.add_get("/user/{user_id}/guilds", self.mutual_guilds)
-        self.app.router.add_get("/{guild_id}/info", self.guild_info)
-        self.app.router.add_get("/{guild_id}/settings", self.guild_settings)
-        self.app.router.add_put("/{guild_id}/settings", self.update_guild_settings)
-        self.app.router.add_get("/{guild_id}/module/{module_name}", self.module_get)
-        self.app.router.add_put("/{guild_id}/module/{module_name}", self.module_update)
+        self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
+        self.app.router.add_get("/guild/{guild_id}/settings", self.guild_settings)
+        self.app.router.add_put(
+            "/guild/{guild_id}/settings", self.update_guild_settings
+        )
+        self.app.router.add_get(
+            "/guild/{guild_id}/module/{module_name}", self.module_get
+        )
+        self.app.router.add_put(
+            "/guild/{guild_id}/module/{module_name}", self.module_update
+        )
 
     async def index(self, request: web.Request) -> web.Response:
         return web.json_response({"version": "Titanium API v2"})
@@ -538,6 +545,7 @@ class APICog(commands.Cog):
                     "moderation": config.moderation_enabled,
                     "automod": config.automod_enabled,
                     "logging": config.logging_enabled,
+                    "fireboard": config.fireboard_enabled,
                 },
                 "settings": {
                     "loading_reaction": config.loading_reaction,
@@ -600,6 +608,7 @@ class APICog(commands.Cog):
             db_config.moderation_enabled = validated_settings.modules["moderation"]
             db_config.automod_enabled = validated_settings.modules["automod"]
             db_config.logging_enabled = validated_settings.modules["logging"]
+            db_config.fireboard_enabled = validated_settings.modules["fireboard"]
             db_config.loading_reaction = validated_settings.settings["loading_reaction"]
             db_config.reply_ping = validated_settings.settings["reply_ping"]
 
@@ -683,6 +692,50 @@ class APICog(commands.Cog):
                     response_data[field_name] = None
 
             return web.json_response(response_data)
+        elif module_name == "fireboard":
+            config = self.bot.guild_configs[guild.id]
+
+            if not config.fireboard_settings:
+                return web.json_response(
+                    {
+                        "global_ignored_roles": [],
+                        "global_ignored_channels": [],
+                        "boards": [],
+                    }
+                )
+
+            fireboard_settings = config.fireboard_settings
+            return web.json_response(
+                {
+                    "global_ignored_roles": [
+                        str(role_id)
+                        for role_id in fireboard_settings.global_ignored_roles
+                    ],
+                    "global_ignored_channels": [
+                        str(channel_id)
+                        for channel_id in fireboard_settings.global_ignored_channels
+                    ],
+                    "boards": [
+                        {
+                            "channel_id": str(board.channel_id),
+                            "reaction": board.reaction,
+                            "threshold": board.threshold,
+                            "ignore_bots": board.ignore_bots,
+                            "ignore_self_reactions": board.ignore_self_reactions,
+                            "ignored_users": [
+                                str(user_id) for user_id in board.ignored_users
+                            ],
+                            "ignored_roles": [
+                                str(role_id) for role_id in board.ignored_roles
+                            ],
+                            "ignored_channels": [
+                                str(channel_id) for channel_id in board.ignored_channels
+                            ],
+                        }
+                        for board in fireboard_settings.fireboard_boards
+                    ],
+                }
+            )
         else:
             return web.json_response({"error": "Module not found"}, status=404)
 

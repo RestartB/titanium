@@ -25,7 +25,7 @@ load_dotenv()
 from lib.sql import (  # noqa: E402
     AutomodRule,
     AvailableWebhook,
-    FireboardChannel,
+    FireboardBoard,
     FireboardMessage,
     GuildAutomodSettings,
     GuildFireboardSettings,
@@ -110,7 +110,7 @@ class TitaniumBot(commands.Bot):
                 .options(selectinload(GuildSettings.logging_settings))
                 .options(
                     selectinload(GuildSettings.fireboard_settings).options(
-                        selectinload(GuildFireboardSettings.fireboard_channels)
+                        selectinload(GuildFireboardSettings.fireboard_boards)
                     )
                 )
             )
@@ -176,8 +176,8 @@ class TitaniumBot(commands.Bot):
                 .options(selectinload(GuildSettings.logging_settings))
                 .options(
                     selectinload(GuildSettings.fireboard_settings).options(
-                        selectinload(GuildFireboardSettings.fireboard_channels).options(
-                            selectinload(FireboardChannel.messages)
+                        selectinload(GuildFireboardSettings.fireboard_boards).options(
+                            selectinload(FireboardBoard.messages)
                         )
                     )
                 )
@@ -206,7 +206,7 @@ class TitaniumBot(commands.Bot):
             # Fireboard messages
             if config and config.fireboard_settings:
                 self.fireboard_messages[guild_id] = []
-                for channel in config.fireboard_settings.fireboard_channels:
+                for channel in config.fireboard_settings.fireboard_boards:
                     self.fireboard_messages[guild_id].extend(channel.messages)
 
         logging.info(f"[CACHE] Guild config cache for guild {guild_id} refreshed.")
