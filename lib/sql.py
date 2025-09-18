@@ -20,7 +20,7 @@ from sqlalchemy.orm import Mapped, MappedColumn, declarative_base, relationship
 Base = declarative_base()
 
 
-def generate_short_uuid():
+def generate_short_uuid() -> str:
     return shortuuid.ShortUUID().random(length=8)
 
 
@@ -387,7 +387,7 @@ engine = create_async_engine(
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
-async def init_db():
+async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await conn.commit()
