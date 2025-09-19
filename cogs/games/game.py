@@ -125,7 +125,7 @@ class GameCog(commands.Cog):
         if user_choice not in ["head", "tails"]:
             embed = Embed(
                 color=Colour.red(),
-                title="Invalid Chocie",
+                title="Invalid Choice",
                 description="Please pick **Head** or **Tails**.",
             )
             ctx.valid_invoke = False  # setting this so we dont inc the played by +1
