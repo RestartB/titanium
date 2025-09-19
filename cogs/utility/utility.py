@@ -136,9 +136,8 @@ class UtilityCog(commands.Cog):
         size_hr = humanize.naturalsize(file.size)
 
         embed = Embed(
-            color=Colour.blurple(),
+            color=Colour.blue(),
             title="File Information",
-            description="-# Please see below for details about the uploaded file.",
         )
         embed.add_field(name="ID", value=f"`{file.id}`")
         embed.add_field(name="File Name", value=f"`{file.filename}`")
