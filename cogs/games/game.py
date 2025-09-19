@@ -49,7 +49,9 @@ class GameCog(commands.Cog):
         """Send the command Group Help, if no sub commands matched."""
         await ctx.send_help(ctx)
 
-    @game.command(name="stats", description="Get the all games stats.")
+    @game.command(
+        name="stats", aliases=["stat"], description="Get the all games stats."
+    )
     @app_commands.describe(user="Whos game stats to be show.")
     async def game_stats(
         self,
