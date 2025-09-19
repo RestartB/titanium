@@ -1,8 +1,10 @@
 import asyncio
 import base64
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from discord import Colour, Embed, File, Interaction, app_commands
+import humanize
+from discord import Attachment, Colour, Embed, File, Interaction, app_commands
 from discord.ext import commands
 
 from lib.helpers.qrcode import generate_qrcode
@@ -123,6 +125,31 @@ class UtilityCog(commands.Cog):
         )
         embed.set_image(url="attachment://titanium_qrcode.png")
         await ctx.reply(embed=embed, file=file)
+
+    @commands.hybrid_command(name="file-info", description="Get info of a file.")
+    async def file_info(
+        self, ctx: commands.Context["TitaniumBot"], *, file: Attachment
+    ) -> None:
+        """Get detailed information of a file."""
+        await ctx.defer()
+
+        size_hr = humanize.naturalsize(file.size)
+
+        embed = Embed(
+            color=Colour.blue(),
+            title="File Information",
+        )
+        embed.add_field(name="ID", value=f"`{file.id}`")
+        embed.add_field(name="File Name", value=f"`{file.filename}`")
+        embed.add_field(name="File Size", value=f"`{size_hr}`")
+        embed.add_field(
+            name="Content Type", value=f"`{file.content_type}`" or "`Unknown`"
+        )
+        embed.add_field(name="URL", value=f"[Click here]({file.url})")
+        embed.add_field(name="Proxy URL", value=f"[Click here]({file.proxy_url})")
+        embed.set_thumbnail(url=file.url)
+        embed.timestamp = datetime.now()
+        await ctx.reply(embed=embed)
 
 
 async def setup(bot: "TitaniumBot") -> None:
