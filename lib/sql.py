@@ -372,6 +372,29 @@ class ScheduledTask(Base):
     time_scheduled: Mapped[datetime] = MappedColumn(DateTime)
 
 
+# Game stats
+class Game(Base):
+    __tablename__ = "games"
+
+    id: Mapped[int] = MappedColumn(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = MappedColumn(String(50), unique=True, nullable=False)
+    # games like -> dice, coin_flip, chess, rps (rock, paper, ..)
+
+
+class GameStat(Base):
+    __tablename__ = "game_stats"
+
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    game_id: Mapped[int] = MappedColumn(ForeignKey("games.id"), nullable=False)
+    played: Mapped[int] = MappedColumn(Integer, default=0)
+    win: Mapped[int] = MappedColumn(Integer, default=0)
+
+    game = relationship("Game")
+
+    # __table_args__ = (UniqueConstraint("user_id", "game_id", name="uq_user_game"),)
+
+
 # -- Engine --
 engine = create_async_engine(
     os.getenv("DATABASE_URL", ""),

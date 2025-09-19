@@ -127,7 +127,7 @@ class UtilityCog(commands.Cog):
         await ctx.reply(embed=embed, file=file)
 
     @commands.hybrid_command(name="file-info", description="Get info of a file.")
-    @app_commands.describe(file="The file attachment to analyze..")
+    @app_commands.describe(file="The file attachment to analyze.")
     async def file_info(
         self, ctx: commands.Context["TitaniumBot"], *, file: Attachment
     ) -> None:
