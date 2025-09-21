@@ -21,6 +21,7 @@ from sqlalchemy import delete
 from lib.sql import (
     AutomodAction,
     AutomodRule,
+    FireboardBoard,
     GuildAutomodSettings,
     GuildLoggingSettings,
     GuildSettings,
@@ -125,7 +126,7 @@ class AutomodRuleModel(BaseModel):
 
     def to_sqlalchemy(self, guild_id: int) -> AutomodRule:
         rule = AutomodRule(
-            id=self.id,
+            id=uuid.UUID(self.id),
             guild_id=guild_id,
             rule_type=self.rule_type,
             rule_name=self.rule_name,
@@ -217,6 +218,29 @@ class LoggingConfigModel(BaseModel):
     titanium_automod_trigger_id: Optional[str]
 
 
+class FireboardBoardModel(BaseModel):
+    id: Optional[str] = None
+    channel_id: str
+    reaction: str
+    threshold: int
+    ignore_bots: bool
+    ignore_self_reactions: bool
+    ignored_roles: list[str] = []
+    ignored_channels: list[str] = []
+
+    @field_validator("id")
+    def validate_id(cls, v: str):
+        if v.strip() == "":
+            return None
+        return v
+
+
+class FireboardConfigModel(BaseModel):
+    global_ignored_roles: list[str] = []
+    global_ignored_channels: list[str] = []
+    boards: list[FireboardBoardModel] = []
+
+
 class APICog(commands.Cog):
     """API server for dashboard, website and status page"""
 
@@ -300,62 +324,6 @@ class APICog(commands.Cog):
             "duration": action.duration,
             "reason": action.reason,
         }
-
-    async def _apply_automod_config(
-        self, guild_id: int, config: AutomodConfigModel
-    ) -> GuildAutomodSettings | None:
-        async with get_session() as session:
-            automod_settings = await session.get(GuildAutomodSettings, guild_id)
-
-            if not automod_settings:
-                await self.bot.init_guild(guild_id)
-                automod_settings = await session.get(GuildAutomodSettings, guild_id)
-
-                if not automod_settings:
-                    raise ValueError("Automod settings not found")
-
-            for detection_config in [
-                config.badword_detection,
-                config.spam_detection,
-                config.malicious_link_detection,
-                config.phishing_link_detection,
-            ]:
-                for rule_model in detection_config:
-                    in_use = True
-                    while in_use:
-                        if rule_model.id is None:
-                            rule_model.id = str(uuid.uuid4())
-
-                        existing_rule = await session.get(AutomodRule, rule_model.id)
-                        if existing_rule and existing_rule.guild_id != guild_id:
-                            rule_model.id = str(uuid.uuid4())
-                        else:
-                            in_use = False
-
-            await session.execute(
-                delete(AutomodAction).where(AutomodAction.guild_id == guild_id)
-            )
-            await session.execute(
-                delete(AutomodRule).where(AutomodRule.guild_id == guild_id)
-            )
-
-            for detection_config in [
-                config.badword_detection,
-                config.spam_detection,
-                config.malicious_link_detection,
-                config.phishing_link_detection,
-            ]:
-                for rule_model in detection_config:
-                    automod_rule = rule_model.to_sqlalchemy(guild_id)
-                    session.add(automod_rule)
-
-        await self.bot.refresh_guild_config_cache(guild_id)
-        config = self.bot.guild_configs.get(guild_id)
-
-        if config is None:
-            return None
-
-        return config.automod_settings
 
     async def start_server(self):
         try:
@@ -503,7 +471,7 @@ class APICog(commands.Cog):
                 "emojis": [
                     {
                         "id": str(emoji.id),
-                        "name": emoji.name,
+                        "label": emoji.name,
                         "url": emoji.url,
                     }
                     for emoji in guild.emojis
@@ -654,6 +622,7 @@ class APICog(commands.Cog):
                         "spam_detection": [],
                         "malicious_link_detection": [],
                         "phishing_link_detection": [],
+                        "userapp_detection_users": [],
                     }
                 )
 
@@ -717,14 +686,12 @@ class APICog(commands.Cog):
                     ],
                     "boards": [
                         {
+                            "id": str(board.id),
                             "channel_id": str(board.channel_id),
                             "reaction": board.reaction,
                             "threshold": board.threshold,
                             "ignore_bots": board.ignore_bots,
                             "ignore_self_reactions": board.ignore_self_reactions,
-                            "ignored_users": [
-                                str(user_id) for user_id in board.ignored_users
-                            ],
                             "ignored_roles": [
                                 str(role_id) for role_id in board.ignored_roles
                             ],
@@ -742,7 +709,10 @@ class APICog(commands.Cog):
     async def module_update(self, request: web.Request) -> web.Response:
         await self.bot.wait_until_ready()
 
-        guild_id = request.match_info.get("guild_id")
+        guild_id_str = request.match_info.get("guild_id")
+        guild_id = (
+            int(guild_id_str) if guild_id_str and guild_id_str.isdigit() else None
+        )
         module_name = request.match_info.get("module_name")
         module_name = module_name.lower() if module_name else None
 
@@ -767,15 +737,6 @@ class APICog(commands.Cog):
             try:
                 data = await request.json()
                 validated_config = AutomodConfigModel(**data)
-
-                config = await self._apply_automod_config(guild.id, validated_config)
-
-                if config is None:
-                    return web.json_response(
-                        {"error": "Failed to update configuration"}, status=500
-                    )
-
-                return web.Response(status=204)
             except ValidationError as e:
                 return web.json_response(
                     {"error": "Validation failed", "details": e.errors()}, status=400
@@ -784,6 +745,66 @@ class APICog(commands.Cog):
                 return web.json_response(
                     {"error": "Invalid data", "message": str(e)}, status=400
                 )
+
+            async with get_session() as session:
+                automod_settings = await session.get(
+                    GuildAutomodSettings, int(guild_id)
+                )
+
+                if not automod_settings:
+                    return web.json_response(
+                        {"error": "Failed to retrieve server configuration from DB"},
+                        status=500,
+                    )
+
+                for detection_config in [
+                    validated_config.badword_detection,
+                    validated_config.spam_detection,
+                    validated_config.malicious_link_detection,
+                    validated_config.phishing_link_detection,
+                ]:
+                    detection_config: list[AutomodRuleModel]
+                    for rule_model in detection_config:
+                        in_use = True
+                        while in_use:
+                            if rule_model.id is None:
+                                rule_model.id = str(uuid.uuid4())
+
+                            existing_rule = await session.get(
+                                AutomodRule, rule_model.id
+                            )
+                            if existing_rule and existing_rule.guild_id != guild_id:
+                                rule_model.id = str(uuid.uuid4())
+                            else:
+                                in_use = False
+
+                await session.execute(
+                    delete(AutomodAction).where(AutomodAction.guild_id == guild_id)
+                )
+                await session.execute(
+                    delete(AutomodRule).where(AutomodRule.guild_id == guild_id)
+                )
+
+                for detection_config in [
+                    validated_config.badword_detection,
+                    validated_config.spam_detection,
+                    validated_config.malicious_link_detection,
+                    validated_config.phishing_link_detection,
+                ]:
+                    for rule_model in detection_config:
+                        automod_rule = rule_model.to_sqlalchemy(guild_id)
+                        session.add(automod_rule)
+
+            await self.bot.refresh_guild_config_cache(guild_id)
+            config = self.bot.guild_configs.get(guild_id)
+
+            if config is None:
+                return web.json_response(
+                    {"error": "Failed to retrieve server configuration from cache"},
+                    status=500,
+                )
+
+            return web.Response(status=204)
         elif module_name == "logging":
             try:
                 data = await request.json()
@@ -815,6 +836,72 @@ class APICog(commands.Cog):
 
             await self.bot.refresh_guild_config_cache(guild.id)
             return web.Response(status=204)
+        elif module_name == "fireboard":
+            try:
+                data = await request.json()
+                validated_config = FireboardConfigModel(**data)
+            except ValidationError as e:
+                return web.json_response(
+                    {"error": "Validation failed", "details": e.errors()}, status=400
+                )
+            except ValueError as e:
+                return web.json_response(
+                    {"error": "Invalid data", "message": str(e)}, status=400
+                )
+
+            async with get_session() as session:
+                db_config = await session.get(GuildSettings, guild.id)
+                if not db_config:
+                    return web.json_response(
+                        {"error": "Failed to retrieve server configuration from DB"},
+                        status=500,
+                    )
+
+                # Get existing configs
+                existing_configs = await session.get(GuildAutomodSettings, guild.id)
+
+                if not existing_configs:
+                    existing_configs = GuildAutomodSettings(guild_id=guild.id)
+
+                for new_board in validated_config.boards:
+                    existing_board = await session.get(FireboardBoard, new_board.id)
+
+                    if existing_board and existing_board.guild_id == guild.id:
+                        existing_board.channel_id = int(new_board.channel_id)
+                        existing_board.reaction = new_board.reaction
+                        existing_board.threshold = new_board.threshold
+                        existing_board.ignore_bots = new_board.ignore_bots
+                        existing_board.ignore_self_reactions = (
+                            new_board.ignore_self_reactions
+                        )
+                        existing_board.ignored_roles = [
+                            int(role_id) for role_id in new_board.ignored_roles
+                        ]
+                        existing_board.ignored_channels = [
+                            int(channel_id) for channel_id in new_board.ignored_channels
+                        ]
+                        session.add(existing_board)
+                    else:
+                        board = FireboardBoard(
+                            guild_id=guild.id,
+                            channel_id=int(new_board.channel_id),
+                            reaction=new_board.reaction,
+                            threshold=new_board.threshold,
+                            ignore_bots=new_board.ignore_bots,
+                            ignore_self_reactions=new_board.ignore_self_reactions,
+                            ignored_roles=[
+                                int(role_id) for role_id in new_board.ignored_roles
+                            ],
+                            ignored_channels=[
+                                int(channel_id)
+                                for channel_id in new_board.ignored_channels
+                            ],
+                        )
+                        session.add(board)
+
+            await self.bot.refresh_guild_config_cache(guild.id)
+            return web.Response(status=204)
+
         else:
             return web.json_response({"error": "Module not found"}, status=404)
 

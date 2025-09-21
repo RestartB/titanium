@@ -286,9 +286,6 @@ class FireboardBoard(Base):
     ignored_roles: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
-    ignored_users: Mapped[list[int]] = MappedColumn(
-        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
-    )
     ignored_channels: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )

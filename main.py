@@ -23,9 +23,7 @@ from lib.setup_logger import setup_logging
 load_dotenv()
 
 from lib.sql import (  # noqa: E402
-    AutomodRule,
     AvailableWebhook,
-    FireboardBoard,
     FireboardMessage,
     GuildAutomodSettings,
     GuildFireboardSettings,
@@ -89,31 +87,7 @@ class TitaniumBot(commands.Bot):
 
         async with get_session() as session:
             # Settings
-            stmt = (
-                select(GuildSettings)
-                .options(
-                    selectinload(GuildSettings.automod_settings).options(
-                        selectinload(
-                            GuildAutomodSettings.badword_detection_rules
-                        ).options(selectinload(AutomodRule.actions)),
-                        selectinload(GuildAutomodSettings.spam_detection_rules).options(
-                            selectinload(AutomodRule.actions)
-                        ),
-                        selectinload(GuildAutomodSettings.malicious_link_rules).options(
-                            selectinload(AutomodRule.actions)
-                        ),
-                        selectinload(GuildAutomodSettings.phishing_link_rules).options(
-                            selectinload(AutomodRule.actions)
-                        ),
-                    )
-                )
-                .options(selectinload(GuildSettings.logging_settings))
-                .options(
-                    selectinload(GuildSettings.fireboard_settings).options(
-                        selectinload(GuildFireboardSettings.fireboard_boards)
-                    )
-                )
-            )
+            stmt = select(GuildSettings).options(selectinload("*"))
             result = await session.execute(stmt)
             configs = result.scalars().all()
             self.guild_configs.clear()
@@ -157,30 +131,7 @@ class TitaniumBot(commands.Bot):
             stmt = (
                 select(GuildSettings)
                 .where(GuildSettings.guild_id == guild_id)
-                .options(
-                    selectinload(GuildSettings.automod_settings).options(
-                        selectinload(
-                            GuildAutomodSettings.badword_detection_rules
-                        ).options(selectinload(AutomodRule.actions)),
-                        selectinload(GuildAutomodSettings.spam_detection_rules).options(
-                            selectinload(AutomodRule.actions)
-                        ),
-                        selectinload(GuildAutomodSettings.malicious_link_rules).options(
-                            selectinload(AutomodRule.actions)
-                        ),
-                        selectinload(GuildAutomodSettings.phishing_link_rules).options(
-                            selectinload(AutomodRule.actions)
-                        ),
-                    )
-                )
-                .options(selectinload(GuildSettings.logging_settings))
-                .options(
-                    selectinload(GuildSettings.fireboard_settings).options(
-                        selectinload(GuildFireboardSettings.fireboard_boards).options(
-                            selectinload(FireboardBoard.messages)
-                        )
-                    )
-                )
+                .options(selectinload("*"))
             )
             result = await session.execute(stmt)
             config = result.scalar()
