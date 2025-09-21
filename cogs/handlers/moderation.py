@@ -51,14 +51,16 @@ class ModMonitorCog(commands.Cog):
                     case_manager = GuildModCaseManager(after.guild, session)
 
                     # Create a case
-                    case = await case_manager.create_case(
+                    _ = await case_manager.create_case(
                         action="mute",
                         user_id=after.id,
                         creator_user_id=entry.user_id,
                         reason=entry.reason,
-                        duration=after.timed_out_until - before.timed_out_until
-                        if after.timed_out_until and before.timed_out_until
-                        else None,
+                        duration=(
+                            after.timed_out_until - before.timed_out_until
+                            if after.timed_out_until and before.timed_out_until
+                            else None
+                        ),
                         external=True,
                     )
 
@@ -92,7 +94,7 @@ class ModMonitorCog(commands.Cog):
                 case_manager = GuildModCaseManager(member.guild, session)
 
                 # Create a case
-                case = await case_manager.create_case(
+                _ = await case_manager.create_case(
                     action="kick",
                     user_id=member.id,
                     creator_user_id=entry.user_id,
@@ -130,7 +132,7 @@ class ModMonitorCog(commands.Cog):
                 case_manager = GuildModCaseManager(guild, session)
 
                 # Create a case
-                case = await case_manager.create_case(
+                _ = await case_manager.create_case(
                     action="ban",
                     user_id=user.id,
                     creator_user_id=entry.user_id,
