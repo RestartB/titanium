@@ -72,10 +72,12 @@ class GameCog(commands.Cog):
         lines = []
         for game_name in self.available_games:
             gid = self.game_cache.get(game_name)
-            played, win = user_stats.get(gid, (0, 0))
-            lines.append(
-                f"- **{game_name.capitalize()}** → Played: `{played}` | Wins: `{win}`"
-            )
+
+            if gid:
+                played, win = user_stats.get(gid, (0, 0))
+                lines.append(
+                    f"- **{game_name.capitalize()}** → Played: `{played}` | Wins: `{win}`"
+                )
 
         embed = Embed(
             title="Game Stats",
@@ -95,20 +97,21 @@ class GameCog(commands.Cog):
 
         roll = random.randint(1, 6)
         win = roll == guess
+
         # set the win value in context, so we can have it after invoke.
-        ctx.win = win
+        setattr(ctx, "win", win)
 
         if win:
             embed = Embed(
-                color=Colour.blue(),
-                title="Dice Game",
-                description=f"🎲 You guessed `{guess}` and rolled `{roll}` → You win! 🎉",
+                color=Colour.green(),
+                title=f"{self.bot.success_emoji} You Win",
+                description=f"🎲 You guessed `{guess}` and rolled `{roll}`!",
             )
         else:
             embed = Embed(
                 color=Colour.red(),
-                title="Dice Game",
-                description=f"🎲 You guessed `{guess}`, but rolled `{roll}` → You lose!",
+                title=f"{self.bot.error_emoji} You Lost",
+                description=f"🎲 You guessed `{guess}`, but rolled `{roll}`!",
             )
 
         await ctx.reply(embed=embed)
@@ -118,7 +121,7 @@ class GameCog(commands.Cog):
     async def coin_flip_game(
         self,
         ctx: commands.Context["TitaniumBot"],
-        choice: str = Literal["Head", "Tails"],
+        choice: Literal["Head", "Tails"],
     ) -> None:
         """Coin flip game."""
         await ctx.defer()
@@ -130,38 +133,42 @@ class GameCog(commands.Cog):
                 title="Invalid Choice",
                 description="Please pick **Head** or **Tails**.",
             )
-            ctx.valid_invoke = False  # setting this so we dont inc the played by +1
-            return await ctx.reply(embed=embed)
+            setattr(
+                ctx, "valid_invoke", False
+            )  # setting this so we dont inc the played by +1
+            await ctx.reply(embed=embed)
+
+            return
 
         flip_result = random.choice(["head", "tails"])
         win = user_choice == flip_result
-        ctx.win = win
+        setattr(ctx, "win", win)
 
         if win:
             embed = Embed(
-                color=Colour.blue(),
-                title="Coin-Flip Game",
-                description=f"🪙 You chose **{choice}** and the coin landed on **{flip_result.title()}** → 🎉 You win!",
+                color=Colour.green(),
+                title=f"{self.bot.success_emoji} You Won",
+                description=f"🪙 You chose **{choice}** and the coin landed on **{flip_result.title()}**!",
             )
         else:
             embed = Embed(
                 color=Colour.red(),
-                title="Coin-Flip Game",
-                description=f"🪙 You chose **{choice}**, but the coin landed on **{flip_result.title()}** → You lose!",
+                title=f"{self.bot.error_emoji} You Lost",
+                description=f"🪙 You chose **{choice}**, but the coin landed on **{flip_result.title()}**!",
             )
         await ctx.reply(embed=embed)
 
     @dice_game.after_invoke
     @coin_flip_game.after_invoke
     async def game_after_execute(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        """Update stats after the dice game finishes."""
+        """Update stats after the game finishes."""
         win = getattr(ctx, "win", False)
 
-        valid_invoke = getattr(
+        valid_invoke: bool = getattr(
             ctx, "valid_invoke", True
         )  # if arg parse failed then we can set the, by defualt it will be True
 
-        if valid_invoke:
+        if valid_invoke and ctx.command:
             await self.record_game_result(ctx.author.id, ctx.command.name, won=win)
 
     async def record_game_result(
