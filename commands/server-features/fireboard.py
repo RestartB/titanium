@@ -124,6 +124,9 @@ class Fireboard(commands.Cog):
             if payload.message_author_id == self.bot.user.id:
                 return
 
+            if ignore_bots and payload.message_author_id == payload.user_id:
+                return
+
             # Stop if emoji doesn't match
             if str(payload.emoji) != emoji:
                 return
