@@ -3,6 +3,7 @@ import html
 import os
 import re
 from io import BytesIO
+from typing import Sequence, Union
 
 import discord
 import jinja2
@@ -58,6 +59,9 @@ def _to_gif(
 async def create_quote_image(
     user: discord.User,
     content: str,
+    user_mentions: Sequence[discord.User | discord.Member],
+    channel_mentions: Sequence[Union[discord.abc.GuildChannel, discord.Thread]],
+    role_mentions: Sequence[discord.Role],
     output_format: str,
     nickname: bool = False,
     fade: bool = True,
@@ -68,6 +72,15 @@ async def create_quote_image(
     bot: bool = False,
 ) -> tuple[BytesIO, bool]:
     image_data = BytesIO()
+
+    for user_mention in user_mentions:
+        content = content.replace(user_mention.mention, f"@{user_mention.name}")
+
+    for channel_mention in channel_mentions:
+        content = content.replace(channel_mention.mention, f"#{channel_mention.name}")
+
+    for role_mention in role_mentions:
+        content = content.replace(role_mention.mention, f"@{role_mention.name}")
 
     content = html.escape(content)
 
@@ -191,6 +204,9 @@ class QuoteView(View):
         self,
         user_id: int,
         content: str,
+        user_mentions: Sequence[discord.abc.User],
+        channel_mentions: Sequence[Union[discord.abc.GuildChannel, discord.Thread]],
+        role_mentions: Sequence[discord.Role],
         output_format: str,
         allowed_ids: list,
         og_msg: str = None,
@@ -206,6 +222,9 @@ class QuoteView(View):
 
         self.user_id = user_id
         self.content = content
+        self.user_mentions = user_mentions
+        self.channel_mentions = channel_mentions
+        self.role_mentions = role_mentions
         self.output_format = output_format
         self.allowed_ids = allowed_ids
         self.og_msg = og_msg
@@ -299,6 +318,9 @@ class QuoteView(View):
         image_data, has_spoilers = await create_quote_image(
             user=user,
             content=self.content,
+            user_mentions=self.user_mentions,
+            channel_mentions=self.channel_mentions,
+            role_mentions=self.role_mentions,
             output_format=self.output_format,
             nickname=self.nickname,
             fade=self.fade,
@@ -318,6 +340,9 @@ class QuoteView(View):
         view = QuoteView(
             user_id=self.user_id,
             content=self.content,
+            user_mentions=self.user_mentions,
+            channel_mentions=self.channel_mentions,
+            role_mentions=self.role_mentions,
             output_format=self.output_format,
             allowed_ids=self.allowed_ids,
             og_msg=self.og_msg,
@@ -415,6 +440,9 @@ class QuoteView(View):
         image_data, has_spoilers = await create_quote_image(
             user=user,
             content=self.content,
+            user_mentions=self.user_mentions,
+            channel_mentions=self.channel_mentions,
+            role_mentions=self.role_mentions,
             output_format=self.output_format,
             nickname=self.nickname,
             fade=self.fade,
@@ -434,6 +462,9 @@ class QuoteView(View):
         view = QuoteView(
             user_id=self.user_id,
             content=self.content,
+            user_mentions=self.user_mentions,
+            channel_mentions=self.channel_mentions,
+            role_mentions=self.role_mentions,
             output_format=self.output_format,
             allowed_ids=self.allowed_ids,
             og_msg=self.og_msg,
@@ -533,6 +564,9 @@ class QuoteView(View):
         image_data, has_spoilers = await create_quote_image(
             user=user,
             content=self.content,
+            user_mentions=self.user_mentions,
+            channel_mentions=self.channel_mentions,
+            role_mentions=self.role_mentions,
             output_format=self.output_format,
             nickname=self.nickname,
             fade=self.fade,
@@ -552,6 +586,9 @@ class QuoteView(View):
         view = QuoteView(
             user_id=self.user_id,
             content=self.content,
+            user_mentions=self.user_mentions,
+            channel_mentions=self.channel_mentions,
+            role_mentions=self.role_mentions,
             output_format=self.output_format,
             allowed_ids=self.allowed_ids,
             og_msg=self.og_msg,
@@ -681,6 +718,9 @@ class Quotes(commands.Cog):
         image_data, has_spoilers = await create_quote_image(
             user=message.author,
             content=message.content,
+            user_mentions=message.mentions,
+            channel_mentions=message.channel_mentions,
+            role_mentions=message.role_mentions,
             output_format="PNG",
             nickname=True,
             bot=message.author.bot,
@@ -695,6 +735,9 @@ class Quotes(commands.Cog):
         view = QuoteView(
             user_id=message.author.id,
             content=message.content,
+            user_mentions=message.mentions,
+            channel_mentions=message.channel_mentions,
+            role_mentions=message.role_mentions,
             output_format="PNG",
             allowed_ids=[interaction.user.id, message.author.id],
             og_msg=message.jump_url,
@@ -784,6 +827,9 @@ class Quotes(commands.Cog):
         image_data, has_spoilers = await create_quote_image(
             user=user,
             content=content,
+            user_mentions=[],
+            channel_mentions=[],
+            role_mentions=[],
             output_format=format.value,
             nickname=nickname,
             fade=fade,
@@ -802,6 +848,9 @@ class Quotes(commands.Cog):
         view = QuoteView(
             user_id=user.id,
             content=content,
+            user_mentions=[],
+            channel_mentions=[],
+            role_mentions=[],
             output_format=format.value,
             allowed_ids=[interaction.user.id, user.id],
             nickname=nickname,
