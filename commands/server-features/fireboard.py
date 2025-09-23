@@ -124,6 +124,9 @@ class Fireboard(commands.Cog):
             if payload.message_author_id == self.bot.user.id:
                 return
 
+            if ignore_bots and payload.message_author_id == payload.user_id:
+                return
+
             # Stop if emoji doesn't match
             if str(payload.emoji) != emoji:
                 return
@@ -1472,10 +1475,10 @@ class Fireboard(commands.Cog):
 
     # Fireboard ignore bots command
     @fireSetupGroup.command(
-        name="ignore-bots",
-        description="Whether bot messages are ignored in the fireboard. Defaults to true.",
+        name="ignore-bots-and-author",
+        description="Whether bot messages and self reactions are ignored in the fireboard. Defaults to true.",
     )
-    async def fireboard_ignore_bots(
+    async def fireboard_ignore_bots_and_author(
         self, interaction: discord.Interaction, value: bool
     ):
         await interaction.response.defer(ephemeral=True)
@@ -1484,7 +1487,7 @@ class Fireboard(commands.Cog):
         if interaction.guild.id in [guild[0] for guild in self.fire_settings]:
             embed = discord.Embed(
                 title="Set",
-                description=f"Bot messages will **{'be ignored.' if value else 'not be ignored.'}**",
+                description=f"Bot messages and self reactions will **{'be ignored.' if value else 'not be ignored.'}**",
                 color=Color.green(),
             )
 
