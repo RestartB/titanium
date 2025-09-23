@@ -131,7 +131,7 @@ class GuildLogger:
     async def app_command_perm_update(
         self, event: discord.RawAppCommandPermissionsUpdateEvent
     ) -> None:
-        # FIXME - implement this log type
+        # TODO - implement this log type
         pass
 
     async def automod_rule_create(self, rule: discord.AutoModRule) -> None:

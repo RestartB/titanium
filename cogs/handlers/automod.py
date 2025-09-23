@@ -26,6 +26,8 @@ from lib.sql import AutomodAction, AutomodRule, get_session
 if TYPE_CHECKING:
     from main import TitaniumBot
 
+# TODO: only apply worst punishment per type (e.g. longest mute, ban over kick, etc)
+
 
 class AutomodMonitorCog(commands.Cog):
     """Monitors new messages for automod triggers and creates cases/punishments"""
@@ -64,7 +66,6 @@ class AutomodMonitorCog(commands.Cog):
             or not self.bot.guild_configs[message.guild.id].automod_settings
             or not message.author
             or not isinstance(message.author, discord.Member)
-            or message.author.bot
             or not self.bot.user
         ):
             logging.debug("Automod initial checks failed, skipping message")
@@ -99,7 +100,7 @@ class AutomodMonitorCog(commands.Cog):
                     )
                 ),
                 attachment_count=len(message.attachments),
-                emoji_count=0,  # FIXME: implement this
+                emoji_count=0,  # TODO: implement this
                 timestamp=message.created_at,
             )
         )
