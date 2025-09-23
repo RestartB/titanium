@@ -23,6 +23,7 @@ from lib.sql import (
     AutomodRule,
     FireboardBoard,
     GuildAutomodSettings,
+    GuildFireboardSettings,
     GuildLoggingSettings,
     GuildSettings,
     get_session,
@@ -858,10 +859,17 @@ class APICog(commands.Cog):
                     )
 
                 # Get existing configs
-                existing_configs = await session.get(GuildAutomodSettings, guild.id)
+                existing_configs = await session.get(GuildFireboardSettings, guild.id)
 
                 if not existing_configs:
-                    existing_configs = GuildAutomodSettings(guild_id=guild.id)
+                    existing_configs = GuildFireboardSettings(guild_id=guild.id)
+
+                existing_configs.global_ignored_channels = [
+                    int(channel) for channel in validated_config.global_ignored_channels
+                ]
+                existing_configs.global_ignored_roles = [
+                    int(role) for role in validated_config.global_ignored_roles
+                ]
 
                 for new_board in validated_config.boards:
                     existing_board = await session.get(FireboardBoard, new_board.id)

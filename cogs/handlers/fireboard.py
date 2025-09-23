@@ -5,13 +5,16 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
+from lib.sql import FireboardMessage, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
 
 
 # TODO: implement ignored users/roles/channels
-# TODO: write messages to database
 
 
 class FireboardCog(commands.Cog):
@@ -45,6 +48,34 @@ class FireboardCog(commands.Cog):
             name=message.author.name, icon_url=message.author.display_avatar.url
         )
         return embed
+
+    async def queue_worker(self):
+        logging.info("Fireboard event handler started.")
+        while True:
+            try:
+                await self.bot.wait_until_ready()
+                event = await self.event_queue.get()
+            except asyncio.QueueShutDown:
+                return
+
+            try:
+                if isinstance(event, discord.RawMessageUpdateEvent):
+                    await self.message_edit_handler(event)
+                elif isinstance(event, discord.RawMessageDeleteEvent):
+                    await self.message_delete_handler(event)
+                elif isinstance(event, discord.Reaction):
+                    await self.reaction_emoji_clear_handler(event)
+                elif isinstance(event, tuple) and len(event) == 2:
+                    await self._reaction_add_remove(event[0], event[1])
+                elif isinstance(event, discord.Message):
+                    await self.reaction_clear_handler(event)
+                elif isinstance(event, discord.Reaction):
+                    await self.reaction_emoji_clear_handler(event)
+            except Exception:
+                logging.error("Error processing event in fireboard:")
+                logging.error(traceback.format_exc())
+            finally:
+                self.event_queue.task_done()
 
     async def _calculate_reaction_count(
         self,
@@ -84,6 +115,7 @@ class FireboardCog(commands.Cog):
                 reaction.message.channel, (discord.DMChannel, discord.GroupChannel)
             )
         ):
+            logging.debug("Ignoring reaction")
             return
 
         processed_boards: list[int] = []
@@ -129,6 +161,14 @@ class FireboardCog(commands.Cog):
                         continue
                     elif count < user_message.fireboard.threshold:
                         await board_msg.delete()
+
+                        async with get_session() as session:
+                            await session.delete(user_message)
+
+                        self.bot.fireboard_messages[reaction.message.guild.id].remove(
+                            user_message
+                        )
+
                         continue
                 except (discord.NotFound, discord.Forbidden):
                     continue
@@ -160,41 +200,44 @@ class FireboardCog(commands.Cog):
                 ):
                     return
 
-                await channel.send(
+                new_message = await channel.send(
                     content=content,
                     embed=self._fireboard_embed(reaction.message),
                 )
-                return
 
-    async def queue_worker(self):
-        logging.info("Fireboard event handler started.")
-        while True:
-            try:
-                await self.bot.wait_until_ready()
-                event = await self.event_queue.get()
-            except asyncio.QueueShutDown:
-                return
+                async with get_session() as session:
+                    fireboard_message = FireboardMessage(
+                        guild_id=reaction.message.guild.id,
+                        channel_id=reaction.message.channel.id,
+                        message_id=reaction.message.id,
+                        fireboard_id=board.id,
+                        fireboard_message_id=new_message.id,
+                    )
+                    session.add(fireboard_message)
 
-            try:
-                if isinstance(event, discord.RawMessageUpdateEvent):
-                    await self.message_edit_handler(event)
-                elif isinstance(event, discord.RawMessageDeleteEvent):
-                    await self.message_delete_handler(event)
-                elif isinstance(event, discord.Reaction):
-                    await self.reaction_emoji_clear_handler(event)
-                elif isinstance(event, tuple) and len(event) == 2:
-                    await self._reaction_add_remove(event[0], event[1])
-                elif isinstance(event, discord.Message):
-                    await self.reaction_clear_handler(event)
-                elif isinstance(event, discord.Reaction):
-                    await self.reaction_emoji_clear_handler(event)
-            except Exception:
-                logging.error("Error processing event in fireboard:")
-                logging.error(traceback.format_exc())
-            finally:
-                self.event_queue.task_done()
+                    await session.commit()
+                    await session.flush()
+                    await session.refresh(fireboard_message)
+
+                    stmt = (
+                        select(FireboardMessage)
+                        .where(FireboardMessage.id == fireboard_message.id)
+                        .options(selectinload("*"))
+                    )
+                    result = await session.execute(stmt)
+                    fireboard_message = result.scalars().first()
+
+                    self.bot.fireboard_messages.setdefault(
+                        reaction.message.guild.id, []
+                    ).append(fireboard_message)
+
+                return
 
     async def message_edit_handler(self, payload: discord.RawMessageUpdateEvent):
+        logging.debug(
+            f"Handling message edit. Message id: {payload.message_id}, channel id: {payload.channel_id}, guild id: {payload.guild_id}"
+        )
+
         if (
             payload.guild_id is None
             or payload.guild_id not in self.bot.guild_configs
@@ -205,14 +248,21 @@ class FireboardCog(commands.Cog):
                 ].fireboard_settings.fireboard_boards
             )
             == 0
-            or isinstance(
-                payload.message.channel, (discord.DMChannel, discord.GroupChannel)
-            )
         ):
             return
 
+        if isinstance(
+            payload.message.channel, (discord.DMChannel, discord.GroupChannel)
+        ):
+            logging.debug("Ignoring edit in DM/Group channel")
+            return
+
         for message in self.bot.fireboard_messages.get(payload.guild_id, []):
+            logging.debug(
+                f"Checking for match: {message.message_id} == {payload.message_id}"
+            )
             if message.message_id == payload.message_id:
+                logging.debug("Found matching message")
                 channel = self.bot.get_channel(message.fireboard.channel_id)
 
                 if channel is None or isinstance(
@@ -223,25 +273,19 @@ class FireboardCog(commands.Cog):
                         discord.abc.PrivateChannel,
                     ),
                 ):
+                    logging.debug("Edit channel not found")
                     continue
 
                 try:
                     msg = await channel.fetch_message(message.fireboard_message_id)
+                    await msg.edit(
+                        embed=self._fireboard_embed(payload.message),
+                    )
 
-                    for reaction in payload.message.reactions:
-                        if reaction.emoji == message.fireboard.reaction:
-                            count = await self._calculate_reaction_count(
-                                reaction,
-                                payload.message.author,
-                                message.fireboard.ignore_self_reactions,
-                                message.fireboard.ignore_bots,
-                            )
-                            await msg.edit(
-                                content=f"{count} {message.fireboard.reaction} | {payload.message.author.mention} | {payload.message.channel.mention}",
-                                embed=self._fireboard_embed(payload.message),
-                            )
+                    logging.debug("Edited message")
 
                 except (discord.NotFound, discord.Forbidden):
+                    logging.debug("Edit message not found")
                     continue
 
     async def message_delete_handler(self, payload: discord.RawMessageDeleteEvent):
@@ -275,6 +319,12 @@ class FireboardCog(commands.Cog):
                 try:
                     msg = await channel.fetch_message(message.fireboard_message_id)
                     await msg.delete()
+
+                    async with get_session() as session:
+                        await session.delete(message)
+
+                    self.bot.fireboard_messages[payload.guild_id].remove(message)
+
                 except (discord.NotFound, discord.Forbidden):
                     continue
 
@@ -309,6 +359,11 @@ class FireboardCog(commands.Cog):
                 try:
                     msg = await channel.fetch_message(message.fireboard_message_id)
                     await msg.delete()
+
+                    async with get_session() as session:
+                        await session.delete(message)
+
+                    self.bot.fireboard_messages[message.guild.id].remove(message)
                 except (discord.NotFound, discord.Forbidden):
                     continue
 
@@ -346,26 +401,17 @@ class FireboardCog(commands.Cog):
                 try:
                     msg = await channel.fetch_message(message.fireboard_message_id)
                     await msg.delete()
+
+                    async with get_session() as session:
+                        await session.delete(message)
+
+                    self.bot.fireboard_messages[reaction.message.guild.id].remove(
+                        message
+                    )
                 except (discord.NotFound, discord.Forbidden):
                     continue
 
-    # Listen for message edits
-    @commands.Cog.listener()
-    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
-        try:
-            await self.event_queue.put(payload)
-        except asyncio.QueueShutDown:
-            return
-
-    # Listen for message delete
-    @commands.Cog.listener()
-    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
-        try:
-            await self.event_queue.put(payload)
-        except asyncio.QueueShutDown:
-            return
-
-    # Lisen for reactions added
+    # Listen for reactions added
     @commands.Cog.listener()
     async def on_reaction_add(
         self, reaction: discord.Reaction, user: discord.User | discord.Member
@@ -382,6 +428,22 @@ class FireboardCog(commands.Cog):
     ):
         try:
             await self.event_queue.put((reaction, user))
+        except asyncio.QueueShutDown:
+            return
+
+    # Listen for message edits
+    @commands.Cog.listener()
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
+        try:
+            await self.event_queue.put(payload)
+        except asyncio.QueueShutDown:
+            return
+
+    # Listen for message delete
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        try:
+            await self.event_queue.put(payload)
         except asyncio.QueueShutDown:
             return
 

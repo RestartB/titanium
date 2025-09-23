@@ -96,7 +96,7 @@ class TitaniumBot(commands.Bot):
                 self.guild_configs[config.guild_id] = config
 
             # Server prefixes
-            stmt = select(GuildPrefixes)
+            stmt = select(GuildPrefixes).options(selectinload("*"))
             result = await session.execute(stmt)
             prefix_configs = result.scalars().all()
             self.guild_prefixes.clear()
@@ -105,7 +105,7 @@ class TitaniumBot(commands.Bot):
                 self.guild_prefixes[config.guild_id] = config
 
             # Available webhooks
-            stmt = select(AvailableWebhook)
+            stmt = select(AvailableWebhook).options(selectinload("*"))
             result = await session.execute(stmt)
             webhook_configs = result.scalars().all()
             self.available_webhooks.clear()
@@ -114,7 +114,7 @@ class TitaniumBot(commands.Bot):
                 self.available_webhooks.setdefault(webhook.guild_id, []).append(webhook)
 
             # Fireboard messages
-            stmt = select(FireboardMessage)
+            stmt = select(FireboardMessage).options(selectinload("*"))
             result = await session.execute(stmt)
             fireboard_messages = result.scalars().all()
             self.fireboard_messages.clear()
@@ -128,6 +128,9 @@ class TitaniumBot(commands.Bot):
         logging.info(f"[CACHE] Refreshing guild config cache for guild {guild_id}...")
         async with get_session() as session:
             # Settings
+            if guild_id in self.guild_configs:
+                del self.guild_configs[guild_id]
+
             stmt = (
                 select(GuildSettings)
                 .where(GuildSettings.guild_id == guild_id)
@@ -139,7 +142,14 @@ class TitaniumBot(commands.Bot):
                 self.guild_configs[config.guild_id] = config
 
             # Server prefixes
-            stmt = select(GuildPrefixes).where(GuildPrefixes.guild_id == guild_id)
+            if guild_id in self.guild_prefixes:
+                del self.guild_prefixes[guild_id]
+
+            stmt = (
+                select(GuildPrefixes)
+                .where(GuildPrefixes.guild_id == guild_id)
+                .options(selectinload("*"))
+            )
             result = await session.execute(stmt)
             prefix_config = result.scalar()
 
@@ -147,7 +157,14 @@ class TitaniumBot(commands.Bot):
                 self.guild_prefixes[prefix_config.guild_id] = prefix_config
 
             # Available webhooks
-            stmt = select(AvailableWebhook).where(AvailableWebhook.guild_id == guild_id)
+            if guild_id in self.available_webhooks:
+                del self.available_webhooks[guild_id]
+
+            stmt = (
+                select(AvailableWebhook)
+                .where(AvailableWebhook.guild_id == guild_id)
+                .options(selectinload("*"))
+            )
             result = await session.execute(stmt)
             webhook_configs = result.scalars().all()
 
@@ -155,10 +172,20 @@ class TitaniumBot(commands.Bot):
                 self.available_webhooks.setdefault(webhook.guild_id, []).append(webhook)
 
             # Fireboard messages
-            if config and config.fireboard_settings:
-                self.fireboard_messages[guild_id] = []
-                for channel in config.fireboard_settings.fireboard_boards:
-                    self.fireboard_messages[guild_id].extend(channel.messages)
+            if guild_id in self.fireboard_messages:
+                del self.fireboard_messages[guild_id]
+
+            stmt = (
+                select(FireboardMessage)
+                .where(FireboardMessage.guild_id == guild_id)
+                .options(selectinload("*"))
+            )
+            result = await session.execute(stmt)
+            fireboard_messages = result.scalars().all()
+            self.fireboard_messages.clear()
+
+            for message in fireboard_messages:
+                self.fireboard_messages.setdefault(message.guild_id, []).append(message)
 
         logging.info(f"[CACHE] Guild config cache for guild {guild_id} refreshed.")
 
@@ -280,7 +307,9 @@ async def get_prefix(bot: TitaniumBot, message: discord.Message):
     return commands.when_mentioned_or(*base)(bot, message)
 
 
-bot = TitaniumBot(intents=intents, command_prefix=get_prefix, case_insensitive=True)
+bot = TitaniumBot(
+    intents=intents, command_prefix=get_prefix, case_insensitive=True, max_messages=2500
+)
 
 
 @bot.event

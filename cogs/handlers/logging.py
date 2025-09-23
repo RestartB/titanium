@@ -11,6 +11,7 @@ from lib.classes.guild_logger import GuildLogger
 if TYPE_CHECKING:
     from main import TitaniumBot
 
+# TODO: test all
 
 class EventLoggingCog(commands.Cog):
     """Monitors Discord events from servers and logs them"""
