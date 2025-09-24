@@ -824,6 +824,54 @@ class Quotes(commands.Cog):
                 value="PNG",
             )
 
+        # adapted from built in discord.py message.clean_content
+        if interaction.guild:
+            guild = interaction.guild
+
+            def resolve_member(id: int) -> str:
+                member = guild.get_member(id)
+                return f"@{member.display_name if member else 'unknown-user'}"
+
+            def resolve_channel(id: int) -> str:
+                channel = guild.get_channel(id)
+                return f"#{channel.name if channel else 'deleted-channel'}"
+
+            def resolve_role(id: int) -> str:
+                role = guild.get_role(id)
+                return f"@{role.name if role else 'deleted-role'}"
+        else:
+
+            def resolve_member(id: int) -> str:
+                user = interaction.client.get_user(id)
+                if not user:
+                    try:
+                        self.bot.fetch_user(id)
+                    except discord.NotFound:
+                        user = None
+
+                return f"@{user.name if user else 'unknown-user'}"
+
+            def resolve_channel(id: int) -> str:
+                return "#unknown-channel"
+
+            def resolve_role(id: int) -> str:
+                return "@unknown-role"
+
+        transforms = {
+            "@": resolve_member,
+            "@!": resolve_member,
+            "#": resolve_channel,
+            "@&": resolve_role,
+        }
+
+        def repl(match: re.Match) -> str:
+            type = match[1]
+            id = int(match[2])
+            transformed = transforms[type](id)
+            return transformed
+
+        content = re.sub(r"<(@[!&]?|#)([0-9]{15,20})>", repl, content)
+
         image_data, has_spoilers = await create_quote_image(
             user=user,
             content=content,
