@@ -17,6 +17,7 @@ class AdminCog(commands.Cog):
 
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
+        self.logger: logging.Logger = logging.getLogger("admin")
 
     @commands.group(name="admin", hidden=True, invoke_without_command=True)
     @commands.is_owner()
@@ -40,8 +41,8 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         except Exception as e:
-            logging.error(f"Error clearing console: {e}")
-            logging.error(traceback.format_exc())
+            self.logger.error(f"Error clearing console: {e}")
+            self.logger.error(traceback.format_exc())
 
             await ctx.reply(
                 embed=discord.Embed(
@@ -63,10 +64,10 @@ class AdminCog(commands.Cog):
         await defer(self.bot, ctx, ephemeral=True)
 
         # Sync commands
-        logging.info("[SYNC] Syncing commands...")
+        self.logger.info("[SYNC] Syncing commands...")
         try:
             tree = await self.bot.tree.sync()
-            logging.info(f"[SYNC] Synced {len(tree)} commands.")
+            self.logger.info(f"[SYNC] Synced {len(tree)} commands.")
 
             await ctx.reply(
                 embed=discord.Embed(
@@ -78,8 +79,8 @@ class AdminCog(commands.Cog):
             )
             await ctx.message.remove_reaction(self.bot.loading_emoji, ctx.me)
         except discord.HTTPException:
-            logging.error("[SYNC] Failed to sync commands.")
-            logging.error(traceback.format_exc())
+            self.logger.error("[SYNC] Failed to sync commands.")
+            self.logger.error(traceback.format_exc())
 
             await ctx.reply(
                 embed=discord.Embed(
@@ -109,8 +110,8 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         except Exception as e:
-            logging.error(f"Error reloading {cog}: {e}")
-            logging.error(traceback.format_exc())
+            self.logger.error(f"Error reloading {cog}: {e}")
+            self.logger.error(traceback.format_exc())
 
             await ctx.reply(
                 embed=discord.Embed(
@@ -139,8 +140,8 @@ class AdminCog(commands.Cog):
                 )
             )
         except Exception as exc:
-            logging.error(f"Error unloading {cog_name}: {exc}")
-            logging.error(traceback.format_exc())
+            self.logger.error(f"Error unloading {cog_name}: {exc}")
+            self.logger.error(traceback.format_exc())
 
             await ctx.reply(
                 embed=discord.Embed(

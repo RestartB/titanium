@@ -19,6 +19,7 @@ class EventLoggingCog(commands.Cog):
 
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
+        self.logger: logging.Logger = logging.getLogger("guild_logger")
 
     async def cog_load(self) -> None:
         importlib.reload(guild_logger)
@@ -154,14 +155,14 @@ class EventLoggingCog(commands.Cog):
             return
 
         if "content" not in payload.data:
-            logging.debug("No content in payload data")
+            self.logger.debug("No content in payload data")
             return
 
         if (
             payload.cached_message
             and payload.cached_message.content == payload.data["content"]
         ):
-            logging.debug("Message content is the same as cached message")
+            self.logger.debug("Message content is the same as cached message")
             return
 
         guild = self.bot.get_guild(payload.guild_id)

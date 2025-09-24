@@ -13,6 +13,7 @@ class BadLinkFetcherCog(commands.Cog):
 
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
+        self.logger: logging.Logger = logging.getLogger("links")
 
         # Start tasks
         self.malicious_update.start()
@@ -28,7 +29,7 @@ class BadLinkFetcherCog(commands.Cog):
     @tasks.loop(hours=6)
     async def malicious_update(self) -> None:
         async with aiohttp.ClientSession() as session:
-            logging.info("[LINKS] Fetching malicious links...")
+            self.logger.info("Fetching malicious links...")
 
             async with session.get(
                 "https://urlhaus.abuse.ch/downloads/text/"
@@ -40,17 +41,19 @@ class BadLinkFetcherCog(commands.Cog):
                         line for line in data if not line.startswith("#")
                     ]
 
-                    logging.info(
-                        f"[LINKS] Updated malicious links • {len(self.bot.malicious_links)} links fetched."
+                    self.logger.info(
+                        f"Updated malicious links • {len(self.bot.malicious_links)} links fetched."
                     )
                 else:
-                    logging.error("Failed to fetch malicious links:", response.status)
+                    self.logger.error(
+                        "Failed to fetch malicious links:", response.status
+                    )
 
     # Phishing update task
     @tasks.loop(hours=6)
     async def phishing_update(self) -> None:
         async with aiohttp.ClientSession() as session:
-            logging.info("[LINKS] Fetching phishing links...")
+            self.logger.info("Fetching phishing links...")
 
             async with session.get(
                 "https://phish.co.za/latest/phishing-domains-ACTIVE.txt"
@@ -58,11 +61,13 @@ class BadLinkFetcherCog(commands.Cog):
                 if response.status == 200:
                     self.bot.phishing_links = (await response.text()).splitlines()
 
-                    logging.info(
-                        f"[LINKS] Updated phishing links • {len(self.bot.phishing_links)} links fetched."
+                    self.logger.info(
+                        f"Updated phishing links • {len(self.bot.phishing_links)} links fetched."
                     )
                 else:
-                    logging.error("Failed to fetch phishing links:", response.status)
+                    self.logger.error(
+                        "Failed to fetch phishing links:", response.status
+                    )
 
 
 async def setup(bot: "TitaniumBot") -> None:

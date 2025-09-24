@@ -251,11 +251,13 @@ class APICog(commands.Cog):
         self.runner = None
         self.site = None
 
+        self.logger: logging.Logger = logging.getLogger("api")
+
         # Get host and port from env with defaults
         self.host = os.getenv("BOT_API_HOST", "127.0.0.1")
         self.port = int(os.getenv("BOT_API_PORT", 5000))
 
-        logging.info(f"[API] Starting API server on {self.host}:{self.port}")
+        self.logger.info(f"[API] Starting API server on {self.host}:{self.port}")
         self.server_task = asyncio.create_task(self.start_server())
 
     def _sort_channels_in_category(
@@ -337,11 +339,11 @@ class APICog(commands.Cog):
             self.site = web.TCPSite(self.runner, self.host, self.port)
             await self.site.start()
 
-            logging.info(
-                f"[API] API server started successfully on {self.host}:{self.port}"
+            self.logger.info(
+                f"API server started successfully on {self.host}:{self.port}"
             )
         except Exception as e:
-            logging.error(f"[API] Failed to start API server: {e}")
+            self.logger.error(f"Failed to start API server: {e}")
             exit(1)
 
     def register_routes(self):

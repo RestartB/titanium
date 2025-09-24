@@ -27,7 +27,7 @@ def setup_logging(
     log_level = getattr(logging, mode.upper(), logging.INFO)
 
     dt_fmt = "%Y-%m-%d %H:%M:%S"
-    fmt = "[{asctime}] [{levelname:<8}] {name}: {message}"
+    fmt = "[{asctime}] [{levelname:<8}] [{name}]: {message}"
 
     logging.basicConfig(
         level=log_level,

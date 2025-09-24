@@ -34,6 +34,7 @@ class AutomodMonitorCog(commands.Cog):
 
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
+        self.logger: logging.Logger = logging.getLogger("automod")
         self.new_message_queue: asyncio.Queue[discord.Message] = asyncio.Queue()
         self.new_message_queue_task = self.bot.loop.create_task(self.queue_worker())
 
@@ -41,7 +42,7 @@ class AutomodMonitorCog(commands.Cog):
         self.new_message_queue.shutdown(immediate=True)
 
     async def queue_worker(self):
-        logging.info("[AMOD] Automod message handler started.")
+        self.logger.info("Automod message handler started.")
         while True:
             try:
                 await self.bot.wait_until_ready()
@@ -52,13 +53,13 @@ class AutomodMonitorCog(commands.Cog):
             try:
                 await self.message_handler(message)
             except Exception:
-                logging.error("[AMOD] Error processing message in automod:")
-                logging.error(traceback.format_exc())
+                self.logger.error("[AMOD] Error processing message in automod:")
+                self.logger.error(traceback.format_exc())
             finally:
                 self.new_message_queue.task_done()
 
     async def message_handler(self, message: discord.Message):
-        logging.debug(f"Processing message from {message.author}: {message.id}")
+        self.logger.debug(f"Processing message from {message.author}: {message.id}")
         # Check for server ID in config list
         if (
             not message.guild
@@ -68,14 +69,14 @@ class AutomodMonitorCog(commands.Cog):
             or not isinstance(message.author, discord.Member)
             or not self.bot.user
         ):
-            logging.debug("Automod initial checks failed, skipping message")
+            self.logger.debug("Automod initial checks failed, skipping message")
             return
 
         triggers: list[AutomodRule] = []
         punishments: list[AutomodAction] = []
 
         if not self.bot.guild_configs[message.guild.id].automod_enabled:
-            logging.debug("Automod is not enabled, skipping message")
+            self.logger.debug("Automod is not enabled, skipping message")
             return
 
         config = self.bot.guild_configs[message.guild.id].automod_settings
@@ -406,7 +407,7 @@ class AutomodMonitorCog(commands.Cog):
                 message=message,
             )
 
-        logging.debug(f"Processed message from {message.author}: {message.id}")
+        self.logger.debug(f"Processed message from {message.author}: {message.id}")
 
     # Listen for messages
     @commands.Cog.listener()

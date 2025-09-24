@@ -41,18 +41,22 @@ path = os.getcwd()
 # setup the logging
 setup_logging()
 
+init_logger: logging.Logger = logging.getLogger("init")
+cache_logger: logging.Logger = logging.getLogger("cache")
+db_logger: logging.Logger = logging.getLogger("db")
+
 logging.info("Welcome to Titanium • v2")
 logging.info("https://github.com/restartb/titanium\n")
 
 # Temp path check
-logging.info("[INIT] Checking temp path...")
+init_logger.info("Checking temp path...")
 basedir = os.path.dirname("user-content/tmp/")
 
 if not os.path.exists(basedir):
-    logging.info("[INIT] Path not present. Creating path...")
+    init_logger.info("Path not present. Creating path...")
     os.makedirs(basedir)
 
-logging.info("[INIT] Path check complete.\n")
+init_logger.info("Path check complete.\n")
 
 
 # Bot Setup
@@ -83,7 +87,7 @@ class TitaniumBot(commands.Bot):
     phishing_links: list[str] = []
 
     async def refresh_all_caches(self) -> None:
-        logging.info("[CACHE] Refreshing guild config caches...")
+        cache_logger.info("Refreshing guild config caches...")
 
         async with get_session() as session:
             # Settings
@@ -122,10 +126,10 @@ class TitaniumBot(commands.Bot):
             for message in fireboard_messages:
                 self.fireboard_messages.setdefault(message.guild_id, []).append(message)
 
-        logging.info("[CACHE] Guild configs refreshed.")
+        cache_logger.info("Guild configs refreshed.")
 
     async def refresh_guild_config_cache(self, guild_id: int) -> None:
-        logging.info(f"[CACHE] Refreshing guild config cache for guild {guild_id}...")
+        cache_logger.info(f"Refreshing guild config cache for guild {guild_id}...")
         async with get_session() as session:
             # Settings
             if guild_id in self.guild_configs:
@@ -187,10 +191,10 @@ class TitaniumBot(commands.Bot):
             for message in fireboard_messages:
                 self.fireboard_messages.setdefault(message.guild_id, []).append(message)
 
-        logging.info(f"[CACHE] Guild config cache for guild {guild_id} refreshed.")
+        cache_logger.info(f"Guild config cache for guild {guild_id} refreshed.")
 
     async def init_guild(self, guild_id: int) -> GuildSettings | None:
-        logging.info(f"[INIT] Initializing guild {guild_id}...")
+        db_logger.info(f"[INIT] Initializing guild {guild_id}...")
 
         async with get_session() as session:
             stmt = insert(GuildSettings).values(guild_id=guild_id)
@@ -219,17 +223,17 @@ class TitaniumBot(commands.Bot):
 
         await self.refresh_guild_config_cache(guild_id)
 
-        logging.info(f"[INIT] Guild {guild_id} initialized.")
+        db_logger.info(f"[INIT] Guild {guild_id} initialized.")
         return self.guild_configs.get(guild_id)
 
     async def setup_hook(self):
-        logging.info("[INIT] Initializing database...")
+        init_logger.info("Initializing database...")
         await init_db()
-        logging.info("[INIT] Database initialized.\n")
+        init_logger.info("Database initialized.\n")
 
         await self.refresh_all_caches()
 
-        logging.info("[INIT] Getting custom emojis...")
+        init_logger.info("Getting custom emojis...")
         try:
             success_emoji = os.getenv("SUCCESS_EMOJI")
             if success_emoji and success_emoji.strip() != "":
@@ -259,11 +263,11 @@ class TitaniumBot(commands.Bot):
             else:
                 self.warn_emoji = "⚠️"
         except discord.HTTPException as e:
-            logging.error(f"[INIT] Failed to fetch emojis: {e}")
+            init_logger.error(f"Failed to fetch emojis: {e}")
             raise
-        logging.info("[INIT] Custom emojis loaded.\n")
+        init_logger.info("Custom emojis loaded.\n")
 
-        logging.info("[INIT] Loading cogs...")
+        init_logger.info("Loading cogs...")
         # Find all cogs in command dir
         for filename in glob(
             os.path.join("cogs", "**"), recursive=True, include_hidden=False
@@ -273,10 +277,10 @@ class TitaniumBot(commands.Bot):
                 if filename.endswith(".py") and not filename.startswith("."):
                     filename = filename.replace("\\", "/").replace("/", ".")[:-3]
 
-                    logging.debug(f"[INIT] Loading normal cog: {filename}...")
+                    init_logger.debug(f"Loading normal cog: {filename}...")
                     await bot.load_extension(filename)
-                    logging.debug(f"[INIT] Loaded normal cog: {filename}")
-        logging.info("[INIT] Loading cogs complete.\n")
+                    init_logger.debug(f"Loaded normal cog: {filename}")
+        init_logger.info("Loading cogs complete.\n")
 
     async def on_connect(self):
         self.connected = True
@@ -314,7 +318,7 @@ bot = TitaniumBot(
 
 @bot.event
 async def on_ready():
-    logging.info(f"[INIT] Bot is ready and connected as {bot.user}.\n")
+    init_logger.info(f"Bot is ready and connected as {bot.user}.\n")
 
 
 @bot.event
@@ -396,7 +400,7 @@ async def on_app_command_error(
 
 
 if __name__ == "__main__":
-    logging.info("[INIT] Starting Titanium bot...")
+    logging.info("Starting Titanium bot...")
     try:
         token = os.getenv("BOT_TOKEN")
 
@@ -409,7 +413,7 @@ if __name__ == "__main__":
 
         bot.run(token, log_handler=None)
     except discord.LoginFailure:
-        logging.error("[INIT] Invalid bot token provided. Please check your .env file.")
+        logging.error("Invalid bot token provided. Please check your .env file.")
     except Exception:
-        logging.error("[INIT] An error occurred while starting the bot:")
+        logging.error("An error occurred while starting the bot:")
         logging.error(traceback.format_exc())

@@ -22,6 +22,7 @@ class GuildLogger:
         self.bot = bot
         self.guild = guild
         self.config = bot.guild_configs.get(guild.id)
+        self.logger: logging.Logger = logging.getLogger("guild_logger")
 
     def _exists_and_enabled(self, entry: str) -> bool:
         if (
@@ -29,22 +30,22 @@ class GuildLogger:
             or not self.config.logging_enabled
             or not self.config.logging_settings
         ):
-            logging.debug(f"Logging in {self.guild.id} is disabled")
+            self.logger.debug(f"Logging in {self.guild.id} is disabled")
             return False
 
         field_value = getattr(self.config.logging_settings, entry, None)
         if not field_value:
-            logging.debug(f"{entry} log type is disabled")
+            self.logger.debug(f"{entry} log type is disabled")
             return False
 
-        logging.debug(f"{entry} log type is enabled")
+        self.logger.debug(f"{entry} log type is enabled")
         return True
 
     async def _find_webhook(self, channel_id: int) -> Optional[str]:
         if self.guild.id in self.bot.available_webhooks:
             for webhook in self.bot.available_webhooks[self.guild.id]:
                 if webhook.channel_id == channel_id:
-                    logging.debug(
+                    self.logger.debug(
                         f"Found existing webhook for channel {channel_id} in guild {self.guild.id}"
                     )
                     return webhook.webhook_url
@@ -72,7 +73,7 @@ class GuildLogger:
             await self.bot.refresh_guild_config_cache(self.guild.id)
             return webhook.url
         except Exception as e:
-            logging.error(f"Failed to create webhook: {e}")
+            self.logger.error(f"Failed to create webhook: {e}")
             return None
 
     async def _send_to_webhook(
@@ -100,7 +101,7 @@ class GuildLogger:
                 result = await webhook.send(embed=embed)
             return result
         except Exception as e:
-            logging.error(f"Failed to send webhook: {e}")
+            self.logger.error(f"Failed to send webhook: {e}")
             return None
 
     async def _get_audit_log_entry(

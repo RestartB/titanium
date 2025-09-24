@@ -11,7 +11,7 @@ from lib.sql import Game, GameStat, get_session
 if TYPE_CHECKING:
     from main import TitaniumBot
 
-log: logging.Logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 class GameCog(commands.Cog):
@@ -34,7 +34,7 @@ class GameCog(commands.Cog):
             await session.commit()
 
         await self.load_game_cache()
-        log.info("Game table cache loaded")
+        logger.info("Game table cache loaded")
 
     async def load_game_cache(self) -> None:
         """Load the game cache initially to reduce the DB call."""

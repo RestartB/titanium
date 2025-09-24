@@ -27,6 +27,7 @@ class FireboardCog(commands.Cog):
             | discord.Message
         ] = asyncio.Queue()
         self.event_queue_task = self.bot.loop.create_task(self.queue_worker())
+        self.logger: logging.Logger = logging.getLogger("fireboard")
 
     def cog_unload(self) -> None:
         self.event_queue.shutdown(immediate=True)
@@ -47,7 +48,7 @@ class FireboardCog(commands.Cog):
         return embed
 
     async def queue_worker(self):
-        logging.info("[FB] Fireboard event handler started.")
+        self.logger.info("Fireboard event handler started.")
         while True:
             try:
                 await self.bot.wait_until_ready()
@@ -69,8 +70,8 @@ class FireboardCog(commands.Cog):
                 elif isinstance(event, discord.Reaction):
                     await self.reaction_emoji_clear_handler(event)
             except Exception:
-                logging.error("Error processing event in fireboard:")
-                logging.error(traceback.format_exc())
+                self.logger.error("Error processing event in fireboard:")
+                self.logger.error(traceback.format_exc())
             finally:
                 self.event_queue.task_done()
 
@@ -113,7 +114,7 @@ class FireboardCog(commands.Cog):
             )
             or isinstance(reaction.message.author, discord.User)
         ):
-            logging.debug("Ignoring reaction")
+            self.logger.debug("Ignoring reaction")
             return
 
         processed_boards: list[int] = []
@@ -239,7 +240,7 @@ class FireboardCog(commands.Cog):
                 return
 
     async def message_edit_handler(self, payload: discord.RawMessageUpdateEvent):
-        logging.debug(
+        self.logger.debug(
             f"Handling message edit. Message id: {payload.message_id}, channel id: {payload.channel_id}, guild id: {payload.guild_id}"
         )
 
@@ -259,15 +260,15 @@ class FireboardCog(commands.Cog):
         if isinstance(
             payload.message.channel, (discord.DMChannel, discord.GroupChannel)
         ):
-            logging.debug("Ignoring edit in DM/Group channel")
+            self.logger.debug("Ignoring edit in DM/Group channel")
             return
 
         for message in self.bot.fireboard_messages.get(payload.guild_id, []):
-            logging.debug(
+            self.logger.debug(
                 f"Checking for match: {message.message_id} == {payload.message_id}"
             )
             if message.message_id == payload.message_id:
-                logging.debug("Found matching message")
+                self.logger.debug("Found matching message")
                 channel = self.bot.get_channel(message.fireboard.channel_id)
 
                 if channel is None or isinstance(
@@ -278,7 +279,7 @@ class FireboardCog(commands.Cog):
                         discord.abc.PrivateChannel,
                     ),
                 ):
-                    logging.debug("Edit channel not found")
+                    self.logger.debug("Edit channel not found")
                     continue
 
                 try:
@@ -287,10 +288,10 @@ class FireboardCog(commands.Cog):
                         embed=self._fireboard_embed(payload.message),
                     )
 
-                    logging.debug("Edited message")
+                    self.logger.debug("Edited message")
 
                 except discord.NotFound:
-                    logging.debug("Edit message not found, deleting record")
+                    self.logger.debug("Edit message not found, deleting record")
 
                     async with get_session() as session:
                         await session.delete(message)
@@ -298,8 +299,8 @@ class FireboardCog(commands.Cog):
                     self.bot.fireboard_messages[payload.guild_id].remove(message)
                     continue
                 except Exception:
-                    logging.error("Error editing fireboard message:")
-                    logging.error(traceback.format_exc())
+                    self.logger.error("Error editing fireboard message:")
+                    self.logger.error(traceback.format_exc())
                     continue
 
     async def message_delete_handler(self, payload: discord.RawMessageDeleteEvent):
@@ -340,15 +341,15 @@ class FireboardCog(commands.Cog):
                     self.bot.fireboard_messages[payload.guild_id].remove(message)
 
                 except discord.NotFound:
-                    logging.debug("Delete message not found, deleting record")
+                    self.logger.debug("Delete message not found, deleting record")
                     async with get_session() as session:
                         await session.delete(message)
 
                     self.bot.fireboard_messages[payload.guild_id].remove(message)
                     continue
                 except Exception:
-                    logging.error("Error deleting fireboard message:")
-                    logging.error(traceback.format_exc())
+                    self.logger.error("Error deleting fireboard message:")
+                    self.logger.error(traceback.format_exc())
                     continue
 
     async def reaction_clear_handler(self, message: discord.Message):
@@ -388,14 +389,14 @@ class FireboardCog(commands.Cog):
 
                     self.bot.fireboard_messages[message.guild_id].remove(message)
                 except discord.NotFound:
-                    logging.debug("Delete message not found, deleting record")
+                    self.logger.debug("Delete message not found, deleting record")
                     async with get_session() as session:
                         await session.delete(message)
 
                     self.bot.fireboard_messages[message.guild_id].remove(message)
                 except Exception:
-                    logging.error("Error deleting fireboard message:")
-                    logging.error(traceback.format_exc())
+                    self.logger.error("Error deleting fireboard message:")
+                    self.logger.error(traceback.format_exc())
                     continue
 
     async def reaction_emoji_clear_handler(self, reaction: discord.Reaction):
@@ -440,7 +441,7 @@ class FireboardCog(commands.Cog):
                         message
                     )
                 except discord.NotFound:
-                    logging.debug("Delete message not found, deleting record")
+                    self.logger.debug("Delete message not found, deleting record")
                     async with get_session() as session:
                         await session.delete(message)
 
@@ -448,8 +449,8 @@ class FireboardCog(commands.Cog):
                         message
                     )
                 except Exception:
-                    logging.error("Error deleting fireboard message:")
-                    logging.error(traceback.format_exc())
+                    self.logger.error("Error deleting fireboard message:")
+                    self.logger.error(traceback.format_exc())
                     continue
 
     # Listen for reactions added
