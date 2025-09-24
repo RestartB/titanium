@@ -11,7 +11,7 @@ from lib.sql import Game, GameStat, get_session
 if TYPE_CHECKING:
     from main import TitaniumBot
 
-logger: logging.Logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger("games")
 
 
 class GameCog(commands.Cog):

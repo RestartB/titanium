@@ -257,7 +257,7 @@ class APICog(commands.Cog):
         self.host = os.getenv("BOT_API_HOST", "127.0.0.1")
         self.port = int(os.getenv("BOT_API_PORT", 5000))
 
-        self.logger.info(f"[API] Starting API server on {self.host}:{self.port}")
+        self.logger.info(f"Starting API server on {self.host}:{self.port}")
         self.server_task = asyncio.create_task(self.start_server())
 
     def _sort_channels_in_category(
