@@ -29,7 +29,7 @@ class ScheduledTasksCog(commands.Cog):
     async def queue_worker(self):
         """Worker that grabs tasks from the processing queue"""
 
-        logging.info("Scheduled task queue worker started.")
+        logging.info("[TASKS] Scheduled task queue worker started.")
         while True:
             try:
                 await self.bot.wait_until_ready()
@@ -41,7 +41,7 @@ class ScheduledTasksCog(commands.Cog):
             try:
                 await self.task_handler(task)
             except Exception:
-                logging.error("Error processing scheduled task:")
+                logging.error("[TASKS] Error processing scheduled task:")
                 logging.error(traceback.format_exc())
             finally:
                 try:
@@ -84,10 +84,16 @@ class ScheduledTasksCog(commands.Cog):
             if not member:
                 return
 
-            await member.timeout(
-                discord.utils.utcnow() + timedelta(days=28),
-                reason=f"{task.case_id} - continuing mute",
-            )
+            try:
+                await member.timeout(
+                    discord.utils.utcnow() + timedelta(days=28),
+                    reason=f"{task.case_id} - continuing mute",
+                )
+            except Exception:
+                logging.error(
+                    f"[TASKS] Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})"
+                )
+                logging.error(traceback.format_exc())
         elif task.type == "unban":
             # Auto unban task
             guild = self.bot.get_guild(task.guild_id)
@@ -101,8 +107,9 @@ class ScheduledTasksCog(commands.Cog):
                 )
             except Exception:
                 logging.error(
-                    f"Failed to auto unban {task.user_id} in guild {guild.name} ({guild.id})"
+                    f"[TASKS] Failed to auto unban {task.user_id} in guild {guild.name} ({guild.id})"
                 )
+                logging.error(traceback.format_exc())
 
     @tasks.loop(seconds=1)
     async def task_fetcher(self) -> None:

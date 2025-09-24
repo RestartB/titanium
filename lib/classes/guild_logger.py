@@ -29,22 +29,22 @@ class GuildLogger:
             or not self.config.logging_enabled
             or not self.config.logging_settings
         ):
-            logging.info("Logging is disabled")
+            logging.debug(f"Logging in {self.guild.id} is disabled")
             return False
 
         field_value = getattr(self.config.logging_settings, entry, None)
         if not field_value:
-            logging.info("This log type is disabled")
+            logging.debug(f"{entry} log type is disabled")
             return False
 
-        logging.info("Logging is enabled")
+        logging.debug(f"{entry} log type is enabled")
         return True
 
     async def _find_webhook(self, channel_id: int) -> Optional[str]:
         if self.guild.id in self.bot.available_webhooks:
             for webhook in self.bot.available_webhooks[self.guild.id]:
                 if webhook.channel_id == channel_id:
-                    logging.info(
+                    logging.debug(
                         f"Found existing webhook for channel {channel_id} in guild {self.guild.id}"
                     )
                     return webhook.webhook_url

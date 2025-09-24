@@ -28,7 +28,7 @@ class BadLinkFetcherCog(commands.Cog):
     @tasks.loop(hours=6)
     async def malicious_update(self) -> None:
         async with aiohttp.ClientSession() as session:
-            logging.info("Fetching malicious links...")
+            logging.info("[LINKS] Fetching malicious links...")
 
             async with session.get(
                 "https://urlhaus.abuse.ch/downloads/text/"
@@ -41,7 +41,7 @@ class BadLinkFetcherCog(commands.Cog):
                     ]
 
                     logging.info(
-                        f"Updated malicious links • {len(self.bot.malicious_links)} links fetched."
+                        f"[LINKS] Updated malicious links • {len(self.bot.malicious_links)} links fetched."
                     )
                 else:
                     logging.error("Failed to fetch malicious links:", response.status)
@@ -50,7 +50,7 @@ class BadLinkFetcherCog(commands.Cog):
     @tasks.loop(hours=6)
     async def phishing_update(self) -> None:
         async with aiohttp.ClientSession() as session:
-            logging.info("Fetching phishing links...")
+            logging.info("[LINKS] Fetching phishing links...")
 
             async with session.get(
                 "https://phish.co.za/latest/phishing-domains-ACTIVE.txt"
@@ -59,7 +59,7 @@ class BadLinkFetcherCog(commands.Cog):
                     self.bot.phishing_links = (await response.text()).splitlines()
 
                     logging.info(
-                        f"Updated phishing links • {len(self.bot.phishing_links)} links fetched."
+                        f"[LINKS] Updated phishing links • {len(self.bot.phishing_links)} links fetched."
                     )
                 else:
                     logging.error("Failed to fetch phishing links:", response.status)

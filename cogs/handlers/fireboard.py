@@ -14,9 +14,6 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-# TODO: implement ignored users/roles/channels
-
-
 class FireboardCog(commands.Cog):
     """Server fireboard system"""
 
@@ -50,7 +47,7 @@ class FireboardCog(commands.Cog):
         return embed
 
     async def queue_worker(self):
-        logging.info("Fireboard event handler started.")
+        logging.info("[FB] Fireboard event handler started.")
         while True:
             try:
                 await self.bot.wait_until_ready()
@@ -114,6 +111,7 @@ class FireboardCog(commands.Cog):
             or isinstance(
                 reaction.message.channel, (discord.DMChannel, discord.GroupChannel)
             )
+            or isinstance(reaction.message.author, discord.User)
         ):
             logging.debug("Ignoring reaction")
             return
@@ -186,7 +184,14 @@ class FireboardCog(commands.Cog):
                 board.ignore_bots,
             )
 
-            if count >= board.threshold:
+            if (
+                count >= board.threshold
+                and reaction.message.channel.id not in board.ignored_channels
+                and any(
+                    role.id not in board.ignored_roles
+                    for role in reaction.message.author.roles
+                )
+            ):
                 content = f"{count} {board.reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
                 channel = self.bot.get_channel(board.channel_id)
 
@@ -284,8 +289,17 @@ class FireboardCog(commands.Cog):
 
                     logging.debug("Edited message")
 
-                except (discord.NotFound, discord.Forbidden):
-                    logging.debug("Edit message not found")
+                except discord.NotFound:
+                    logging.debug("Edit message not found, deleting record")
+
+                    async with get_session() as session:
+                        await session.delete(message)
+
+                    self.bot.fireboard_messages[payload.guild_id].remove(message)
+                    continue
+                except Exception:
+                    logging.error("Error editing fireboard message:")
+                    logging.error(traceback.format_exc())
                     continue
 
     async def message_delete_handler(self, payload: discord.RawMessageDeleteEvent):
@@ -325,7 +339,16 @@ class FireboardCog(commands.Cog):
 
                     self.bot.fireboard_messages[payload.guild_id].remove(message)
 
-                except (discord.NotFound, discord.Forbidden):
+                except discord.NotFound:
+                    logging.debug("Delete message not found, deleting record")
+                    async with get_session() as session:
+                        await session.delete(message)
+
+                    self.bot.fireboard_messages[payload.guild_id].remove(message)
+                    continue
+                except Exception:
+                    logging.error("Error deleting fireboard message:")
+                    logging.error(traceback.format_exc())
                     continue
 
     async def reaction_clear_handler(self, message: discord.Message):
@@ -363,8 +386,16 @@ class FireboardCog(commands.Cog):
                     async with get_session() as session:
                         await session.delete(message)
 
-                    self.bot.fireboard_messages[message.guild.id].remove(message)
-                except (discord.NotFound, discord.Forbidden):
+                    self.bot.fireboard_messages[message.guild_id].remove(message)
+                except discord.NotFound:
+                    logging.debug("Delete message not found, deleting record")
+                    async with get_session() as session:
+                        await session.delete(message)
+
+                    self.bot.fireboard_messages[message.guild_id].remove(message)
+                except Exception:
+                    logging.error("Error deleting fireboard message:")
+                    logging.error(traceback.format_exc())
                     continue
 
     async def reaction_emoji_clear_handler(self, reaction: discord.Reaction):
@@ -408,7 +439,17 @@ class FireboardCog(commands.Cog):
                     self.bot.fireboard_messages[reaction.message.guild.id].remove(
                         message
                     )
-                except (discord.NotFound, discord.Forbidden):
+                except discord.NotFound:
+                    logging.debug("Delete message not found, deleting record")
+                    async with get_session() as session:
+                        await session.delete(message)
+
+                    self.bot.fireboard_messages[reaction.message.guild.id].remove(
+                        message
+                    )
+                except Exception:
+                    logging.error("Error deleting fireboard message:")
+                    logging.error(traceback.format_exc())
                     continue
 
     # Listen for reactions added

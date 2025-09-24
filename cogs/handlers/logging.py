@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 # TODO: test all
 
+
 class EventLoggingCog(commands.Cog):
     """Monitors Discord events from servers and logs them"""
 
@@ -153,17 +154,15 @@ class EventLoggingCog(commands.Cog):
             return
 
         if "content" not in payload.data:
-            logging.info("No content in payload data")
+            logging.debug("No content in payload data")
             return
 
         if (
             payload.cached_message
             and payload.cached_message.content == payload.data["content"]
         ):
-            logging.info("Message content is the same as cached message")
+            logging.debug("Message content is the same as cached message")
             return
-
-        logging.info(payload.data["content"])
 
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:

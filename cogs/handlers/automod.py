@@ -41,7 +41,7 @@ class AutomodMonitorCog(commands.Cog):
         self.new_message_queue.shutdown(immediate=True)
 
     async def queue_worker(self):
-        logging.info("Automod message handler started.")
+        logging.info("[AMOD] Automod message handler started.")
         while True:
             try:
                 await self.bot.wait_until_ready()
@@ -52,7 +52,7 @@ class AutomodMonitorCog(commands.Cog):
             try:
                 await self.message_handler(message)
             except Exception:
-                logging.error("Error processing message in automod:")
+                logging.error("[AMOD] Error processing message in automod:")
                 logging.error(traceback.format_exc())
             finally:
                 self.new_message_queue.task_done()
