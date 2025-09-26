@@ -2,17 +2,14 @@ import asyncio
 import logging
 import os
 import uuid
-from typing import TYPE_CHECKING, Optional, Sequence, TypedDict
+from typing import TYPE_CHECKING, Optional, TypedDict
 
 from aiohttp import web
 from discord import (
-    CategoryChannel,
     ForumChannel,
-    Guild,
     StageChannel,
     TextChannel,
     VoiceChannel,
-    abc,
 )
 from discord.ext import commands
 from pydantic import BaseModel, ValidationError, field_validator, model_validator
@@ -260,55 +257,6 @@ class APICog(commands.Cog):
         self.logger.info(f"Starting API server on {self.host}:{self.port}")
         self.server_task = asyncio.create_task(self.start_server())
 
-    def _sort_channels_in_category(
-        self,
-        channels: Sequence[abc.GuildChannel],
-    ) -> Sequence[abc.GuildChannel]:
-        non_voice_channels = [
-            channel
-            for channel in channels
-            if not isinstance(
-                channel,
-                (VoiceChannel, StageChannel, CategoryChannel),
-            )
-        ]
-        voice_channels = [
-            channel
-            for channel in channels
-            if isinstance(channel, (VoiceChannel, StageChannel))
-            and not isinstance(channel, CategoryChannel)
-        ]
-
-        non_voice_channels.sort(key=lambda c: (c.position, c.id))
-        voice_channels.sort(key=lambda c: (c.position, c.id))
-
-        return non_voice_channels + voice_channels
-
-    def _sort_channels(self, guild: Guild) -> Sequence[abc.GuildChannel]:
-        loose_channels = self._sort_channels_in_category(
-            [c for c in guild.channels if c.category is None]
-        )
-
-        categories = guild.categories
-        sorted_categories = sorted(categories, key=lambda c: (c.position, c.id))
-        category_channels = []
-
-        for category in sorted_categories:
-            sorted_category_channels = self._sort_channels_in_category(
-                category.channels
-            )
-            category_channels.extend(sorted_category_channels)
-
-        for i, channel in enumerate(list(loose_channels) + list(category_channels)):
-            channel.position = i
-
-        return list(loose_channels) + list(category_channels)
-
-    def _sort_categories(self, guild: Guild) -> list[CategoryChannel]:
-        categories = guild.categories
-        sorted_categories = sorted(categories, key=lambda c: (c.position, c.id))
-        return sorted_categories
-
     def _serialize_automod_rule(self, rule: AutomodRule) -> dict:
         return {
             "id": str(rule.id),
@@ -451,25 +399,25 @@ class APICog(commands.Cog):
                     }
                     for role in guild.roles
                 ],
-                "channels": [
-                    {
-                        "id": str(channel.id),
-                        "name": channel.name,
-                        "type": str(channel.type),
-                        "position": channel.position,
-                        "category": str(channel.category_id)
-                        if channel.category_id
-                        else None,
-                    }
-                    for channel in self._sort_channels(guild)
-                ],
                 "categories": [
                     {
-                        "id": str(category.id),
-                        "name": category.name,
-                        "position": category.position,
+                        "id": str(category.id) if category else None,
+                        "name": category.name if category else None,
+                        "position": i,
+                        "channels": [
+                            {
+                                "id": str(channel.id),
+                                "name": channel.name,
+                                "type": str(channel.type),
+                                "position": x,
+                                "category": str(channel.category_id)
+                                if channel.category_id
+                                else None,
+                            }
+                            for x, channel in enumerate(channels)
+                        ],
                     }
-                    for category in self._sort_categories(guild)
+                    for i, (category, channels) in enumerate(guild.by_category())
                 ],
                 "emojis": [
                     {

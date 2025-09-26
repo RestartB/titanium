@@ -46,6 +46,9 @@ class ModToggleButton(Button["SettingsView"]):
             self.style = ButtonStyle.red
 
     async def callback(self, interaction: Interaction) -> None:
+        if not interaction.guild_id:
+            return
+
         self.settings.moderation_enabled = not self.settings.moderation_enabled
 
         async with get_session() as session:
@@ -82,6 +85,9 @@ class AutomodToggleButton(Button["SettingsView"]):
             self.style = ButtonStyle.red
 
     async def callback(self, interaction: Interaction) -> None:
+        if not interaction.guild_id:
+            return
+
         self.settings.automod_enabled = not self.settings.automod_enabled
 
         async with get_session() as session:
@@ -118,6 +124,9 @@ class LoggingToggleButton(Button["SettingsView"]):
             self.style = ButtonStyle.red
 
     async def callback(self, interaction: Interaction) -> None:
+        if not interaction.guild_id:
+            return
+
         self.settings.logging_enabled = not self.settings.logging_enabled
 
         async with get_session() as session:
