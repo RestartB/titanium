@@ -52,6 +52,10 @@ class GuildSettings(Base):
         back_populates="guild_settings",
         uselist=False,
     )
+    server_counts_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    server_counts_settings: Mapped[list["ServerCounterSettings"]] = relationship(
+        "ServerCounterSetting", back_populates="guild", cascade="all, delete-orphan"
+    )
 
 
 class GuildLimits(Base):
@@ -307,6 +311,35 @@ class FireboardMessage(Base):
     fireboard: Mapped["FireboardBoard"] = relationship(
         "FireboardBoard", back_populates="messages", uselist=False
     )
+
+
+class ServerCounterSettings(Base):
+    __tablename__ = "server_counter_settings"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id")
+    )
+    guild: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="server_counts_settings", uselist=False
+    )
+    channels: Mapped[list["ServerCounterChannel"]] = relationship(
+        "ServerCounterChannel", back_populates="settings", cascade="all, delete-orphan"
+    )
+
+
+class ServerCounterChannel(Base):
+    __tablename__ = "server_counter_channels"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    settings_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("server_count_settings.id")
+    )
+    settings: Mapped["ServerCounterSettings"] = relationship(
+        "ServerCounterSettings", back_populates="channels", uselist=False
+    )
+    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    count_type: Mapped[str] = MappedColumn(String(length=32))
+    name: Mapped[str] = MappedColumn(String(length=50), default="{count}")
 
 
 class ModCase(Base):

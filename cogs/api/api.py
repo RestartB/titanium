@@ -257,25 +257,6 @@ class APICog(commands.Cog):
         self.logger.info(f"Starting API server on {self.host}:{self.port}")
         self.server_task = asyncio.create_task(self.start_server())
 
-    def _serialize_automod_rule(self, rule: AutomodRule) -> dict:
-        return {
-            "id": str(rule.id),
-            "rule_type": rule.rule_type,
-            "words": rule.words,
-            "threshold": rule.threshold,
-            "duration": rule.duration,
-            "actions": [
-                self._serialize_automod_action(action) for action in rule.actions
-            ],
-        }
-
-    def _serialize_automod_action(self, action: AutomodAction) -> dict:
-        return {
-            "type": action.action_type,
-            "duration": action.duration,
-            "reason": action.reason,
-        }
-
     async def start_server(self):
         try:
             self.app = web.Application()
@@ -448,8 +429,7 @@ class APICog(commands.Cog):
             prefixes = self.bot.guild_prefixes.get(guild.id)
 
             if not config or not prefixes:
-                await self.bot.init_guild(guild.id)
-                config = self.bot.guild_configs.get(guild.id)
+                config = await self.bot.init_guild(guild.id)
                 prefixes = self.bot.guild_prefixes.get(guild.id)
 
                 if not config or not prefixes:
@@ -494,8 +474,7 @@ class APICog(commands.Cog):
             prefixes = self.bot.guild_prefixes.get(guild.id)
 
             if not config or not prefixes:
-                await self.bot.init_guild(guild.id)
-                config = self.bot.guild_configs.get(guild.id)
+                config = await self.bot.init_guild(guild.id)
                 prefixes = self.bot.guild_prefixes.get(guild.id)
 
                 if not config or not prefixes:
@@ -561,7 +540,7 @@ class APICog(commands.Cog):
             config = self.bot.guild_configs.get(guild.id)
 
             if not config:
-                await self.bot.init_guild(guild.id)
+                config = await self.bot.init_guild(guild.id)
 
         if module_name == "automod":
             config = self.bot.guild_configs[guild.id].automod_settings
@@ -573,14 +552,27 @@ class APICog(commands.Cog):
                         "spam_detection": [],
                         "malicious_link_detection": [],
                         "phishing_link_detection": [],
-                        "userapp_detection_users": [],
                     }
                 )
 
             return web.json_response(
                 {
                     detection_type: [
-                        self._serialize_automod_rule(rule)
+                        {
+                            "id": str(rule.id),
+                            "rule_type": rule.rule_type,
+                            "words": rule.words,
+                            "threshold": rule.threshold,
+                            "duration": rule.duration,
+                            "actions": [
+                                {
+                                    "type": action.action_type,
+                                    "duration": action.duration,
+                                    "reason": action.reason,
+                                }
+                                for action in (rule.actions or [])
+                            ],
+                        }
                         for rule in getattr(config, f"{detection_type}_rules", [])
                     ]
                     for detection_type in [
@@ -682,7 +674,7 @@ class APICog(commands.Cog):
             config = self.bot.guild_configs.get(guild.id)
 
             if not config:
-                await self.bot.init_guild(guild.id)
+                config = await self.bot.init_guild(guild.id)
 
         if module_name == "automod":
             try:
