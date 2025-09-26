@@ -331,7 +331,7 @@ class ServerCounterChannel(Base):
     __tablename__ = "server_counter_channels"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     settings_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("server_count_settings.id")
+        BigInteger, ForeignKey("server_counter_settings.id")
     )
     settings: Mapped["ServerCounterSettings"] = relationship(
         "ServerCounterSettings", back_populates="channels", uselist=False
