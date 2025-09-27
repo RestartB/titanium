@@ -169,17 +169,19 @@ class UtilityCog(commands.Cog):
     ) -> None:
         """Convert a image to "PNG", "JPEG", "WEBP", "GIF" """
         await ctx.defer()
-        valid_output_format = ImageConverter.format_types()
-        if output_format.upper() not in valid_output_format:
+
+        valid_output_formats = ImageConverter.format_types()
+        requested_output_format = output_format.upper()
+        if requested_output_format not in valid_output_formats:
             e = Embed(
                 color=Colour.red(),
                 title="Invalid Output Format",
-                description=f"Please specify a valid output format: {', '.join(valid_output_format)}.",
+                description=f"Please specify a valid output format: {', '.join(valid_output_formats)}.",
             )
             return await ctx.reply(embed=e)
 
         converter = ImageConverter(image)
-        file = await converter.convert(output_format)
+        file = await converter.convert(requested_output_format)
         await ctx.reply(file=file)
 
 
