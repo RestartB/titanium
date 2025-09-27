@@ -53,8 +53,11 @@ class GuildSettings(Base):
         uselist=False,
     )
     server_counters_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
-    server_counters_settings: Mapped[list["ServerCounterSettings"]] = relationship(
-        "ServerCounterSettings", back_populates="guild", cascade="all, delete-orphan"
+    server_counters_settings: Mapped["ServerCounterSettings"] = relationship(
+        "ServerCounterSettings",
+        back_populates="guild",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
 

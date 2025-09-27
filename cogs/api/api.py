@@ -5,12 +5,6 @@ import uuid
 from typing import TYPE_CHECKING, Optional, TypedDict
 
 from aiohttp import web
-from discord import (
-    ForumChannel,
-    StageChannel,
-    TextChannel,
-    VoiceChannel,
-)
 from discord.ext import commands
 from pydantic import BaseModel, ValidationError, field_validator, model_validator
 from sqlalchemy import delete
@@ -28,13 +22,6 @@ from lib.sql import (
 
 if TYPE_CHECKING:
     from main import TitaniumBot
-
-
-class CategoryDict(TypedDict):
-    id: int
-    name: str
-    position: int
-    channels: list[VoiceChannel | StageChannel | ForumChannel | TextChannel]
 
 
 class ModuleTypes(TypedDict):
@@ -644,6 +631,25 @@ class APICog(commands.Cog):
                         }
                         for board in fireboard_settings.fireboard_boards
                     ],
+                }
+            )
+        elif module_name == "server_counters":
+            config = self.bot.guild_configs[guild.id]
+
+            if not config.server_counters_settings:
+                return web.json_response({"channels": []})
+
+            server_counters_settings = config.server_counters_settings
+            return web.json_response(
+                {
+                    "channels": [
+                        {
+                            "id": str(channel.id),
+                            "name": channel.name,
+                            "type": str(channel.count_type),
+                        }
+                        for channel in server_counters_settings.channels
+                    ]
                 }
             )
         else:
