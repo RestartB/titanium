@@ -52,8 +52,8 @@ class GuildSettings(Base):
         back_populates="guild_settings",
         uselist=False,
     )
-    server_counts_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
-    server_counts_settings: Mapped[list["ServerCounterSettings"]] = relationship(
+    server_counters_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    server_counters_settings: Mapped[list["ServerCounterSettings"]] = relationship(
         "ServerCounterSettings", back_populates="guild", cascade="all, delete-orphan"
     )
 
@@ -320,7 +320,7 @@ class ServerCounterSettings(Base):
         BigInteger, ForeignKey("guild_settings.guild_id")
     )
     guild: Mapped["GuildSettings"] = relationship(
-        "GuildSettings", back_populates="server_counts_settings", uselist=False
+        "GuildSettings", back_populates="server_counters_settings", uselist=False
     )
     channels: Mapped[list["ServerCounterChannel"]] = relationship(
         "ServerCounterChannel", back_populates="settings", cascade="all, delete-orphan"
