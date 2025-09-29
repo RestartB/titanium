@@ -53,8 +53,8 @@ class GuildSettings(Base):
         uselist=False,
     )
     server_counters_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
-    server_counters_settings: Mapped["ServerCounterSettings"] = relationship(
-        "ServerCounterSettings",
+    server_counters_settings: Mapped["GuildServerCounterSettings"] = relationship(
+        "GuildServerCounterSettings",
         back_populates="guild",
         cascade="all, delete-orphan",
         uselist=False,
@@ -316,11 +316,10 @@ class FireboardMessage(Base):
     )
 
 
-class ServerCounterSettings(Base):
-    __tablename__ = "server_counter_settings"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+class GuildServerCounterSettings(Base):
+    __tablename__ = "guild_server_counter_settings"
     guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("guild_settings.guild_id")
+        BigInteger, ForeignKey("guild_settings.guild_id"), primary_key=True
     )
     guild: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="server_counters_settings", uselist=False
@@ -332,17 +331,16 @@ class ServerCounterSettings(Base):
 
 class ServerCounterChannel(Base):
     __tablename__ = "server_counter_channels"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    settings_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("server_counter_settings.id")
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger,
+        ForeignKey("guild_server_counter_settings.guild_id"),
     )
-    settings: Mapped["ServerCounterSettings"] = relationship(
-        "ServerCounterSettings", back_populates="channels", uselist=False
+    settings: Mapped["GuildServerCounterSettings"] = relationship(
+        "GuildServerCounterSettings", back_populates="channels", uselist=False
     )
-    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     count_type: Mapped[str] = MappedColumn(String(length=32))
-    name: Mapped[str] = MappedColumn(String(length=50), default="{count}")
+    name: Mapped[str] = MappedColumn(String(length=50), default="{value}")
 
 
 class ModCase(Base):

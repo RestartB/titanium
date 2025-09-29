@@ -9,6 +9,7 @@ from discord.ext import commands
 from pydantic import BaseModel, ValidationError, field_validator, model_validator
 from sqlalchemy import delete
 
+from lib.helpers.resolve_counter import resolve_counter
 from lib.sql import (
     AutomodAction,
     AutomodRule,
@@ -16,7 +17,9 @@ from lib.sql import (
     GuildAutomodSettings,
     GuildFireboardSettings,
     GuildLoggingSettings,
+    GuildServerCounterSettings,
     GuildSettings,
+    ServerCounterChannel,
     get_session,
 )
 
@@ -29,6 +32,7 @@ class ModuleTypes(TypedDict):
     automod: bool
     logging: bool
     fireboard: bool
+    server_counters: bool
 
 
 class SettingsDict(TypedDict):
@@ -224,6 +228,41 @@ class FireboardConfigModel(BaseModel):
     global_ignored_roles: list[str] = []
     global_ignored_channels: list[str] = []
     boards: list[FireboardBoardModel] = []
+
+
+class ServerCounterChannelModel(BaseModel):
+    id: Optional[str] = None
+    name: str
+    type: str
+
+    @field_validator("type")
+    def validate_type(cls, v):
+        valid_types = [
+            "total_members",
+            "users",
+            "bots",
+            "online_members",
+            "members_status_online",
+            "members_status_idle",
+            "members_status_dnd",
+            "members_activity",
+            "members_custom_status",
+            "offline_members",
+            "channels",
+        ]
+        if v not in valid_types:
+            raise ValueError(f"Channel type must be one of: {valid_types}")
+        return v
+
+    @field_validator("id")
+    def validate_id(cls, v: str):
+        if v.strip() == "":
+            return None
+        return v
+
+
+class ServerCountersConfigModel(BaseModel):
+    channels: list[ServerCounterChannelModel] = []
 
 
 class APICog(commands.Cog):
@@ -432,6 +471,7 @@ class APICog(commands.Cog):
                     "automod": config.automod_enabled,
                     "logging": config.logging_enabled,
                     "fireboard": config.fireboard_enabled,
+                    "server_counters": config.server_counters_enabled,
                 },
                 "settings": {
                     "loading_reaction": config.loading_reaction,
@@ -494,6 +534,7 @@ class APICog(commands.Cog):
             db_config.automod_enabled = validated_settings.modules["automod"]
             db_config.logging_enabled = validated_settings.modules["logging"]
             db_config.fireboard_enabled = validated_settings.modules["fireboard"]
+            db_config.server_counters_enabled = validated_settings.modules["server_counters"]
             db_config.loading_reaction = validated_settings.settings["loading_reaction"]
             db_config.reply_ping = validated_settings.settings["reply_ping"]
 
@@ -819,25 +860,13 @@ class APICog(commands.Cog):
                     int(role) for role in validated_config.global_ignored_roles
                 ]
 
-                for new_board in validated_config.boards:
-                    existing_board = await session.get(FireboardBoard, new_board.id)
+                session.add(existing_configs)
 
-                    if existing_board and existing_board.guild_id == guild.id:
-                        existing_board.channel_id = int(new_board.channel_id)
-                        existing_board.reaction = new_board.reaction
-                        existing_board.threshold = new_board.threshold
-                        existing_board.ignore_bots = new_board.ignore_bots
-                        existing_board.ignore_self_reactions = (
-                            new_board.ignore_self_reactions
-                        )
-                        existing_board.ignored_roles = [
-                            int(role_id) for role_id in new_board.ignored_roles
-                        ]
-                        existing_board.ignored_channels = [
-                            int(channel_id) for channel_id in new_board.ignored_channels
-                        ]
-                        session.add(existing_board)
-                    else:
+                await session.commit()
+                await session.refresh(existing_configs)
+
+                for new_board in validated_config.boards:
+                    if new_board.id is None:
                         board = FireboardBoard(
                             guild_id=guild.id,
                             channel_id=int(new_board.channel_id),
@@ -854,10 +883,127 @@ class APICog(commands.Cog):
                             ],
                         )
                         session.add(board)
+                    else:
+                        existing_board = await session.get(
+                            FireboardBoard, int(new_board.id)
+                        )
+
+                        if existing_board and existing_board.guild_id == guild.id:
+                            existing_board.channel_id = int(new_board.channel_id)
+                            existing_board.reaction = new_board.reaction
+                            existing_board.threshold = new_board.threshold
+                            existing_board.ignore_bots = new_board.ignore_bots
+                            existing_board.ignore_self_reactions = (
+                                new_board.ignore_self_reactions
+                            )
+                            existing_board.ignored_roles = [
+                                int(role_id) for role_id in new_board.ignored_roles
+                            ]
+                            existing_board.ignored_channels = [
+                                int(channel_id)
+                                for channel_id in new_board.ignored_channels
+                            ]
+                            session.add(existing_board)
+                        else:
+                            board = FireboardBoard(
+                                guild_id=guild.id,
+                                channel_id=int(new_board.channel_id),
+                                reaction=new_board.reaction,
+                                threshold=new_board.threshold,
+                                ignore_bots=new_board.ignore_bots,
+                                ignore_self_reactions=new_board.ignore_self_reactions,
+                                ignored_roles=[
+                                    int(role_id) for role_id in new_board.ignored_roles
+                                ],
+                                ignored_channels=[
+                                    int(channel_id)
+                                    for channel_id in new_board.ignored_channels
+                                ],
+                            )
+                            session.add(board)
 
             await self.bot.refresh_guild_config_cache(guild.id)
             return web.Response(status=204)
+        elif module_name == "server_counters":
+            try:
+                data = await request.json()
+                validated_config = ServerCountersConfigModel(**data)
+            except ValidationError as e:
+                return web.json_response(
+                    {"error": "Validation failed", "details": e.errors()}, status=400
+                )
+            except ValueError as e:
+                return web.json_response(
+                    {"error": "Invalid data", "message": str(e)}, status=400
+                )
 
+            async with get_session() as session:
+                db_config = await session.get(GuildSettings, guild.id)
+                if not db_config:
+                    return web.json_response(
+                        {"error": "Failed to retrieve server configuration from DB"},
+                        status=500,
+                    )
+
+                # Get existing configs
+                existing_config = await session.get(
+                    GuildServerCounterSettings, guild.id
+                )
+
+                if not existing_config:
+                    existing_config = GuildServerCounterSettings(guild_id=guild.id)
+                    session.add(existing_config)
+
+                    await session.commit()
+                    await session.refresh(existing_config)
+
+                for new_channel in validated_config.channels:
+                    if new_channel.id is None:
+                        new_name = resolve_counter(
+                            guild, new_channel.type, new_channel.name
+                        )
+
+                        discord_channel = await guild.create_voice_channel(
+                            name=new_name,
+                            reason="Creating server counter channel",
+                        )
+
+                        channel = ServerCounterChannel(
+                            id=discord_channel.id,
+                            guild_id=guild.id,
+                            name=new_channel.name,
+                            count_type=new_channel.type,
+                        )
+                        session.add(channel)
+                    else:
+                        existing_channel = await session.get(
+                            ServerCounterChannel, int(new_channel.id)
+                        )
+
+                        if existing_channel and existing_channel.guild_id == guild.id:
+                            existing_channel.name = new_channel.name
+                            existing_channel.count_type = new_channel.type
+                            session.add(existing_channel)
+                        else:
+                            new_name = resolve_counter(
+                                guild, new_channel.type, new_channel.name
+                            )
+
+                            discord_channel = await guild.create_voice_channel(
+                                name=new_name,
+                                reason="Creating server counter channel",
+                            )
+
+                            channel = ServerCounterChannel(
+                                id=discord_channel.id,
+                                guild_id=guild.id,
+                                name=new_channel.name,
+                                count_type=new_channel.type,
+                            )
+                            session.add(channel)
+
+            await self.bot.refresh_guild_config_cache(guild.id)
+            return web.Response(status=204)
         else:
             return web.json_response({"error": "Module not found"}, status=404)
 
