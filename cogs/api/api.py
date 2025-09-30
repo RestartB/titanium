@@ -534,7 +534,9 @@ class APICog(commands.Cog):
             db_config.automod_enabled = validated_settings.modules["automod"]
             db_config.logging_enabled = validated_settings.modules["logging"]
             db_config.fireboard_enabled = validated_settings.modules["fireboard"]
-            db_config.server_counters_enabled = validated_settings.modules["server_counters"]
+            db_config.server_counters_enabled = validated_settings.modules[
+                "server_counters"
+            ]
             db_config.loading_reaction = validated_settings.settings["loading_reaction"]
             db_config.reply_ping = validated_settings.settings["reply_ping"]
 
