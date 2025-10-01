@@ -1,13 +1,12 @@
 import asyncio
 import base64
 from datetime import datetime
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import humanize
 from discord import Attachment, Colour, Embed, File, Interaction, app_commands
 from discord.ext import commands
 
-from lib.helpers.img_converter import ImageConverter
 from lib.helpers.qrcode import generate_qrcode
 from lib.views.feedback_modal import FeedbackModal
 
@@ -152,37 +151,6 @@ class UtilityCog(commands.Cog):
         embed.set_thumbnail(url=file.url)
         embed.timestamp = datetime.now()
         await ctx.reply(embed=embed)
-
-    @commands.hybrid_command(
-        name="image-converter",
-        description="Convert an uploaded image to a different format.",
-    )
-    @app_commands.describe(
-        image="Upload the image you want to convert.",
-        output_format="Select the target image format.",
-    )
-    async def image_converter(
-        self,
-        ctx: commands.Context["TitaniumBot"],
-        image: Attachment,
-        output_format: Literal["PNG", "JPEG", "WEBP", "GIF"],
-    ) -> None:
-        """Convert a image to "PNG", "JPEG", "WEBP", "GIF" """
-        await ctx.defer()
-
-        valid_output_formats = ImageConverter.format_types()
-        requested_output_format = output_format.upper()
-        if requested_output_format not in valid_output_formats:
-            e = Embed(
-                color=Colour.red(),
-                title="Invalid Output Format",
-                description=f"Please specify a valid output format: {', '.join(valid_output_formats)}.",
-            )
-            return await ctx.reply(embed=e)
-
-        converter = ImageConverter(image)
-        file = await converter.convert(requested_output_format)
-        await ctx.reply(file=file)
 
 
 async def setup(bot: "TitaniumBot") -> None:
