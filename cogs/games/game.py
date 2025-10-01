@@ -26,7 +26,6 @@ class GameCog(commands.Cog):
             stmt = select(Game.name)
             result = await session.execute(stmt)
             existing_games = {row[0] for row in result.all()}
-
             for game_name in self.available_games:
                 if game_name not in existing_games:
                     session.add(Game(name=game_name))
@@ -98,9 +97,7 @@ class GameCog(commands.Cog):
         roll = random.randint(1, 6)
         win = roll == guess
 
-        # set the win value in context, so we can have it after invoke.
         setattr(ctx, "win", win)
-
         if win:
             embed = Embed(
                 color=Colour.green(),
