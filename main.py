@@ -29,6 +29,7 @@ from lib.sql import (  # noqa: E402
     GuildFireboardSettings,
     GuildLimits,
     GuildLoggingSettings,
+    GuildModerationSettings,
     GuildPrefixes,
     GuildSettings,
     get_session,
@@ -198,6 +199,10 @@ class TitaniumBot(commands.Bot):
 
         async with get_session() as session:
             stmt = insert(GuildSettings).values(guild_id=guild_id)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
+            stmt = insert(GuildModerationSettings).values(guild_id=guild_id)
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 

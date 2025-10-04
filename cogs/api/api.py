@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import uuid
-from typing import TYPE_CHECKING, Optional, TypedDict
+from typing import TYPE_CHECKING, Optional
 
 from aiohttp import web
 from discord.ext import commands
@@ -17,6 +17,7 @@ from lib.sql import (
     GuildAutomodSettings,
     GuildFireboardSettings,
     GuildLoggingSettings,
+    GuildModerationSettings,
     GuildServerCounterSettings,
     GuildSettings,
     ServerCounterChannel,
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class ModuleTypes(TypedDict):
+class ModuleModel(BaseModel):
     moderation: bool
     automod: bool
     logging: bool
@@ -35,14 +36,14 @@ class ModuleTypes(TypedDict):
     server_counters: bool
 
 
-class SettingsDict(TypedDict):
+class SettingsModel(BaseModel):
     loading_reaction: bool
     reply_ping: bool
 
 
 class GuildSettingsModel(BaseModel):
-    modules: ModuleTypes
-    settings: SettingsDict
+    modules: ModuleModel
+    settings: SettingsModel
     prefixes: list[str]
 
     @field_validator("prefixes")
@@ -55,6 +56,11 @@ class GuildSettingsModel(BaseModel):
             if not (1 <= len(prefix) <= 5):
                 raise ValueError("Each prefix must be between 1 and 5 characters long")
         return v
+
+
+class ModerationConfigModel(BaseModel):
+    delete_confirmation: bool
+    dm_users: bool
 
 
 class AutomodActionModel(BaseModel):
@@ -90,6 +96,8 @@ class AutomodRuleModel(BaseModel):
     rule_type: str
     rule_name: str = ""
     words: Optional[list[str]] = []
+    match_whole_word: bool = False
+    case_sensitive: bool = False
     antispam_type: Optional[str] = None
     threshold: int
     duration: int
@@ -120,6 +128,8 @@ class AutomodRuleModel(BaseModel):
             rule_type=self.rule_type,
             rule_name=self.rule_name,
             words=self.words or [],
+            match_whole_word=self.match_whole_word,
+            case_sensitive=self.case_sensitive,
             antispam_type=self.antispam_type,
             threshold=self.threshold,
             duration=self.duration,
@@ -530,15 +540,15 @@ class APICog(commands.Cog):
                     status=500,
                 )
 
-            db_config.moderation_enabled = validated_settings.modules["moderation"]
-            db_config.automod_enabled = validated_settings.modules["automod"]
-            db_config.logging_enabled = validated_settings.modules["logging"]
-            db_config.fireboard_enabled = validated_settings.modules["fireboard"]
-            db_config.server_counters_enabled = validated_settings.modules[
-                "server_counters"
-            ]
-            db_config.loading_reaction = validated_settings.settings["loading_reaction"]
-            db_config.reply_ping = validated_settings.settings["reply_ping"]
+            db_config.moderation_enabled = validated_settings.modules.moderation
+            db_config.automod_enabled = validated_settings.modules.automod
+            db_config.logging_enabled = validated_settings.modules.logging
+            db_config.fireboard_enabled = validated_settings.modules.fireboard
+            db_config.server_counters_enabled = (
+                validated_settings.modules.server_counters
+            )
+            db_config.loading_reaction = validated_settings.settings.loading_reaction
+            db_config.reply_ping = validated_settings.settings.reply_ping
 
             prefixes.prefixes = validated_settings.prefixes
             session.add(db_config)
@@ -571,11 +581,28 @@ class APICog(commands.Cog):
 
             if not config:
                 config = await self.bot.init_guild(guild.id)
+        if module_name == "moderation":
+            config = self.bot.guild_configs[guild.id]
 
-        if module_name == "automod":
-            config = self.bot.guild_configs[guild.id].automod_settings
+            if not config.moderation_settings:
+                return web.json_response(
+                    {
+                        "delete_confirmation": True,
+                        "dm_users": True,
+                    }
+                )
 
-            if not config:
+            moderation_settings = config.moderation_settings
+            return web.json_response(
+                {
+                    "delete_confirmation": moderation_settings.delete_confirmation,
+                    "dm_users": moderation_settings.dm_users,
+                }
+            )
+        elif module_name == "automod":
+            config = self.bot.guild_configs[guild.id]
+
+            if not config.automod_settings:
                 return web.json_response(
                     {
                         "badword_detection": [],
@@ -592,6 +619,8 @@ class APICog(commands.Cog):
                             "id": str(rule.id),
                             "rule_type": rule.rule_type,
                             "words": rule.words,
+                            "match_whole_word": rule.match_whole_word,
+                            "case_sensitive": rule.case_sensitive,
                             "threshold": rule.threshold,
                             "duration": rule.duration,
                             "actions": [
@@ -603,7 +632,9 @@ class APICog(commands.Cog):
                                 for action in (rule.actions or [])
                             ],
                         }
-                        for rule in getattr(config, f"{detection_type}_rules", [])
+                        for rule in getattr(
+                            config.automod_settings, f"{detection_type}_rules", []
+                        )
                     ]
                     for detection_type in [
                         "badword_detection",
@@ -725,7 +756,33 @@ class APICog(commands.Cog):
             if not config:
                 config = await self.bot.init_guild(guild.id)
 
-        if module_name == "automod":
+        if module_name == "moderation":
+            try:
+                data = await request.json()
+                validated_config = ModerationConfigModel(**data)
+            except ValidationError as e:
+                return web.json_response(
+                    {"error": "Validation failed", "details": e.errors()}, status=400
+                )
+            except ValueError as e:
+                return web.json_response(
+                    {"error": "Invalid data", "message": str(e)}, status=400
+                )
+
+            async with get_session() as session:
+                db_config = await session.get(GuildModerationSettings, guild.id)
+                if not db_config:
+                    db_config = GuildModerationSettings(guild_id=guild.id)
+
+                db_config.delete_confirmation = validated_config.delete_confirmation
+                db_config.dm_users = validated_config.dm_users
+
+                session.add(db_config)
+                await session.commit()
+
+            await self.bot.refresh_guild_config_cache(guild.id)
+            return web.Response(status=204)
+        elif module_name == "automod":
             try:
                 data = await request.json()
                 validated_config = AutomodConfigModel(**data)

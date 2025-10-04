@@ -31,9 +31,22 @@ class GuildSettings(Base):
     loading_reaction: Mapped[bool] = MappedColumn(Boolean, default=True)
     reply_ping: Mapped[bool] = MappedColumn(Boolean, default=True)
     moderation_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
+    moderation_settings: Mapped["GuildModerationSettings"] = relationship(
+        "GuildModerationSettings",
+        cascade="all, delete-orphan",
+        back_populates="guild_settings",
+        uselist=False,
+    )
     automod_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
     automod_settings: Mapped["GuildAutomodSettings"] = relationship(
         "GuildAutomodSettings",
+        cascade="all, delete-orphan",
+        back_populates="guild_settings",
+        uselist=False,
+    )
+    bouncer_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    bouncer_settings: Mapped["GuildBouncerSettings"] = relationship(
+        "GuildBouncerSettings",
         cascade="all, delete-orphan",
         back_populates="guild_settings",
         uselist=False,
@@ -94,6 +107,21 @@ class AvailableWebhook(Base):
     webhook_url: Mapped[str] = MappedColumn(String, nullable=False)
 
 
+class GuildModerationSettings(Base):
+    __tablename__ = "guild_moderation_settings"
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id"), primary_key=True
+    )
+    guild_settings: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="moderation_settings", uselist=False
+    )
+    delete_confirmation: Mapped[bool] = MappedColumn(Boolean, default=True)
+    dm_users: Mapped[bool] = MappedColumn(Boolean, default=True)
+    immune_roles: Mapped[list[int]] = MappedColumn(
+        ARRAY(Integer), server_default=text("ARRAY[]::bigint[]")
+    )
+
+
 class GuildAutomodSettings(Base):
     __tablename__ = "guild_automod_settings"
     guild_id: Mapped[int] = MappedColumn(
@@ -102,14 +130,12 @@ class GuildAutomodSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="automod_settings", uselist=False
     )
-    badword_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     badword_detection_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
         primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='badword_detection')",
         back_populates="guild",
         cascade="all, delete-orphan",
     )
-    spam_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     spam_detection_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
         primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='spam_detection')",
@@ -117,7 +143,6 @@ class GuildAutomodSettings(Base):
         cascade="all, delete-orphan",
         overlaps="badword_detection_rules",
     )
-    malicious_link_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     malicious_link_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
         primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='malicious_link')",
@@ -125,7 +150,6 @@ class GuildAutomodSettings(Base):
         cascade="all, delete-orphan",
         overlaps="badword_detection_rules,spam_detection_rules",
     )
-    phishing_link_detection: Mapped[bool] = MappedColumn(Boolean, default=False)
     phishing_link_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
         primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='phishing_link')",
@@ -149,6 +173,8 @@ class AutomodRule(Base):
     words: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
     )
+    match_whole_word: Mapped[bool] = MappedColumn(Boolean, default=False)
+    case_sensitive: Mapped[bool] = MappedColumn(Boolean, default=False)
     threshold: Mapped[int] = MappedColumn(Integer)  # number of occurrences to trigger
     duration: Mapped[int] = MappedColumn(Integer)  # duration to look for occurrences
     actions: Mapped[list["AutomodAction"]] = relationship(
@@ -179,6 +205,92 @@ class AutomodAction(Base):
     reason: Mapped[str] = MappedColumn(String(length=512), nullable=True)
     rule: Mapped["AutomodRule"] = relationship(
         "AutomodRule", back_populates="actions", uselist=False
+    )
+
+
+class GuildBouncerSettings(Base):
+    __tablename__ = "guild_bouncer_settings"
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id"), primary_key=True
+    )
+    guild_settings: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="bouncer_settings", uselist=False
+    )
+    rules: Mapped[list["BouncerRule"]] = relationship(
+        "BouncerRule",
+        back_populates="guild",
+        cascade="all, delete-orphan",
+    )
+
+
+class BouncerRule(Base):
+    __tablename__ = "bouncer_rules"
+    id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_bouncer_settings.guild_id")
+    )
+    rule_name: Mapped[str] = MappedColumn(String(length=100), nullable=True)
+    enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
+    criteria: Mapped[list["BouncerCriteria"]] = relationship(
+        "BouncerCriteria",
+        back_populates="rule",
+        cascade="all, delete-orphan",
+    )
+    actions: Mapped[list["BouncerAction"]] = relationship(
+        "BouncerAction",
+        back_populates="rule",
+        cascade="all, delete-orphan",
+    )
+    guild: Mapped["GuildBouncerSettings"] = relationship(
+        "GuildBouncerSettings",
+        back_populates="rules",
+        uselist=False,
+    )
+
+
+class BouncerCriteria(Base):
+    __tablename__ = "bouncer_criteria"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
+    rule_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("bouncer_rules.id")
+    )
+    criteria_type: Mapped[str] = MappedColumn(String(length=32))
+    account_age: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    words: Mapped[list[str]] = MappedColumn(
+        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
+    )
+    match_whole_word: Mapped[bool] = MappedColumn(Boolean, default=False)
+    case_sensitive: Mapped[bool] = MappedColumn(Boolean, default=False)
+    rule: Mapped["BouncerRule"] = relationship(
+        "BouncerRule", back_populates="criteria", uselist=False
+    )
+
+
+class BouncerAction(Base):
+    __tablename__ = "bouncer_actions"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
+    rule_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("bouncer_rules.id")
+    )
+    action_type: Mapped[str] = MappedColumn(String(length=32))
+
+    # Actions with duration
+    duration: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+
+    # Role actions
+    role_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+
+    # All actions
+    reason: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+
+    # Send message action
+    message_content: Mapped[str] = MappedColumn(String(length=2000), nullable=True)
+    dm_user: Mapped[bool] = MappedColumn(Boolean, default=False)
+
+    rule: Mapped["BouncerRule"] = relationship(
+        "BouncerRule", back_populates="actions", uselist=False
     )
 
 
