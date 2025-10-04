@@ -5,7 +5,6 @@
 import datetime
 import logging
 import os
-import traceback
 from glob import glob
 from typing import Optional
 
@@ -268,7 +267,8 @@ class TitaniumBot(commands.Bot):
             else:
                 self.warn_emoji = "⚠️"
         except discord.HTTPException as e:
-            init_logger.error(f"Failed to fetch emojis: {e}")
+            init_logger.error("Failed to fetch emojis")
+            init_logger.exception(e)
             raise
         init_logger.info("Custom emojis loaded.\n")
 
@@ -372,9 +372,10 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
 
         logging.error(f"Error in command {ctx.command}: {error}")
-        logging.error(
-            "".join(traceback.format_exception(type(error), error, error.__traceback__))
-        )
+        # logging.error(
+        #     "".join(traceback.format_exception(type(error), error, error.__traceback__))
+        # )
+        logging.exception(error)
 
 
 @bot.tree.error
@@ -397,11 +398,12 @@ async def on_app_command_error(
         await interaction.edit_original_response(embed=embed, view=None)
 
         logging.error(
-            f"Error in command {interaction.command.name if interaction.command else 'unknown'}: {error}"
+            f"Error in command {interaction.command.name if interaction.command else 'unknown'}"
         )
-        logging.error(
-            "".join(traceback.format_exception(type(error), error, error.__traceback__))
-        )
+        # logging.error(
+        #     "".join(traceback.format_exception(type(error), error, error.__traceback__))
+        # )
+        logging.exception(error)
 
 
 if __name__ == "__main__":
@@ -419,6 +421,6 @@ if __name__ == "__main__":
         bot.run(token, log_handler=None)
     except discord.LoginFailure:
         logging.error("Invalid bot token provided. Please check your .env file.")
-    except Exception:
+    except Exception as e:
         logging.error("An error occurred while starting the bot:")
-        logging.error(traceback.format_exc())
+        logging.exception(e)

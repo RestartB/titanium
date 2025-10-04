@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import re
-import traceback
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -52,9 +51,9 @@ class AutomodMonitorCog(commands.Cog):
 
             try:
                 await self.message_handler(message)
-            except Exception:
+            except Exception as e:
                 self.logger.error("[AMOD] Error processing message in automod:")
-                self.logger.error(traceback.format_exc())
+                self.logger.exception(e)
             finally:
                 self.new_message_queue.task_done()
 

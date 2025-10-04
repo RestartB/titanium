@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import traceback
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -41,9 +40,9 @@ class ScheduledTasksCog(commands.Cog):
 
             try:
                 await self.task_handler(task)
-            except Exception:
+            except Exception as e:
                 self.logger.error("Error processing scheduled task:")
-                self.logger.error(traceback.format_exc())
+                self.logger.exception(e)
             finally:
                 try:
                     # Remove from database if exists
@@ -90,11 +89,11 @@ class ScheduledTasksCog(commands.Cog):
                     discord.utils.utcnow() + timedelta(days=28),
                     reason=f"{task.case_id} - continuing mute",
                 )
-            except Exception:
+            except Exception as e:
                 self.logger.error(
                     f"[TASKS] Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})"
                 )
-                self.logger.error(traceback.format_exc())
+                self.logger.exception(e)
         elif task.type == "unban":
             # Auto unban task
             guild = self.bot.get_guild(task.guild_id)
@@ -106,11 +105,11 @@ class ScheduledTasksCog(commands.Cog):
                     discord.Object(id=task.user_id),
                     reason=f"{task.case_id} - ban expired",
                 )
-            except Exception:
+            except Exception as e:
                 self.logger.error(
                     f"[TASKS] Failed to auto unban {task.user_id} in guild {guild.name} ({guild.id})"
                 )
-                self.logger.error(traceback.format_exc())
+                self.logger.exception(e)
 
     @tasks.loop(seconds=1)
     async def task_fetcher(self) -> None:

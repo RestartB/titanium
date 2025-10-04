@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import traceback
 from typing import TYPE_CHECKING
 
 import discord
@@ -69,9 +68,9 @@ class FireboardCog(commands.Cog):
                     await self.reaction_clear_handler(event)
                 elif isinstance(event, discord.Reaction):
                     await self.reaction_emoji_clear_handler(event)
-            except Exception:
+            except Exception as e:
                 self.logger.error("Error processing event in fireboard:")
-                self.logger.error(traceback.format_exc())
+                self.logger.exception(e)
             finally:
                 self.event_queue.task_done()
 
@@ -298,9 +297,9 @@ class FireboardCog(commands.Cog):
 
                     self.bot.fireboard_messages[payload.guild_id].remove(message)
                     continue
-                except Exception:
+                except Exception as e:
                     self.logger.error("Error editing fireboard message:")
-                    self.logger.error(traceback.format_exc())
+                    self.logger.exception(e)
                     continue
 
     async def message_delete_handler(self, payload: discord.RawMessageDeleteEvent):
@@ -347,9 +346,9 @@ class FireboardCog(commands.Cog):
 
                     self.bot.fireboard_messages[payload.guild_id].remove(message)
                     continue
-                except Exception:
+                except Exception as e:
                     self.logger.error("Error deleting fireboard message:")
-                    self.logger.error(traceback.format_exc())
+                    self.logger.exception(e)
                     continue
 
     async def reaction_clear_handler(self, message: discord.Message):
@@ -394,9 +393,9 @@ class FireboardCog(commands.Cog):
                         await session.delete(message)
 
                     self.bot.fireboard_messages[message.guild_id].remove(message)
-                except Exception:
+                except Exception as e:
                     self.logger.error("Error deleting fireboard message:")
-                    self.logger.error(traceback.format_exc())
+                    self.logger.exception(e)
                     continue
 
     async def reaction_emoji_clear_handler(self, reaction: discord.Reaction):
@@ -448,9 +447,9 @@ class FireboardCog(commands.Cog):
                     self.bot.fireboard_messages[reaction.message.guild.id].remove(
                         message
                     )
-                except Exception:
+                except Exception as e:
                     self.logger.error("Error deleting fireboard message:")
-                    self.logger.error(traceback.format_exc())
+                    self.logger.exception(e)
                     continue
 
     # Listen for reactions added

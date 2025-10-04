@@ -101,5 +101,6 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
             )
             return True
         except Exception as e:
-            logging.error(f"Feedback webhook error: {e}")
+            logging.error("Feedback webhook error")
+            logging.exception(e)
             return False

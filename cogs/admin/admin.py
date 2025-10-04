@@ -41,8 +41,8 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         except Exception as e:
-            self.logger.error(f"Error clearing console: {e}")
-            self.logger.error(traceback.format_exc())
+            self.logger.error("Error clearing console")
+            self.logger.exception(e)
 
             await ctx.reply(
                 embed=discord.Embed(
@@ -78,9 +78,9 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
             await ctx.message.remove_reaction(self.bot.loading_emoji, ctx.me)
-        except discord.HTTPException:
+        except discord.HTTPException as e:
             self.logger.error("[SYNC] Failed to sync commands.")
-            self.logger.error(traceback.format_exc())
+            self.logger.exception(e)
 
             await ctx.reply(
                 embed=discord.Embed(
@@ -110,8 +110,8 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         except Exception as e:
-            self.logger.error(f"Error reloading {cog}: {e}")
-            self.logger.error(traceback.format_exc())
+            self.logger.error(f"Error reloading {cog}")
+            self.logger.exception(e)
 
             await ctx.reply(
                 embed=discord.Embed(
@@ -139,9 +139,9 @@ class AdminCog(commands.Cog):
                     colour=discord.Colour.green(),
                 )
             )
-        except Exception as exc:
-            self.logger.error(f"Error unloading {cog_name}: {exc}")
-            self.logger.error(traceback.format_exc())
+        except Exception as e:
+            self.logger.error(f"Error unloading {cog_name}")
+            self.logger.exception(e)
 
             await ctx.reply(
                 embed=discord.Embed(

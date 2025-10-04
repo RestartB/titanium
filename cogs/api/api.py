@@ -322,6 +322,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/stats", self.stats)
         self.app.router.add_get("/user/{user_id}/guilds", self.mutual_guilds)
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
+        self.app.router.add_get("/guild/{guild_id}/perms/{user_id}", self.perm_check)
         self.app.router.add_get("/guild/{guild_id}/settings", self.guild_settings)
         self.app.router.add_put(
             "/guild/{guild_id}/settings", self.update_guild_settings
@@ -379,7 +380,7 @@ class APICog(commands.Cog):
 
     async def mutual_guilds(self, request: web.Request) -> web.Response:
         user_id = request.match_info.get("user_id")
-        if not user_id:
+        if not user_id or not user_id.isdigit():
             return web.json_response({"error": "user_id required"}, status=400)
 
         try:
@@ -392,7 +393,7 @@ class APICog(commands.Cog):
 
     async def guild_info(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
-        if not guild_id:
+        if not guild_id or not guild_id.isdigit():
             return web.json_response({"error": "guild_id required"}, status=400)
 
         guild = self.bot.get_guild(int(guild_id))
@@ -447,9 +448,33 @@ class APICog(commands.Cog):
             }
         )
 
+    async def perm_check(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        user_id = request.match_info.get("user_id")
+        if not user_id or not user_id.isdigit():
+            return web.json_response({"error": "user_id required"}, status=400)
+
+        member = guild.get_member(int(user_id))
+        if not member:
+            return web.json_response({"error": "member not found"}, status=404)
+
+        return web.json_response(
+            {
+                "dashboard_manager": member.guild_permissions.administrator,
+                "case_manager": member.guild_permissions.manage_guild,
+            }
+        )
+
     async def guild_settings(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
-        if not guild_id:
+        if not guild_id or not guild_id.isdigit():
             return web.json_response({"error": "guild_id required"}, status=400)
 
         guild = self.bot.get_guild(int(guild_id))
@@ -495,7 +520,7 @@ class APICog(commands.Cog):
         await self.bot.wait_until_ready()
 
         guild_id = request.match_info.get("guild_id")
-        if not guild_id:
+        if not guild_id or not guild_id.isdigit():
             return web.json_response({"error": "guild_id required"}, status=400)
 
         guild = self.bot.get_guild(int(guild_id))
@@ -565,7 +590,7 @@ class APICog(commands.Cog):
         module_name = request.match_info.get("module_name")
         module_name = module_name.lower() if module_name else None
 
-        if not guild_id or not module_name:
+        if not guild_id or not guild_id.isdigit() or not module_name:
             return web.json_response(
                 {"error": "guild_id and module_name required"}, status=400
             )
