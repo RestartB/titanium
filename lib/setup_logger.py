@@ -23,7 +23,6 @@ def setup_logging(
     None
     """
 
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
     log_level = getattr(logging, mode.upper(), logging.INFO)
 
     dt_fmt = "%Y-%m-%d %H:%M:%S"
@@ -38,20 +37,24 @@ def setup_logging(
 
     root_logger = logging.getLogger()
 
-    file_handler = logging.handlers.RotatingFileHandler(
-        filename=log_file,
-        encoding="utf-8",
-        maxBytes=20 * 1024 * 1024,  # 20 MB
-        backupCount=file_backup,
-    )
-    file_handler.setFormatter(logging.Formatter(fmt, dt_fmt, style="{"))
-
     if root_logger.handlers:
         root_logger.handlers[0].setFormatter(logging.Formatter(fmt, dt_fmt, style="{"))
 
-    root_logger.addHandler(file_handler)
+    if os.getenv("ENVIRONMENT") != "docker":
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        file_handler = logging.handlers.RotatingFileHandler(
+            filename=log_file,
+            encoding="utf-8",
+            maxBytes=20 * 1024 * 1024,  # 20 MB
+            backupCount=file_backup,
+        )
+        file_handler.setFormatter(logging.Formatter(fmt, dt_fmt, style="{"))
+
+        root_logger.addHandler(file_handler)
 
     for noisy_logger in ["discord", "discord.gateway"]:
         logger = logging.getLogger(noisy_logger)
         logger.setLevel(logging.INFO)
-        logger.addHandler(file_handler)
+
+        if os.getenv("ENVIRONMENT") != "docker":
+            logger.addHandler(file_handler)

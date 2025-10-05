@@ -48,16 +48,6 @@ db_logger: logging.Logger = logging.getLogger("db")
 logging.info("Welcome to Titanium - v2 Development Version")
 logging.info("https://github.com/restartb/titanium\n")
 
-# Temp path check
-init_logger.info("Checking temp path...")
-basedir = os.path.dirname("user-content/tmp/")
-
-if not os.path.exists(basedir):
-    init_logger.info("Path not present. Creating path...")
-    os.makedirs(basedir)
-
-init_logger.info("Path check complete.\n")
-
 
 # Bot Setup
 intents = discord.Intents.default()
