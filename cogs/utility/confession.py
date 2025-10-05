@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from discord import Colour, Embed, app_commands
 from discord.ext import commands
 
-from lib.sql import GuildConfessionSettings
+from lib.sql.sql import GuildConfessionSettings
 from lib.views.confession import ConfessionSettings, ConfessionSettingsLayout
 
 if TYPE_CHECKING:

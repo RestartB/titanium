@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Literal
 import discord
 from discord import Colour, Interaction, SeparatorSpacing, ui
 
-from lib.sql import GuildConfessionSettings, get_session
+from lib.sql.sql import GuildConfessionSettings, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot

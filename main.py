@@ -232,7 +232,9 @@ class TitaniumBot(commands.Bot):
 
     async def setup_hook(self):
         try:
-            await init_db()
+            # FIXME needs to rmeove the comment
+            # await init_db()
+            pass
         except Exception:
             raise
 
