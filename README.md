@@ -3,7 +3,7 @@
 Welcome to the Titanium v2 branch! This branch is used for Titanium v2 development, and will eventually become the main Titanium branch.
 
 > [!CAUTION]
-> Titanium v2 is in very early development, does not have many features, and is not meant to be ran yet. It's buggy, unfinished, and in a lot of cases, untested.
+> Titanium v2 currently in active development. Many features are constantly changing, haven't been tested yet, and may be removed at any time. It is certain that there will be unfixed bugs. It is not recommended at this time to use Titanium v2 in production.
 
 > [!IMPORTANT]
 > You will need to run a PostgreSQL server to run the bot.
