@@ -21,7 +21,7 @@ from lib.setup_logger import setup_logging
 # load the env variables
 load_dotenv()
 
-from lib.sql import (  # noqa: E402
+from lib.sql.sql import (  # noqa: E402
     AvailableWebhook,
     FireboardMessage,
     GuildAutomodSettings,
@@ -45,7 +45,7 @@ init_logger: logging.Logger = logging.getLogger("init")
 cache_logger: logging.Logger = logging.getLogger("cache")
 db_logger: logging.Logger = logging.getLogger("db")
 
-logging.info("Welcome to Titanium • v2")
+logging.info("Welcome to Titanium - v2 Development Version")
 logging.info("https://github.com/restartb/titanium\n")
 
 # Temp path check
@@ -231,9 +231,10 @@ class TitaniumBot(commands.Bot):
         return self.guild_configs.get(guild_id)
 
     async def setup_hook(self):
-        init_logger.info("Initializing database...")
-        await init_db()
-        init_logger.info("Database initialized.\n")
+        try:
+            await init_db()
+        except Exception:
+            raise
 
         await self.refresh_all_caches()
 
@@ -372,9 +373,6 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
 
         logging.error(f"Error in command {ctx.command}: {error}")
-        # logging.error(
-        #     "".join(traceback.format_exception(type(error), error, error.__traceback__))
-        # )
         logging.exception(error)
 
 
@@ -400,9 +398,6 @@ async def on_app_command_error(
         logging.error(
             f"Error in command {interaction.command.name if interaction.command else 'unknown'}"
         )
-        # logging.error(
-        #     "".join(traceback.format_exception(type(error), error, error.__traceback__))
-        # )
         logging.exception(error)
 
 

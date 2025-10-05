@@ -7,7 +7,7 @@ from discord.ext import commands
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from lib.sql import FireboardMessage, get_session
+from lib.sql.sql import FireboardMessage, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot

@@ -20,7 +20,7 @@ from lib.embeds.mod_actions import (
     warned,
 )
 from lib.helpers.send_dm import send_dm
-from lib.sql import AutomodAction, AutomodRule, get_session
+from lib.sql.sql import AutomodAction, AutomodRule, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot

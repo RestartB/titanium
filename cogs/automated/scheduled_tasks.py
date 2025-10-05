@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 from sqlalchemy import func, select
 
-from lib.sql import ScheduledTask, get_session
+from lib.sql.sql import ScheduledTask, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot

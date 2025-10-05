@@ -7,7 +7,7 @@ from lib.cases.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.embeds.cases import case_deleted, case_embed, case_not_found, cases
 from lib.embeds.general import cancelled
 from lib.helpers.hybrid_adapters import defer, stop_loading
-from lib.sql import ModCase, get_session
+from lib.sql.sql import ModCase, get_session
 from lib.views.confirm import ConfirmView
 from lib.views.pagination import PaginationView
 

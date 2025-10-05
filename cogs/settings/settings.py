@@ -20,7 +20,7 @@ from discord.ui import (
 )
 from sqlalchemy.orm.attributes import flag_modified
 
-from lib.sql import GuildPrefixes, GuildSettings, get_session
+from lib.sql.sql import GuildPrefixes, GuildSettings, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -374,84 +374,6 @@ class GuildSettingsCog(commands.Cog):
             embed=Embed(
                 title=f"{str(self.bot.success_emoji)} Removed",
                 description=f"Removed the `{prefix.lower()}` prefix.",
-                colour=Colour.green(),
-            ),
-            ephemeral=True,
-        )
-
-    @mod_group.command(name="enable", description="Enable the moderation module.")
-    @app_commands.guild_only()
-    async def enable_moderation(self, interaction: Interaction) -> None:
-        if not interaction.guild or not interaction.guild_id or not self.bot.user:
-            return
-
-        await interaction.response.defer(ephemeral=True)
-
-        async with get_session() as session:
-            guild_settings = await session.get(GuildSettings, interaction.guild_id)
-
-            if not guild_settings:
-                guild_settings = GuildSettings(guild_id=interaction.guild_id)
-                session.add(guild_settings)
-
-            if guild_settings.moderation_enabled:
-                await interaction.followup.send(
-                    embed=Embed(
-                        title=f"{str(self.bot.error_emoji)} Already Enabled",
-                        description="Moderation module is already enabled.",
-                        colour=Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
-                return
-
-            guild_settings.moderation_enabled = True
-
-            self.bot.guild_configs[interaction.guild_id] = guild_settings
-
-        await interaction.followup.send(
-            embed=Embed(
-                title=f"{str(self.bot.success_emoji)} Enabled",
-                description="Moderation module has been enabled.",
-                colour=Colour.green(),
-            ),
-            ephemeral=True,
-        )
-
-    @mod_group.command(name="disable", description="Disable the moderation module.")
-    @app_commands.guild_only()
-    async def disable_moderation(self, interaction: Interaction) -> None:
-        if not interaction.guild or not interaction.guild_id or not self.bot.user:
-            return
-
-        await interaction.response.defer(ephemeral=True)
-
-        async with get_session() as session:
-            guild_settings = await session.get(GuildSettings, interaction.guild_id)
-
-            if not guild_settings:
-                guild_settings = GuildSettings(guild_id=interaction.guild_id)
-                session.add(guild_settings)
-
-            if not guild_settings.moderation_enabled:
-                await interaction.followup.send(
-                    embed=Embed(
-                        title=f"{str(self.bot.error_emoji)} Already Disabled",
-                        description="Moderation module is already disabled.",
-                        colour=Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
-                return
-
-            guild_settings.moderation_enabled = False
-
-            self.bot.guild_configs[interaction.guild_id] = guild_settings
-
-        await interaction.followup.send(
-            embed=Embed(
-                title=f"{str(self.bot.success_emoji)} Disabled",
-                description="Moderation module has been disabled.",
                 colour=Colour.green(),
             ),
             ephemeral=True,

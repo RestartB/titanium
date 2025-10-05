@@ -10,7 +10,7 @@ from pydantic import BaseModel, ValidationError, field_validator, model_validato
 from sqlalchemy import delete
 
 from lib.helpers.resolve_counter import resolve_counter
-from lib.sql import (
+from lib.sql.sql import (
     AutomodAction,
     AutomodRule,
     FireboardBoard,

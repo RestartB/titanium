@@ -151,6 +151,38 @@ class AdminCog(commands.Cog):
                 )
             )
 
+    @admin_group.command(name="migrate-db", hidden=True)
+    @commands.is_owner()
+    async def migrate_db(self, ctx: commands.Context["TitaniumBot"]) -> None:
+        await defer(self.bot, ctx, ephemeral=True)
+
+        try:
+            from lib.sql.sql import init_db
+
+            await init_db()
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{str(self.bot.success_emoji)} Database Migrated",
+                    description="Database migrations completed successfully.",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error("Error migrating database")
+            self.logger.exception(e)
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} Error Migrating Database",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
+        finally:
+            await stop_loading(self.bot, ctx)
+
 
 async def setup(bot: "TitaniumBot") -> None:
     await bot.add_cog(AdminCog(bot))
