@@ -1,9 +1,11 @@
 # OS
 .DS_Store
 
-# Python Cache
+# Python
 __pycache__/
 *.pyc
+.ruff_cache/
+.venv/
 
 # Logs
 logs/
