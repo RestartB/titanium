@@ -360,6 +360,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
 
         if not ctx.interaction:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
+
     else:
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Error",

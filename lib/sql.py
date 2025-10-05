@@ -73,6 +73,27 @@ class GuildSettings(Base):
         uselist=False,
     )
 
+    # confession settings
+    confession_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    confession_settings: Mapped["GuildConfessionSettings"] = relationship(
+        "GuildConfessionSettings",
+        cascade="all, delete-orphan",
+        back_populates="guild_settings",
+        uselist=False,
+    )
+
+
+class GuildConfessionSettings(Base):
+    __tablename__ = "guild_confession_settings"
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id"), primary_key=True
+    )
+    guild_settings: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="confession_settings", uselist=False
+    )
+    confession_channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    confession_log_channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+
 
 class GuildLimits(Base):
     __tablename__ = "guild_limits"
