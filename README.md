@@ -13,18 +13,18 @@ Welcome to the Titanium v2 branch! This branch is used for Titanium v2 developme
 
 ## Database Setup
 
-### Initial Setup
+### Initial Setups
 
 1. Create a PostgreSQL 18 database - this can be done with Docker or similar tools
 2. Note down the username and password, add these to the .env file along with the host, port and database name
 3. Download and install the [Atlas CLI](https://atlasgo.io/getting-started#installation) (you may also need to install Docker)
-4. When you run the bot, the database will automatically create required tables and complete any needed migrations
+4. When you run the bot, the bot will automatically create required tables in the database and complete any needed migrations
 
 ### Modifying tables
 
 When developing, you may modify, add or remove tables. To migrate the database to the new schema, follow these steps:
 
-1. Run `atlas migrate lint --env sqlalchemy` - this will create a migration file in the `/migrations` folder
+1. Run `atlas migrate diff --env sqlalchemy` - this will create a migration file in the `/migrations` folder
 2. Review the created migration file to ensure that it looks ok
 3. Run the `t!admin migrate-db` command or restart the bot to migrate the database
 
