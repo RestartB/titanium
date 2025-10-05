@@ -1,6 +1,15 @@
-config.cfg
+# OS
 .DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.ruff_cache/
+.venv/
+
+# Logs
+logs/
+*.log
+
+# .env
 .env
-.venv
-__pycache__
-/logs

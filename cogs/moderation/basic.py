@@ -34,7 +34,7 @@ from lib.embeds.mod_actions import (
     warned,
 )
 from lib.helpers.hybrid_adapters import defer, stop_loading
-from lib.sql import get_session
+from lib.sql.sql import get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot

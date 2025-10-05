@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 
 from lib.cases.case_manager import GuildModCaseManager
-from lib.sql import get_session
+from lib.sql.sql import get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot

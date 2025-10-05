@@ -5,7 +5,7 @@ from discord.ext import commands, tasks
 from sqlalchemy import select
 
 from lib.helpers.resolve_counter import resolve_counter
-from lib.sql import ServerCounterChannel, get_session
+from lib.sql.sql import ServerCounterChannel, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot

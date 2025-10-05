@@ -4,7 +4,7 @@ from discord import Colour, Embed, Member, User
 from sqlalchemy import Column
 
 from ..duration import duration_to_timestring
-from ..sql import ModCase
+from ..sql.sql import ModCase
 
 if TYPE_CHECKING:
     from main import TitaniumBot

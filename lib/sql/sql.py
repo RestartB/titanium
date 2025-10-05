@@ -1,3 +1,5 @@
+import asyncio
+import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -5,6 +7,7 @@ from datetime import datetime
 
 import shortuuid
 from sqlalchemy import (
+    URL,
     BigInteger,
     Boolean,
     DateTime,
@@ -22,6 +25,9 @@ Base = declarative_base()
 
 def generate_short_uuid() -> str:
     return shortuuid.ShortUUID().random(length=8)
+
+
+logger = logging.getLogger("sql")
 
 
 # -- Tables --
@@ -559,9 +565,20 @@ class GameStat(Base):
     # __table_args__ = (UniqueConstraint("user_id", "game_id", name="uq_user_game"),)
 
 
+SQLALCHEMY_DATABASE_URL = URL.create(
+    "postgresql+asyncpg",
+    username=os.getenv("DB_USERNAME", ""),
+    password=os.getenv("DB_PASSWORD", ""),
+    host=os.getenv("DB_HOST", ""),
+    port=int(os.getenv("DB_PORT", 0)),
+    database=os.getenv("DB_DATABASE_NAME", ""),
+)
+
+logger.info(f"Connecting to database at {SQLALCHEMY_DATABASE_URL}, password is hidden")
+
 # -- Engine --
 engine = create_async_engine(
-    os.getenv("DATABASE_URL", ""),
+    SQLALCHEMY_DATABASE_URL,
     echo=False,
     pool_size=20,
     max_overflow=30,
@@ -574,10 +591,54 @@ engine = create_async_engine(
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
-async def init_db() -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        await conn.commit()
+async def init_db():
+    try:
+        logger.info("Applying database migrations...")
+        result = await asyncio.create_subprocess_exec(
+            "atlas",
+            "migrate",
+            "apply",
+            "--env",
+            "sqlalchemy",
+            "--url",
+            str(
+                SQLALCHEMY_DATABASE_URL.render_as_string(hide_password=False).replace(
+                    "postgresql+asyncpg", "postgresql"
+                )
+                + "?search_path=public&sslmode=disable"
+            ),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        if await result.wait() != 0:
+            raise Exception("Database migration failed")
+
+        logger.info("Database migrations applied successfully")
+
+        if result.stdout:
+            stdout_text = (await result.stdout.read()).decode().strip()
+            if stdout_text:
+                logger.info(f"stdout: {stdout_text}")
+
+        if result.stderr:
+            stderr_text = (await result.stderr.read()).decode().strip()
+            if stderr_text:
+                logger.info(f"stderr: {stderr_text}")
+    except Exception:
+        logger.error("Error applying database migrations:")
+
+        if result.stdout:
+            stdout_text = (await result.stdout.read()).decode().strip()
+            if stdout_text:
+                logger.error(f"stdout: {stdout_text}")
+
+        if result.stderr:
+            stderr_text = (await result.stderr.read()).decode().strip()
+            if stderr_text:
+                logger.error(f"stderr: {stderr_text}")
+
+        raise
 
 
 @asynccontextmanager

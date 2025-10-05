@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..duration import DurationConverter
-from ..sql import ModCase, ScheduledTask
+from ..sql.sql import ModCase, ScheduledTask
 
 
 class CaseNotFoundException(Exception):

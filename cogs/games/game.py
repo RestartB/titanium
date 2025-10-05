@@ -6,7 +6,7 @@ from discord import Colour, Embed, Member, User, app_commands
 from discord.ext import commands
 from sqlalchemy import select
 
-from lib.sql import Game, GameStat, get_session
+from lib.sql.sql import Game, GameStat, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot

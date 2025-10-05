@@ -7,7 +7,13 @@ import discord
 from humanize.time import naturaldelta
 
 from lib.embeds.mod_actions import banned, kicked, muted, unbanned, unmuted, warned
-from lib.sql import AutomodAction, AutomodRule, AvailableWebhook, ModCase, get_session
+from lib.sql.sql import (
+    AutomodAction,
+    AutomodRule,
+    AvailableWebhook,
+    ModCase,
+    get_session,
+)
 
 if TYPE_CHECKING:
     from main import TitaniumBot
