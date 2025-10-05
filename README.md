@@ -4,10 +4,10 @@ Welcome to the Titanium v2 branch! This branch is used for Titanium v2 developme
 
 > [!CAUTION]
 > Titanium v2 is in very early development, does not have many features, and is not meant to be ran yet. It's buggy, unfinished, and in a lot of cases, untested.
-\
+
 > [!IMPORTANT]
 > You will need to run a PostgreSQL server to run the bot.
-\
+
 > [!IMPORTANT]
 > When developing, you should ensure that you're using ruff to format and lint your code, and Pyright basic type checking to ensure that code remains high quality and type safe.
 
