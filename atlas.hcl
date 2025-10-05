@@ -1,7 +1,7 @@
 data "external_schema" "sqlalchemy" {
     program = [
         "atlas-provider-sqlalchemy",
-        "--path", "./lib/",
+        "--path", "./lib/sql",
         "--dialect", "postgresql"
     ]
 }
