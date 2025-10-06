@@ -61,8 +61,8 @@ class GuildSettingsModel(BaseModel):
 
 
 class ConfessionConfigModel(BaseModel):
-    confession_channel_id: Optional[str]
-    confession_log_channel_id: Optional[str]
+    confession_channel_id: Optional[str] = None
+    confession_log_channel_id: Optional[str] = None
 
 
 class ModerationConfigModel(BaseModel):
@@ -624,14 +624,14 @@ class APICog(commands.Cog):
             if not config.confession_settings:
                 return web.json_response(
                     {
-                        "confession_enable": config.confession_enabled,
+                        "confession_enabled": config.confession_enabled,
                         "confession_channel_id": None,
                         "confession_log_channel_id": None,
                     }
                 )
             return web.json_response(
                 {
-                    "confession_enable": config.confession_enabled,
+                    "confession_enabled": config.confession_enabled,
                     "confession_channel_id": str(
                         config.confession_settings.confession_channel_id
                     ),

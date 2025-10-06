@@ -186,13 +186,13 @@ class ConfessionSettingsLayout(ui.LayoutView):
                 ephemeral=True,
             )
 
-        self.diable_components()
+        self.disable_components()
         await interaction.message.edit(view=self)  # disable the comonent
         await self.update_settings(interaction)  # update the database
         await interaction.followup.send("Settings has been saved.", ephemeral=True)
         self.stop()
 
-    def diable_components(self) -> None:
+    def disable_components(self) -> None:
         for child in self.walk_children():
             if child.is_dispatchable():
                 child.disabled = True
