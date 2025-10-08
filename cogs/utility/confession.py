@@ -1,11 +1,9 @@
 import re
 from typing import TYPE_CHECKING
 
+import discord
 from discord import Colour, Embed, app_commands
 from discord.ext import commands
-
-from lib.sql.sql import GuildConfessionSettings
-from lib.views.confession import ConfessionSettings, ConfessionSettingsLayout
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -42,6 +40,27 @@ class ConfessionCog(commands.Cog):
     ) -> None:
         await ctx.defer()
 
+        if ctx.guild is None:
+            return
+
+        if isinstance(
+            ctx.channel,
+            (
+                discord.ForumChannel,
+                discord.abc.PrivateChannel,
+                discord.CategoryChannel,
+            ),
+        ):
+            await ctx.reply(
+                embed=Embed(
+                    color=Colour.red(),
+                    title="Invalid Channel",
+                    description="Confessions cannot be sent from this channel type. Please use a different channel.",
+                ),
+                ephemeral=True,
+            )
+            return
+
         guild_settings = self.bot.guild_configs.get(ctx.guild.id)
         if not guild_settings or not guild_settings.confession_enabled:
             e = Embed(
@@ -49,7 +68,9 @@ class ConfessionCog(commands.Cog):
                 title="Confession Disabled",
                 description=f"The confession seettings is disabled for the {ctx.guild.name} server. Ask a server admin to turn it on using `/settings confession` command.",
             )
-            return await ctx.reply(embed=e)
+            await ctx.reply(embed=e)
+            return
+
         channel = self.bot.get_channel(
             guild_settings.confession_settings.confession_channel_id
         )
@@ -61,7 +82,26 @@ class ConfessionCog(commands.Cog):
                     "The confession channel is not set or could not be found. Ask a server admin to configure it using `/settings confession` command."
                 ),
             )
-            return await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed)
+            return
+
+        if isinstance(
+            channel,
+            (
+                discord.ForumChannel,
+                discord.abc.PrivateChannel,
+                discord.CategoryChannel,
+            ),
+        ):
+            await ctx.reply(
+                embed=Embed(
+                    color=Colour.red(),
+                    title="Invalid Channel",
+                    description="Titanium can't send to the configured confession channel. Please ask a server admin to set a valid channel using `/settings confession` command.",
+                ),
+                ephemeral=True,
+            )
+            return
 
         author_text = "Anonymous" if anonymous else f"{ctx.author.display_name}"
         confession_embed = Embed(
@@ -78,21 +118,30 @@ class ConfessionCog(commands.Cog):
         log_channel = self.bot.get_channel(
             guild_settings.confession_settings.confession_log_channel_id
         )
+
         if log_channel:
-            log_embed = Embed(
-                title="New Confession",
-                description=message,
-                color=Colour.green(),
-            )
-            log_embed.add_field(
-                name="Author",
-                value=f"{ctx.author.mention}",
-            )
-            log_embed.add_field(
-                name="Jump To Confession",
-                value=f"[Click Here]({conf_msg.jump_url})",
-            )
-            await log_channel.send(embed=log_embed)
+            if not isinstance(
+                log_channel,
+                (
+                    discord.ForumChannel,
+                    discord.abc.PrivateChannel,
+                    discord.CategoryChannel,
+                ),
+            ):
+                log_embed = Embed(
+                    title="New Confession",
+                    description=message,
+                    color=Colour.green(),
+                )
+                log_embed.add_field(
+                    name="Author",
+                    value=f"{ctx.author.mention}",
+                )
+                log_embed.add_field(
+                    name="Jump To Confession",
+                    value=f"[Click Here]({conf_msg.jump_url})",
+                )
+                await log_channel.send(embed=log_embed)
 
         await ctx.reply(
             "Your confession has been sent!",

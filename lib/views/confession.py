@@ -186,8 +186,10 @@ class ConfessionSettingsLayout(ui.LayoutView):
                 ephemeral=True,
             )
 
-        self.disable_components()
-        await interaction.message.edit(view=self)  # disable the comonent
+        if interaction.message:
+            self.disable_components()
+            await interaction.message.edit(view=self)  # disable the comonent
+
         await self.update_settings(interaction)  # update the database
         await interaction.followup.send("Settings has been saved.", ephemeral=True)
         self.stop()
@@ -195,12 +197,29 @@ class ConfessionSettingsLayout(ui.LayoutView):
     def disable_components(self) -> None:
         for child in self.walk_children():
             if child.is_dispatchable():
-                child.disabled = True
+                child.disabled = True  # type: ignore
 
-    async def update_settings(self, interaction: discord.Interaction) -> None:
+    async def update_settings(
+        self, interaction: discord.Interaction["TitaniumBot"]
+    ) -> None:
+        if interaction.guild is None:
+            return
+
         async with get_session() as session:
             # confession settings update
             guild_config = interaction.client.guild_configs.get(interaction.guild.id)
+
+            if not guild_config:
+                await interaction.followup.send(
+                    embed=discord.Embed(
+                        title="Error",
+                        description="Guild configuration not found. Please try again.",
+                        color=Colour.red(),
+                    ),
+                    ephemeral=True,
+                )
+                return
+
             guild_config.confession_enabled = self.settings.is_conf_enable
             session.add(guild_config)
 
