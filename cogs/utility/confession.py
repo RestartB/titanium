@@ -18,7 +18,7 @@ class ConfessionCog(commands.Cog):
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
         if not ctx.guild:
             raise commands.errors.NoPrivateMessage(
-                message="Confession commands onyl works on server."
+                message="Confession commands only work in servers."
             )
         return True
 
@@ -28,6 +28,7 @@ class ConfessionCog(commands.Cog):
         await ctx.send_help(ctx)
 
     @confession.command(name="message", description="Share an anonymous message")
+    @commands.guild_only()
     @app_commands.describe(
         message="Message of the confession.",
         anonymous="Whether it should be anonymous or not.",
@@ -79,9 +80,9 @@ class ConfessionCog(commands.Cog):
         )
         if log_channel:
             log_embed = Embed(
-                title="Confession Log",
+                title="New Confession",
                 description=message,
-                color=Colour.orange(),
+                color=Colour.green(),
             )
             log_embed.add_field(
                 name="Author",
@@ -98,7 +99,7 @@ class ConfessionCog(commands.Cog):
             ephemeral=True,
         )
 
-    def safe_message(self, message: str) -> None:
+    def safe_message(self, message: str) -> str:
         safe_msg = re.sub(r"@everyone", "@\u200beveryone", message)
         safe_msg = re.sub(r"@here", "@\u200bhere", safe_msg)
         return safe_msg

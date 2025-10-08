@@ -624,14 +624,12 @@ class APICog(commands.Cog):
             if not config.confession_settings:
                 return web.json_response(
                     {
-                        "confession_enabled": config.confession_enabled,
                         "confession_channel_id": None,
                         "confession_log_channel_id": None,
                     }
                 )
             return web.json_response(
                 {
-                    "confession_enabled": config.confession_enabled,
                     "confession_channel_id": str(
                         config.confession_settings.confession_channel_id
                     ),
@@ -845,19 +843,10 @@ class APICog(commands.Cog):
                 if not db_config:
                     db_config = GuildConfessionSettings(guild_id=guild.id)
 
-                db_config.confession_channel_id = (
-                    int(validated_config.confession_channel_id)
-                    if validated_config.confession_channel_id
-                    else None
-                )
-                db_config.confession_log_channel_id = (
-                    int(validated_config.confession_log_channel_id)
-                    if validated_config.confession_log_channel_id
-                    else None
-                )
-
-                session.add(db_config)
-                await session.commit()
+                if validated_config.confession_channel_id is not None:
+                    db_config.confession_channel_id = int(validated_config.confession_channel_id)
+                if validated_config.confession_log_channel_id is not None:
+                    db_config.confession_log_channel_id = int(validated_config.confession_log_channel_id)
 
             await self.bot.refresh_guild_config_cache(guild.id)
             return web.Response(status=204)
