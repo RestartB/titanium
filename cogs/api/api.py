@@ -38,7 +38,6 @@ class ModuleModel(BaseModel):
 
 class SettingsModel(BaseModel):
     loading_reaction: bool
-    reply_ping: bool
 
 
 class GuildSettingsModel(BaseModel):
@@ -463,7 +462,12 @@ class APICog(commands.Cog):
 
         member = guild.get_member(int(user_id))
         if not member:
-            return web.json_response({"error": "member not found"}, status=404)
+            return web.json_response(
+                {
+                    "dashboard_manager": False,
+                    "case_manager": False,
+                }
+            )
 
         return web.json_response(
             {
@@ -510,7 +514,6 @@ class APICog(commands.Cog):
                 },
                 "settings": {
                     "loading_reaction": config.loading_reaction,
-                    "reply_ping": config.reply_ping,
                 },
                 "prefixes": prefixes.prefixes,
             }
@@ -573,7 +576,6 @@ class APICog(commands.Cog):
                 validated_settings.modules.server_counters
             )
             db_config.loading_reaction = validated_settings.settings.loading_reaction
-            db_config.reply_ping = validated_settings.settings.reply_ping
 
             prefixes.prefixes = validated_settings.prefixes
             session.add(db_config)

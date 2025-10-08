@@ -46,7 +46,7 @@ cache_logger: logging.Logger = logging.getLogger("cache")
 db_logger: logging.Logger = logging.getLogger("db")
 
 logging.info("Welcome to Titanium - v2 Development Version")
-logging.info("https://github.com/restartb/titanium\n")
+logging.info("https://github.com/restartb/titanium")
 
 
 # Bot Setup
@@ -261,7 +261,7 @@ class TitaniumBot(commands.Bot):
             init_logger.error("Failed to fetch emojis")
             init_logger.exception(e)
             raise
-        init_logger.info("Custom emojis loaded.\n")
+        init_logger.info("Custom emojis loaded.")
 
         init_logger.info("Loading cogs...")
         # Find all cogs in command dir
@@ -276,7 +276,7 @@ class TitaniumBot(commands.Bot):
                     init_logger.debug(f"Loading normal cog: {filename}...")
                     await bot.load_extension(filename)
                     init_logger.debug(f"Loaded normal cog: {filename}")
-        init_logger.info("Loading cogs complete.\n")
+        init_logger.info("Loading cogs complete.")
 
     async def on_connect(self):
         self.connected = True
@@ -314,7 +314,7 @@ bot = TitaniumBot(
 
 @bot.event
 async def on_ready():
-    init_logger.info(f"Bot is ready and connected as {bot.user}.\n")
+    init_logger.info(f"Bot is ready and connected as {bot.user}.")
 
 
 @bot.event
