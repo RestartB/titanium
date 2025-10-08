@@ -35,7 +35,6 @@ class GuildSettings(Base):
     __tablename__ = "guild_settings"
     guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     loading_reaction: Mapped[bool] = MappedColumn(Boolean, default=True)
-    reply_ping: Mapped[bool] = MappedColumn(Boolean, default=True)
     moderation_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
     moderation_settings: Mapped["GuildModerationSettings"] = relationship(
         "GuildModerationSettings",

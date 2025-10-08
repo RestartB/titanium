@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+
+# Docs
+docs/
+README.md
+
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+.ruff_cache/
+.venv/
+
+# Logs
+logs/
+*.log
+
+# .env
+.env
+.env.example
