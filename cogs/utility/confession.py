@@ -47,7 +47,7 @@ class ConfessionCog(commands.Cog):
             e = Embed(
                 color=Colour.red(),
                 title="Confession Disabled",
-                description=f"The confession seettings is disabled for the {ctx.guild.name} server. Ask a server admin to turn it on using `/confession settings` command.",
+                description=f"The confession seettings is disabled for the {ctx.guild.name} server. Ask a server admin to turn it on using `/settings confession` command.",
             )
             return await ctx.reply(embed=e)
         channel = self.bot.get_channel(
@@ -58,7 +58,7 @@ class ConfessionCog(commands.Cog):
                 color=Colour.red(),
                 title="Confession Channel Not Found",
                 description=(
-                    "The confession channel is not set or could not be found. Ask a server admin to configure it using `/confession settings` command."
+                    "The confession channel is not set or could not be found. Ask a server admin to configure it using `/settings confession` command."
                 ),
             )
             return await ctx.reply(embed=embed)
@@ -103,30 +103,6 @@ class ConfessionCog(commands.Cog):
         safe_msg = re.sub(r"@everyone", "@\u200beveryone", message)
         safe_msg = re.sub(r"@here", "@\u200bhere", safe_msg)
         return safe_msg
-
-    @confession.command(name="settings", description="Customize confession settings.")
-    @commands.has_permissions(administrator=True)
-    async def confession_settings(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.defer()
-
-        guild_settings = self.bot.guild_configs.get(ctx.guild.id)
-        conf_settings = GuildConfessionSettings(guild_id=ctx.guild.id)
-
-        if not guild_settings:
-            guild_settings = await self.bot.init_guild(ctx.guild.id)
-
-        if guild_settings.confession_settings:
-            conf_settings = guild_settings.confession_settings
-
-        await ctx.reply(
-            view=ConfessionSettingsLayout(
-                settings=ConfessionSettings(
-                    user_id=ctx.author.id,
-                    is_conf_enable=guild_settings.confession_enabled,
-                    guild_settings=conf_settings,
-                )
-            )
-        )
 
 
 async def setup(bot: "TitaniumBot") -> None:
