@@ -47,14 +47,14 @@ class ChannelSetting(ui.ActionRow["ConfessionSettingsLayout"]):
     def __init__(
         self,
         settings: ConfessionSettings,
-        channle_type: Literal["conf_channle", "conf_log"],
+        channel_type: Literal["conf_channel", "conf_log"],
     ) -> None:
         super().__init__()
         self.settings: ConfessionSettings = settings
-        self.channle_type: str = channle_type
+        self.channel_type: str = channel_type
 
         if (
-            channle_type == "conf_channle"
+            channel_type == "conf_channel"
             and settings.guild_settings.confession_channel_id
         ):
             self.select_channel.default_values = [
@@ -64,7 +64,7 @@ class ChannelSetting(ui.ActionRow["ConfessionSettingsLayout"]):
                 )
             ]
         elif (
-            channle_type == "conf_log"
+            channel_type == "conf_log"
             and settings.guild_settings.confession_log_channel_id
         ):
             self.select_channel.default_values = [
@@ -98,12 +98,12 @@ class ChannelSetting(ui.ActionRow["ConfessionSettingsLayout"]):
         await interaction.response.edit_message(view=self.view)
 
     def update_channel(self, ch_id: int | None) -> None:
-        if self.channle_type == "conf_channle":
+        if self.channel_type == "conf_channel":
             self.settings.guild_settings.confession_channel_id = ch_id
-        elif self.channle_type == "conf_log":
+        elif self.channel_type == "conf_log":
             self.settings.guild_settings.confession_log_channel_id = ch_id
         else:
-            log.warning("[ConfessionLayout] invalid channle_type has been provided")
+            log.warning("[ConfessionLayout] invalid channel_type has been provided")
 
 
 class ConfessionSettingsLayout(ui.LayoutView):
@@ -150,7 +150,7 @@ class ConfessionSettingsLayout(ui.LayoutView):
                 "-# Select the channel where confessions will be posted for everyone to see."
             )
         )
-        container.add_item(ChannelSetting(self.settings, channle_type="conf_channle"))
+        container.add_item(ChannelSetting(self.settings, channel_type="conf_channel"))
 
         container.add_item(ui.Separator())
 
@@ -162,7 +162,7 @@ class ConfessionSettingsLayout(ui.LayoutView):
                 "This is usually a private channel for moderators to review."
             )
         )
-        container.add_item(ChannelSetting(self.settings, channle_type="conf_log"))
+        container.add_item(ChannelSetting(self.settings, channel_type="conf_log"))
 
         self.add_item(container)
 
