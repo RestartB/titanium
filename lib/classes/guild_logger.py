@@ -11,6 +11,8 @@ from lib.sql.sql import (
     AutomodAction,
     AutomodRule,
     AvailableWebhook,
+    BouncerAction,
+    BouncerRule,
     ModCase,
     get_session,
 )
@@ -2054,8 +2056,51 @@ class GuildLogger:
         embed.add_field(
             name="Triggered Rules",
             value="\n".join(
-                f"**{rule.rule_name}** (`{rule.id}`) - **{rule.threshold} occurrences** in **{rule.duration} seconds**"
+                f"**{rule.rule_type.capitalize()}** (`{rule.id}`) - **{rule.threshold} occurrences** in **{rule.duration} seconds**"
                 for rule in rules
+            ),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="Actions Taken",
+            value="\n".join(
+                f"**{action.action_type.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`): {shorten(action.reason, width=100, placeholder='...')}"
+                for action in actions
+            ),
+            inline=False,
+        )
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(
+                self.config.logging_settings.titanium_automod_trigger_id
+            ),
+            embed=embed,
+        )
+
+    async def titanium_bouncer_trigger(
+        self,
+        rules: list[BouncerRule],
+        actions: list[BouncerAction],
+        member: discord.Member,
+    ) -> None:
+        if not self._exists_and_enabled("titanium_bouncer_trigger_id"):
+            return
+
+        embed = discord.Embed(
+            title="Titanium Bouncer",
+            description=f"{member.mention} (`@{member.name}`, `{member.id}`) triggered bouncer.",
+            color=discord.Color.blue(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        embed.add_field(
+            name="Triggered Criteria",
+            value="\n".join(
+                f"**{criteria.criteria_type.capitalize()}** (`{criteria.id}`)"
+                for rule in rules
+                for criteria in rule.criteria
             ),
             inline=False,
         )

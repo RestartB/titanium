@@ -6,10 +6,13 @@ Welcome to the Titanium v2 branch! This branch is used for Titanium v2 developme
 > Titanium v2 currently in active development. Many features are constantly changing, haven't been tested yet, and may be removed at any time. It is certain that there will be unfixed bugs. It is not recommended at this time to use Titanium v2 in production.
 
 > [!IMPORTANT]
-> You will need to run a PostgreSQL server to run the bot.
+> This project is in highly active development. Therefore, I am not accepting PRs or code edits for this repo at this time. Once the initial version has been released, I will be happy to accept new PRs again.
 
 > [!IMPORTANT]
-> When developing, you should ensure that you're using ruff to format and lint your code, and Pyright basic type checking to ensure that code remains high quality and type safe.
+> You will need to run a PostgreSQL server to run the bot.
+
+<!-- > [!IMPORTANT]
+> When developing, you should ensure that you're using ruff to format and lint your code, and Pyright basic type checking to ensure that code remains high quality and type safe. -->
 
 ## Database Setup
 

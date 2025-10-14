@@ -52,7 +52,7 @@ class AutomodMonitorCog(commands.Cog):
             try:
                 await self.message_handler(message)
             except Exception as e:
-                self.logger.error("[AMOD] Error processing message in automod:")
+                self.logger.error("Error processing message in automod:")
                 self.logger.exception(e)
             finally:
                 self.new_message_queue.task_done()

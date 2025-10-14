@@ -419,11 +419,12 @@ class APICog(commands.Cog):
                     {
                         "id": str(role.id),
                         "name": role.name,
-                        "color": role.colour.value,
+                        "color": "#%02x%02x%02x" % role.colour.to_rgb(),
                         "hoist": role.hoist,
                         "position": role.position,
                     }
-                    for role in guild.roles
+                    for role in reversed(guild.roles)
+                    if role.id != guild.id
                 ],
                 "categories": [
                     {
@@ -846,9 +847,13 @@ class APICog(commands.Cog):
                     db_config = GuildConfessionSettings(guild_id=guild.id)
 
                 if validated_config.confession_channel_id is not None:
-                    db_config.confession_channel_id = int(validated_config.confession_channel_id)
+                    db_config.confession_channel_id = int(
+                        validated_config.confession_channel_id
+                    )
                 if validated_config.confession_log_channel_id is not None:
-                    db_config.confession_log_channel_id = int(validated_config.confession_log_channel_id)
+                    db_config.confession_log_channel_id = int(
+                        validated_config.confession_log_channel_id
+                    )
 
             await self.bot.refresh_guild_config_cache(guild.id)
             return web.Response(status=204)

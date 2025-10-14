@@ -12,16 +12,19 @@ class StatsUpdateCog(commands.Cog):
 
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
+        self.showing_info: bool = True
 
         # Start tasks
         self.info_update.start()
+        self.status_update.start()
 
     def cog_unload(self) -> None:
         # Stop tasks on unload
         self.info_update.cancel()
+        self.status_update.cancel()
 
     # Info update task
-    @tasks.loop(hours=1)
+    @tasks.loop(minutes=10)
     async def info_update(self) -> None:
         await self.bot.wait_until_ready()
 
@@ -39,6 +42,34 @@ class StatsUpdateCog(commands.Cog):
         )
         self.bot.guild_installs = app_data.approximate_guild_count
         self.bot.guild_member_count = guild_members
+
+    # Status update task
+    @tasks.loop(minutes=10)
+    async def status_update(self) -> None:
+        await self.bot.wait_until_ready()
+
+        if self.showing_info:
+            # Show website status
+            await self.bot.change_presence(
+                activity=discord.Activity(
+                    status=discord.Status.online,
+                    type=discord.ActivityType.custom,
+                    name="custom",
+                    state="🌐 titaniumbot.me",
+                )
+            )
+        else:
+            # Show info status
+            await self.bot.change_presence(
+                activity=discord.Activity(
+                    status=discord.Status.online,
+                    type=discord.ActivityType.custom,
+                    name="custom",
+                    state=f"{self.bot.user_installs} users, {self.bot.guild_installs} servers with {self.bot.guild_member_count:,} members",
+                )
+            )
+
+        self.showing_info = not self.showing_info
 
 
 async def setup(bot: "TitaniumBot"):

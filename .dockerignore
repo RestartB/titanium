@@ -1,6 +1,10 @@
 # OS
 .DS_Store
 
+# IDEs
+.vscode/
+.idea/
+
 # Docs
 docs/
 README.md
@@ -8,6 +12,7 @@ README.md
 # Git
 .git/
 .gitignore
+.github/
 
 # Python
 __pycache__/
