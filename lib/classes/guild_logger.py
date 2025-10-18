@@ -5,8 +5,10 @@ from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 import discord
 from humanize.time import naturaldelta
+from sqlalchemy import delete
 
 from lib.embeds.mod_actions import banned, kicked, muted, unbanned, unmuted, warned
+from lib.helpers.log_error import log_error
 from lib.sql.sql import (
     AutomodAction,
     AutomodRule,
@@ -80,8 +82,23 @@ class GuildLogger:
 
             await self.bot.refresh_guild_config_cache(self.guild.id)
             return webhook.url
-        except Exception as e:
-            self.logger.error(f"Failed to create webhook: {e}")
+        except discord.Forbidden as e:
+            await log_error(
+                module="Logging",
+                guild_id=self.guild.id,
+                error=f"Missing permissions to create webhook in channel #{channel.name} ({channel.id})",
+                details=e.text,
+            )
+
+            return None
+        except discord.HTTPException as e:
+            await log_error(
+                module="Logging",
+                guild_id=self.guild.id,
+                error=f"Unknown Discord error while creating webhook in channel #{channel.name} ({channel.id})",
+                details=e.text,
+            )
+
             return None
 
     async def _send_to_webhook(
@@ -107,10 +124,39 @@ class GuildLogger:
                 )
             else:
                 result = await webhook.send(embed=embed)
+
             return result
+        except discord.NotFound:
+            async with get_session() as session:
+                await session.execute(
+                    delete(AvailableWebhook).where(
+                        AvailableWebhook.guild_id == self.guild.id,
+                        AvailableWebhook.webhook_url == url,
+                    )
+                )
+                await session.commit()
+
+            await self.bot.refresh_guild_config_cache(self.guild.id)
+
+            await log_error(
+                module="Logging",
+                guild_id=self.guild.id if self.guild else None,
+                error="Failed to find logging webhook.",
+            )
+        except discord.HTTPException as e:
+            await log_error(
+                module="Logging",
+                guild_id=self.guild.id if self.guild else None,
+                error="Failed to send logging message.",
+                details=e.text,
+            )
         except Exception as e:
-            self.logger.error(f"Failed to send webhook: {e}")
-            return None
+            await log_error(
+                module="Logging",
+                guild_id=self.guild.id if self.guild else None,
+                error="Internal Titanium error occurred while sending logging message.",
+                exc=e,
+            )
 
     async def _get_audit_log_entry(
         self,
@@ -2056,7 +2102,7 @@ class GuildLogger:
         embed.add_field(
             name="Triggered Rules",
             value="\n".join(
-                f"**{rule.rule_type.capitalize()}** (`{rule.id}`) - **{rule.threshold} occurrences** in **{rule.duration} seconds**"
+                f"**{rule.rule_type.replace('_', ' ').capitalize()}**{f' ({rule.antispam_type.replace("_", " ").lower()})' if rule.antispam_type else ''} - **{rule.threshold} occurrences** in **{rule.duration} seconds**"
                 for rule in rules
             ),
             inline=False,
@@ -2065,7 +2111,7 @@ class GuildLogger:
         embed.add_field(
             name="Actions Taken",
             value="\n".join(
-                f"**{action.action_type.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`): {shorten(action.reason, width=100, placeholder='...')}"
+                f"**{action.action_type.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`){': ' + shorten(action.reason, width=100, placeholder='...') if action.reason else ''}"
                 for action in actions
             ),
             inline=False,
@@ -2098,7 +2144,7 @@ class GuildLogger:
         embed.add_field(
             name="Triggered Criteria",
             value="\n".join(
-                f"**{criteria.criteria_type.capitalize()}** (`{criteria.id}`)"
+                f"**{criteria.criteria_type.capitalize()}**"
                 for rule in rules
                 for criteria in rule.criteria
             ),
@@ -2108,7 +2154,7 @@ class GuildLogger:
         embed.add_field(
             name="Actions Taken",
             value="\n".join(
-                f"**{action.action_type.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`): {shorten(action.reason, width=100, placeholder='...')}"
+                f"**{action.action_type.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`){': ' + shorten(action.reason, width=100, placeholder='...') if action.reason else ''}"
                 for action in actions
             ),
             inline=False,

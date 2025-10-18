@@ -19,13 +19,12 @@ from lib.embeds.mod_actions import (
     muted,
     warned,
 )
+from lib.helpers.log_error import log_error
 from lib.helpers.send_dm import send_dm
 from lib.sql.sql import AutomodAction, AutomodRule, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
-
-# TODO: only apply worst punishment per type (e.g. longest mute, ban over kick, etc)
 
 
 class AutomodMonitorCog(commands.Cog):
@@ -52,8 +51,12 @@ class AutomodMonitorCog(commands.Cog):
             try:
                 await self.message_handler(message)
             except Exception as e:
-                self.logger.error("Error processing message in automod:")
-                self.logger.exception(e)
+                await log_error(
+                    module="Automod",
+                    guild_id=message.guild.id if message.guild else None,
+                    error=f"An unknown error occurred while processing automod for message {message.id} from @{message.author.name} ({message.author.id})",
+                    exc=e,
+                )
             finally:
                 self.new_message_queue.task_done()
 
@@ -132,9 +135,8 @@ class AutomodMonitorCog(commands.Cog):
                 elif str(rule.antispam_type) == "mention_spam":
                     count = sum(m.mention_count for m in filtered_messages)
                 elif str(rule.antispam_type) == "word_spam":
-                    count = sum(
-                        m.word_count for m in filtered_messages
-                    )  # FIXME: seems to trigger at 6 words if you set threshold to 5
+                    # FIXME: seems to trigger at 6 words if you set threshold to 5
+                    count = sum(m.word_count for m in filtered_messages)
                 elif str(rule.antispam_type) == "newline_spam":
                     count = sum(m.newline_count for m in filtered_messages)
                 elif str(rule.antispam_type) == "link_spam":
@@ -253,6 +255,8 @@ class AutomodMonitorCog(commands.Cog):
                         embed=warned_dm(self.bot, message, case),
                         user=message.author,
                         source_guild=message.guild,
+                        module="Automod",
+                        action="warning",
                     )
 
                     embeds.append(
@@ -301,6 +305,8 @@ class AutomodMonitorCog(commands.Cog):
                             embed=muted_dm(self.bot, message, case),
                             user=message.author,
                             source_guild=message.guild,
+                            module="Automod",
+                            action="muting",
                         )
 
                         embeds.append(
@@ -313,9 +319,21 @@ class AutomodMonitorCog(commands.Cog):
                                 dm_error=dm_error,
                             )
                         )
-                    except discord.Forbidden:
+                    except discord.Forbidden as e:
+                        await log_error(
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Forbidden error while muting @{message.author.name} ({message.author.id})",
+                            details=e.text,
+                        )
                         embeds.append(forbidden(self.bot, message.author))
-                    except discord.HTTPException:
+                    except discord.HTTPException as e:
+                        await log_error(
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unknown Discord error while muting @{message.author.name} ({message.author.id})",
+                            details=e.text,
+                        )
                         embeds.append(http_exception(self.bot, message.author))
 
                 elif (
@@ -339,6 +357,8 @@ class AutomodMonitorCog(commands.Cog):
                             embed=kicked_dm(self.bot, message, case),
                             user=message.author,
                             source_guild=message.guild,
+                            module="Automod",
+                            action="kicking",
                         )
 
                         embeds.append(
@@ -351,9 +371,21 @@ class AutomodMonitorCog(commands.Cog):
                                 dm_error=dm_error,
                             )
                         )
-                    except discord.Forbidden:
+                    except discord.Forbidden as e:
+                        await log_error(
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Forbidden error while kicking @{message.author.name} ({message.author.id})",
+                            details=e.text,
+                        )
                         embeds.append(forbidden(self.bot, message.author))
-                    except discord.HTTPException:
+                    except discord.HTTPException as e:
+                        await log_error(
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unknown Discord error while kicking @{message.author.name} ({message.author.id})",
+                            details=e.text,
+                        )
                         embeds.append(http_exception(self.bot, message.author))
                 elif str(punishment.action_type) == "ban":
                     # Ban user
@@ -378,6 +410,8 @@ class AutomodMonitorCog(commands.Cog):
                             embed=banned_dm(self.bot, message, case),
                             user=message.author,
                             source_guild=message.guild,
+                            module="Automod",
+                            action="banning",
                         )
 
                         embeds.append(
@@ -390,9 +424,21 @@ class AutomodMonitorCog(commands.Cog):
                                 dm_error=dm_error,
                             )
                         )
-                    except discord.Forbidden:
+                    except discord.Forbidden as e:
+                        await log_error(
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Forbidden error while banning @{message.author.name} ({message.author.id})",
+                            details=e.text,
+                        )
                         embeds.append(forbidden(self.bot, message.author))
-                    except discord.HTTPException:
+                    except discord.HTTPException as e:
+                        await log_error(
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unknown Discord error while banning @{message.author.name} ({message.author.id})",
+                            details=e.text,
+                        )
                         embeds.append(http_exception(self.bot, message.author))
 
                 if embeds:

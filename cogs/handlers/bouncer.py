@@ -9,6 +9,7 @@ from discord.ext import commands
 from lib.cases.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
 from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, warned_dm
+from lib.helpers.log_error import log_error
 from lib.helpers.send_dm import send_dm
 from lib.sql.sql import BouncerAction, BouncerRule, get_session
 
@@ -42,8 +43,12 @@ class BouncerMonitorCog(commands.Cog):
             try:
                 await self.event_handler(event)
             except Exception as e:
-                self.logger.error("Error processing event in bouncer:")
-                self.logger.exception(e)
+                await log_error(
+                    module="Bouncer",
+                    guild_id=event.guild.id if event.guild else None,
+                    error=f"An unknown error occurred while processing bouncer for member @{event.name} ({event.id})",
+                    exc=e,
+                )
             finally:
                 self.event_queue.task_done()
 
@@ -138,10 +143,20 @@ class BouncerMonitorCog(commands.Cog):
                             await member.add_roles(
                                 role, reason=f"Bouncer: {punishment.reason}"
                             )
-                        except discord.Forbidden:
-                            pass
-                        except discord.HTTPException:
-                            pass
+                        except discord.Forbidden as e:
+                            await log_error(
+                                module="Bouncer",
+                                guild_id=member.guild.id,
+                                error=f"Forbidden error while adding role {role.name} ({role.id}) to {member.name} ({member.id})",
+                                details=e.text,
+                            )
+                        except discord.HTTPException as e:
+                            await log_error(
+                                module="Bouncer",
+                                guild_id=member.guild.id,
+                                error=f"Unknown Discord error while adding role {role.name} ({role.id}) to {member.name} ({member.id})",
+                                details=e.text,
+                            )
                 elif str(punishment.action_type) == "remove_role":
                     role = member.guild.get_role(punishment.role_id)
 
@@ -150,10 +165,20 @@ class BouncerMonitorCog(commands.Cog):
                             await member.remove_roles(
                                 role, reason=f"Bouncer: {punishment.reason}"
                             )
-                        except discord.Forbidden:
-                            pass
-                        except discord.HTTPException:
-                            pass
+                        except discord.Forbidden as e:
+                            await log_error(
+                                module="Bouncer",
+                                guild_id=member.guild.id,
+                                error=f"Forbidden error while removing role {role.name} ({role.id}) from {member.name} ({member.id})",
+                                details=e.text,
+                            )
+                        except discord.HTTPException as e:
+                            await log_error(
+                                module="Bouncer",
+                                guild_id=member.guild.id,
+                                error=f"Unknown Discord error while removing role {role.name} ({role.id}) from {member.name} ({member.id})",
+                                details=e.text,
+                            )
                 elif str(punishment.action_type) == "toggle_role":
                     role = member.guild.get_role(punishment.role_id)
 
@@ -167,10 +192,20 @@ class BouncerMonitorCog(commands.Cog):
                                 await member.add_roles(
                                     role, reason=f"Bouncer: {punishment.reason}"
                                 )
-                        except discord.Forbidden:
-                            pass
-                        except discord.HTTPException:
-                            pass
+                        except discord.Forbidden as e:
+                            await log_error(
+                                module="Bouncer",
+                                guild_id=member.guild.id,
+                                error=f"Forbidden error while toggling role {role.name} ({role.id}) for {member.name} ({member.id})",
+                                details=e.text,
+                            )
+                        except discord.HTTPException as e:
+                            await log_error(
+                                module="Bouncer",
+                                guild_id=member.guild.id,
+                                error=f"Unknown Discord error while toggling role {role.name} ({role.id}) for {member.name} ({member.id})",
+                                details=e.text,
+                            )
                 elif str(punishment.action_type) == "warn":
                     case = await manager.create_case(
                         action="warn",
@@ -179,10 +214,12 @@ class BouncerMonitorCog(commands.Cog):
                         reason=f"Bouncer: {punishment.reason}",
                     )
 
-                    dm_success, dm_error = await send_dm(
+                    await send_dm(
                         embed=warned_dm(self.bot, member, case),
                         user=member,
                         source_guild=member.guild,
+                        module="Bouncer",
+                        action="warning",
                     )
                 elif str(punishment.action_type) == "mute":
                     # Check if user is already timed out
@@ -216,15 +253,27 @@ class BouncerMonitorCog(commands.Cog):
                             ),
                         )
 
-                        dm_success, dm_error = await send_dm(
+                        await send_dm(
                             embed=muted_dm(self.bot, member, case),
                             user=member,
                             source_guild=member.guild,
+                            module="Bouncer",
+                            action="muting",
                         )
-                    except discord.Forbidden:
-                        pass
-                    except discord.HTTPException:
-                        pass
+                    except discord.Forbidden as e:
+                        await log_error(
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Forbidden error while muting {member.name} ({member.id})",
+                            details=e.text,
+                        )
+                    except discord.HTTPException as e:
+                        await log_error(
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Unknown Discord error while muting {member.name} ({member.id})",
+                            details=e.text,
+                        )
 
                 elif (
                     str(punishment.action_type) == "kick"
@@ -243,15 +292,27 @@ class BouncerMonitorCog(commands.Cog):
                             reason=f"Bouncer: {punishment.reason}",
                         )
 
-                        dm_success, dm_error = await send_dm(
+                        await send_dm(
                             embed=kicked_dm(self.bot, member, case),
                             user=member,
                             source_guild=member.guild,
+                            module="Bouncer",
+                            action="kicking",
                         )
-                    except discord.Forbidden:
-                        pass
-                    except discord.HTTPException:
-                        pass
+                    except discord.Forbidden as e:
+                        await log_error(
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Forbidden error while kicking {member.name} ({member.id})",
+                            details=e.text,
+                        )
+                    except discord.HTTPException as e:
+                        await log_error(
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Unknown Discord error while kicking {member.name} ({member.id})",
+                            details=e.text,
+                        )
 
                 elif str(punishment.action_type) == "ban":
                     # Ban user
@@ -272,15 +333,27 @@ class BouncerMonitorCog(commands.Cog):
                             ),
                         )
 
-                        dm_success, dm_error = await send_dm(
+                        await send_dm(
                             embed=banned_dm(self.bot, member, case),
                             user=member,
                             source_guild=member.guild,
+                            module="Bouncer",
+                            action="banning",
                         )
-                    except discord.Forbidden:
-                        pass
-                    except discord.HTTPException:
-                        pass
+                    except discord.Forbidden as e:
+                        await log_error(
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Forbidden error while banning {member.name} ({member.id})",
+                            details=e.text,
+                        )
+                    except discord.HTTPException as e:
+                        await log_error(
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Unknown Discord error while banning {member.name} ({member.id})",
+                            details=e.text,
+                        )
 
         if triggers:
             guild_logger = GuildLogger(self.bot, member.guild)

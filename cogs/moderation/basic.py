@@ -4,14 +4,12 @@ from typing import TYPE_CHECKING
 import discord
 from discord import Message, app_commands
 from discord.ext import commands
-from discord.ui import View
 
 from lib.cases.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
 from lib.duration import DurationConverter
 from lib.embeds.dm_notifs import (
     banned_dm,
-    jump_button,
     kicked_dm,
     muted_dm,
     unbanned_dm,
@@ -23,6 +21,7 @@ from lib.embeds.mod_actions import (
     already_banned,
     already_muted,
     already_punishing,
+    already_unbanned,
     already_unmuted,
     banned,
     forbidden,
@@ -34,6 +33,8 @@ from lib.embeds.mod_actions import (
     warned,
 )
 from lib.helpers.hybrid_adapters import defer, stop_loading
+from lib.helpers.log_error import log_error
+from lib.helpers.send_dm import send_dm
 from lib.sql.sql import get_session
 
 if TYPE_CHECKING:
@@ -93,21 +94,13 @@ class ModerationBasicCog(commands.Cog):
                     reason=reason,
                 )
 
-            # Send DM
-            dm_success = True
-            dm_error = ""
-
-            try:
-                await member.send(
-                    embed=warned_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx.guild)),
-                )
-            except discord.Forbidden:
-                dm_success = False
-                dm_error = "User has DMs disabled."
-            except discord.HTTPException:
-                dm_success = False
-                dm_error = "Failed to send DM."
+            dm_success, dm_error = await send_dm(
+                embed=warned_dm(self.bot, ctx, case),
+                user=member,
+                source_guild=ctx.guild,
+                module="Moderation",
+                action="warning",
+            )
 
             guild_logger = GuildLogger(self.bot, ctx.guild)
             await guild_logger.titanium_warn(
@@ -219,9 +212,23 @@ class ModerationBasicCog(commands.Cog):
                     ),
                     reason=f"@{ctx.author.name}: {processed_reason}",
                 )
-            except discord.Forbidden:
+            except discord.Forbidden as e:
+                await log_error(
+                    module="Moderation",
+                    guild_id=member.guild.id,
+                    error=f"Forbidden error while muting @{member.name} ({member.id})",
+                    details=e.text,
+                )
+
                 return await ctx.reply(embed=forbidden(self.bot, member))
-            except discord.HTTPException:
+            except discord.HTTPException as e:
+                await log_error(
+                    module="Moderation",
+                    guild_id=member.guild.id,
+                    error=f"Unknown Discord error while muting @{member.name} ({member.id})",
+                    details=e.text,
+                )
+
                 return await ctx.reply(embed=http_exception(self.bot, member))
 
             # Create case
@@ -236,21 +243,13 @@ class ModerationBasicCog(commands.Cog):
                     duration=processed_duration,
                 )
 
-            # Send DM
-            dm_success = True
-            dm_error = ""
-
-            try:
-                await member.send(
-                    embed=muted_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx.guild)),
-                )
-            except discord.Forbidden:
-                dm_success = False
-                dm_error = "User has DMs disabled."
-            except discord.HTTPException:
-                dm_success = False
-                dm_error = "Failed to send DM."
+            dm_success, dm_error = await send_dm(
+                embed=muted_dm(self.bot, ctx, case),
+                user=member,
+                source_guild=ctx.guild,
+                module="Moderation",
+                action="muting",
+            )
 
             guild_logger = GuildLogger(self.bot, ctx.guild)
             await guild_logger.titanium_mute(
@@ -324,9 +323,23 @@ class ModerationBasicCog(commands.Cog):
             # Unmute user
             try:
                 await member.timeout(None, reason=f"Unmuted by @{ctx.author.name}")
-            except discord.Forbidden:
+            except discord.Forbidden as e:
+                await log_error(
+                    module="Moderation",
+                    guild_id=member.guild.id,
+                    error=f"Forbidden error while unmuting @{member.name} ({member.id})",
+                    details=e.text,
+                )
+
                 return await ctx.reply(embed=forbidden(self.bot, member))
-            except discord.HTTPException:
+            except discord.HTTPException as e:
+                await log_error(
+                    module="Moderation",
+                    guild_id=member.guild.id,
+                    error=f"Unknown Discord error while unmuting @{member.name} ({member.id})",
+                    details=e.text,
+                )
+
                 return await ctx.reply(embed=http_exception(self.bot, member))
 
             # Get last ummute case
@@ -342,21 +355,13 @@ class ModerationBasicCog(commands.Cog):
                 # Close case
                 case = await manager.close_case(case.id)
 
-            # Send DM
-            dm_success = True
-            dm_error = ""
-
-            try:
-                await member.send(
-                    embed=unmuted_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx.guild)),
-                )
-            except discord.Forbidden:
-                dm_success = False
-                dm_error = "User has DMs disabled."
-            except discord.HTTPException:
-                dm_success = False
-                dm_error = "Failed to send DM."
+            dm_success, dm_error = await send_dm(
+                embed=unmuted_dm(self.bot, ctx, case),
+                user=member,
+                source_guild=ctx.guild,
+                module="Moderation",
+                action="unmuting",
+            )
 
             guild_logger = GuildLogger(self.bot, ctx.guild)
             await guild_logger.titanium_unmute(
@@ -426,9 +431,23 @@ class ModerationBasicCog(commands.Cog):
             # Kick user
             try:
                 await member.kick(reason=f"@{ctx.author.name}: {reason}")
-            except discord.Forbidden:
+            except discord.Forbidden as e:
+                await log_error(
+                    module="Moderation",
+                    guild_id=member.guild.id,
+                    error=f"Forbidden error while kicking @{member.name} ({member.id})",
+                    details=e.text,
+                )
+
                 return await ctx.reply(embed=forbidden(self.bot, member))
-            except discord.HTTPException:
+            except discord.HTTPException as e:
+                await log_error(
+                    module="Moderation",
+                    guild_id=member.guild.id,
+                    error=f"Unknown Discord error while kicking @{member.name} ({member.id})",
+                    details=e.text,
+                )
+
                 return await ctx.reply(embed=http_exception(self.bot, member))
 
             # Create case
@@ -442,21 +461,13 @@ class ModerationBasicCog(commands.Cog):
                     reason=reason,
                 )
 
-            # Send DM
-            dm_success = True
-            dm_error = ""
-
-            try:
-                await member.send(
-                    embed=kicked_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx.guild)),
-                )
-            except discord.Forbidden:
-                dm_success = False
-                dm_error = "User has DMs disabled."
-            except discord.HTTPException:
-                dm_success = False
-                dm_error = "Failed to send DM."
+            dm_success, dm_error = await send_dm(
+                embed=kicked_dm(self.bot, ctx, case),
+                user=member,
+                source_guild=ctx.guild,
+                module="Moderation",
+                action="kicking",
+            )
 
             guild_logger = GuildLogger(self.bot, ctx.guild)
             await guild_logger.titanium_kick(
@@ -558,9 +569,23 @@ class ModerationBasicCog(commands.Cog):
                     user=user,
                     reason=f"@{ctx.author.name}: {processed_reason}",
                 )
-            except discord.Forbidden:
+            except discord.Forbidden as e:
+                await log_error(
+                    module="Moderation",
+                    guild_id=ctx.guild.id,
+                    error=f"Forbidden error while banning @{user.name} ({user.id})",
+                    details=e.text,
+                )
+
                 return await ctx.reply(embed=forbidden(self.bot, user))
-            except discord.HTTPException:
+            except discord.HTTPException as e:
+                await log_error(
+                    module="Moderation",
+                    guild_id=ctx.guild.id,
+                    error=f"Unknown Discord error while banning @{user.name} ({user.id})",
+                    details=e.text,
+                )
+
                 return await ctx.reply(embed=http_exception(self.bot, user))
 
             # Create case
@@ -575,21 +600,13 @@ class ModerationBasicCog(commands.Cog):
                     duration=processed_duration,
                 )
 
-            # Send DM
-            dm_success = True
-            dm_error = ""
-
-            try:
-                await user.send(
-                    embed=banned_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx.guild)),
-                )
-            except discord.Forbidden:
-                dm_success = False
-                dm_error = "User has DMs disabled."
-            except discord.HTTPException:
-                dm_success = False
-                dm_error = "Failed to send DM."
+            dm_success, dm_error = await send_dm(
+                embed=banned_dm(self.bot, ctx, case),
+                user=user,
+                source_guild=ctx.guild,
+                module="Moderation",
+                action="banning",
+            )
 
             guild_logger = GuildLogger(self.bot, ctx.guild)
             await guild_logger.titanium_ban(
@@ -654,14 +671,28 @@ class ModerationBasicCog(commands.Cog):
             try:
                 await ctx.guild.fetch_ban(user)
             except discord.NotFound:
-                return await ctx.reply(embed=already_banned(self.bot, user))
+                return await ctx.reply(embed=already_unbanned(self.bot, user))
 
             # Unban user
             try:
                 await ctx.guild.unban(user, reason=f"Unbanned by @{ctx.author.name}")
-            except discord.Forbidden:
+            except discord.Forbidden as e:
+                await log_error(
+                    module="Moderation",
+                    guild_id=ctx.guild.id,
+                    error=f"Forbidden error while unbanning @{user.name} ({user.id})",
+                    details=e.text,
+                )
+
                 return await ctx.reply(embed=forbidden(self.bot, user))
-            except discord.HTTPException:
+            except discord.HTTPException as e:
+                await log_error(
+                    module="Moderation",
+                    guild_id=ctx.guild.id,
+                    error=f"Unknown Discord error while unbanning @{user.name} ({user.id})",
+                    details=e.text,
+                )
+
                 return await ctx.reply(embed=http_exception(self.bot, user))
 
             # Get last ban case
@@ -677,21 +708,13 @@ class ModerationBasicCog(commands.Cog):
                 # Close case
                 case = await manager.close_case(case.id)
 
-            # Send DM
-            dm_success = True
-            dm_error = ""
-
-            try:
-                await user.send(
-                    embed=unbanned_dm(self.bot, ctx, case),
-                    view=View().add_item(jump_button(ctx.guild)),
-                )
-            except discord.Forbidden:
-                dm_success = False
-                dm_error = "User has DMs disabled."
-            except discord.HTTPException:
-                dm_success = False
-                dm_error = "Failed to send DM."
+            dm_success, dm_error = await send_dm(
+                embed=unbanned_dm(self.bot, ctx, case),
+                user=user,
+                source_guild=ctx.guild,
+                module="Moderation",
+                action="unbanning",
+            )
 
             guild_logger = GuildLogger(self.bot, ctx.guild)
             await guild_logger.titanium_unban(

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 import shortuuid
+from dotenv import load_dotenv
 from sqlalchemy import (
     URL,
     BigInteger,
@@ -520,27 +521,6 @@ class ModCaseComment(Base):
     )
 
 
-class ScheduledTask(Base):
-    __tablename__ = "scheduled_tasks"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    type: Mapped[str] = MappedColumn(String)
-    guild_id: Mapped[int] = MappedColumn(BigInteger)
-    user_id: Mapped[int] = MappedColumn(BigInteger)
-    channel_id: Mapped[int] = MappedColumn(BigInteger)
-    role_id: Mapped[int] = MappedColumn(BigInteger)
-    message_id: Mapped[int] = MappedColumn(BigInteger)
-    case_id: Mapped[str] = MappedColumn(
-        String(length=8), ForeignKey("mod_cases.id"), nullable=True
-    )
-    duration: Mapped[int] = MappedColumn(
-        BigInteger, nullable=True
-    )  # for refresh_mute - how long we need to extend mute by
-    case: Mapped["ModCase"] = relationship(
-        "ModCase", back_populates="scheduled_tasks", uselist=False
-    )
-    time_scheduled: Mapped[datetime] = MappedColumn(DateTime)
-
-
 # Game stats
 class Game(Base):
     __tablename__ = "games"
@@ -563,6 +543,41 @@ class GameStat(Base):
 
     # __table_args__ = (UniqueConstraint("user_id", "game_id", name="uq_user_game"),)
 
+
+class ScheduledTask(Base):
+    __tablename__ = "scheduled_tasks"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    type: Mapped[str] = MappedColumn(String)
+    guild_id: Mapped[int] = MappedColumn(BigInteger)
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    channel_id: Mapped[int] = MappedColumn(BigInteger)
+    role_id: Mapped[int] = MappedColumn(BigInteger)
+    message_id: Mapped[int] = MappedColumn(BigInteger)
+    case_id: Mapped[str] = MappedColumn(
+        String(length=8), ForeignKey("mod_cases.id"), nullable=True
+    )
+    duration: Mapped[int] = MappedColumn(
+        BigInteger, nullable=True
+    )  # for refresh_mute - how long we need to extend mute by
+    case: Mapped["ModCase"] = relationship(
+        "ModCase", back_populates="scheduled_tasks", uselist=False
+    )
+    time_scheduled: Mapped[datetime] = MappedColumn(DateTime)
+
+
+class ErrorLog(Base):
+    __tablename__ = "error_logs"
+    id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    guild_id: Mapped[int] = MappedColumn(BigInteger)
+    module: Mapped[str] = MappedColumn(String(length=100))
+    error: Mapped[str] = MappedColumn(String(length=512))
+    details: Mapped[str] = MappedColumn(String(length=1024), nullable=True)
+    time_occurred: Mapped[datetime] = MappedColumn(DateTime, default=datetime.now)
+
+
+load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = URL.create(
     "postgresql+asyncpg",

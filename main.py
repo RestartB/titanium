@@ -16,6 +16,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from lib.classes.automod_message import AutomodMessage
+from lib.helpers.log_error import log_error
 from lib.setup_logger import setup_logging
 
 # load the env variables
@@ -291,7 +292,7 @@ class TitaniumBot(commands.Bot):
             self.last_disconnect = datetime.datetime.now()
 
 
-async def get_prefix(bot: TitaniumBot, message: discord.Message):
+async def get_prefix(bot: "TitaniumBot", message: discord.Message):
     base = []
 
     if message.guild:
@@ -353,43 +354,62 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
 
     else:
+        error_id = await log_error(
+            module="Commands",
+            guild_id=ctx.guild.id if ctx.guild else None,
+            error=f"Unexpected error in prefix command /{ctx.command.qualified_name if ctx.command else 'unknown'}.",
+            exc=error,
+        )
+
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Error",
             description="An error occurred while executing the command. Please try again later.",
             colour=discord.Colour.red(),
         )
+
+        embed.add_field(
+            name="Error ID",
+            value=f"`{error_id}`",
+            inline=False,
+        )
+
         await ctx.reply(embed=embed)
 
         if not ctx.interaction:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
-
-        logging.error(f"Error in command {ctx.command}: {error}")
-        logging.exception(error)
 
 
 @bot.tree.error
 async def on_app_command_error(
     interaction: discord.Interaction, error: discord.app_commands.AppCommandError
 ):
-    if isinstance(error, discord.app_commands.CommandNotFound):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Command Not Found",
-            description="The command does not exist.",
-            colour=discord.Colour.red(),
-        )
-        await interaction.followup.send(embed=embed, ephemeral=True)
-    else:
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Command Error",
-            description="An error occurred while executing the command. Please try again later.",
-            colour=discord.Colour.red(),
-        )
-        await interaction.edit_original_response(embed=embed, view=None)
+    if not isinstance(error, discord.app_commands.CommandNotFound):
+        try:
+            error_id = await log_error(
+                module="Commands",
+                guild_id=interaction.guild.id if interaction.guild else None,
+                error=f"Unexpected error in interaction /{interaction.command.qualified_name if interaction.command else 'unknown'}.",
+                exc=error,
+            )
+        except Exception as log_exc:
+            error_id = "Unknown"
+            logging.error("Failed to log error to database.")
+            logging.exception(log_exc)
+            logging.exception(error)
 
-        logging.error(
-            f"Error in command {interaction.command.name if interaction.command else 'unknown'}"
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Interaction Error",
+            description="An error occurred while processing the interaction. Please try again later.",
+            colour=discord.Colour.red(),
         )
-        logging.exception(error)
+
+        embed.add_field(
+            name="Error ID",
+            value=f"`{error_id}`",
+            inline=False,
+        )
+
+        await interaction.edit_original_response(embed=embed, view=None)
 
 
 if __name__ == "__main__":

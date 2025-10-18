@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 import discord
 from discord import Colour, Embed, Webhook
 
+from lib.helpers.log_error import log_error
+
 if TYPE_CHECKING:
     from main import TitaniumBot
 
@@ -101,6 +103,11 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
             )
             return True
         except Exception as e:
-            logging.error("Feedback webhook error")
-            logging.exception(e)
+            await log_error(
+                module="Feedback Modal",
+                guild_id=self.interaction.guild.id if self.interaction.guild else None,
+                error="Unknown error",
+                store_err=False,
+                exc=e,
+            )
             return False

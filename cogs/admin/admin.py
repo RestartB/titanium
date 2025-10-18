@@ -26,6 +26,17 @@ class AdminCog(commands.Cog):
             ctx.command
         )  # send group help if does not match nay subcommands.
 
+    @admin_group.command(name="exc", hidden=True)
+    @commands.is_owner()
+    async def raise_exception(self, ctx: commands.Context["TitaniumBot"]) -> None:
+        """Command to raise an exception for testing error logging."""
+        await defer(self.bot, ctx, ephemeral=True)
+
+        try:
+            raise ValueError("This is a test exception for error logging.")
+        finally:
+            await stop_loading(self.bot, ctx)
+
     @admin_group.command(name="clear", hidden=True)
     @commands.is_owner()
     async def clear_console(self, ctx: commands.Context["TitaniumBot"]) -> None:

@@ -7,6 +7,7 @@ import discord
 from discord.ext import commands, tasks
 from sqlalchemy import func, select
 
+from lib.helpers.log_error import log_error
 from lib.sql.sql import ScheduledTask, get_session
 
 if TYPE_CHECKING:
@@ -44,8 +45,13 @@ class ScheduledTasksCog(commands.Cog):
             try:
                 await self.task_handler(task)
             except Exception as e:
-                self.logger.error("Error processing scheduled task:")
-                self.logger.exception(e)
+                await log_error(
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error="An internal unexpected error occurred while processing a scheduled task",
+                    details=f"Task ID: {task.id}\nType: {task.type}\nUser ID: {task.user_id}\nChannel ID: {task.channel_id}\nRole ID: {task.role_id}\nMessage ID: {task.message_id}\nCase ID: {task.case_id}",
+                    exc=e,
+                )
             finally:
                 try:
                     # Remove from database if exists
@@ -73,10 +79,18 @@ class ScheduledTasksCog(commands.Cog):
             if not member:
                 return
 
-            await member.timeout(
-                discord.utils.utcnow() + timedelta(seconds=task.duration),
-                reason=f"{task.case_id} - continuing mute",
-            )
+            try:
+                await member.timeout(
+                    discord.utils.utcnow() + timedelta(seconds=task.duration),
+                    reason=f"{task.case_id} - continuing mute",
+                )
+            except Exception as e:
+                await log_error(
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"Failed to refresh mute for {member.id} in guild {guild.name} ({guild.id})",
+                    exc=e,
+                )
         elif task.type == "perma_mute_refresh":
             # Perma mute refresh task
             guild = self.bot.get_guild(task.guild_id)
@@ -93,10 +107,12 @@ class ScheduledTasksCog(commands.Cog):
                     reason=f"{task.case_id} - continuing mute",
                 )
             except Exception as e:
-                self.logger.error(
-                    f"[TASKS] Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})"
+                await log_error(
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})",
+                    exc=e,
                 )
-                self.logger.exception(e)
         elif task.type == "unban":
             # Auto unban task
             guild = self.bot.get_guild(task.guild_id)
@@ -109,10 +125,12 @@ class ScheduledTasksCog(commands.Cog):
                     reason=f"{task.case_id} - ban expired",
                 )
             except Exception as e:
-                self.logger.error(
-                    f"[TASKS] Failed to auto unban {task.user_id} in guild {guild.name} ({guild.id})"
+                await log_error(
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"Failed to auto unban {task.user_id} in guild {guild.name} ({guild.id})",
+                    exc=e,
                 )
-                self.logger.exception(e)
 
     @tasks.loop(seconds=1)
     async def task_fetcher(self) -> None:

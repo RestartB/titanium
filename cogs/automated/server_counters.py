@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands, tasks
 from sqlalchemy import select
 
+from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
 from lib.sql.sql import ServerCounterChannel, get_session
 
@@ -59,10 +60,20 @@ class ServerCountersCog(commands.Cog):
                 await discord_channel.edit(
                     name=new_name, reason="Automated server counter update"
                 )
-            except discord.Forbidden:
-                continue
-            except discord.HTTPException:
-                continue
+            except discord.Forbidden as e:
+                await log_error(
+                    module="Server Counters",
+                    guild_id=guild.id,
+                    error=f"Forbidden error while updating counter channel {discord_channel.name} ({discord_channel.id})",
+                    details=e.text,
+                )
+            except discord.HTTPException as e:
+                await log_error(
+                    module="Server Counters",
+                    guild_id=guild.id,
+                    error=f"Unknown Discord error while updating counter channel {discord_channel.name} ({discord_channel.id})",
+                    details=e.text,
+                )
 
 
 async def setup(bot: "TitaniumBot"):

@@ -7,6 +7,7 @@ from discord.ext import commands
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from lib.helpers.log_error import log_error
 from lib.sql.sql import FireboardMessage, get_session
 
 if TYPE_CHECKING:
@@ -66,11 +67,27 @@ class FireboardCog(commands.Cog):
                     await self._reaction_add_remove(event[0], event[1])
                 elif isinstance(event, discord.Message):
                     await self.reaction_clear_handler(event)
-                elif isinstance(event, discord.Reaction):
-                    await self.reaction_emoji_clear_handler(event)
             except Exception as e:
-                self.logger.error("Error processing event in fireboard:")
-                self.logger.exception(e)
+                if isinstance(
+                    event,
+                    (discord.RawMessageUpdateEvent, discord.RawMessageDeleteEvent),
+                ):
+                    guild_id = event.guild_id or 0
+                elif isinstance(event, discord.Reaction):
+                    guild_id = event.message.guild.id if event.message.guild else 0
+                elif isinstance(event, tuple) and len(event) == 2:
+                    guild_id = (
+                        event[0].message.guild.id if event[0].message.guild else 0
+                    )
+                elif isinstance(event, discord.Message):
+                    guild_id = event.guild.id if event.guild else 0
+
+                await log_error(
+                    module="Fireboard",
+                    guild_id=guild_id or None,
+                    error="An unknown error occurred while processing a fireboard event",
+                    exc=e,
+                )
             finally:
                 self.event_queue.task_done()
 
@@ -298,8 +315,13 @@ class FireboardCog(commands.Cog):
                     self.bot.fireboard_messages[payload.guild_id].remove(message)
                     continue
                 except Exception as e:
-                    self.logger.error("Error editing fireboard message:")
-                    self.logger.exception(e)
+                    await log_error(
+                        module="Fireboard",
+                        guild_id=payload.guild_id,
+                        error="An unknown error occurred while processing a fireboard message edit",
+                        details=f"Message ID: {payload.message_id}",
+                        exc=e,
+                    )
                     continue
 
     async def message_delete_handler(self, payload: discord.RawMessageDeleteEvent):
@@ -347,8 +369,13 @@ class FireboardCog(commands.Cog):
                     self.bot.fireboard_messages[payload.guild_id].remove(message)
                     continue
                 except Exception as e:
-                    self.logger.error("Error deleting fireboard message:")
-                    self.logger.exception(e)
+                    await log_error(
+                        module="Fireboard",
+                        guild_id=message.guild_id,
+                        error="An unknown error occurred while processing a fireboard message deletion",
+                        details=f"Message ID: {message.id}",
+                        exc=e,
+                    )
                     continue
 
     async def reaction_clear_handler(self, message: discord.Message):
@@ -394,8 +421,13 @@ class FireboardCog(commands.Cog):
 
                     self.bot.fireboard_messages[message.guild_id].remove(message)
                 except Exception as e:
-                    self.logger.error("Error deleting fireboard message:")
-                    self.logger.exception(e)
+                    await log_error(
+                        module="Fireboard",
+                        guild_id=message.guild_id,
+                        error="An unknown error occurred while processing a fireboard message deletion",
+                        details=f"Message ID: {message.id}",
+                        exc=e,
+                    )
                     continue
 
     async def reaction_emoji_clear_handler(self, reaction: discord.Reaction):
@@ -448,8 +480,13 @@ class FireboardCog(commands.Cog):
                         message
                     )
                 except Exception as e:
-                    self.logger.error("Error deleting fireboard message:")
-                    self.logger.exception(e)
+                    await log_error(
+                        module="Fireboard",
+                        guild_id=reaction.message.guild.id,
+                        error="An unknown error occurred while processing a fireboard reaction emoji clear event",
+                        details=f"Message ID: {reaction.message.id}",
+                        exc=e,
+                    )
                     continue
 
     # Listen for reactions added
