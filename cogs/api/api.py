@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from aiohttp import web
 from discord.ext import commands
 from pydantic import ValidationError
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
 
 from lib.api.endpoints import (
     automod_info,
@@ -31,6 +31,7 @@ from lib.helpers.resolve_counter import resolve_counter
 from lib.sql.sql import (
     AutomodAction,
     AutomodRule,
+    ErrorLog,
     FireboardBoard,
     GuildAutomodSettings,
     GuildConfessionSettings,
@@ -76,9 +77,7 @@ class APICog(commands.Cog):
             self.site = web.TCPSite(self.runner, self.host, self.port)
             await self.site.start()
 
-            self.logger.info(
-                f"API server started successfully on {self.host}:{self.port}"
-            )
+            self.logger.info(f"API server started successfully on {self.host}:{self.port}")
         except Exception as e:
             self.logger.error(f"Failed to start API server: {e}")
             exit(1)
@@ -94,17 +93,12 @@ class APICog(commands.Cog):
         self.app.router.add_get("/stats", self.stats)
         self.app.router.add_get("/user/{user_id}/guilds", self.mutual_guilds)
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
-        self.app.router.add_get("/guild/{guild_id}/perms/{user_id}", self.perm_check)
+        self.app.router.add_get("/guild/{guild_id}/error", self.guild_errors)
+        self.app.router.add_get("/guild/{guild_id}/perms/{user_id}", self.guild_perm_check)
         self.app.router.add_get("/guild/{guild_id}/settings", self.guild_settings)
-        self.app.router.add_put(
-            "/guild/{guild_id}/settings", self.update_guild_settings
-        )
-        self.app.router.add_get(
-            "/guild/{guild_id}/module/{module_name}", self.module_get
-        )
-        self.app.router.add_put(
-            "/guild/{guild_id}/module/{module_name}", self.module_update
-        )
+        self.app.router.add_put("/guild/{guild_id}/settings", self.update_guild_settings)
+        self.app.router.add_get("/guild/{guild_id}/module/{module_name}", self.module_get)
+        self.app.router.add_put("/guild/{guild_id}/module/{module_name}", self.module_update)
 
     async def index(self, request: web.Request) -> web.Response:
         return web.json_response({"version": "Titanium API v2"})
@@ -131,13 +125,9 @@ class APICog(commands.Cog):
                     self.bot.connect_time.timestamp() if self.bot.connect_time else None
                 ),
                 "last_disconnect": (
-                    self.bot.last_disconnect.timestamp()
-                    if self.bot.last_disconnect
-                    else None
+                    self.bot.last_disconnect.timestamp() if self.bot.last_disconnect else None
                 ),
-                "last_resume": (
-                    self.bot.last_resume.timestamp() if self.bot.last_resume else None
-                ),
+                "last_resume": (self.bot.last_resume.timestamp() if self.bot.last_resume else None),
             }
         )
 
@@ -204,9 +194,7 @@ class APICog(commands.Cog):
                                 "type": str(channel.type),
                                 "position": x,
                                 "category": (
-                                    str(channel.category_id)
-                                    if channel.category_id
-                                    else None
+                                    str(channel.category_id) if channel.category_id else None
                                 ),
                             }
                             for x, channel in enumerate(channels)
@@ -225,7 +213,60 @@ class APICog(commands.Cog):
             }
         )
 
-    async def perm_check(self, request: web.Request) -> web.Response:
+    async def guild_errors(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        limit = max(min(int(request.query.get("limit", 50)), 100), 1)
+        offset = max(int(request.query.get("offset", 0)), 0)
+
+        async with get_session() as session:
+            # Get total count
+            total_result = await session.execute(
+                select(func.count()).select_from(ErrorLog).where(ErrorLog.guild_id == guild.id)
+            )
+            total_count = total_result.scalar() or 0
+
+            if offset >= total_count:
+                return web.json_response(
+                    {
+                        "total_count": total_count,
+                        "errors": [],
+                    }
+                )
+
+            # Get errors from DB
+            result = await session.execute(
+                select(ErrorLog)
+                .where(ErrorLog.guild_id == guild.id)
+                .order_by(ErrorLog.time_occurred.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+            errors = result.scalars().all()
+
+        return web.json_response(
+            {
+                "total_count": total_count,
+                "errors": [
+                    {
+                        "id": str(error.id),
+                        "module": error.module,
+                        "error": error.error,
+                        "details": error.details,
+                        "time_occurred": error.time_occurred.isoformat(),
+                    }
+                    for error in errors
+                ],
+            }
+        )
+
+    async def guild_perm_check(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
         if not guild_id or not guild_id.isdigit():
             return web.json_response({"error": "guild_id required"}, status=400)
@@ -335,9 +376,7 @@ class APICog(commands.Cog):
                 {"error": "Validation failed", "details": e.errors()}, status=400
             )
         except ValueError as e:
-            return web.json_response(
-                {"error": "Invalid data", "message": str(e)}, status=400
-            )
+            return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
 
         async with get_session() as session:
             db_config = await session.get(GuildSettings, guild.id)
@@ -351,9 +390,7 @@ class APICog(commands.Cog):
             db_config.automod_enabled = validated_settings.modules.automod
             db_config.logging_enabled = validated_settings.modules.logging
             db_config.fireboard_enabled = validated_settings.modules.fireboard
-            db_config.server_counters_enabled = (
-                validated_settings.modules.server_counters
-            )
+            db_config.server_counters_enabled = validated_settings.modules.server_counters
             db_config.loading_reaction = validated_settings.settings.loading_reaction
 
             prefixes.prefixes = validated_settings.prefixes
@@ -372,9 +409,7 @@ class APICog(commands.Cog):
         module_name = module_name.lower() if module_name else None
 
         if not guild_id or not guild_id.isdigit() or not module_name:
-            return web.json_response(
-                {"error": "guild_id and module_name required"}, status=400
-            )
+            return web.json_response({"error": "guild_id and module_name required"}, status=400)
 
         guild = self.bot.get_guild(int(guild_id))
         if not guild:
@@ -407,16 +442,12 @@ class APICog(commands.Cog):
         await self.bot.wait_until_ready()
 
         guild_id_str = request.match_info.get("guild_id")
-        guild_id = (
-            int(guild_id_str) if guild_id_str and guild_id_str.isdigit() else None
-        )
+        guild_id = int(guild_id_str) if guild_id_str and guild_id_str.isdigit() else None
         module_name = request.match_info.get("module_name")
         module_name = module_name.lower() if module_name else None
 
         if not guild_id or not module_name:
-            return web.json_response(
-                {"error": "guild_id and module_name required"}, status=400
-            )
+            return web.json_response({"error": "guild_id and module_name required"}, status=400)
 
         guild = self.bot.get_guild(int(guild_id))
         if not guild:
@@ -440,13 +471,8 @@ class APICog(commands.Cog):
                     {"error": "Validation failed", "details": e.errors()}, status=400
                 )
             except ValueError as e:
-                return web.json_response(
-                    {"error": "Invalid data", "message": str(e)}, status=400
-                )
-            if (
-                guild_config.confession_enabled
-                and not validated_config.confession_channel_id
-            ):
+                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
+            if guild_config.confession_enabled and not validated_config.confession_channel_id:
                 return web.json_response(
                     {
                         "error": "Invalid data",
@@ -460,9 +486,7 @@ class APICog(commands.Cog):
                     db_config = GuildConfessionSettings(guild_id=guild.id)
 
                 if validated_config.confession_channel_id is not None:
-                    db_config.confession_channel_id = int(
-                        validated_config.confession_channel_id
-                    )
+                    db_config.confession_channel_id = int(validated_config.confession_channel_id)
                 if validated_config.confession_log_channel_id is not None:
                     db_config.confession_log_channel_id = int(
                         validated_config.confession_log_channel_id
@@ -480,9 +504,7 @@ class APICog(commands.Cog):
                     {"error": "Validation failed", "details": e.errors()}, status=400
                 )
             except ValueError as e:
-                return web.json_response(
-                    {"error": "Invalid data", "message": str(e)}, status=400
-                )
+                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
 
             async with get_session() as session:
                 db_config = await session.get(GuildModerationSettings, guild.id)
@@ -506,14 +528,10 @@ class APICog(commands.Cog):
                     {"error": "Validation failed", "details": e.errors()}, status=400
                 )
             except ValueError as e:
-                return web.json_response(
-                    {"error": "Invalid data", "message": str(e)}, status=400
-                )
+                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
 
             async with get_session() as session:
-                automod_settings = await session.get(
-                    GuildAutomodSettings, int(guild_id)
-                )
+                automod_settings = await session.get(GuildAutomodSettings, int(guild_id))
 
                 if not automod_settings:
                     return web.json_response(
@@ -534,9 +552,7 @@ class APICog(commands.Cog):
                             if rule_model.id is None:
                                 rule_model.id = str(uuid.uuid4())
 
-                            existing_rule = await session.get(
-                                AutomodRule, rule_model.id
-                            )
+                            existing_rule = await session.get(AutomodRule, rule_model.id)
                             if existing_rule and existing_rule.guild_id != guild_id:
                                 rule_model.id = str(uuid.uuid4())
                             else:
@@ -545,9 +561,7 @@ class APICog(commands.Cog):
                 await session.execute(
                     delete(AutomodAction).where(AutomodAction.guild_id == guild_id)
                 )
-                await session.execute(
-                    delete(AutomodRule).where(AutomodRule.guild_id == guild_id)
-                )
+                await session.execute(delete(AutomodRule).where(AutomodRule.guild_id == guild_id))
 
                 for detection_config in [
                     validated_config.badword_detection,
@@ -578,9 +592,7 @@ class APICog(commands.Cog):
                     {"error": "Validation failed", "details": e.errors()}, status=400
                 )
             except ValueError as e:
-                return web.json_response(
-                    {"error": "Invalid data", "message": str(e)}, status=400
-                )
+                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
 
             async with get_session() as session:
                 db_config = await session.get(GuildLoggingSettings, guild.id)
@@ -609,9 +621,7 @@ class APICog(commands.Cog):
                     {"error": "Validation failed", "details": e.errors()}, status=400
                 )
             except ValueError as e:
-                return web.json_response(
-                    {"error": "Invalid data", "message": str(e)}, status=400
-                )
+                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
 
             async with get_session() as session:
                 db_config = await session.get(GuildSettings, guild.id)
@@ -648,34 +658,26 @@ class APICog(commands.Cog):
                             threshold=new_board.threshold,
                             ignore_bots=new_board.ignore_bots,
                             ignore_self_reactions=new_board.ignore_self_reactions,
-                            ignored_roles=[
-                                int(role_id) for role_id in new_board.ignored_roles
-                            ],
+                            ignored_roles=[int(role_id) for role_id in new_board.ignored_roles],
                             ignored_channels=[
-                                int(channel_id)
-                                for channel_id in new_board.ignored_channels
+                                int(channel_id) for channel_id in new_board.ignored_channels
                             ],
                         )
                         session.add(board)
                     else:
-                        existing_board = await session.get(
-                            FireboardBoard, int(new_board.id)
-                        )
+                        existing_board = await session.get(FireboardBoard, int(new_board.id))
 
                         if existing_board and existing_board.guild_id == guild.id:
                             existing_board.channel_id = int(new_board.channel_id)
                             existing_board.reaction = new_board.reaction
                             existing_board.threshold = new_board.threshold
                             existing_board.ignore_bots = new_board.ignore_bots
-                            existing_board.ignore_self_reactions = (
-                                new_board.ignore_self_reactions
-                            )
+                            existing_board.ignore_self_reactions = new_board.ignore_self_reactions
                             existing_board.ignored_roles = [
                                 int(role_id) for role_id in new_board.ignored_roles
                             ]
                             existing_board.ignored_channels = [
-                                int(channel_id)
-                                for channel_id in new_board.ignored_channels
+                                int(channel_id) for channel_id in new_board.ignored_channels
                             ]
                             session.add(existing_board)
                         else:
@@ -686,12 +688,9 @@ class APICog(commands.Cog):
                                 threshold=new_board.threshold,
                                 ignore_bots=new_board.ignore_bots,
                                 ignore_self_reactions=new_board.ignore_self_reactions,
-                                ignored_roles=[
-                                    int(role_id) for role_id in new_board.ignored_roles
-                                ],
+                                ignored_roles=[int(role_id) for role_id in new_board.ignored_roles],
                                 ignored_channels=[
-                                    int(channel_id)
-                                    for channel_id in new_board.ignored_channels
+                                    int(channel_id) for channel_id in new_board.ignored_channels
                                 ],
                             )
                             session.add(board)
@@ -707,9 +706,7 @@ class APICog(commands.Cog):
                     {"error": "Validation failed", "details": e.errors()}, status=400
                 )
             except ValueError as e:
-                return web.json_response(
-                    {"error": "Invalid data", "message": str(e)}, status=400
-                )
+                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
 
             async with get_session() as session:
                 db_config = await session.get(GuildSettings, guild.id)
@@ -720,9 +717,7 @@ class APICog(commands.Cog):
                     )
 
                 # Get existing configs
-                existing_config = await session.get(
-                    GuildServerCounterSettings, guild.id
-                )
+                existing_config = await session.get(GuildServerCounterSettings, guild.id)
 
                 if not existing_config:
                     existing_config = GuildServerCounterSettings(guild_id=guild.id)
@@ -733,9 +728,7 @@ class APICog(commands.Cog):
 
                 for new_channel in validated_config.channels:
                     if new_channel.id is None:
-                        new_name = resolve_counter(
-                            guild, new_channel.type, new_channel.name
-                        )
+                        new_name = resolve_counter(guild, new_channel.type, new_channel.name)
 
                         discord_channel = await guild.create_voice_channel(
                             name=new_name,
@@ -759,9 +752,7 @@ class APICog(commands.Cog):
                             existing_channel.count_type = new_channel.type
                             session.add(existing_channel)
                         else:
-                            new_name = resolve_counter(
-                                guild, new_channel.type, new_channel.name
-                            )
+                            new_name = resolve_counter(guild, new_channel.type, new_channel.name)
 
                             discord_channel = await guild.create_voice_channel(
                                 name=new_name,
