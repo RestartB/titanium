@@ -18,9 +18,7 @@ class PaginationView(View):
         self.first_button.disabled = True
         self.prev_button.disabled = True
 
-        await interaction.edit_original_response(
-            embed=self.embeds[self.current_page], view=self
-        )
+        await interaction.edit_original_response(embed=self.embeds[self.current_page], view=self)
 
     # Prev Page
     @button(emoji="⏪", style=ButtonStyle.primary, custom_id="prev")
@@ -31,9 +29,7 @@ class PaginationView(View):
             self.first_button.disabled = True
             self.prev_button.disabled = True
 
-        await interaction.edit_original_response(
-            embed=self.embeds[self.current_page], view=self
-        )
+        await interaction.edit_original_response(embed=self.embeds[self.current_page], view=self)
 
     # Page count
     @button(style=ButtonStyle.gray, custom_id="count", disabled=True)
@@ -49,9 +45,7 @@ class PaginationView(View):
             self.next_button.disabled = True
             self.last_button.disabled = True
 
-        await interaction.edit_original_response(
-            embed=self.embeds[self.current_page], view=self
-        )
+        await interaction.edit_original_response(embed=self.embeds[self.current_page], view=self)
 
     # Last page
     @button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
@@ -61,6 +55,4 @@ class PaginationView(View):
         self.next_button.disabled = True
         self.last_button.disabled = True
 
-        await interaction.edit_original_response(
-            embed=self.embeds[self.current_page], view=self
-        )
+        await interaction.edit_original_response(embed=self.embeds[self.current_page], view=self)

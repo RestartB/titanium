@@ -48,9 +48,7 @@ class GameCog(commands.Cog):
         """Send the command Group Help, if no sub commands matched."""
         await ctx.send_help(ctx)
 
-    @game.command(
-        name="stats", aliases=["stat"], description="Get the all games stats."
-    )
+    @game.command(name="stats", aliases=["stat"], description="Get the all games stats.")
     @app_commands.describe(user="Whos game stats to be show.")
     async def game_stats(
         self,
@@ -74,9 +72,7 @@ class GameCog(commands.Cog):
 
             if gid:
                 played, win = user_stats.get(gid, (0, 0))
-                lines.append(
-                    f"- **{game_name.capitalize()}** → Played: `{played}` | Wins: `{win}`"
-                )
+                lines.append(f"- **{game_name.capitalize()}** → Played: `{played}` | Wins: `{win}`")
 
         embed = Embed(
             title="Game Stats",
@@ -130,9 +126,7 @@ class GameCog(commands.Cog):
                 title="Invalid Choice",
                 description="Please pick **Head** or **Tails**.",
             )
-            setattr(
-                ctx, "valid_invoke", False
-            )  # setting this so we dont inc the played by +1
+            setattr(ctx, "valid_invoke", False)  # setting this so we dont inc the played by +1
             await ctx.reply(embed=embed)
 
             return
@@ -168,18 +162,14 @@ class GameCog(commands.Cog):
         if valid_invoke and ctx.command:
             await self.record_game_result(ctx.author.id, ctx.command.name, won=win)
 
-    async def record_game_result(
-        self, user_id: int, game_name: str, won: bool = False
-    ) -> None:
+    async def record_game_result(self, user_id: int, game_name: str, won: bool = False) -> None:
         """Insert or update a user's stats for a game."""
         game_id = self.game_cache.get(game_name)
         if not game_id:
             raise ValueError(f"Game '{game_name}' not found in cache.")
 
         async with get_session() as session:
-            stmt = select(GameStat).where(
-                GameStat.user_id == user_id, GameStat.game_id == game_id
-            )
+            stmt = select(GameStat).where(GameStat.user_id == user_id, GameStat.game_id == game_id)
             result = await session.execute(stmt)
             stat = result.scalar_one_or_none()
 

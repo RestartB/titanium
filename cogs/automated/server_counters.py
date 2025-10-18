@@ -44,22 +44,16 @@ class ServerCountersCog(commands.Cog):
                 continue
 
             discord_channel = guild.get_channel(count_channel.id)
-            if not discord_channel or not isinstance(
-                discord_channel, discord.VoiceChannel
-            ):
+            if not discord_channel or not isinstance(discord_channel, discord.VoiceChannel):
                 continue
 
-            new_name = resolve_counter(
-                guild, count_channel.count_type, count_channel.name
-            )
+            new_name = resolve_counter(guild, count_channel.count_type, count_channel.name)
 
             if discord_channel.name == new_name:
                 continue
 
             try:
-                await discord_channel.edit(
-                    name=new_name, reason="Automated server counter update"
-                )
+                await discord_channel.edit(name=new_name, reason="Automated server counter update")
             except discord.Forbidden as e:
                 await log_error(
                     module="Server Counters",

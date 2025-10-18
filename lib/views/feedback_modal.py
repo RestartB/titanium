@@ -20,9 +20,7 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
         description="Select feedback type.",
         component=discord.ui.Select(
             options=[
-                discord.SelectOption(
-                    emoji="🐞", label="Bug Report", value="🐞 Bug Report"
-                ),
+                discord.SelectOption(emoji="🐞", label="Bug Report", value="🐞 Bug Report"),
                 discord.SelectOption(
                     emoji="✨", label="Feature Request", value="✨ Feature Request"
                 ),

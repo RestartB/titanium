@@ -63,9 +63,7 @@ class ModerationCasesCog(commands.Cog):
             if user:
                 if ctx.channel.permissions_for(ctx.author).manage_guild:
                     cases_list = await case_manager.get_cases_by_user(user.id)
-                    embeds = await self._build_embeds(
-                        cases_list, target=user, user=ctx.author
-                    )
+                    embeds = await self._build_embeds(cases_list, target=user, user=ctx.author)
 
                     if embeds == []:
                         return await ctx.reply(
@@ -125,9 +123,7 @@ class ModerationCasesCog(commands.Cog):
 
         try:
             async with get_session() as session:
-                case = await GuildModCaseManager(ctx.guild, session).get_case_by_id(
-                    case_id
-                )
+                case = await GuildModCaseManager(ctx.guild, session).get_case_by_id(case_id)
 
             # Get creator
             creator = self.bot.get_user(case.creator_user_id)  # pyright: ignore[reportArgumentType]
@@ -152,9 +148,7 @@ class ModerationCasesCog(commands.Cog):
     @commands.has_permissions(manage_guild=True)
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(case_id="The case ID to delete.")
-    async def view_case(
-        self, ctx: commands.Context["TitaniumBot"], case_id: str
-    ) -> None | Message:
+    async def view_case(self, ctx: commands.Context["TitaniumBot"], case_id: str) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
 

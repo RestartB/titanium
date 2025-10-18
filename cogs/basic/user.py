@@ -38,15 +38,11 @@ class UserCommandsCog(commands.Cog):
 
         view = View()
         for format_name, format_url in formats.items():
-            view.add_item(
-                Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link)
-            )
+            view.add_item(Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link))
 
         await ctx.reply(embed=embed, view=view)
 
-    @commands.hybrid_command(
-        name="server-pfp", description="Get a user's server profile picture."
-    )
+    @commands.hybrid_command(name="server-pfp", description="Get a user's server profile picture.")
     @commands.guild_only()
     async def server_pfp(
         self, ctx: commands.Context["TitaniumBot"], user: Optional[Member]
@@ -76,16 +72,12 @@ class UserCommandsCog(commands.Cog):
             view = View()
             for format_name, format_url in formats.items():
                 view.add_item(
-                    Button(
-                        label=f"{format_name}", url=format_url, style=ButtonStyle.link
-                    )
+                    Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link)
                 )
 
             await ctx.reply(embed=embed, view=view)
         else:
-            embed.description = (
-                f"{user.mention} does not have a server profile picture."
-            )
+            embed.description = f"{user.mention} does not have a server profile picture."
             await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="banner", description="Get the banner of a user.")
@@ -121,16 +113,12 @@ class UserCommandsCog(commands.Cog):
             view = View()
             for format_name, format_url in formats.items():
                 view.add_item(
-                    Button(
-                        label=f"{format_name}", url=format_url, style=ButtonStyle.link
-                    )
+                    Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link)
                 )
 
             await ctx.reply(embed=e, view=view)
         else:
-            e.description = (
-                f"{str(self.bot.error_emoji)} This user does not have a banner."
-            )
+            e.description = f"{str(self.bot.error_emoji)} This user does not have a banner."
             e.colour = Colour.red()
 
             await ctx.reply(embed=e)

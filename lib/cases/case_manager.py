@@ -161,9 +161,7 @@ class GuildModCaseManager:
         await self.session.delete(case)
         await self.session.commit()
 
-    async def _schedule_mute_refreshes(
-        self, case: ModCase, duration: timedelta
-    ) -> None:
+    async def _schedule_mute_refreshes(self, case: ModCase, duration: timedelta) -> None:
         """Schedule refresh tasks for mutes longer than 28 days"""
         if duration.total_seconds() <= 28 * 24 * 60 * 60:
             return

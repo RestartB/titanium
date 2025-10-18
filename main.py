@@ -233,9 +233,7 @@ class TitaniumBot(commands.Bot):
         try:
             success_emoji = os.getenv("SUCCESS_EMOJI")
             if success_emoji and success_emoji.strip() != "":
-                self.success_emoji = await self.fetch_application_emoji(
-                    int(success_emoji)
-                )
+                self.success_emoji = await self.fetch_application_emoji(int(success_emoji))
             else:
                 self.success_emoji = "✅"
 
@@ -247,9 +245,7 @@ class TitaniumBot(commands.Bot):
 
             loading_emoji = os.getenv("LOADING_EMOJI")
             if loading_emoji and loading_emoji.strip() != "":
-                self.loading_emoji = await self.fetch_application_emoji(
-                    int(loading_emoji)
-                )
+                self.loading_emoji = await self.fetch_application_emoji(int(loading_emoji))
             else:
                 self.loading_emoji = "⏳"
 
@@ -266,9 +262,7 @@ class TitaniumBot(commands.Bot):
 
         init_logger.info("Loading cogs...")
         # Find all cogs in command dir
-        for filename in glob(
-            os.path.join("cogs", "**"), recursive=True, include_hidden=False
-        ):
+        for filename in glob(os.path.join("cogs", "**"), recursive=True, include_hidden=False):
             if not os.path.isdir(filename):
                 # Determine if file is a python file
                 if filename.endswith(".py") and not filename.startswith("."):
@@ -320,9 +314,7 @@ async def on_ready():
 
 @bot.event
 async def on_command_error(ctx: commands.Context, error: commands.CommandError):
-    if isinstance(error, commands.CommandNotFound) or isinstance(
-        error, commands.NotOwner
-    ):
+    if isinstance(error, commands.CommandNotFound) or isinstance(error, commands.NotOwner):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Not Found",
             description=f"The command `{ctx.invoked_with}` does not exist.",

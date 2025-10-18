@@ -188,12 +188,8 @@ class GuildAutomodSettings(Base):
 
 class AutomodRule(Base):
     __tablename__ = "automod_rules"
-    id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-    guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("guild_automod_settings.guild_id")
-    )
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    guild_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("guild_automod_settings.guild_id"))
     rule_type: Mapped[str] = MappedColumn(String(length=32))
     antispam_type: Mapped[str] = MappedColumn(String(length=32), nullable=True)
     rule_name: Mapped[str] = MappedColumn(String(length=100), nullable=True)
@@ -223,9 +219,7 @@ class AutomodAction(Base):
         BigInteger,
         ForeignKey("guild_automod_settings.guild_id"),
     )
-    rule_id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), ForeignKey("automod_rules.id")
-    )
+    rule_id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), ForeignKey("automod_rules.id"))
     rule_type: Mapped[str] = MappedColumn(String(length=32))
     action_type: Mapped[str] = MappedColumn(String(length=32))
     duration: Mapped[int] = MappedColumn(BigInteger, nullable=True)
@@ -252,12 +246,8 @@ class GuildBouncerSettings(Base):
 
 class BouncerRule(Base):
     __tablename__ = "bouncer_rules"
-    id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-    guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("guild_bouncer_settings.guild_id")
-    )
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    guild_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("guild_bouncer_settings.guild_id"))
     rule_name: Mapped[str] = MappedColumn(String(length=100), nullable=True)
     enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
     criteria: Mapped[list["BouncerCriteria"]] = relationship(
@@ -280,9 +270,7 @@ class BouncerRule(Base):
 class BouncerCriteria(Base):
     __tablename__ = "bouncer_criteria"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
-    rule_id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), ForeignKey("bouncer_rules.id")
-    )
+    rule_id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), ForeignKey("bouncer_rules.id"))
     criteria_type: Mapped[str] = MappedColumn(String(length=32))
     account_age: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     words: Mapped[list[str]] = MappedColumn(
@@ -298,9 +286,7 @@ class BouncerCriteria(Base):
 class BouncerAction(Base):
     __tablename__ = "bouncer_actions"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
-    rule_id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), ForeignKey("bouncer_rules.id")
-    )
+    rule_id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), ForeignKey("bouncer_rules.id"))
     action_type: Mapped[str] = MappedColumn(String(length=32))
 
     # Actions with duration
@@ -447,9 +433,7 @@ class FireboardMessage(Base):
     channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     fireboard_message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    fireboard_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("fireboard_boards.id")
-    )
+    fireboard_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("fireboard_boards.id"))
     fireboard: Mapped["FireboardBoard"] = relationship(
         "FireboardBoard", back_populates="messages", uselist=False
     )
@@ -484,9 +468,7 @@ class ServerCounterChannel(Base):
 
 class ModCase(Base):
     __tablename__ = "mod_cases"
-    id: Mapped[str] = MappedColumn(
-        String(length=8), primary_key=True, default=generate_short_uuid
-    )
+    id: Mapped[str] = MappedColumn(String(length=8), primary_key=True, default=generate_short_uuid)
     type: Mapped[str] = MappedColumn(String(length=32))
     guild_id: Mapped[int] = MappedColumn(BigInteger)
     user_id: Mapped[int] = MappedColumn(BigInteger)
@@ -516,9 +498,7 @@ class ModCaseComment(Base):
     user_id: Mapped[int] = MappedColumn(BigInteger)
     comment: Mapped[str] = MappedColumn(String(length=512))
     time_created: Mapped[datetime] = MappedColumn(DateTime)
-    case: Mapped["ModCase"] = relationship(
-        "ModCase", back_populates="comments", uselist=False
-    )
+    case: Mapped["ModCase"] = relationship("ModCase", back_populates="comments", uselist=False)
 
 
 # Game stats
@@ -553,9 +533,7 @@ class ScheduledTask(Base):
     channel_id: Mapped[int] = MappedColumn(BigInteger)
     role_id: Mapped[int] = MappedColumn(BigInteger)
     message_id: Mapped[int] = MappedColumn(BigInteger)
-    case_id: Mapped[str] = MappedColumn(
-        String(length=8), ForeignKey("mod_cases.id"), nullable=True
-    )
+    case_id: Mapped[str] = MappedColumn(String(length=8), ForeignKey("mod_cases.id"), nullable=True)
     duration: Mapped[int] = MappedColumn(
         BigInteger, nullable=True
     )  # for refresh_mute - how long we need to extend mute by
@@ -567,9 +545,7 @@ class ScheduledTask(Base):
 
 class ErrorLog(Base):
     __tablename__ = "error_logs"
-    id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(BigInteger)
     module: Mapped[str] = MappedColumn(String(length=100))
     error: Mapped[str] = MappedColumn(String(length=512))

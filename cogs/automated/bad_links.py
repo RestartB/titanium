@@ -36,13 +36,9 @@ class BadLinkFetcherCog(commands.Cog):
                 if response.status == 200:
                     data = (await response.text()).splitlines()
 
-                    new_malicious_links = [
-                        line for line in data if not line.startswith("#")
-                    ]
+                    new_malicious_links = [line for line in data if not line.startswith("#")]
                 else:
-                    self.logger.error(
-                        "Failed to fetch malicious links:", response.status
-                    )
+                    self.logger.error("Failed to fetch malicious links:", response.status)
                     return
 
             async with session.get(
@@ -51,21 +47,15 @@ class BadLinkFetcherCog(commands.Cog):
                 if response.status == 200:
                     data = (await response.text()).splitlines()
 
-                    new_malicious_links += [
-                        line for line in data if not line.startswith("#")
-                    ]
+                    new_malicious_links += [line for line in data if not line.startswith("#")]
 
                 else:
-                    self.logger.error(
-                        "Failed to fetch malicious links:", response.status
-                    )
+                    self.logger.error("Failed to fetch malicious links:", response.status)
                     return
 
             self.bot.malicious_links = new_malicious_links
 
-            self.logger.info(
-                f"Updated malicious links • {len(new_malicious_links)} links fetched."
-            )
+            self.logger.info(f"Updated malicious links • {len(new_malicious_links)} links fetched.")
 
     # Phishing update task
     @tasks.loop(hours=6)
@@ -85,9 +75,7 @@ class BadLinkFetcherCog(commands.Cog):
                         f"Updated phishing links • {len(new_phishing_links)} links fetched."
                     )
                 else:
-                    self.logger.error(
-                        "Failed to fetch phishing links:", response.status
-                    )
+                    self.logger.error("Failed to fetch phishing links:", response.status)
                     return
 
 

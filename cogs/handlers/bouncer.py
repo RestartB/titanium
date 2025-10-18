@@ -112,9 +112,7 @@ class BouncerMonitorCog(commands.Cog):
                         spotted = True
                         break
                 elif str(criteria.criteria_type) == "age":
-                    if (
-                        discord.utils.utcnow() - member.created_at
-                    ).seconds <= criteria.account_age:
+                    if (discord.utils.utcnow() - member.created_at).seconds <= criteria.account_age:
                         spotted = True
                         break
                 elif str(criteria.criteria_type) == "avatar":
@@ -140,9 +138,7 @@ class BouncerMonitorCog(commands.Cog):
 
                     if role and role not in member.roles:
                         try:
-                            await member.add_roles(
-                                role, reason=f"Bouncer: {punishment.reason}"
-                            )
+                            await member.add_roles(role, reason=f"Bouncer: {punishment.reason}")
                         except discord.Forbidden as e:
                             await log_error(
                                 module="Bouncer",
@@ -162,9 +158,7 @@ class BouncerMonitorCog(commands.Cog):
 
                     if role and role in member.roles:
                         try:
-                            await member.remove_roles(
-                                role, reason=f"Bouncer: {punishment.reason}"
-                            )
+                            await member.remove_roles(role, reason=f"Bouncer: {punishment.reason}")
                         except discord.Forbidden as e:
                             await log_error(
                                 module="Bouncer",
@@ -189,9 +183,7 @@ class BouncerMonitorCog(commands.Cog):
                                     role, reason=f"Bouncer: {punishment.reason}"
                                 )
                             else:
-                                await member.add_roles(
-                                    role, reason=f"Bouncer: {punishment.reason}"
-                                )
+                                await member.add_roles(role, reason=f"Bouncer: {punishment.reason}")
                         except discord.Forbidden as e:
                             await log_error(
                                 module="Bouncer",
@@ -232,9 +224,7 @@ class BouncerMonitorCog(commands.Cog):
                             (
                                 timedelta(seconds=punishment.duration)
                                 if punishment.duration > 0
-                                and timedelta(
-                                    seconds=punishment.duration
-                                ).total_seconds()
+                                and timedelta(seconds=punishment.duration).total_seconds()
                                 <= 2419200
                                 else timedelta(seconds=2419200)
                             ),
@@ -275,10 +265,7 @@ class BouncerMonitorCog(commands.Cog):
                             details=e.text,
                         )
 
-                elif (
-                    str(punishment.action_type) == "kick"
-                    and "ban" not in punishment_types
-                ):
+                elif str(punishment.action_type) == "kick" and "ban" not in punishment_types:
                     # Kick user
                     try:
                         await member.kick(

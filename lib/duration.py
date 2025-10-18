@@ -22,9 +22,7 @@ class DurationConverter(commands.Converter):
         matches = re.findall(pattern, argument.lower())
 
         if not matches:
-            raise commands.BadArgument(
-                "Invalid time format. Use format like '1h30m' or '5d'."
-            )
+            raise commands.BadArgument("Invalid time format. Use format like '1h30m' or '5d'.")
 
         total_seconds = 0
         used_units = set()

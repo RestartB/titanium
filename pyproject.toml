@@ -21,5 +21,8 @@ dev = [
     "ruff>=0.12.5",
 ]
 
+[tool.ruff]
+line-length = 100
+
 [tool.ruff.lint]
 extend-select = ["I"]

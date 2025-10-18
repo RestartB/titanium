@@ -9,9 +9,7 @@ if TYPE_CHECKING:
 from lib.api.validators import LoggingConfigModel
 
 
-def confession_info(
-    bot: "TitaniumBot", request: web.Request, guild: Guild
-) -> web.Response:
+def confession_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
     if not config.confession_settings:
         return web.json_response(
@@ -22,19 +20,13 @@ def confession_info(
         )
     return web.json_response(
         {
-            "confession_channel_id": str(
-                config.confession_settings.confession_channel_id
-            ),
-            "confession_log_channel_id": str(
-                config.confession_settings.confession_log_channel_id
-            ),
+            "confession_channel_id": str(config.confession_settings.confession_channel_id),
+            "confession_log_channel_id": str(config.confession_settings.confession_log_channel_id),
         }
     )
 
 
-def moderation_info(
-    bot: "TitaniumBot", request: web.Request, guild: Guild
-) -> web.Response:
+def moderation_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.moderation_settings:
@@ -54,9 +46,7 @@ def moderation_info(
     )
 
 
-def automod_info(
-    bot: "TitaniumBot", request: web.Request, guild: Guild
-) -> web.Response:
+def automod_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.automod_settings:
@@ -90,9 +80,7 @@ def automod_info(
                         for action in (rule.actions or [])
                     ],
                 }
-                for rule in getattr(
-                    config.automod_settings, f"{detection_type}_rules", []
-                )
+                for rule in getattr(config.automod_settings, f"{detection_type}_rules", [])
             ]
             for detection_type in [
                 "badword_detection",
@@ -104,9 +92,7 @@ def automod_info(
     )
 
 
-def logging_info(
-    bot: "TitaniumBot", request: web.Request, guild: Guild
-) -> web.Response:
+def logging_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.logging_settings:
@@ -129,9 +115,7 @@ def logging_info(
     return web.json_response(response_data)
 
 
-def fireboard_info(
-    bot: "TitaniumBot", request: web.Request, guild: Guild
-) -> web.Response:
+def fireboard_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.fireboard_settings:
@@ -150,8 +134,7 @@ def fireboard_info(
                 str(role_id) for role_id in fireboard_settings.global_ignored_roles
             ],
             "global_ignored_channels": [
-                str(channel_id)
-                for channel_id in fireboard_settings.global_ignored_channels
+                str(channel_id) for channel_id in fireboard_settings.global_ignored_channels
             ],
             "boards": [
                 {
@@ -162,9 +145,7 @@ def fireboard_info(
                     "ignore_bots": board.ignore_bots,
                     "ignore_self_reactions": board.ignore_self_reactions,
                     "ignored_roles": [str(role_id) for role_id in board.ignored_roles],
-                    "ignored_channels": [
-                        str(channel_id) for channel_id in board.ignored_channels
-                    ],
+                    "ignored_channels": [str(channel_id) for channel_id in board.ignored_channels],
                 }
                 for board in fireboard_settings.fireboard_boards
             ],
@@ -172,9 +153,7 @@ def fireboard_info(
     )
 
 
-def server_counters_info(
-    bot: "TitaniumBot", request: web.Request, guild: Guild
-) -> web.Response:
+def server_counters_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.server_counters_settings:

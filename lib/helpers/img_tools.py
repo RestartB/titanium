@@ -37,9 +37,7 @@ class ImageConverter:
             img = img.convert("RGB")
 
         buffer = io.BytesIO()
-        save_params = (
-            {"quality": quality} if output_format.upper() in ["JPEG", "WEBP"] else {}
-        )
+        save_params = {"quality": quality} if output_format.upper() in ["JPEG", "WEBP"] else {}
         img.save(buffer, format=output_format.upper(), **save_params)
         buffer.seek(0)
 

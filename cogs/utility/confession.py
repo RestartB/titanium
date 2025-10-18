@@ -71,9 +71,7 @@ class ConfessionCog(commands.Cog):
             await ctx.reply(embed=e)
             return
 
-        channel = self.bot.get_channel(
-            guild_settings.confession_settings.confession_channel_id
-        )
+        channel = self.bot.get_channel(guild_settings.confession_settings.confession_channel_id)
         if not channel:
             embed = Embed(
                 color=Colour.red(),

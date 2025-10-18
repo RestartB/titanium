@@ -47,15 +47,11 @@ class ModerationBasicCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
-    @commands.hybrid_command(
-        name="warn", description="Warn a member for a specified reason."
-    )
+    @commands.hybrid_command(name="warn", description="Warn a member for a specified reason.")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @app_commands.default_permissions(manage_guild=True)
-    @app_commands.describe(
-        member="The member to warn.", reason="The reason for the warning."
-    )
+    @app_commands.describe(member="The member to warn.", reason="The reason for the warning.")
     async def warn(
         self,
         ctx: commands.Context["TitaniumBot"],
@@ -73,10 +69,7 @@ class ModerationBasicCog(commands.Cog):
             return await ctx.reply(embed=not_in_guild(self.bot, member))
 
         # Check if member is already being punished
-        if (
-            ctx.guild.id in self.bot.punishing
-            and member.id in self.bot.punishing[ctx.guild.id]
-        ):
+        if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
             return await ctx.reply(embed=already_punishing(self.bot, member))
 
         # Add member to punishing list
@@ -164,10 +157,7 @@ class ModerationBasicCog(commands.Cog):
             return await ctx.reply(embed=not_in_guild(self.bot, member))
 
         # Check if member is already being punished
-        if (
-            ctx.guild.id in self.bot.punishing
-            and member.id in self.bot.punishing[ctx.guild.id]
-        ):
+        if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
             return await ctx.reply(embed=already_punishing(self.bot, member))
 
         # Add member to punishing list
@@ -180,22 +170,16 @@ class ModerationBasicCog(commands.Cog):
             if ctx.interaction:
                 if duration:
                     try:
-                        processed_duration = await DurationConverter().convert(
-                            ctx, duration
-                        )
+                        processed_duration = await DurationConverter().convert(ctx, duration)
                     except commands.BadArgument:
                         raise commands.BadArgument("Invalid duration format.")
             else:
                 if duration:
                     # Process duration
                     try:
-                        processed_duration = await DurationConverter().convert(
-                            ctx, duration
-                        )
+                        processed_duration = await DurationConverter().convert(ctx, duration)
                     except commands.BadArgument:
-                        processed_reason = (
-                            duration + " " + reason if reason else duration
-                        )
+                        processed_reason = duration + " " + reason if reason else duration
 
             # Check if user is already timed out
             if member.is_timed_out():
@@ -206,8 +190,7 @@ class ModerationBasicCog(commands.Cog):
                 await member.timeout(
                     (
                         processed_duration
-                        if processed_duration
-                        and processed_duration.total_seconds() <= 2419200
+                        if processed_duration and processed_duration.total_seconds() <= 2419200
                         else timedelta(seconds=2419200)
                     ),
                     reason=f"@{ctx.author.name}: {processed_reason}",
@@ -306,10 +289,7 @@ class ModerationBasicCog(commands.Cog):
             return await ctx.reply(embed=not_in_guild(self.bot, member))
 
         # Check if member is already being punished
-        if (
-            ctx.guild.id in self.bot.punishing
-            and member.id in self.bot.punishing[ctx.guild.id]
-        ):
+        if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
             return await ctx.reply(embed=already_punishing(self.bot, member))
 
         # Add member to punishing list
@@ -394,9 +374,7 @@ class ModerationBasicCog(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(kick_members=True)
     @app_commands.default_permissions(kick_members=True)
-    @app_commands.describe(
-        member="The member to kick.", reason="The reason for the kick."
-    )
+    @app_commands.describe(member="The member to kick.", reason="The reason for the kick.")
     async def kick(
         self,
         ctx: commands.Context["TitaniumBot"],
@@ -418,10 +396,7 @@ class ModerationBasicCog(commands.Cog):
             return await ctx.reply(embed=not_in_guild(self.bot, member))
 
         # Check if member is already being punished
-        if (
-            ctx.guild.id in self.bot.punishing
-            and member.id in self.bot.punishing[ctx.guild.id]
-        ):
+        if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
             return await ctx.reply(embed=already_punishing(self.bot, member))
 
         # Add member to punishing list
@@ -523,10 +498,7 @@ class ModerationBasicCog(commands.Cog):
             return
 
         # Check if member is already being punished
-        if (
-            ctx.guild.id in self.bot.punishing
-            and user.id in self.bot.punishing[ctx.guild.id]
-        ):
+        if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
             return await ctx.reply(embed=already_punishing(self.bot, user))
 
         # Add member to punishing list
@@ -539,22 +511,16 @@ class ModerationBasicCog(commands.Cog):
             if ctx.interaction:
                 if duration:
                     try:
-                        processed_duration = await DurationConverter().convert(
-                            ctx, duration
-                        )
+                        processed_duration = await DurationConverter().convert(ctx, duration)
                     except commands.BadArgument:
                         raise commands.BadArgument("Invalid duration format.")
             else:
                 if duration:
                     # Process duration
                     try:
-                        processed_duration = await DurationConverter().convert(
-                            ctx, duration
-                        )
+                        processed_duration = await DurationConverter().convert(ctx, duration)
                     except commands.BadArgument:
-                        processed_reason = (
-                            duration + " " + reason if reason else duration
-                        )
+                        processed_reason = duration + " " + reason if reason else duration
 
             # Check if user is already banned
             try:
@@ -635,9 +601,7 @@ class ModerationBasicCog(commands.Cog):
 
             await stop_loading(self.bot, ctx)
 
-    @commands.hybrid_command(
-        name="unban", description="Unban a member from the server."
-    )
+    @commands.hybrid_command(name="unban", description="Unban a member from the server.")
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @app_commands.default_permissions(ban_members=True)
@@ -657,10 +621,7 @@ class ModerationBasicCog(commands.Cog):
             return
 
         # Check if user is already being punished
-        if (
-            ctx.guild.id in self.bot.punishing
-            and user.id in self.bot.punishing[ctx.guild.id]
-        ):
+        if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
             return await ctx.reply(embed=already_punishing(self.bot, user))
 
         # Add user to punishing list

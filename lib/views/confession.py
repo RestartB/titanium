@@ -53,20 +53,14 @@ class ChannelSetting(ui.ActionRow["ConfessionSettingsLayout"]):
         self.settings: ConfessionSettings = settings
         self.channel_type: str = channel_type
 
-        if (
-            channel_type == "conf_channel"
-            and settings.guild_settings.confession_channel_id
-        ):
+        if channel_type == "conf_channel" and settings.guild_settings.confession_channel_id:
             self.select_channel.default_values = [
                 discord.SelectDefaultValue(
                     id=settings.guild_settings.confession_channel_id,
                     type=discord.SelectDefaultValueType.channel,
                 )
             ]
-        elif (
-            channel_type == "conf_log"
-            and settings.guild_settings.confession_log_channel_id
-        ):
+        elif channel_type == "conf_log" and settings.guild_settings.confession_log_channel_id:
             self.select_channel.default_values = [
                 discord.SelectDefaultValue(
                     id=settings.guild_settings.confession_log_channel_id,
@@ -177,10 +171,7 @@ class ConfessionSettingsLayout(ui.LayoutView):
         self, interaction: discord.Interaction["TitaniumBot"], button: ui.Button
     ) -> None:
         await interaction.response.defer()
-        if (
-            self.settings.is_conf_enable
-            and not self.settings.guild_settings.confession_channel_id
-        ):
+        if self.settings.is_conf_enable and not self.settings.guild_settings.confession_channel_id:
             return await interaction.followup.send(
                 "You must select a confession message channel (Step 2) when the confession settings is enabled.",
                 ephemeral=True,
@@ -199,9 +190,7 @@ class ConfessionSettingsLayout(ui.LayoutView):
             if child.is_dispatchable():
                 child.disabled = True  # type: ignore
 
-    async def update_settings(
-        self, interaction: discord.Interaction["TitaniumBot"]
-    ) -> None:
+    async def update_settings(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
         if interaction.guild is None:
             return
 
@@ -224,14 +213,10 @@ class ConfessionSettingsLayout(ui.LayoutView):
             session.add(guild_config)
 
             # Fetch existing confession settings
-            confession_settings = await session.get(
-                GuildConfessionSettings, interaction.guild.id
-            )
+            confession_settings = await session.get(GuildConfessionSettings, interaction.guild.id)
 
             if not confession_settings:
-                confession_settings = GuildConfessionSettings(
-                    guild_id=interaction.guild.id
-                )
+                confession_settings = GuildConfessionSettings(guild_id=interaction.guild.id)
                 session.add(confession_settings)
 
             confession_settings.confession_channel_id = (

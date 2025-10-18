@@ -34,14 +34,10 @@ class BasicCommandsCog(commands.Cog):
                 title="Titanium",
                 description="This is a development version of Titanium. For more information, please go to https://github.com/RestartB/titanium/tree/v2.",
                 colour=Colour.light_gray(),
-            ).set_thumbnail(
-                url=self.bot.user.display_avatar.url if self.bot.user else None
-            )
+            ).set_thumbnail(url=self.bot.user.display_avatar.url if self.bot.user else None)
         )
 
-    @commands.hybrid_command(
-        name="prefixes", description="Get the bot's command prefixes."
-    )
+    @commands.hybrid_command(name="prefixes", description="Get the bot's command prefixes.")
     @commands.guild_only()
     async def prefixes(self, ctx: commands.Context["TitaniumBot"]) -> None:
         if not ctx.guild or not self.bot.user:
@@ -73,9 +69,7 @@ class BasicCommandsCog(commands.Cog):
             name=ctx.guild.name,
             icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
         )
-        embed.set_footer(
-            text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url
-        )
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
         await ctx.reply(embed=embed)
 

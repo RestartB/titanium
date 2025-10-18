@@ -42,9 +42,7 @@ class FireboardCog(commands.Cog):
             color=discord.Color.random(),
             timestamp=message.created_at,
         )
-        embed.set_author(
-            name=message.author.name, icon_url=message.author.display_avatar.url
-        )
+        embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
         return embed
 
     async def queue_worker(self):
@@ -76,9 +74,7 @@ class FireboardCog(commands.Cog):
                 elif isinstance(event, discord.Reaction):
                     guild_id = event.message.guild.id if event.message.guild else 0
                 elif isinstance(event, tuple) and len(event) == 2:
-                    guild_id = (
-                        event[0].message.guild.id if event[0].message.guild else 0
-                    )
+                    guild_id = event[0].message.guild.id if event[0].message.guild else 0
                 elif isinstance(event, discord.Message):
                     guild_id = event.guild.id if event.guild else 0
 
@@ -125,9 +121,7 @@ class FireboardCog(commands.Cog):
             )
             == 0
             or user.id == self.bot.user.id
-            or isinstance(
-                reaction.message.channel, (discord.DMChannel, discord.GroupChannel)
-            )
+            or isinstance(reaction.message.channel, (discord.DMChannel, discord.GroupChannel))
             or isinstance(reaction.message.author, discord.User)
         ):
             self.logger.debug("Ignoring reaction")
@@ -135,9 +129,7 @@ class FireboardCog(commands.Cog):
 
         processed_boards: list[int] = []
 
-        for user_message in self.bot.fireboard_messages.get(
-            reaction.message.guild.id, []
-        ):
+        for user_message in self.bot.fireboard_messages.get(reaction.message.guild.id, []):
             if user_message.message_id == reaction.message.id:
                 processed_boards.append(user_message.fireboard.id)
                 channel = self.bot.get_channel(user_message.fireboard.channel_id)
@@ -153,9 +145,7 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    board_msg = await channel.fetch_message(
-                        user_message.fireboard_message_id
-                    )
+                    board_msg = await channel.fetch_message(user_message.fireboard_message_id)
                     count = await self._calculate_reaction_count(
                         reaction,
                         reaction.message.author,
@@ -165,10 +155,7 @@ class FireboardCog(commands.Cog):
 
                     content = f"{count} {user_message.fireboard.reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
 
-                    if (
-                        count >= user_message.fireboard.threshold
-                        and content != board_msg.content
-                    ):
+                    if count >= user_message.fireboard.threshold and content != board_msg.content:
                         await board_msg.edit(
                             content=content,
                             embed=self._fireboard_embed(reaction.message),
@@ -180,9 +167,7 @@ class FireboardCog(commands.Cog):
                         async with get_session() as session:
                             await session.delete(user_message)
 
-                        self.bot.fireboard_messages[reaction.message.guild.id].remove(
-                            user_message
-                        )
+                        self.bot.fireboard_messages[reaction.message.guild.id].remove(user_message)
 
                         continue
                 except (discord.NotFound, discord.Forbidden):
@@ -205,8 +190,7 @@ class FireboardCog(commands.Cog):
                 count >= board.threshold
                 and reaction.message.channel.id not in board.ignored_channels
                 and any(
-                    role.id not in board.ignored_roles
-                    for role in reaction.message.author.roles
+                    role.id not in board.ignored_roles for role in reaction.message.author.roles
                 )
             ):
                 content = f"{count} {board.reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
@@ -249,9 +233,9 @@ class FireboardCog(commands.Cog):
                     result = await session.execute(stmt)
                     fireboard_message = result.scalars().first()
 
-                    self.bot.fireboard_messages.setdefault(
-                        reaction.message.guild.id, []
-                    ).append(fireboard_message)
+                    self.bot.fireboard_messages.setdefault(reaction.message.guild.id, []).append(
+                        fireboard_message
+                    )
 
                 return
 
@@ -264,25 +248,17 @@ class FireboardCog(commands.Cog):
             payload.guild_id is None
             or payload.guild_id not in self.bot.guild_configs
             or not self.bot.guild_configs[payload.guild_id].fireboard_enabled
-            or len(
-                self.bot.guild_configs[
-                    payload.guild_id
-                ].fireboard_settings.fireboard_boards
-            )
+            or len(self.bot.guild_configs[payload.guild_id].fireboard_settings.fireboard_boards)
             == 0
         ):
             return
 
-        if isinstance(
-            payload.message.channel, (discord.DMChannel, discord.GroupChannel)
-        ):
+        if isinstance(payload.message.channel, (discord.DMChannel, discord.GroupChannel)):
             self.logger.debug("Ignoring edit in DM/Group channel")
             return
 
         for message in self.bot.fireboard_messages.get(payload.guild_id, []):
-            self.logger.debug(
-                f"Checking for match: {message.message_id} == {payload.message_id}"
-            )
+            self.logger.debug(f"Checking for match: {message.message_id} == {payload.message_id}")
             if message.message_id == payload.message_id:
                 self.logger.debug("Found matching message")
                 channel = self.bot.get_channel(message.fireboard.channel_id)
@@ -329,11 +305,7 @@ class FireboardCog(commands.Cog):
             payload.guild_id is None
             or payload.guild_id not in self.bot.guild_configs
             or not self.bot.guild_configs[payload.guild_id].fireboard_enabled
-            or len(
-                self.bot.guild_configs[
-                    payload.guild_id
-                ].fireboard_settings.fireboard_boards
-            )
+            or len(self.bot.guild_configs[payload.guild_id].fireboard_settings.fireboard_boards)
             == 0
         ):
             return
@@ -383,11 +355,7 @@ class FireboardCog(commands.Cog):
             message.guild is None
             or message.guild.id not in self.bot.guild_configs
             or not self.bot.guild_configs[message.guild.id].fireboard_enabled
-            or len(
-                self.bot.guild_configs[
-                    message.guild.id
-                ].fireboard_settings.fireboard_boards
-            )
+            or len(self.bot.guild_configs[message.guild.id].fireboard_settings.fireboard_boards)
             == 0
         ):
             return
@@ -445,9 +413,8 @@ class FireboardCog(commands.Cog):
             return
 
         for message in self.bot.fireboard_messages.get(reaction.message.guild.id, []):
-            if (
-                message.message_id == reaction.message.id
-                and message.fireboard.reaction == str(reaction.emoji)
+            if message.message_id == reaction.message.id and message.fireboard.reaction == str(
+                reaction.emoji
             ):
                 channel = self.bot.get_channel(message.fireboard.channel_id)
 
@@ -468,17 +435,13 @@ class FireboardCog(commands.Cog):
                     async with get_session() as session:
                         await session.delete(message)
 
-                    self.bot.fireboard_messages[reaction.message.guild.id].remove(
-                        message
-                    )
+                    self.bot.fireboard_messages[reaction.message.guild.id].remove(message)
                 except discord.NotFound:
                     self.logger.debug("Delete message not found, deleting record")
                     async with get_session() as session:
                         await session.delete(message)
 
-                    self.bot.fireboard_messages[reaction.message.guild.id].remove(
-                        message
-                    )
+                    self.bot.fireboard_messages[reaction.message.guild.id].remove(message)
                 except Exception as e:
                     await log_error(
                         module="Fireboard",
@@ -527,9 +490,7 @@ class FireboardCog(commands.Cog):
 
     # Listen for reactions cleared
     @commands.Cog.listener()
-    async def on_reaction_clear(
-        self, message: discord.Message, reactions: list[discord.Reaction]
-    ):
+    async def on_reaction_clear(self, message: discord.Message, reactions: list[discord.Reaction]):
         try:
             await self.event_queue.put(message)
         except asyncio.QueueShutDown:

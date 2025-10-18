@@ -179,17 +179,13 @@ class SettingsView(LayoutView):
 
         mod_section = Section(accessory=ModToggleButton(bot, settings))
         mod_section.add_item(
-            TextDisplay(
-                "### Moderation\nModerate your server members and create cases."
-            )
+            TextDisplay("### Moderation\nModerate your server members and create cases.")
         )
         container.add_item(mod_section)
 
         automod_section = Section(accessory=ModToggleButton(bot, settings))
         automod_section.add_item(
-            TextDisplay(
-                "### Auto Moderation\nAllow Titanium to moderate your server for you."
-            )
+            TextDisplay("### Auto Moderation\nAllow Titanium to moderate your server for you.")
         )
         container.add_item(automod_section)
 
@@ -310,10 +306,7 @@ class GuildSettingsCog(commands.Cog):
 
         prefixes = self.bot.guild_prefixes.get(interaction.guild_id)
         if prefixes and prefixes.prefixes is not None:
-            return [
-                app_commands.Choice(name=prefix, value=prefix)
-                for prefix in prefixes.prefixes
-            ]
+            return [app_commands.Choice(name=prefix, value=prefix) for prefix in prefixes.prefixes]
         else:
             return [app_commands.Choice(name="t!", value="t!")]
 
@@ -375,9 +368,7 @@ class GuildSettingsCog(commands.Cog):
             ephemeral=True,
         )
 
-    @settings_group.command(
-        name="confession", description="Customize confession settings."
-    )
+    @settings_group.command(name="confession", description="Customize confession settings.")
     @commands.has_permissions(administrator=True)
     async def confession_settings(self, interaction: Interaction) -> None:
         if not interaction.guild or not interaction.guild_id or not self.bot.user:

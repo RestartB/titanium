@@ -18,9 +18,7 @@ class UtilityCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot: "TitaniumBot" = bot
 
-    @app_commands.command(
-        name="feedback", description="Share any suggestions or feedback."
-    )
+    @app_commands.command(name="feedback", description="Share any suggestions or feedback.")
     async def feedback(self, interaction: Interaction["TitaniumBot"]) -> None:
         """
         This command allows you to provide feedback or share your suggestions or maybe any bug/issue with the bot's developers.
@@ -103,9 +101,7 @@ class UtilityCog(commands.Cog):
         )
         await ctx.reply(embed=e)
 
-    @commands.hybrid_command(
-        name="qrcode", description="Generate a QR code from a string."
-    )
+    @commands.hybrid_command(name="qrcode", description="Generate a QR code from a string.")
     @app_commands.describe(data="Data to be included in the QR code.")
     async def qrcode(
         self,
@@ -128,9 +124,7 @@ class UtilityCog(commands.Cog):
 
     @commands.hybrid_command(name="file-info", description="Get info of a file.")
     @app_commands.describe(file="The file attachment to analyze.")
-    async def file_info(
-        self, ctx: commands.Context["TitaniumBot"], *, file: Attachment
-    ) -> None:
+    async def file_info(self, ctx: commands.Context["TitaniumBot"], *, file: Attachment) -> None:
         """Get detailed information of a file."""
         await ctx.defer()
 
@@ -143,9 +137,7 @@ class UtilityCog(commands.Cog):
         embed.add_field(name="ID", value=f"`{file.id}`")
         embed.add_field(name="File Name", value=f"`{file.filename}`")
         embed.add_field(name="File Size", value=f"`{size_hr}`")
-        embed.add_field(
-            name="Content Type", value=f"`{file.content_type}`" or "`Unknown`"
-        )
+        embed.add_field(name="Content Type", value=f"`{file.content_type}`" or "`Unknown`")
         embed.add_field(name="URL", value=f"[Click here]({file.url})")
         embed.add_field(name="Proxy URL", value=f"[Click here]({file.proxy_url})")
         embed.set_thumbnail(url=file.url)

@@ -18,9 +18,7 @@ class ModMonitorCog(commands.Cog):
 
     # Listen for mutes
     @commands.Cog.listener()
-    async def on_mmeber_update(
-        self, before: discord.Member, after: discord.Member
-    ) -> None:
+    async def on_mmeber_update(self, before: discord.Member, after: discord.Member) -> None:
         if not self.bot.user:
             return
 
@@ -29,16 +27,9 @@ class ModMonitorCog(commands.Cog):
 
         if not before.is_timed_out() and after.is_timed_out():
             # Grab logs
-            logs = after.guild.audit_logs(
-                limit=1, action=discord.AuditLogAction.member_update
-            )
+            logs = after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update)
             async for entry in logs:
-                if (
-                    not entry.target
-                    or not self.bot.user
-                    or not entry.user_id
-                    or not entry.user
-                ):
+                if not entry.target or not self.bot.user or not entry.user_id or not entry.user:
                     return
 
                 if entry.target.id != after.id:
@@ -76,12 +67,7 @@ class ModMonitorCog(commands.Cog):
         # Grab logs
         logs = member.guild.audit_logs(limit=1, action=discord.AuditLogAction.kick)
         async for entry in logs:
-            if (
-                not entry.target
-                or not self.bot.user
-                or not entry.user_id
-                or not entry.user
-            ):
+            if not entry.target or not self.bot.user or not entry.user_id or not entry.user:
                 return
 
             if entry.target.id != member.id:
@@ -114,12 +100,7 @@ class ModMonitorCog(commands.Cog):
         # Grab logs
         logs = guild.audit_logs(limit=1, action=discord.AuditLogAction.ban)
         async for entry in logs:
-            if (
-                not entry.target
-                or not self.bot.user
-                or not entry.user_id
-                or not entry.user
-            ):
+            if not entry.target or not self.bot.user or not entry.user_id or not entry.user:
                 return
 
             if entry.target.id != user.id:
@@ -152,12 +133,7 @@ class ModMonitorCog(commands.Cog):
         # Grab logs
         logs = guild.audit_logs(limit=1, action=discord.AuditLogAction.unban)
         async for entry in logs:
-            if (
-                not entry.target
-                or not self.bot.user
-                or not entry.user_id
-                or not entry.user
-            ):
+            if not entry.target or not self.bot.user or not entry.user_id or not entry.user:
                 return
 
             if entry.target.id != user.id:

@@ -31,9 +31,7 @@ async def defer(
         await ctx.message.add_reaction(bot.loading_emoji)
 
 
-async def stop_loading(
-    bot: "TitaniumBot", ctx: commands.Context["TitaniumBot"]
-) -> None:
+async def stop_loading(bot: "TitaniumBot", ctx: commands.Context["TitaniumBot"]) -> None:
     try:
         show_loading = True
 

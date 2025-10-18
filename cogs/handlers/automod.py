@@ -109,13 +109,11 @@ class AutomodMonitorCog(commands.Cog):
         )
 
         # Limit to 100 messages
-        self.bot.automod_messages[message.guild.id][message.author.id] = (
-            self.bot.automod_messages[message.guild.id][message.author.id][-100:]
-        )
+        self.bot.automod_messages[message.guild.id][message.author.id] = self.bot.automod_messages[
+            message.guild.id
+        ][message.author.id][-100:]
 
-        current_state = self.bot.automod_messages[message.guild.id][
-            message.author.id
-        ].copy()
+        current_state = self.bot.automod_messages[message.guild.id][message.author.id].copy()
         current_state.reverse()
 
         # Check for any spam detection
@@ -167,9 +165,7 @@ class AutomodMonitorCog(commands.Cog):
             spotted = 0
 
             for filtered_msg in filtered_messages:
-                if any(
-                    link in filtered_msg.content for link in self.bot.malicious_links
-                ):
+                if any(link in filtered_msg.content for link in self.bot.malicious_links):
                     spotted += 1
 
             if spotted >= rule.threshold:
@@ -192,11 +188,9 @@ class AutomodMonitorCog(commands.Cog):
 
             for filtered_msg in filtered_messages:
                 if any(
-                    f"http://{link}" in filtered_msg.content
-                    for link in self.bot.phishing_links
+                    f"http://{link}" in filtered_msg.content for link in self.bot.phishing_links
                 ) or any(
-                    f"https://{link}" in filtered_msg.content
-                    for link in self.bot.phishing_links
+                    f"https://{link}" in filtered_msg.content for link in self.bot.phishing_links
                 ):
                     spotted += 1
 
@@ -280,9 +274,7 @@ class AutomodMonitorCog(commands.Cog):
                             (
                                 timedelta(seconds=punishment.duration)
                                 if punishment.duration > 0
-                                and timedelta(
-                                    seconds=punishment.duration
-                                ).total_seconds()
+                                and timedelta(seconds=punishment.duration).total_seconds()
                                 <= 2419200
                                 else timedelta(seconds=2419200)
                             ),
@@ -336,10 +328,7 @@ class AutomodMonitorCog(commands.Cog):
                         )
                         embeds.append(http_exception(self.bot, message.author))
 
-                elif (
-                    str(punishment.action_type) == "kick"
-                    and "ban" not in punishment_types
-                ):
+                elif str(punishment.action_type) == "kick" and "ban" not in punishment_types:
                     # Kick user
                     try:
                         await message.author.kick(

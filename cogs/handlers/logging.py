@@ -60,9 +60,7 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.channel_update(before, after)
 
     @commands.Cog.listener()
-    async def on_guild_update(
-        self, before: discord.Guild, after: discord.Guild
-    ) -> None:
+    async def on_guild_update(self, before: discord.Guild, after: discord.Guild) -> None:
         guild_logger = GuildLogger(self.bot, after)
         await guild_logger.guild_name_update(before, after)
         await guild_logger.guild_afk_channel_update(before, after)
@@ -122,9 +120,7 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.member_leave(member)
 
     @commands.Cog.listener()
-    async def on_member_update(
-        self, before: discord.Member, after: discord.Member
-    ) -> None:
+    async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
         guild_logger = GuildLogger(self.bot, after.guild)
         await guild_logger.member_nickname_update(before, after)
         await guild_logger.member_roles_update(before, after)
@@ -137,9 +133,7 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.member_ban(member)
 
     @commands.Cog.listener()
-    async def on_member_unban(
-        self, guild: discord.Guild, member: discord.Member
-    ) -> None:
+    async def on_member_unban(self, guild: discord.Guild, member: discord.Member) -> None:
         guild_logger = GuildLogger(self.bot, guild)
         await guild_logger.member_unban(member)
 
@@ -158,10 +152,7 @@ class EventLoggingCog(commands.Cog):
             self.logger.debug("No content in payload data")
             return
 
-        if (
-            payload.cached_message
-            and payload.cached_message.content == payload.data["content"]
-        ):
+        if payload.cached_message and payload.cached_message.content == payload.data["content"]:
             self.logger.debug("Message content is the same as cached message")
             return
 
@@ -173,9 +164,7 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.message_edit(payload)
 
     @commands.Cog.listener()
-    async def on_raw_message_delete(
-        self, payload: discord.RawMessageDeleteEvent
-    ) -> None:
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent) -> None:
         if not payload.guild_id:
             return
 
@@ -187,9 +176,7 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.message_delete(payload)
 
     @commands.Cog.listener()
-    async def on_raw_bulk_message_delete(
-        self, payload: discord.RawBulkMessageDeleteEvent
-    ) -> None:
+    async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent) -> None:
         if not payload.guild_id:
             return
 
@@ -236,9 +223,7 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.role_create(role)
 
     @commands.Cog.listener()
-    async def on_guild_role_update(
-        self, before: discord.Role, after: discord.Role
-    ) -> None:
+    async def on_guild_role_update(self, before: discord.Role, after: discord.Role) -> None:
         if not before.guild:
             return
 
@@ -340,9 +325,7 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.thread_create(thread)
 
     @commands.Cog.listener()
-    async def on_thread_update(
-        self, before: discord.Thread, after: discord.Thread
-    ) -> None:
+    async def on_thread_update(self, before: discord.Thread, after: discord.Thread) -> None:
         if not before.guild:
             return
 
