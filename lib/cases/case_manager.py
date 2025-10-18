@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Annotated, Literal, Optional, Sequence
 
 from discord import Guild
-from sqlalchemy import Column, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -31,7 +31,7 @@ class GuildModCaseManager:
 
         return cases
 
-    async def get_case_by_id(self, case_id: int | Column[int]) -> ModCase:
+    async def get_case_by_id(self, case_id: str) -> ModCase:
         stmt = (
             select(ModCase)
             .where(ModCase.id == case_id, ModCase.guild_id == self.guild.id)
@@ -119,7 +119,7 @@ class GuildModCaseManager:
 
     async def update_case(
         self,
-        case_id: int,
+        case_id: str,
         reason: Optional[str],
         resolved: Optional[bool],
         duration: Annotated[timedelta, DurationConverter] | None = None,
@@ -143,7 +143,7 @@ class GuildModCaseManager:
         await self.session.commit()
         return case
 
-    async def close_case(self, case_id: int | Column[int]) -> ModCase:
+    async def close_case(self, case_id: str) -> ModCase:
         case = await self.get_case_by_id(case_id)
 
         if not case:
@@ -155,7 +155,7 @@ class GuildModCaseManager:
         await self.session.commit()
         return case
 
-    async def delete_case(self, case_id: int) -> None:
+    async def delete_case(self, case_id: str) -> None:
         case = await self.get_case_by_id(case_id)
 
         await self.session.delete(case)

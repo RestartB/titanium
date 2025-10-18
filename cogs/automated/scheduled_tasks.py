@@ -21,7 +21,10 @@ class ScheduledTasksCog(commands.Cog):
         self.logger: logging.Logger = logging.getLogger("tasks")
         self.queued_tasks: list[int] = []
         self.task_queue: asyncio.Queue[ScheduledTask] = asyncio.Queue()
-        self.task_queue_task = self.bot.loop.create_task(self.queue_worker())
+
+        # Start workers
+        for i in range(3):
+            self.bot.loop.create_task(self.queue_worker())
 
     def cog_unload(self) -> None:
         self.task_queue.shutdown(immediate=True)

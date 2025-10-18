@@ -226,6 +226,18 @@ def already_banned(
     return embed
 
 
+def already_unbanned(
+    bot: "TitaniumBot",
+    user: Member | User | ClientUser,
+) -> Embed:
+    embed = Embed(
+        title=f"{str(bot.error_emoji)} Error",
+        description=f"{user.mention} is not banned.",
+        colour=Colour.red(),
+    )
+    return embed
+
+
 def already_punishing(bot: "TitaniumBot", user: Member | User | ClientUser) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",

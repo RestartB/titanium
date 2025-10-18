@@ -87,7 +87,7 @@ def case_not_found(bot: "TitaniumBot", case: str) -> Embed:
     )
 
 
-def case_deleted(bot: "TitaniumBot", case_id: int) -> Embed:
+def case_deleted(bot: "TitaniumBot", case_id: str) -> Embed:
     return Embed(
         title=f"{str(bot.success_emoji)} Case Deleted",
         description=f"Case `{case_id}` has been successfully deleted.",

@@ -116,7 +116,7 @@ class ModerationCasesCog(commands.Cog):
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(case_id="The case ID to search for.")
     async def case_group(
-        self, ctx: commands.Context["TitaniumBot"], case_id: int
+        self, ctx: commands.Context["TitaniumBot"], case_id: str
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
@@ -153,7 +153,7 @@ class ModerationCasesCog(commands.Cog):
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(case_id="The case ID to delete.")
     async def view_case(
-        self, ctx: commands.Context["TitaniumBot"], case_id: int
+        self, ctx: commands.Context["TitaniumBot"], case_id: str
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
