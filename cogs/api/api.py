@@ -93,7 +93,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/stats", self.stats)
         self.app.router.add_get("/user/{user_id}/guilds", self.mutual_guilds)
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
-        self.app.router.add_get("/guild/{guild_id}/error", self.guild_errors)
+        self.app.router.add_get("/guild/{guild_id}/errors", self.guild_errors)
         self.app.router.add_get("/guild/{guild_id}/perms/{user_id}", self.guild_perm_check)
         self.app.router.add_get("/guild/{guild_id}/settings", self.guild_settings)
         self.app.router.add_put("/guild/{guild_id}/settings", self.update_guild_settings)
