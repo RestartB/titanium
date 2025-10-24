@@ -1,6 +1,7 @@
+import urllib.parse
+
 import aiohttp
 import discord
-import wikipedia
 from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import View
@@ -366,64 +367,92 @@ class WebSearch(commands.Cog):
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        try:
-            page = wikipedia.page(search)
+        headers = {"User-Agent": self.bot.tokens["wikipedia-user-agent"]}
 
-            embed = discord.Embed(
-                title=f"Search: {search}", color=Color.from_rgb(r=255, g=255, b=255)
-            )
-            embed.add_field(
-                name=f"{page.title}", value=wikipedia.summary(search, sentences=3)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"https://api.wikimedia.org/core/v1/wikipedia/en/search/title?q={urllib.parse.quote(search)}&limit=1",
+                headers=headers,
+            ) as request:
+                if request.status != 200:
+                    embed = discord.Embed(title="No results found.", color=Color.red())
+                    embed.set_author(
+                        name="Wikipedia",
+                        icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
+                    )
+                    embed.set_footer(
+                        text=f"@{interaction.user.name}",
+                        icon_url=interaction.user.display_avatar.url,
+                    )
+
+                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                    return
+
+                page_data = await request.json()
+
+        if not page_data.get("pages") or len(page_data["pages"]) == 0:
+            embed = discord.Embed(title="No results found.", color=Color.red())
+            embed.set_author(
+                name="Wikipedia",
+                icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
             )
             embed.set_footer(
                 text=f"@{interaction.user.name}",
                 icon_url=interaction.user.display_avatar.url,
             )
-            embed.set_author(
-                name="Wikipedia",
-                icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
-            )
-
-            view = View()
-            view.add_item(
-                discord.ui.Button(
-                    label="Read More", style=discord.ButtonStyle.url, url=page.url
-                )
-            )
-
-            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
-        except wikipedia.exceptions.PageError:
-            embed = discord.Embed(
-                title="Error",
-                description=f"No page was found on Wikipedia matching {search}. Try another search.",
-                color=Color.red(),
-            )
-            embed.set_footer(
-                text=f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
-            )
-            embed.set_author(
-                name="Wikipedia",
-                icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
-            )
-
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-        except wikipedia.exceptions.DisambiguationError as error:
-            embed = discord.Embed(
-                title="Please be more specific with your query.",
-                description=error,
-                color=Color.red(),
-            )
-            embed.set_footer(
-                text=f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
-            )
-            embed.set_author(
-                name="Wikipedia",
-                icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
-            )
+            return
 
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+        target_page = page_data["pages"][0]
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"https://en.wikipedia.org/api/rest_v1/page/summary/{target_page['key']}",
+                headers=headers,
+            ) as request:
+                if request.status != 200:
+                    embed = discord.Embed(title="No results found.", color=Color.red())
+                    embed.set_author(
+                        name="Wikipedia",
+                        icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
+                    )
+                    embed.set_footer(
+                        text=f"@{interaction.user.name}",
+                        icon_url=interaction.user.display_avatar.url,
+                    )
+
+                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                    return
+
+                page = await request.json()
+
+        embed = discord.Embed(
+            title=page["title"],
+            description=page["extract"],
+            color=Color.from_rgb(r=255, g=255, b=255),
+        )
+        embed.set_footer(
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+        embed.set_author(
+            name="Wikipedia",
+            icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
+        )
+
+        # if page.get("thumbnail") and "source" in page["thumbnail"]:
+        #     embed.set_thumbnail(url=page["thumbnail"]["source"])
+
+        view = View()
+        view.add_item(
+            discord.ui.Button(
+                label="Read More",
+                style=discord.ButtonStyle.url,
+                url=page["content_urls"]["desktop"]["page"],
+            )
+        )
+
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
 
 async def setup(bot):

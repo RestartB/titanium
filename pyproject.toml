@@ -17,7 +17,6 @@ dependencies = [
     "spotipy==2.25.1",
     "thefuzz==0.22.1",
     "url-cleaner==0.1.5",
-    "wikipedia==1.4.0",
     "pilmoji",
     "wand>=0.6.13",
     "pytest-playwright>=0.7.0",
@@ -35,3 +34,6 @@ extend-select = ["I"]
 
 [tool.uv.sources]
 pilmoji = { git = "https://github.com/jay3332/pilmoji" }
+
+[tool.basedpyright]
+typeCheckingMode = "off"
