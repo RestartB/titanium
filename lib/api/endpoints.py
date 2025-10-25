@@ -92,6 +92,47 @@ def automod_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.
     )
 
 
+def bouncer_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
+    config = bot.guild_configs[guild.id]
+
+    if not config.bouncer_settings:
+        return web.json_response({"rules": []})
+
+    bouncer_settings = config.bouncer_settings
+    return web.json_response(
+        {
+            "rules": [
+                {
+                    "id": str(rule.id),
+                    "enabled": rule.enabled,
+                    "criteria": [
+                        {
+                            "type": criterion.criteria_type,
+                            "account_age": criterion.account_age,
+                            "words": criterion.words,
+                            "match_whole_word": criterion.match_whole_word,
+                            "case_sensitive": criterion.case_sensitive,
+                        }
+                        for criterion in rule.criteria
+                    ],
+                    "actions": [
+                        {
+                            "type": action.action_type,
+                            "duration": action.duration,
+                            "role_id": str(action.role_id) if action.role_id else None,
+                            "reason": action.reason,
+                            "message_content": action.message_content,
+                            "dm_user": action.dm_user,
+                        }
+                        for action in rule.actions
+                    ],
+                }
+                for rule in bouncer_settings.rules
+            ]
+        }
+    )
+
+
 def logging_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 

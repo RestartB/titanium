@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from lib.sql.sql import AutomodAction, AutomodRule
 
@@ -9,6 +9,7 @@ from lib.sql.sql import AutomodAction, AutomodRule
 class ModuleModel(BaseModel):
     moderation: bool
     automod: bool
+    bouncer: bool
     logging: bool
     fireboard: bool
     server_counters: bool
@@ -78,7 +79,7 @@ class AutomodRuleModel(BaseModel):
     id: Optional[str] = None
     rule_type: str
     rule_name: str = ""
-    words: Optional[list[str]] = []
+    words: Optional[list[str]] = Field(default_factory=list)
     match_whole_word: bool = False
     case_sensitive: bool = False
     antispam_type: Optional[str] = None
@@ -130,6 +131,34 @@ class AutomodConfigModel(BaseModel):
     spam_detection: list[AutomodRuleModel]
     malicious_link_detection: list[AutomodRuleModel]
     phishing_link_detection: list[AutomodRuleModel]
+
+
+class BouncerCriterionModel(BaseModel):
+    type: str
+    account_age: Optional[int] = None
+    words: Optional[list[str]] = None
+    match_whole_word: Optional[bool] = None
+    case_sensitive: Optional[bool] = None
+
+
+class BouncerActionModel(BaseModel):
+    type: str
+    duration: Optional[int] = None
+    role_id: Optional[str] = None
+    reason: Optional[str] = None
+    message_content: Optional[str] = None
+    dm_user: Optional[bool] = None
+
+
+class BouncerRuleModel(BaseModel):
+    id: str
+    enabled: bool
+    criteria: list[BouncerCriterionModel]
+    actions: list[BouncerActionModel]
+
+
+class BouncerConfigModel(BaseModel):
+    rules: list[BouncerRuleModel]
 
 
 class LoggingConfigModel(BaseModel):
@@ -207,8 +236,8 @@ class FireboardBoardModel(BaseModel):
     threshold: int
     ignore_bots: bool
     ignore_self_reactions: bool
-    ignored_roles: list[str] = []
-    ignored_channels: list[str] = []
+    ignored_roles: list[str] = Field(default_factory=list)
+    ignored_channels: list[str] = Field(default_factory=list)
 
     @field_validator("id")
     def validate_id(cls, v: str):
@@ -218,9 +247,9 @@ class FireboardBoardModel(BaseModel):
 
 
 class FireboardConfigModel(BaseModel):
-    global_ignored_roles: list[str] = []
-    global_ignored_channels: list[str] = []
-    boards: list[FireboardBoardModel] = []
+    global_ignored_roles: list[str] = Field(default_factory=list)
+    global_ignored_channels: list[str] = Field(default_factory=list)
+    boards: list[FireboardBoardModel] = Field(default_factory=list)
 
 
 class ServerCounterChannelModel(BaseModel):
@@ -255,4 +284,4 @@ class ServerCounterChannelModel(BaseModel):
 
 
 class ServerCountersConfigModel(BaseModel):
-    channels: list[ServerCounterChannelModel] = []
+    channels: list[ServerCounterChannelModel] = Field(default_factory=list)

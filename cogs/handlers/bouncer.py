@@ -16,8 +16,6 @@ from lib.sql.sql import BouncerAction, BouncerRule, get_session
 if TYPE_CHECKING:
     from main import TitaniumBot
 
-# TODO: only apply worst punishment per type (e.g. longest mute, ban over kick, etc)
-
 
 class BouncerMonitorCog(commands.Cog):
     """Monitors joiners and member updates for bouncer triggers and creates cases/punishments"""
@@ -76,8 +74,10 @@ class BouncerMonitorCog(commands.Cog):
         config = self.bot.guild_configs[member.guild.id].bouncer_settings
 
         for rule in config.rules:
-            rule: BouncerRule
             spotted = False
+
+            if not rule.enabled:
+                continue
 
             for criteria in rule.criteria:
                 if str(criteria.criteria_type) == "username":

@@ -4,13 +4,16 @@ import os
 import uuid
 from typing import TYPE_CHECKING
 
+import discord
 from aiohttp import web
 from discord.ext import commands
 from pydantic import ValidationError
 from sqlalchemy import delete, func, select
+from sqlalchemy.orm import selectinload
 
 from lib.api.endpoints import (
     automod_info,
+    bouncer_info,
     confession_info,
     fireboard_info,
     logging_info,
@@ -40,6 +43,7 @@ from lib.sql.sql import (
     GuildModerationSettings,
     GuildServerCounterSettings,
     GuildSettings,
+    ModCase,
     ServerCounterChannel,
     get_session,
 )
@@ -93,6 +97,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/stats", self.stats)
         self.app.router.add_get("/user/{user_id}/guilds", self.mutual_guilds)
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
+        self.app.router.add_get("/guild/{guild_id}/cases", self.guild_cases)
         self.app.router.add_get("/guild/{guild_id}/errors", self.guild_errors)
         self.app.router.add_get("/guild/{guild_id}/perms/{user_id}", self.guild_perm_check)
         self.app.router.add_get("/guild/{guild_id}/settings", self.guild_settings)
@@ -213,6 +218,148 @@ class APICog(commands.Cog):
             }
         )
 
+    async def guild_cases(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        limit = max(min(int(request.query.get("limit", 50)), 100), 1)
+        offset = max(int(request.query.get("offset", 0)), 0)
+
+        async with get_session() as session:
+            # Get total count
+            total_result = await session.execute(
+                select(func.count()).select_from(ModCase).where(ModCase.guild_id == guild.id)
+            )
+            total_count = total_result.scalar() or 0
+
+            if offset >= total_count:
+                return web.json_response(
+                    {
+                        "total_count": total_count,
+                        "cases": [],
+                    }
+                )
+
+            # Get cases from DB
+            result = await session.execute(
+                select(ModCase)
+                .where(ModCase.guild_id == guild.id)
+                .order_by(ModCase.time_created.desc())
+                .limit(limit)
+                .offset(offset)
+                .options(selectinload(ModCase.comments))
+            )
+            cases = result.scalars().all()
+
+        # Get user objects to send user info
+        cached_users: dict[int, discord.User | discord.Member] = {}
+        for case in cases:
+            for user_id in [case.user_id, case.creator_user_id]:
+                if user_id not in cached_users:
+                    member = guild.get_member(user_id)
+                    if member:
+                        cached_users[user_id] = member
+                    else:
+                        try:
+                            user = await self.bot.fetch_user(user_id)
+                            cached_users[user_id] = user
+                        except Exception:
+                            cached_users[user_id] = None
+
+                for comment in case.comments:
+                    if comment.user_id not in cached_users:
+                        member = guild.get_member(comment.user_id)
+                        if member:
+                            cached_users[comment.user_id] = member
+                        else:
+                            try:
+                                user = await self.bot.fetch_user(comment.user_id)
+                                cached_users[comment.user_id] = user
+                            except Exception:
+                                cached_users[comment.user_id] = None
+
+        return web.json_response(
+            {
+                "total_count": total_count,
+                "cases": [
+                    {
+                        "id": case.id,
+                        "type": case.type,
+                        "user_id": str(case.user_id),
+                        "user_name": (
+                            cached_users[case.user_id].name if cached_users[case.user_id] else None
+                        ),
+                        "user_display": (
+                            cached_users[case.user_id].display_name
+                            if cached_users[case.user_id]
+                            else None
+                        ),
+                        "user_pfp": (
+                            cached_users[case.user_id].display_avatar.url
+                            if cached_users[case.user_id]
+                            else None
+                        ),
+                        "creator_id": str(case.creator_user_id),
+                        "creator_name": (
+                            cached_users[case.creator_user_id].name
+                            if cached_users[case.creator_user_id]
+                            else None
+                        ),
+                        "creator_display": (
+                            cached_users[case.creator_user_id].display_name
+                            if cached_users[case.creator_user_id]
+                            else None
+                        ),
+                        "creator_pfp": (
+                            cached_users[case.creator_user_id].display_avatar.url
+                            if cached_users[case.creator_user_id]
+                            else None
+                        ),
+                        "description": case.description,
+                        "external": case.external,
+                        "resolved": case.resolved,
+                        "comments": [
+                            {
+                                "id": str(comment.id),
+                                "creator_id": str(comment.user_id),
+                                "creator_name": (
+                                    cached_users[comment.user_id].name
+                                    if cached_users[comment.user_id]
+                                    else None
+                                ),
+                                "creator_display": (
+                                    cached_users[comment.user_id].display_name
+                                    if cached_users[comment.user_id]
+                                    else None
+                                ),
+                                "creator_pfp": (
+                                    cached_users[comment.user_id].display_avatar.url
+                                    if cached_users[comment.user_id]
+                                    else None
+                                ),
+                                "content": comment.content,
+                                "time_created": comment.time_created.isoformat(),
+                            }
+                            for comment in case.comments
+                        ],
+                        "time_created": case.time_created.isoformat(),
+                        "time_expires": case.time_expires.isoformat()
+                        if case.time_expires
+                        else None,
+                        "time_updated": case.time_updated.isoformat()
+                        if case.time_updated
+                        else None,
+                    }
+                    for case in cases
+                ],
+            }
+        )
+
     async def guild_errors(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
         if not guild_id or not guild_id.isdigit():
@@ -253,7 +400,7 @@ class APICog(commands.Cog):
         return web.json_response(
             {
                 "total_count": total_count,
-                "errors": [
+                "cases": [
                     {
                         "id": str(error.id),
                         "module": error.module,
@@ -288,6 +435,7 @@ class APICog(commands.Cog):
                 }
             )
 
+        # TODO: add role based permission check
         return web.json_response(
             {
                 "dashboard_manager": member.guild_permissions.administrator,
@@ -327,6 +475,7 @@ class APICog(commands.Cog):
                 "modules": {
                     "moderation": config.moderation_enabled,
                     "automod": config.automod_enabled,
+                    "bouncer": config.bouncer_enabled,
                     "logging": config.logging_enabled,
                     "fireboard": config.fireboard_enabled,
                     "server_counters": config.server_counters_enabled,
@@ -388,6 +537,7 @@ class APICog(commands.Cog):
             db_config.confession_enabled = validated_settings.modules.confession
             db_config.moderation_enabled = validated_settings.modules.moderation
             db_config.automod_enabled = validated_settings.modules.automod
+            db_config.bouncer_enabled = validated_settings.modules.bouncer
             db_config.logging_enabled = validated_settings.modules.logging
             db_config.fireboard_enabled = validated_settings.modules.fireboard
             db_config.server_counters_enabled = validated_settings.modules.server_counters
@@ -429,6 +579,8 @@ class APICog(commands.Cog):
             return moderation_info(self.bot, request, guild)
         elif module_name == "automod":
             return automod_info(self.bot, request, guild)
+        elif module_name == "bouncer":
+            return bouncer_info(self.bot, request, guild)
         elif module_name == "logging":
             return logging_info(self.bot, request, guild)
         elif module_name == "fireboard":

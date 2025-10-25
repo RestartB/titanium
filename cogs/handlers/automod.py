@@ -119,8 +119,6 @@ class AutomodMonitorCog(commands.Cog):
         # Check for any spam detection
         if len(config.spam_detection_rules) > 0:
             for rule in config.spam_detection_rules:
-                rule: AutomodRule
-
                 latest_timestamp = current_state[0].timestamp
                 filtered_messages = [
                     m
@@ -149,13 +147,10 @@ class AutomodMonitorCog(commands.Cog):
                 if count >= rule.threshold:
                     triggers.append(rule)
                     for action in rule.actions:
-                        action: AutomodAction
                         punishments.append(action)
 
         # Malicious link check
         for rule in config.malicious_link_rules:
-            rule: AutomodRule
-
             latest_timestamp = current_state[0].timestamp
             filtered_messages = [
                 m
@@ -171,13 +166,10 @@ class AutomodMonitorCog(commands.Cog):
             if spotted >= rule.threshold:
                 triggers.append(rule)
                 for action in rule.actions:
-                    action: AutomodAction
                     punishments.append(action)
 
         # Phishing link check
         for rule in config.phishing_link_rules:
-            rule: AutomodRule
-
             latest_timestamp = current_state[0].timestamp
             filtered_messages = [
                 m
@@ -197,13 +189,10 @@ class AutomodMonitorCog(commands.Cog):
             if spotted >= rule.threshold:
                 triggers.append(rule)
                 for action in rule.actions:
-                    action: AutomodAction
                     punishments.append(action)
 
         # Bad word detection
         for rule in config.badword_detection_rules:
-            rule: AutomodRule
-
             if not rule.words:
                 continue
 
@@ -224,7 +213,6 @@ class AutomodMonitorCog(commands.Cog):
             if spotted >= rule.threshold:
                 triggers.append(rule)
                 for action in rule.actions:
-                    action: AutomodAction
                     punishments.append(action)
 
         # Get list of punishment types
