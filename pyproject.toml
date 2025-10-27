@@ -8,7 +8,7 @@ dependencies = [
     "aiohttp==3.12.15",
     "asqlite==2.0.0",
     "colorthief==0.2.1",
-    "discord-py==2.5.2",
+    "discord-py==2.6.4",
     "pillow-avif-plugin==1.5.2",
     "pillow==11.3.0",
     "psutil==7.0.0",
