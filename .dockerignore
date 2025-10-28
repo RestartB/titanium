@@ -14,10 +14,13 @@ README.md
 .gitignore
 .github/
 
-# Python
+# Caches
 __pycache__/
 *.pyc
 .ruff_cache/
+.cache
+
+# Virtual Environments
 .venv/
 
 # Logs

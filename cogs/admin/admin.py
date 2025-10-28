@@ -131,10 +131,39 @@ class AdminCog(commands.Cog):
         finally:
             await stop_loading(self.bot, ctx)
 
+    @admin_group.command(name="load", hidden=True)
+    @commands.is_owner()
+    async def load_cog(self, ctx: commands.Context["TitaniumBot"], cog_name: str) -> None:
+        await defer(self.bot, ctx, ephemeral=True)
+
+        try:
+            await ctx.bot.load_extension(f"cogs.{cog_name}")
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Loaded",
+                    description=f"Successfully loaded `{cog_name}` cog.",
+                    colour=discord.Colour.green(),
+                )
+            )
+        except Exception as e:
+            self.logger.error(f"Error loading {cog_name}")
+            self.logger.exception(e)
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Loading",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                )
+            )
+        finally:
+            await stop_loading(self.bot, ctx)
+
     @admin_group.command(name="unload", hidden=True)
     @commands.is_owner()
     async def unload_cog(self, ctx: commands.Context["TitaniumBot"], cog_name: str) -> None:
-        # As it is a prefix command no need of defer.
+        await defer(self.bot, ctx, ephemeral=True)
+
         try:
             await ctx.bot.unload_extension(f"cogs.{cog_name}")
             await ctx.reply(
@@ -155,6 +184,8 @@ class AdminCog(commands.Cog):
                     colour=discord.Colour.red(),
                 )
             )
+        finally:
+            await stop_loading(self.bot, ctx)
 
     @admin_group.command(name="migrate-db", hidden=True)
     @commands.is_owner()

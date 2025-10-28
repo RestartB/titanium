@@ -3,11 +3,14 @@ from discord.ui import Button, View, button
 
 
 class PaginationView(View):
-    def __init__(self, embeds: list[Embed], timeout: float):
+    def __init__(self, embeds: list[Embed], timeout: float, custom_buttons: list[Button] = []):
         super().__init__(timeout=timeout)
         self.embeds = embeds
-        self.page_count.label = f"1/{len(embeds)}"
 
+        for custom_button in custom_buttons:
+            self.add_item(custom_button)
+
+        self.page_count.label = f"1/{len(embeds)}"
         self.current_page = 0
 
     # First page
@@ -18,7 +21,13 @@ class PaginationView(View):
         self.first_button.disabled = True
         self.prev_button.disabled = True
 
-        await interaction.edit_original_response(embed=self.embeds[self.current_page], view=self)
+        await interaction.edit_original_response(
+            embed=self.embeds[self.current_page].set_footer(
+                text=f"Controlling: @{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            ),
+            view=self,
+        )
 
     # Prev Page
     @button(emoji="⏪", style=ButtonStyle.primary, custom_id="prev")
@@ -29,7 +38,13 @@ class PaginationView(View):
             self.first_button.disabled = True
             self.prev_button.disabled = True
 
-        await interaction.edit_original_response(embed=self.embeds[self.current_page], view=self)
+        await interaction.edit_original_response(
+            embed=self.embeds[self.current_page].set_footer(
+                text=f"Controlling: @{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            ),
+            view=self,
+        )
 
     # Page count
     @button(style=ButtonStyle.gray, custom_id="count", disabled=True)
@@ -45,7 +60,13 @@ class PaginationView(View):
             self.next_button.disabled = True
             self.last_button.disabled = True
 
-        await interaction.edit_original_response(embed=self.embeds[self.current_page], view=self)
+        await interaction.edit_original_response(
+            embed=self.embeds[self.current_page].set_footer(
+                text=f"Controlling: @{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            ),
+            view=self,
+        )
 
     # Last page
     @button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
@@ -55,4 +76,10 @@ class PaginationView(View):
         self.next_button.disabled = True
         self.last_button.disabled = True
 
-        await interaction.edit_original_response(embed=self.embeds[self.current_page], view=self)
+        await interaction.edit_original_response(
+            embed=self.embeds[self.current_page].set_footer(
+                text=f"Controlling: @{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
+            ),
+            view=self,
+        )

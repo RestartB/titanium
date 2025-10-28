@@ -662,7 +662,7 @@ class QuoteView(View):
             )
 
 
-class Quotes(commands.Cog):
+class QuoteCommandsCog(commands.Cog):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot: "TitaniumBot" = bot
 
@@ -972,4 +972,4 @@ class Quotes(commands.Cog):
 
 
 async def setup(bot: "TitaniumBot") -> None:
-    await bot.add_cog(Quotes(bot))
+    await bot.add_cog(QuoteCommandsCog(bot))

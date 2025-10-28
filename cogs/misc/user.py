@@ -78,6 +78,8 @@ class UserCommandsCog(commands.Cog):
             await ctx.reply(embed=embed, view=view)
         else:
             embed.description = f"{user.mention} does not have a server profile picture."
+            embed.colour = Colour.red()
+
             await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="banner", description="Get the banner of a user.")
@@ -97,12 +99,12 @@ class UserCommandsCog(commands.Cog):
         banner = user_obj.banner.url if user_obj.banner else None
 
         e = Embed(colour=user.accent_colour)
+        e.set_author(
+            name=f"@{user.name}'s Banner",
+            icon_url=user.display_avatar.url,
+        )
 
         if banner:
-            e.set_author(
-                name=f"@{user.name}'s Banner",
-                icon_url=user.display_avatar.url,
-            )
             e.set_image(url=banner)
 
             png_url = banner + "?format=png"
@@ -118,7 +120,7 @@ class UserCommandsCog(commands.Cog):
 
             await ctx.reply(embed=e, view=view)
         else:
-            e.description = f"{str(self.bot.error_emoji)} This user does not have a banner."
+            e.description = f"{str(self.bot.error_emoji)} {user.mention} does not have a banner."
             e.colour = Colour.red()
 
             await ctx.reply(embed=e)

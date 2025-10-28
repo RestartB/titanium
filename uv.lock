@@ -215,6 +215,18 @@ wheels = [
 ]
 
 [[package]]
+name = "colorthief"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pillow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b6/b2/b55b741f7a7d1299d23e1c635f00f6c57ea4d2e9b76d09e1fc5ea3ca9921/colorthief-0.2.1.tar.gz", hash = "sha256:079cb0c95bdd669c4643e2f7494de13b0b6029d5cdbe2d74d5d3c3386bd57221", size = 6164 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/56/18/be03b7058e65f9df479b14e7af4e73945ce311e07aaad45cf2536e14791a/colorthief-0.2.1-py2.py3-none-any.whl", hash = "sha256:b04fc8ce5cf9c888768745e29cb19b7b688d5711af6fba26e8057debabec56b9", size = 6134 },
+]
+
+[[package]]
 name = "discord-py"
 version = "2.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -768,6 +780,15 @@ pil = [
 ]
 
 [[package]]
+name = "redis"
+version = "7.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/8f/f125feec0b958e8d22c8f0b492b30b1991d9499a4315dfde466cf4289edc/redis-7.0.1.tar.gz", hash = "sha256:c949df947dca995dc68fdf5a7863950bf6df24f8d6022394585acc98e81624f1", size = 4755322 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e9/97/9f22a33c475cda519f20aba6babb340fb2f2254a02fb947816960d1e669a/redis-7.0.1-py3-none-any.whl", hash = "sha256:4977af3c7d67f8f0eb8b6fec0dafc9605db9343142f634041fb0235f67c0588a", size = 339938 },
+]
+
+[[package]]
 name = "requests"
 version = "2.32.5"
 source = { registry = "https://pypi.org/simple" }
@@ -839,6 +860,20 @@ wheels = [
 ]
 
 [[package]]
+name = "spotipy"
+version = "2.25.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "redis" },
+    { name = "requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/18/22/d900e55cfdd489ecdacf560aea4618848893fcbab4433bf62d0d731fa030/spotipy-2.25.1.tar.gz", hash = "sha256:607d3c43722b7e217a7e6c82f17258b798b92a512017d60c06323d62ae814cd7", size = 44432 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bd/3b/dde90e39c456f0d72397afd49d433f95c6a2fdbdcd829bcfc38cdbf6949a/spotipy-2.25.1-py3-none-any.whl", hash = "sha256:18f47d9a0594ced8001b3baa5a4160ea6dcf570abbdad371971f475a81892844", size = 31331 },
+]
+
+[[package]]
 name = "sqlalchemy"
 version = "2.0.41"
 source = { registry = "https://pypi.org/simple" }
@@ -880,6 +915,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "asyncpg" },
     { name = "atlas-provider-sqlalchemy" },
+    { name = "colorthief" },
     { name = "discord-py" },
     { name = "dotenv" },
     { name = "humanize" },
@@ -890,6 +926,7 @@ dependencies = [
     { name = "pytest-playwright" },
     { name = "qrcode", extra = ["pil"] },
     { name = "shortuuid" },
+    { name = "spotipy" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "wand" },
 ]
@@ -903,6 +940,7 @@ dev = [
 requires-dist = [
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "atlas-provider-sqlalchemy", specifier = ">=0.4.0" },
+    { name = "colorthief", specifier = ">=0.2.1" },
     { name = "discord-py", specifier = ">=2.6.0" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "humanize", specifier = ">=4.13.0" },
@@ -913,6 +951,7 @@ requires-dist = [
     { name = "pytest-playwright", specifier = ">=0.7.1" },
     { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
     { name = "shortuuid", specifier = ">=1.0.13" },
+    { name = "spotipy", specifier = ">=2.25.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.41" },
     { name = "wand", specifier = ">=0.6.13" },
 ]

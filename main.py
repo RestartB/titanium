@@ -254,6 +254,12 @@ class TitaniumBot(commands.Bot):
                 self.warn_emoji = await self.fetch_application_emoji(int(warn_emoji))
             else:
                 self.warn_emoji = "⚠️"
+
+            explicit_emoji = os.getenv("EXPLICIT_EMOJI")
+            if explicit_emoji and explicit_emoji.strip() != "":
+                self.explicit_emoji = await self.fetch_application_emoji(int(explicit_emoji))
+            else:
+                self.explicit_emoji = "🔞"
         except discord.HTTPException as e:
             init_logger.error("Failed to fetch emojis")
             init_logger.exception(e)
