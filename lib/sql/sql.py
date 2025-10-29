@@ -463,6 +463,7 @@ class ServerCounterChannel(Base):
         "GuildServerCounterSettings", back_populates="channels", uselist=False
     )
     count_type: Mapped[str] = MappedColumn(String(length=32))
+    activity_name: Mapped[str] = MappedColumn(String(length=50), nullable=True)
     name: Mapped[str] = MappedColumn(String(length=50), default="{value}")
 
 
@@ -634,6 +635,7 @@ async def init_db():
 @asynccontextmanager
 async def get_session():
     async with async_session() as session:
+        session: AsyncSession
         try:
             yield session
             await session.commit()

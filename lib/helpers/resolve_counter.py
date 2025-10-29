@@ -1,8 +1,12 @@
+from typing import Optional
+
 import discord
 import humanize
 
 
-def resolve_counter(guild: discord.Guild, type: str, name: str) -> str:
+def resolve_counter(
+    guild: discord.Guild, type: str, name: str, target_activity: Optional[str] = None
+) -> str:
     """Resolve the server counter name for a channel."""
 
     if type == "total_members":
@@ -77,6 +81,18 @@ def resolve_counter(guild: discord.Guild, type: str, name: str) -> str:
             + len(guild.stage_channels)
             + len(guild.forums)
         )
+    elif type == "activity":
+        updated_value = 0
+
+        if target_activity is not None:
+            for member in guild.members:
+                for activity in member.activities:
+                    if (
+                        activity.name is not None
+                        and activity.name.lower() == target_activity.lower()
+                    ):
+                        updated_value += 1
+                        break
     else:
         return ""
 

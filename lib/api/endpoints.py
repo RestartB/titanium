@@ -208,6 +208,7 @@ def server_counters_info(bot: "TitaniumBot", request: web.Request, guild: Guild)
                     "id": str(channel.id),
                     "name": channel.name,
                     "type": str(channel.count_type),
+                    "activity_name": channel.activity_name,
                 }
                 for channel in server_counters_settings.channels
             ]

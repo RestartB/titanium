@@ -256,6 +256,7 @@ class ServerCounterChannelModel(BaseModel):
     id: Optional[str] = None
     name: str
     type: str
+    activity_name: Optional[str] = None
 
     @field_validator("type")
     def validate_type(cls, v):
@@ -271,6 +272,7 @@ class ServerCounterChannelModel(BaseModel):
             "members_custom_status",
             "offline_members",
             "channels",
+            "activity",
         ]
         if v not in valid_types:
             raise ValueError(f"Channel type must be one of: {valid_types}")

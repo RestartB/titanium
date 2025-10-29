@@ -51,6 +51,8 @@ from lib.sql.sql import (
 if TYPE_CHECKING:
     from main import TitaniumBot
 
+from lib.helpers.log_error import log_error
+
 
 class APICog(commands.Cog):
     """API server for dashboard, website and status page"""
@@ -257,7 +259,7 @@ class APICog(commands.Cog):
             cases = result.scalars().all()
 
         # Get user objects to send user info
-        cached_users: dict[int, discord.User | discord.Member] = {}
+        cached_users: dict[int, discord.User | discord.Member | None] = {}
         for case in cases:
             for user_id in [case.user_id, case.creator_user_id]:
                 if user_id not in cached_users:
@@ -283,80 +285,52 @@ class APICog(commands.Cog):
                             except Exception:
                                 cached_users[comment.user_id] = None
 
+        cases_output = []
+        for case in cases:
+            user = cached_users.get(case.user_id)
+            creator = cached_users.get(case.creator_user_id)
+
+            comments_list = []
+            for comment in case.comments:
+                cuser = cached_users.get(comment.user_id)
+                comments_list.append(
+                    {
+                        "id": str(comment.id),
+                        "creator_id": str(comment.user_id),
+                        "creator_name": cuser.name if cuser else None,
+                        "creator_display": cuser.display_name if cuser else None,
+                        "creator_pfp": cuser.display_avatar.url if cuser else None,
+                        "content": comment.comment,
+                        "time_created": comment.time_created.isoformat(),
+                    }
+                )
+
+            cases_output.append(
+                {
+                    "id": case.id,
+                    "type": case.type,
+                    "user_id": str(case.user_id),
+                    "user_name": user.name if user else None,
+                    "user_display": user.display_name if user else None,
+                    "user_pfp": user.display_avatar.url if user else None,
+                    "creator_id": str(case.creator_user_id),
+                    "creator_name": creator.name if creator else None,
+                    "creator_display": creator.display_name if creator else None,
+                    "creator_pfp": creator.display_avatar.url if creator else None,
+                    "description": case.description,
+                    "external": case.external,
+                    "resolved": case.resolved,
+                    "comments": comments_list,
+                    "time_created": case.time_created.isoformat(),
+                    "time_expires": case.time_expires.isoformat() if case.time_expires else None,
+                    "time_updated": case.time_updated.isoformat() if case.time_updated else None,
+                }
+            )
+
         return web.json_response(
             {
                 "total_count": total_count,
-                "cases": [
-                    {
-                        "id": case.id,
-                        "type": case.type,
-                        "user_id": str(case.user_id),
-                        "user_name": (
-                            cached_users[case.user_id].name if cached_users[case.user_id] else None
-                        ),
-                        "user_display": (
-                            cached_users[case.user_id].display_name
-                            if cached_users[case.user_id]
-                            else None
-                        ),
-                        "user_pfp": (
-                            cached_users[case.user_id].display_avatar.url
-                            if cached_users[case.user_id]
-                            else None
-                        ),
-                        "creator_id": str(case.creator_user_id),
-                        "creator_name": (
-                            cached_users[case.creator_user_id].name
-                            if cached_users[case.creator_user_id]
-                            else None
-                        ),
-                        "creator_display": (
-                            cached_users[case.creator_user_id].display_name
-                            if cached_users[case.creator_user_id]
-                            else None
-                        ),
-                        "creator_pfp": (
-                            cached_users[case.creator_user_id].display_avatar.url
-                            if cached_users[case.creator_user_id]
-                            else None
-                        ),
-                        "description": case.description,
-                        "external": case.external,
-                        "resolved": case.resolved,
-                        "comments": [
-                            {
-                                "id": str(comment.id),
-                                "creator_id": str(comment.user_id),
-                                "creator_name": (
-                                    cached_users[comment.user_id].name
-                                    if cached_users[comment.user_id]
-                                    else None
-                                ),
-                                "creator_display": (
-                                    cached_users[comment.user_id].display_name
-                                    if cached_users[comment.user_id]
-                                    else None
-                                ),
-                                "creator_pfp": (
-                                    cached_users[comment.user_id].display_avatar.url
-                                    if cached_users[comment.user_id]
-                                    else None
-                                ),
-                                "content": comment.content,
-                                "time_created": comment.time_created.isoformat(),
-                            }
-                            for comment in case.comments
-                        ],
-                        "time_created": case.time_created.isoformat(),
-                        "time_expires": case.time_expires.isoformat()
-                        if case.time_expires
-                        else None,
-                        "time_updated": case.time_updated.isoformat()
-                        if case.time_updated
-                        else None,
-                    }
-                    for case in cases
-                ],
+                "cases": cases_output,
             }
         )
 
@@ -797,55 +771,29 @@ class APICog(commands.Cog):
                 ]
 
                 session.add(existing_configs)
-
-                await session.commit()
-                await session.refresh(existing_configs)
+                await session.execute(
+                    delete(FireboardBoard).where(FireboardBoard.guild_id == guild.id)
+                )
 
                 for new_board in validated_config.boards:
-                    if new_board.id is None:
-                        board = FireboardBoard(
-                            guild_id=guild.id,
-                            channel_id=int(new_board.channel_id),
-                            reaction=new_board.reaction,
-                            threshold=new_board.threshold,
-                            ignore_bots=new_board.ignore_bots,
-                            ignore_self_reactions=new_board.ignore_self_reactions,
-                            ignored_roles=[int(role_id) for role_id in new_board.ignored_roles],
-                            ignored_channels=[
-                                int(channel_id) for channel_id in new_board.ignored_channels
-                            ],
-                        )
-                        session.add(board)
-                    else:
-                        existing_board = await session.get(FireboardBoard, int(new_board.id))
+                    channel = guild.get_channel(int(new_board.channel_id))
 
-                        if existing_board and existing_board.guild_id == guild.id:
-                            existing_board.channel_id = int(new_board.channel_id)
-                            existing_board.reaction = new_board.reaction
-                            existing_board.threshold = new_board.threshold
-                            existing_board.ignore_bots = new_board.ignore_bots
-                            existing_board.ignore_self_reactions = new_board.ignore_self_reactions
-                            existing_board.ignored_roles = [
-                                int(role_id) for role_id in new_board.ignored_roles
-                            ]
-                            existing_board.ignored_channels = [
-                                int(channel_id) for channel_id in new_board.ignored_channels
-                            ]
-                            session.add(existing_board)
-                        else:
-                            board = FireboardBoard(
-                                guild_id=guild.id,
-                                channel_id=int(new_board.channel_id),
-                                reaction=new_board.reaction,
-                                threshold=new_board.threshold,
-                                ignore_bots=new_board.ignore_bots,
-                                ignore_self_reactions=new_board.ignore_self_reactions,
-                                ignored_roles=[int(role_id) for role_id in new_board.ignored_roles],
-                                ignored_channels=[
-                                    int(channel_id) for channel_id in new_board.ignored_channels
-                                ],
-                            )
-                            session.add(board)
+                    if not channel:
+                        raise web.HTTPBadRequest(reason="Invalid channel ID for fireboard board")
+
+                    board = FireboardBoard(
+                        guild_id=guild.id,
+                        channel_id=int(new_board.channel_id),
+                        reaction=new_board.reaction,
+                        threshold=new_board.threshold,
+                        ignore_bots=new_board.ignore_bots,
+                        ignore_self_reactions=new_board.ignore_self_reactions,
+                        ignored_roles=[int(role_id) for role_id in new_board.ignored_roles],
+                        ignored_channels=[
+                            int(channel_id) for channel_id in new_board.ignored_channels
+                        ],
+                    )
+                    session.add(board)
 
             await self.bot.refresh_guild_config_cache(guild.id)
             return web.Response(status=204)
@@ -869,7 +817,12 @@ class APICog(commands.Cog):
                     )
 
                 # Get existing configs
-                existing_config = await session.get(GuildServerCounterSettings, guild.id)
+                result = await session.execute(
+                    select(GuildServerCounterSettings)
+                    .where(GuildServerCounterSettings.guild_id == guild.id)
+                    .options(selectinload(GuildServerCounterSettings.channels))
+                )
+                existing_config = result.scalar_one_or_none()
 
                 if not existing_config:
                     existing_config = GuildServerCounterSettings(guild_id=guild.id)
@@ -878,7 +831,12 @@ class APICog(commands.Cog):
                     await session.commit()
                     await session.refresh(existing_config)
 
+                channel_ids = []
+
                 for new_channel in validated_config.channels:
+                    if new_channel.id is not None:
+                        channel_ids.append(int(new_channel.id))
+
                     if new_channel.id is None:
                         new_name = resolve_counter(guild, new_channel.type, new_channel.name)
 
@@ -886,12 +844,14 @@ class APICog(commands.Cog):
                             name=new_name,
                             reason="Creating server counter channel",
                         )
+                        channel_ids.append(discord_channel.id)
 
                         channel = ServerCounterChannel(
                             id=discord_channel.id,
                             guild_id=guild.id,
                             name=new_channel.name,
                             count_type=new_channel.type,
+                            activity_name=new_channel.activity_name,
                         )
                         session.add(channel)
                     else:
@@ -902,22 +862,86 @@ class APICog(commands.Cog):
                         if existing_channel and existing_channel.guild_id == guild.id:
                             existing_channel.name = new_channel.name
                             existing_channel.count_type = new_channel.type
+                            existing_channel.activity_name = new_channel.activity_name  # pyright: ignore[reportAttributeAccessIssue]
+
                             session.add(existing_channel)
                         else:
                             new_name = resolve_counter(guild, new_channel.type, new_channel.name)
 
-                            discord_channel = await guild.create_voice_channel(
-                                name=new_name,
-                                reason="Creating server counter channel",
-                            )
+                            try:
+                                discord_channel = await guild.create_voice_channel(
+                                    name=new_name,
+                                    reason="Creating server counter channel",
+                                )
+                                channel_ids.append(discord_channel.id)
+                            except discord.Forbidden:
+                                await log_error(
+                                    module="Server Counters",
+                                    guild_id=guild.id,
+                                    error="Missing permissions to create server counter channel",
+                                )
+                                continue
+                            except discord.HTTPException as e:
+                                await log_error(
+                                    module="Server Counters",
+                                    guild_id=guild.id,
+                                    error="Unexpected Discord error when creating server counter channel",
+                                    exc=e,
+                                )
+                                continue
+                            except Exception as e:
+                                await log_error(
+                                    module="Server Counters",
+                                    guild_id=guild.id,
+                                    error="Unexpected error when creating server counter channel",
+                                    exc=e,
+                                )
+                                continue
 
                             channel = ServerCounterChannel(
                                 id=discord_channel.id,
                                 guild_id=guild.id,
                                 name=new_channel.name,
                                 count_type=new_channel.type,
+                                activity_name=new_channel.activity_name,
                             )
                             session.add(channel)
+
+                await session.commit()
+                await session.refresh(existing_config, ["channels"])
+
+                # Delete removed channels
+                for existing_channel in existing_config.channels:
+                    if existing_channel.id not in channel_ids:
+                        discord_channel = guild.get_channel(existing_channel.id)
+
+                        if discord_channel:
+                            try:
+                                await discord_channel.delete(
+                                    reason="Removing server counter channel"
+                                )
+                            except discord.Forbidden:
+                                await log_error(
+                                    module="Server Counters",
+                                    guild_id=guild.id,
+                                    error=f"Missing permissions to delete channel #{discord_channel.name} ({discord_channel.id})",
+                                )
+                            except discord.HTTPException as e:
+                                await log_error(
+                                    module="Server Counters",
+                                    guild_id=guild.id,
+                                    error=f"Unexpected Discord error when deleting channel #{discord_channel.name} ({discord_channel.id})",
+                                    exc=e,
+                                )
+                            except Exception as e:
+                                await log_error(
+                                    module="Server Counters",
+                                    guild_id=guild.id,
+                                    error=f"Unexpected error when deleting channel #{discord_channel.name} ({discord_channel.id})",
+                                    exc=e,
+                                )
+
+                        await session.delete(existing_channel)
 
             await self.bot.refresh_guild_config_cache(guild.id)
             return web.Response(status=204)
