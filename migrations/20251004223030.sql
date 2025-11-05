@@ -28,15 +28,15 @@ CREATE TABLE "guild_prefixes" (
 -- Create "guild_limits" table
 CREATE TABLE "guild_limits" (
   "id" bigserial NOT NULL,
-  "BadWordList" integer NOT NULL,
-  "BadWordListSize" integer NOT NULL,
-  "MessageSpamRules" integer NOT NULL,
-  "MentionSpamRules" integer NOT NULL,
-  "WordSpamRules" integer NOT NULL,
-  "NewLineSpamRules" integer NOT NULL,
-  "LinkSpamRules" integer NOT NULL,
-  "AttachmentSpamRules" integer NOT NULL,
-  "EmojiSpamRules" integer NOT NULL,
+  "bad_word_rules" integer NOT NULL,
+  "bad_word_list_size" integer NOT NULL,
+  "message_spam_rules" integer NOT NULL,
+  "mention_spam_rules" integer NOT NULL,
+  "word_spam_rules" integer NOT NULL,
+  "new_line_spam_rules" integer NOT NULL,
+  "link_spam_rules" integer NOT NULL,
+  "attachment_spam_rules" integer NOT NULL,
+  "emoji_spam_rules" integer NOT NULL,
   PRIMARY KEY ("id")
 );
 -- Create "guild_automod_settings" table

@@ -104,15 +104,18 @@ class GuildConfessionSettings(Base):
 class GuildLimits(Base):
     __tablename__ = "guild_limits"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    BadWordList: Mapped[int] = MappedColumn(Integer, default=10)
-    BadWordListSize: Mapped[int] = MappedColumn(Integer, default=1500)
-    MessageSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    MentionSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    WordSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    NewLineSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    LinkSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    AttachmentSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
-    EmojiSpamRules: Mapped[int] = MappedColumn(Integer, default=5)
+    bad_word_rules: Mapped[int] = MappedColumn(Integer, default=10)
+    bad_word_list_size: Mapped[int] = MappedColumn(Integer, default=1500)
+    message_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
+    mention_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
+    word_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
+    new_line_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
+    link_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
+    attachment_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
+    emoji_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
+    bouncer_rules: Mapped[int] = MappedColumn(Integer, default=10)
+    fireboards: Mapped[int] = MappedColumn(Integer, default=10)
+    server_counters: Mapped[int] = MappedColumn(Integer, default=20)
 
 
 class GuildPrefixes(Base):

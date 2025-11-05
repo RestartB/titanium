@@ -54,7 +54,7 @@ class StatsUpdateCog(commands.Cog):
                 activity=discord.Activity(
                     status=discord.Status.online,
                     type=discord.ActivityType.custom,
-                    name="custom",
+                    name="titanium",
                     state="🌐 titaniumbot.me",
                 )
             )
@@ -64,7 +64,7 @@ class StatsUpdateCog(commands.Cog):
                 activity=discord.Activity(
                     status=discord.Status.online,
                     type=discord.ActivityType.custom,
-                    name="custom",
+                    name="titanium",
                     state=f"{self.bot.user_installs} users, {self.bot.guild_installs} servers with {self.bot.guild_member_count:,} members",
                 )
             )

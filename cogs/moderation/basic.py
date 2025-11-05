@@ -199,7 +199,7 @@ class ModerationBasicCog(commands.Cog):
                 await log_error(
                     module="Moderation",
                     guild_id=member.guild.id,
-                    error=f"Forbidden error while muting @{member.name} ({member.id})",
+                    error=f"Titanium was not allowed to mute @{member.name} ({member.id})",
                     details=e.text,
                 )
 
@@ -307,7 +307,7 @@ class ModerationBasicCog(commands.Cog):
                 await log_error(
                     module="Moderation",
                     guild_id=member.guild.id,
-                    error=f"Forbidden error while unmuting @{member.name} ({member.id})",
+                    error=f"Titanium was not allowed to unmute @{member.name} ({member.id})",
                     details=e.text,
                 )
 
@@ -410,7 +410,7 @@ class ModerationBasicCog(commands.Cog):
                 await log_error(
                     module="Moderation",
                     guild_id=member.guild.id,
-                    error=f"Forbidden error while kicking @{member.name} ({member.id})",
+                    error=f"Titanium was not allowed to kick @{member.name} ({member.id})",
                     details=e.text,
                 )
 
@@ -539,7 +539,7 @@ class ModerationBasicCog(commands.Cog):
                 await log_error(
                     module="Moderation",
                     guild_id=ctx.guild.id,
-                    error=f"Forbidden error while banning @{user.name} ({user.id})",
+                    error=f"Titanium was not allowed to ban @{user.name} ({user.id})",
                     details=e.text,
                 )
 
@@ -641,7 +641,7 @@ class ModerationBasicCog(commands.Cog):
                 await log_error(
                     module="Moderation",
                     guild_id=ctx.guild.id,
-                    error=f"Forbidden error while unbanning @{user.name} ({user.id})",
+                    error=f"Titanium was not allowed to unban @{user.name} ({user.id})",
                     details=e.text,
                 )
 

@@ -47,7 +47,9 @@ class ServerCountersCog(commands.Cog):
             if not discord_channel or not isinstance(discord_channel, discord.VoiceChannel):
                 continue
 
-            new_name = resolve_counter(guild, count_channel.count_type, count_channel.name)
+            new_name = resolve_counter(
+                guild, count_channel.count_type, count_channel.name, count_channel.activity_name
+            )
 
             if discord_channel.name == new_name:
                 continue
@@ -58,7 +60,7 @@ class ServerCountersCog(commands.Cog):
                 await log_error(
                     module="Server Counters",
                     guild_id=guild.id,
-                    error=f"Forbidden error while updating counter channel {discord_channel.name} ({discord_channel.id})",
+                    error=f"Titanium was not allowed to update counter channel {discord_channel.name} ({discord_channel.id})",
                     details=e.text,
                 )
             except discord.HTTPException as e:

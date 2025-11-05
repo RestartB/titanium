@@ -68,6 +68,7 @@ class TitaniumBot(commands.Bot):
 
     guild_configs: dict[int, GuildSettings] = {}
     guild_prefixes: dict[int, GuildPrefixes] = {}
+    guild_limits: dict[int, GuildLimits] = {}
     available_webhooks: dict[int, list[AvailableWebhook]] = {}
     automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
     fireboard_messages: dict[int, list[FireboardMessage]] = {}
@@ -99,6 +100,15 @@ class TitaniumBot(commands.Bot):
             for config in prefix_configs:
                 self.guild_prefixes[config.guild_id] = config
 
+            # Guild limits
+            stmt = select(GuildLimits).options(selectinload("*"))
+            result = await session.execute(stmt)
+            limit_configs = result.scalars().all()
+            self.guild_limits.clear()
+
+            for config in limit_configs:
+                self.guild_limits[config.id] = config
+
             # Available webhooks
             stmt = select(AvailableWebhook).options(selectinload("*"))
             result = await session.execute(stmt)
@@ -123,9 +133,6 @@ class TitaniumBot(commands.Bot):
         cache_logger.info(f"Refreshing guild config cache for guild {guild_id}...")
         async with get_session() as session:
             # Settings
-            if guild_id in self.guild_configs:
-                del self.guild_configs[guild_id]
-
             stmt = (
                 select(GuildSettings)
                 .where(GuildSettings.guild_id == guild_id)
@@ -137,9 +144,6 @@ class TitaniumBot(commands.Bot):
                 self.guild_configs[config.guild_id] = config
 
             # Server prefixes
-            if guild_id in self.guild_prefixes:
-                del self.guild_prefixes[guild_id]
-
             stmt = (
                 select(GuildPrefixes)
                 .where(GuildPrefixes.guild_id == guild_id)
@@ -151,10 +155,15 @@ class TitaniumBot(commands.Bot):
             if prefix_config:
                 self.guild_prefixes[prefix_config.guild_id] = prefix_config
 
-            # Available webhooks
-            if guild_id in self.available_webhooks:
-                del self.available_webhooks[guild_id]
+            # Guild limits
+            stmt = select(GuildLimits).where(GuildLimits.id == guild_id).options(selectinload("*"))
+            result = await session.execute(stmt)
+            limit_config = result.scalar()
 
+            if limit_config:
+                self.guild_limits[limit_config.id] = limit_config
+
+            # Available webhooks
             stmt = (
                 select(AvailableWebhook)
                 .where(AvailableWebhook.guild_id == guild_id)
@@ -167,9 +176,6 @@ class TitaniumBot(commands.Bot):
                 self.available_webhooks.setdefault(webhook.guild_id, []).append(webhook)
 
             # Fireboard messages
-            if guild_id in self.fireboard_messages:
-                del self.fireboard_messages[guild_id]
-
             stmt = (
                 select(FireboardMessage)
                 .where(FireboardMessage.guild_id == guild_id)
@@ -350,7 +356,26 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
 
         if not ctx.interaction:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
+    elif isinstance(error, commands.errors.BadArgument):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Bad Argument",
+            description=str(error),
+            colour=discord.Colour.red(),
+        )
+        await ctx.reply(embed=embed)
 
+        if not ctx.interaction:
+            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
+    elif isinstance(error, commands.errors.MissingRequiredArgument):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Argument Missing",
+            description=f"You are missing the `{error.param.name}` argument.",
+            colour=discord.Colour.red(),
+        )
+        await ctx.reply(embed=embed)
+
+        if not ctx.interaction:
+            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     else:
         error_id = await log_error(
             module="Commands",

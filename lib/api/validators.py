@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -48,16 +48,9 @@ class ModerationConfigModel(BaseModel):
 
 
 class AutomodActionModel(BaseModel):
-    type: str
+    type: Literal["warn", "mute", "kick", "ban", "delete", "add_role", "remove_role", "toggle_role"]
     duration: Optional[int] = None
     reason: Optional[str] = None
-
-    @field_validator("type")
-    def validate_action_type(cls, v):
-        valid_types = ["warn", "mute", "kick", "ban", "delete"]
-        if v not in valid_types:
-            raise ValueError(f"Action type must be one of: {valid_types}")
-        return v
 
     @model_validator(mode="after")
     def validate_mute_duration(self):
@@ -77,7 +70,12 @@ class AutomodActionModel(BaseModel):
 
 class AutomodRuleModel(BaseModel):
     id: Optional[str] = None
-    rule_type: str
+    rule_type: Literal[
+        "badword_detection",
+        "spam_detection",
+        "malicious_link",
+        "phishing_link",
+    ]
     rule_name: str = ""
     words: Optional[list[str]] = Field(default_factory=list)
     match_whole_word: bool = False
@@ -87,23 +85,20 @@ class AutomodRuleModel(BaseModel):
     duration: int
     actions: list[AutomodActionModel]
 
-    @field_validator("rule_type")
-    def validate_rule_type(cls, v):
-        valid_types = [
-            "badword_detection",
-            "spam_detection",
-            "malicious_link",
-            "phishing_link",
-        ]
-        if v not in valid_types:
-            raise ValueError(f"Rule type must be one of: {valid_types}")
-        return v
-
     @field_validator("id")
     def validate_id(cls, v):
         if v == "":
             return None
         return v
+
+    @model_validator(mode="after")
+    def validate_unique_action_types(self):
+        action_types = [action.type for action in self.actions]
+
+        if len(action_types) != len(set(action_types)):
+            raise ValueError("Each action type in a rule must be unique")
+
+        return self
 
     def to_sqlalchemy(self, guild_id: int) -> AutomodRule:
         rule = AutomodRule(
@@ -134,7 +129,7 @@ class AutomodConfigModel(BaseModel):
 
 
 class BouncerCriterionModel(BaseModel):
-    type: str
+    type: Literal["username", "tag", "age", "avatar"]
     account_age: Optional[int] = None
     words: Optional[list[str]] = None
     match_whole_word: Optional[bool] = None
@@ -142,7 +137,7 @@ class BouncerCriterionModel(BaseModel):
 
 
 class BouncerActionModel(BaseModel):
-    type: str
+    type: Literal["warn", "mute", "kick", "ban", "add_role", "remove_role", "toggle_role"]
     duration: Optional[int] = None
     role_id: Optional[str] = None
     reason: Optional[str] = None
@@ -155,6 +150,24 @@ class BouncerRuleModel(BaseModel):
     enabled: bool
     criteria: list[BouncerCriterionModel]
     actions: list[BouncerActionModel]
+
+    @model_validator(mode="after")
+    def validate_unique_criteria_types(self):
+        criteria_types = [criterion.type for criterion in self.criteria]
+
+        if len(criteria_types) != len(set(criteria_types)):
+            raise ValueError("Each criterion type in a rule must be unique")
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_unique_action_types(self):
+        action_types = [action.type for action in self.actions]
+
+        if len(action_types) != len(set(action_types)):
+            raise ValueError("Each action type in a rule must be unique")
+
+        return self
 
 
 class BouncerConfigModel(BaseModel):
@@ -255,28 +268,21 @@ class FireboardConfigModel(BaseModel):
 class ServerCounterChannelModel(BaseModel):
     id: Optional[str] = None
     name: str
-    type: str
+    type: Literal[
+        "total_members",
+        "users",
+        "bots",
+        "online_members",
+        "members_status_online",
+        "members_status_idle",
+        "members_status_dnd",
+        "members_activity",
+        "members_custom_status",
+        "offline_members",
+        "channels",
+        "activity",
+    ]
     activity_name: Optional[str] = None
-
-    @field_validator("type")
-    def validate_type(cls, v):
-        valid_types = [
-            "total_members",
-            "users",
-            "bots",
-            "online_members",
-            "members_status_online",
-            "members_status_idle",
-            "members_status_dnd",
-            "members_activity",
-            "members_custom_status",
-            "offline_members",
-            "channels",
-            "activity",
-        ]
-        if v not in valid_types:
-            raise ValueError(f"Channel type must be one of: {valid_types}")
-        return v
 
     @field_validator("id")
     def validate_id(cls, v: str):

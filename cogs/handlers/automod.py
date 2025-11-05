@@ -1,10 +1,10 @@
-import asyncio
 import logging
 import re
 from datetime import timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import discord
+import emoji
 from discord.ext import commands
 
 from lib.cases.case_manager import GuildModCaseManager
@@ -30,267 +30,238 @@ if TYPE_CHECKING:
 class AutomodMonitorCog(commands.Cog):
     """Monitors new messages for automod triggers and creates cases/punishments"""
 
+    # -------------------------
+    # New messages: new messages will be added to the queue for spam checks
+    # Edited messages: only the edited message will be checked for triggers
+    # -------------------------
+
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("automod")
-        self.new_message_queue: asyncio.Queue[discord.Message] = asyncio.Queue()
-        self.new_message_queue_task = self.bot.loop.create_task(self.queue_worker())
 
-    def cog_unload(self) -> None:
-        self.new_message_queue.shutdown(immediate=True)
+    async def handle_message(
+        self, message: discord.Message, event_type: Literal["new", "edit"] = "new"
+    ):
+        self.logger.debug(f"Processing message from {message.author}: {message.id}")
 
-    async def queue_worker(self):
-        self.logger.info("Automod message handler started.")
-        while True:
-            try:
-                await self.bot.wait_until_ready()
-                message = await self.new_message_queue.get()
-            except asyncio.QueueShutDown:
+        try:
+            # Check for server ID in config list
+            if (
+                not message.guild
+                or message.guild.id not in self.bot.guild_configs
+                or not self.bot.guild_configs[message.guild.id].automod_settings
+                or not message.author
+                or not isinstance(message.author, discord.Member)
+                or not self.bot.user
+            ):
+                self.logger.debug("Automod initial checks failed, skipping message")
                 return
 
-            try:
-                await self.message_handler(message)
-            except Exception as e:
-                await log_error(
-                    module="Automod",
-                    guild_id=message.guild.id if message.guild else None,
-                    error=f"An unknown error occurred while processing automod for message {message.id} from @{message.author.name} ({message.author.id})",
-                    exc=e,
-                )
-            finally:
-                self.new_message_queue.task_done()
+            triggers: list[AutomodRule] = []
+            punishments: list[AutomodAction] = []
 
-    async def message_handler(self, message: discord.Message):
-        self.logger.debug(f"Processing message from {message.author}: {message.id}")
-        # Check for server ID in config list
-        if (
-            not message.guild
-            or message.guild.id not in self.bot.guild_configs
-            or not self.bot.guild_configs[message.guild.id].automod_settings
-            or not message.author
-            or not isinstance(message.author, discord.Member)
-            or not self.bot.user
-        ):
-            self.logger.debug("Automod initial checks failed, skipping message")
-            return
+            if not self.bot.guild_configs[message.guild.id].automod_enabled:
+                self.logger.debug("Automod is not enabled, skipping message")
+                return
 
-        triggers: list[AutomodRule] = []
-        punishments: list[AutomodAction] = []
+            config = self.bot.guild_configs[message.guild.id].automod_settings
 
-        if not self.bot.guild_configs[message.guild.id].automod_enabled:
-            self.logger.debug("Automod is not enabled, skipping message")
-            return
-
-        config = self.bot.guild_configs[message.guild.id].automod_settings
-
-        self.bot.automod_messages.setdefault(message.guild.id, {}).setdefault(
-            message.author.id, []
-        ).append(
-            AutomodMessage(
-                user_id=message.author.id,
-                message_id=message.id,
-                channel_id=message.channel.id,
-                content=message.content,
-                mention_count=len(message.mentions)
-                + len(message.role_mentions)
-                + (1 if message.mention_everyone else 0),
-                word_count=len(message.clean_content.split()),
-                newline_count=len(message.clean_content.splitlines()),
-                link_count=len(
-                    re.findall(
-                        r"(http|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
-                        message.content,
+            if event_type == "new":
+                self.bot.automod_messages.setdefault(message.guild.id, {}).setdefault(
+                    message.author.id, []
+                ).append(
+                    AutomodMessage(
+                        user_id=message.author.id,
+                        message_id=message.id,
+                        channel_id=message.channel.id,
+                        content=message.content,
+                        mention_count=len(message.mentions)
+                        + len(message.role_mentions)
+                        + (1 if message.mention_everyone else 0),
+                        word_count=len(message.clean_content.split()),
+                        newline_count=len(message.clean_content.splitlines()),
+                        link_count=len(
+                            re.findall(
+                                r"(http|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
+                                message.content,
+                            )
+                        ),
+                        attachment_count=len(message.attachments),
+                        emoji_count=len(emoji.emoji_list(message.content))
+                        + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", message.content)),
+                        timestamp=message.created_at,
                     )
-                ),
-                attachment_count=len(message.attachments),
-                emoji_count=0,  # TODO: implement this
-                timestamp=message.created_at,
-            )
-        )
+                )
 
-        # Limit to 100 messages
-        self.bot.automod_messages[message.guild.id][message.author.id] = self.bot.automod_messages[
-            message.guild.id
-        ][message.author.id][-100:]
+                # Limit to 100 messages
+                self.bot.automod_messages[message.guild.id][message.author.id] = (
+                    self.bot.automod_messages[message.guild.id][message.author.id][-100:]
+                )
 
-        current_state = self.bot.automod_messages[message.guild.id][message.author.id].copy()
-        current_state.reverse()
+                current_state = self.bot.automod_messages[message.guild.id][
+                    message.author.id
+                ].copy()
+                current_state.reverse()
+            else:
+                current_state = [
+                    AutomodMessage(
+                        user_id=message.author.id,
+                        message_id=message.id,
+                        channel_id=message.channel.id,
+                        content=message.content,
+                        mention_count=len(message.mentions)
+                        + len(message.role_mentions)
+                        + (1 if message.mention_everyone else 0),
+                        word_count=len(message.clean_content.split()),
+                        newline_count=len(message.clean_content.splitlines()),
+                        link_count=len(
+                            re.findall(
+                                r"(http|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
+                                message.content,
+                            )
+                        ),
+                        attachment_count=len(message.attachments),
+                        emoji_count=len(emoji.emoji_list(message.content))
+                        + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", message.content)),
+                        timestamp=message.created_at,
+                    )
+                ]
 
-        # Check for any spam detection
-        if len(config.spam_detection_rules) > 0:
-            for rule in config.spam_detection_rules:
+            # Check for any spam detection
+            if len(config.spam_detection_rules) > 0:
+                for rule in config.spam_detection_rules:
+                    latest_timestamp = current_state[0].timestamp
+                    filtered_messages = [
+                        m
+                        for m in current_state
+                        if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
+                    ]
+
+                    if str(rule.antispam_type) == "message_spam":
+                        count = len(list(filtered_messages))
+                    elif str(rule.antispam_type) == "mention_spam":
+                        count = sum(m.mention_count for m in filtered_messages)
+                    elif str(rule.antispam_type) == "word_spam":
+                        # FIXME: seems to trigger at 6 words if you set threshold to 5
+                        count = sum(m.word_count for m in filtered_messages)
+                    elif str(rule.antispam_type) == "newline_spam":
+                        count = sum(m.newline_count for m in filtered_messages)
+                    elif str(rule.antispam_type) == "link_spam":
+                        count = sum(m.link_count for m in filtered_messages)
+                    elif str(rule.antispam_type) == "attachment_spam":
+                        count = sum(m.attachment_count for m in filtered_messages)
+                    elif str(rule.antispam_type) == "emoji_spam":
+                        count = sum(m.emoji_count for m in filtered_messages)
+                    else:
+                        continue
+
+                    if count >= rule.threshold:
+                        triggers.append(rule)
+                        for action in rule.actions:
+                            punishments.append(action)
+
+            # Malicious link check
+            for rule in config.malicious_link_rules:
                 latest_timestamp = current_state[0].timestamp
                 filtered_messages = [
                     m
                     for m in current_state
                     if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
                 ]
+                spotted = 0
 
-                if str(rule.antispam_type) == "message_spam":
-                    count = len(list(filtered_messages))
-                elif str(rule.antispam_type) == "mention_spam":
-                    count = sum(m.mention_count for m in filtered_messages)
-                elif str(rule.antispam_type) == "word_spam":
-                    # FIXME: seems to trigger at 6 words if you set threshold to 5
-                    count = sum(m.word_count for m in filtered_messages)
-                elif str(rule.antispam_type) == "newline_spam":
-                    count = sum(m.newline_count for m in filtered_messages)
-                elif str(rule.antispam_type) == "link_spam":
-                    count = sum(m.link_count for m in filtered_messages)
-                elif str(rule.antispam_type) == "attachment_spam":
-                    count = sum(m.attachment_count for m in filtered_messages)
-                elif str(rule.antispam_type) == "emoji_spam":
-                    count = sum(m.emoji_count for m in filtered_messages)
-                else:
-                    continue
+                for filtered_msg in filtered_messages:
+                    if any(link in filtered_msg.content for link in self.bot.malicious_links):
+                        spotted += 1
 
-                if count >= rule.threshold:
+                if spotted >= rule.threshold:
                     triggers.append(rule)
                     for action in rule.actions:
                         punishments.append(action)
 
-        # Malicious link check
-        for rule in config.malicious_link_rules:
-            latest_timestamp = current_state[0].timestamp
-            filtered_messages = [
-                m
-                for m in current_state
-                if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-            ]
-            spotted = 0
+            # Phishing link check
+            for rule in config.phishing_link_rules:
+                latest_timestamp = current_state[0].timestamp
+                filtered_messages = [
+                    m
+                    for m in current_state
+                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
+                ]
+                spotted = 0
 
-            for filtered_msg in filtered_messages:
-                if any(link in filtered_msg.content for link in self.bot.malicious_links):
-                    spotted += 1
+                for filtered_msg in filtered_messages:
+                    if any(
+                        f"http://{link}" in filtered_msg.content for link in self.bot.phishing_links
+                    ) or any(
+                        f"https://{link}" in filtered_msg.content
+                        for link in self.bot.phishing_links
+                    ):
+                        spotted += 1
 
-            if spotted >= rule.threshold:
-                triggers.append(rule)
-                for action in rule.actions:
-                    punishments.append(action)
+                if spotted >= rule.threshold:
+                    triggers.append(rule)
+                    for action in rule.actions:
+                        punishments.append(action)
 
-        # Phishing link check
-        for rule in config.phishing_link_rules:
-            latest_timestamp = current_state[0].timestamp
-            filtered_messages = [
-                m
-                for m in current_state
-                if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-            ]
-            spotted = 0
+            # Bad word detection
+            for rule in config.badword_detection_rules:
+                if not rule.words:
+                    continue
 
-            for filtered_msg in filtered_messages:
-                if any(
-                    f"http://{link}" in filtered_msg.content for link in self.bot.phishing_links
-                ) or any(
-                    f"https://{link}" in filtered_msg.content for link in self.bot.phishing_links
-                ):
-                    spotted += 1
+                latest_timestamp = current_state[0].timestamp
+                filtered_messages = [
+                    m
+                    for m in current_state
+                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
+                ]
+                spotted = 0
 
-            if spotted >= rule.threshold:
-                triggers.append(rule)
-                for action in rule.actions:
-                    punishments.append(action)
-
-        # Bad word detection
-        for rule in config.badword_detection_rules:
-            if not rule.words:
-                continue
-
-            latest_timestamp = current_state[0].timestamp
-            filtered_messages = [
-                m
-                for m in current_state
-                if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-            ]
-            spotted = 0
-
-            for filtered_msg in filtered_messages:
-                content_list = filtered_msg.content.lower().split()
-
-                if any(word.lower() in content_list for word in rule.words):
-                    spotted += 1
-
-            if spotted >= rule.threshold:
-                triggers.append(rule)
-                for action in rule.actions:
-                    punishments.append(action)
-
-        # Get list of punishment types
-        punishment_types = list(set(action.action_type for action in punishments))
-        embeds: list[discord.Embed] = []
-
-        async with get_session() as session:
-            manager = GuildModCaseManager(message.guild, session)
-
-            for punishment in punishments:
-                if str(punishment.action_type) == "delete":
-                    await message.delete()
-                elif str(punishment.action_type) == "warn":
-                    case = await manager.create_case(
-                        action="warn",
-                        user_id=message.author.id,
-                        creator_user_id=self.bot.user.id,
-                        reason=f"Automod: {punishment.reason}",
+                for filtered_msg in filtered_messages:
+                    content_list = (
+                        filtered_msg.content.lower().split()
+                        if not rule.case_sensitive
+                        else filtered_msg.content.split()
                     )
 
-                    dm_success, dm_error = await send_dm(
-                        embed=warned_dm(self.bot, message, case),
-                        user=message.author,
-                        source_guild=message.guild,
-                        module="Automod",
-                        action="warning",
-                    )
+                    if any(
+                        word.lower() if not rule.case_sensitive else word in content_list
+                        for word in rule.words
+                    ):
+                        spotted += 1
 
-                    embeds.append(
-                        warned(
-                            self.bot,
-                            message.author,
-                            self.bot.user,
-                            case,
-                            dm_success=dm_success,
-                            dm_error=dm_error,
-                        )
-                    )
-                elif str(punishment.action_type) == "mute":
-                    # Check if user is already timed out
-                    if message.author.is_timed_out():
-                        continue
+                if spotted >= rule.threshold:
+                    triggers.append(rule)
+                    for action in rule.actions:
+                        punishments.append(action)
 
-                    # Time out user
-                    try:
-                        await message.author.timeout(
-                            (
-                                timedelta(seconds=punishment.duration)
-                                if punishment.duration > 0
-                                and timedelta(seconds=punishment.duration).total_seconds()
-                                <= 2419200
-                                else timedelta(seconds=2419200)
-                            ),
-                            reason=f"Automod: {punishment.reason}",
-                        )
+            # Get list of punishment types
+            punishment_types = list(set(action.action_type for action in punishments))
+            embeds: list[discord.Embed] = []
 
+            async with get_session() as session:
+                manager = GuildModCaseManager(message.guild, session)
+
+                for punishment in punishments:
+                    if str(punishment.action_type) == "delete":
+                        await message.delete()
+                    elif str(punishment.action_type) == "warn":
                         case = await manager.create_case(
-                            action="mute",
+                            action="warn",
                             user_id=message.author.id,
                             creator_user_id=self.bot.user.id,
                             reason=f"Automod: {punishment.reason}",
-                            duration=(
-                                timedelta(seconds=punishment.duration)
-                                if punishment.duration > 0
-                                else None
-                            ),
                         )
 
                         dm_success, dm_error = await send_dm(
-                            embed=muted_dm(self.bot, message, case),
+                            embed=warned_dm(self.bot, message, case),
                             user=message.author,
                             source_guild=message.guild,
                             module="Automod",
-                            action="muting",
+                            action="warning",
                         )
 
                         embeds.append(
-                            muted(
+                            warned(
                                 self.bot,
                                 message.author,
                                 self.bot.user,
@@ -299,145 +270,224 @@ class AutomodMonitorCog(commands.Cog):
                                 dm_error=dm_error,
                             )
                         )
-                    except discord.Forbidden as e:
-                        await log_error(
-                            module="Automod",
-                            guild_id=message.guild.id,
-                            error=f"Forbidden error while muting @{message.author.name} ({message.author.id})",
-                            details=e.text,
-                        )
-                        embeds.append(forbidden(self.bot, message.author))
-                    except discord.HTTPException as e:
-                        await log_error(
-                            module="Automod",
-                            guild_id=message.guild.id,
-                            error=f"Unknown Discord error while muting @{message.author.name} ({message.author.id})",
-                            details=e.text,
-                        )
-                        embeds.append(http_exception(self.bot, message.author))
+                    elif str(punishment.action_type) == "mute":
+                        # Check if user is already timed out
+                        if message.author.is_timed_out():
+                            continue
 
-                elif str(punishment.action_type) == "kick" and "ban" not in punishment_types:
-                    # Kick user
-                    try:
-                        await message.author.kick(
-                            reason=f"Automod: {punishment.reason}",
-                        )
-
-                        case = await manager.create_case(
-                            action="kick",
-                            user_id=message.author.id,
-                            creator_user_id=self.bot.user.id,
-                            reason=f"Automod: {punishment.reason}",
-                        )
-
-                        dm_success, dm_error = await send_dm(
-                            embed=kicked_dm(self.bot, message, case),
-                            user=message.author,
-                            source_guild=message.guild,
-                            module="Automod",
-                            action="kicking",
-                        )
-
-                        embeds.append(
-                            kicked(
-                                self.bot,
-                                message.author,
-                                self.bot.user,
-                                case,
-                                dm_success=dm_success,
-                                dm_error=dm_error,
+                        # Time out user
+                        try:
+                            await message.author.timeout(
+                                (
+                                    timedelta(seconds=punishment.duration)
+                                    if punishment.duration > 0
+                                    and timedelta(seconds=punishment.duration).total_seconds()
+                                    <= 2419200
+                                    else timedelta(seconds=2419200)
+                                ),
+                                reason=f"Automod: {punishment.reason}",
                             )
-                        )
-                    except discord.Forbidden as e:
-                        await log_error(
-                            module="Automod",
-                            guild_id=message.guild.id,
-                            error=f"Forbidden error while kicking @{message.author.name} ({message.author.id})",
-                            details=e.text,
-                        )
-                        embeds.append(forbidden(self.bot, message.author))
-                    except discord.HTTPException as e:
-                        await log_error(
-                            module="Automod",
-                            guild_id=message.guild.id,
-                            error=f"Unknown Discord error while kicking @{message.author.name} ({message.author.id})",
-                            details=e.text,
-                        )
-                        embeds.append(http_exception(self.bot, message.author))
-                elif str(punishment.action_type) == "ban":
-                    # Ban user
-                    try:
-                        await message.author.ban(
-                            reason=f"Automod: {punishment.reason}",
-                        )
 
-                        case = await manager.create_case(
-                            action="ban",
-                            user_id=message.author.id,
-                            creator_user_id=self.bot.user.id,
-                            reason=f"Automod: {punishment.reason}",
-                            duration=(
-                                timedelta(seconds=punishment.duration)
-                                if punishment.duration > 0
-                                else None
-                            ),
-                        )
-
-                        dm_success, dm_error = await send_dm(
-                            embed=banned_dm(self.bot, message, case),
-                            user=message.author,
-                            source_guild=message.guild,
-                            module="Automod",
-                            action="banning",
-                        )
-
-                        embeds.append(
-                            banned(
-                                self.bot,
-                                message.author,
-                                self.bot.user,
-                                case,
-                                dm_success=dm_success,
-                                dm_error=dm_error,
+                            case = await manager.create_case(
+                                action="mute",
+                                user_id=message.author.id,
+                                creator_user_id=self.bot.user.id,
+                                reason=f"Automod: {punishment.reason}",
+                                duration=(
+                                    timedelta(seconds=punishment.duration)
+                                    if punishment.duration > 0
+                                    else None
+                                ),
                             )
-                        )
-                    except discord.Forbidden as e:
-                        await log_error(
-                            module="Automod",
-                            guild_id=message.guild.id,
-                            error=f"Forbidden error while banning @{message.author.name} ({message.author.id})",
-                            details=e.text,
-                        )
-                        embeds.append(forbidden(self.bot, message.author))
-                    except discord.HTTPException as e:
-                        await log_error(
-                            module="Automod",
-                            guild_id=message.guild.id,
-                            error=f"Unknown Discord error while banning @{message.author.name} ({message.author.id})",
-                            details=e.text,
-                        )
-                        embeds.append(http_exception(self.bot, message.author))
 
-                if embeds:
-                    await message.channel.send(embeds=embeds)
+                            dm_success, dm_error = await send_dm(
+                                embed=muted_dm(self.bot, message, case),
+                                user=message.author,
+                                source_guild=message.guild,
+                                module="Automod",
+                                action="muting",
+                            )
 
-        if triggers:
-            guild_logger = GuildLogger(self.bot, message.guild)
-            await guild_logger.titanium_automod_trigger(
-                rules=triggers,
-                actions=punishments,
-                message=message,
+                            embeds.append(
+                                muted(
+                                    self.bot,
+                                    message.author,
+                                    self.bot.user,
+                                    case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
+                                )
+                            )
+                        except discord.Forbidden as e:
+                            await log_error(
+                                module="Automod",
+                                guild_id=message.guild.id,
+                                error=f"Titanium was not allowed to mute @{message.author.name} ({message.author.id})",
+                                details=e.text,
+                            )
+                            embeds.append(forbidden(self.bot, message.author))
+                        except discord.HTTPException as e:
+                            await log_error(
+                                module="Automod",
+                                guild_id=message.guild.id,
+                                error=f"Unknown Discord error while muting @{message.author.name} ({message.author.id})",
+                                details=e.text,
+                            )
+                            embeds.append(http_exception(self.bot, message.author))
+
+                    elif str(punishment.action_type) == "kick" and "ban" not in punishment_types:
+                        # Kick user
+                        try:
+                            await message.author.kick(
+                                reason=f"Automod: {punishment.reason}",
+                            )
+
+                            case = await manager.create_case(
+                                action="kick",
+                                user_id=message.author.id,
+                                creator_user_id=self.bot.user.id,
+                                reason=f"Automod: {punishment.reason}",
+                            )
+
+                            dm_success, dm_error = await send_dm(
+                                embed=kicked_dm(self.bot, message, case),
+                                user=message.author,
+                                source_guild=message.guild,
+                                module="Automod",
+                                action="kicking",
+                            )
+
+                            embeds.append(
+                                kicked(
+                                    self.bot,
+                                    message.author,
+                                    self.bot.user,
+                                    case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
+                                )
+                            )
+                        except discord.Forbidden as e:
+                            await log_error(
+                                module="Automod",
+                                guild_id=message.guild.id,
+                                error=f"Titanium was not allowed to kick @{message.author.name} ({message.author.id})",
+                                details=e.text,
+                            )
+                            embeds.append(forbidden(self.bot, message.author))
+                        except discord.HTTPException as e:
+                            await log_error(
+                                module="Automod",
+                                guild_id=message.guild.id,
+                                error=f"Unknown Discord error while kicking @{message.author.name} ({message.author.id})",
+                                details=e.text,
+                            )
+                            embeds.append(http_exception(self.bot, message.author))
+                    elif str(punishment.action_type) == "ban":
+                        # Ban user
+                        try:
+                            await message.author.ban(
+                                reason=f"Automod: {punishment.reason}",
+                            )
+
+                            case = await manager.create_case(
+                                action="ban",
+                                user_id=message.author.id,
+                                creator_user_id=self.bot.user.id,
+                                reason=f"Automod: {punishment.reason}",
+                                duration=(
+                                    timedelta(seconds=punishment.duration)
+                                    if punishment.duration > 0
+                                    else None
+                                ),
+                            )
+
+                            dm_success, dm_error = await send_dm(
+                                embed=banned_dm(self.bot, message, case),
+                                user=message.author,
+                                source_guild=message.guild,
+                                module="Automod",
+                                action="banning",
+                            )
+
+                            embeds.append(
+                                banned(
+                                    self.bot,
+                                    message.author,
+                                    self.bot.user,
+                                    case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
+                                )
+                            )
+                        except discord.Forbidden as e:
+                            await log_error(
+                                module="Automod",
+                                guild_id=message.guild.id,
+                                error=f"Titanium was not allowed to ban @{message.author.name} ({message.author.id})",
+                                details=e.text,
+                            )
+                            embeds.append(forbidden(self.bot, message.author))
+                        except discord.HTTPException as e:
+                            await log_error(
+                                module="Automod",
+                                guild_id=message.guild.id,
+                                error=f"Unknown Discord error while banning @{message.author.name} ({message.author.id})",
+                                details=e.text,
+                            )
+                            embeds.append(http_exception(self.bot, message.author))
+
+                    if embeds:
+                        await message.channel.send(embeds=embeds)
+
+            if triggers:
+                guild_logger = GuildLogger(self.bot, message.guild)
+                await guild_logger.titanium_automod_trigger(
+                    rules=triggers,
+                    actions=punishments,
+                    message=message,
+                )
+
+            self.logger.debug(f"Processed message from {message.author}: {message.id}")
+        except Exception as e:
+            await log_error(
+                module="Automod",
+                guild_id=message.guild.id if message.guild else None,
+                error=f"An unknown error occurred while processing automod for message {message.id} from @{message.author.name} ({message.author.id})",
+                exc=e,
             )
-
-        self.logger.debug(f"Processed message from {message.author}: {message.id}")
 
     # Listen for messages
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        try:
-            await self.new_message_queue.put(message)
-        except asyncio.QueueShutDown:
+        await self.handle_message(message)
+
+    # Listen for message edits
+    @commands.Cog.listener()
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+        if not payload.data.get("guild_id"):
             return
+
+        if not payload.data.get("content"):
+            return
+
+        channel = self.bot.get_channel(payload.channel_id)
+        if not channel or not isinstance(channel, discord.abc.Messageable):
+            return
+
+        if payload.cached_message:
+            message = payload.cached_message
+        else:
+            try:
+                message = await channel.fetch_message(payload.message_id)
+            except discord.NotFound:
+                return
+            except discord.Forbidden:
+                return
+            except discord.HTTPException:
+                return
+
+        await self.handle_message(message)
 
 
 async def setup(bot: "TitaniumBot") -> None:

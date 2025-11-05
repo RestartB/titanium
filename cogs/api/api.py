@@ -171,6 +171,21 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
+        guild_limits = self.bot.guild_limits.get(guild.id)
+        if not guild_limits:
+            await self.bot.refresh_guild_config_cache(guild.id)
+            guild_limits = self.bot.guild_limits.get(guild.id)
+
+        if not guild_limits:
+            await self.bot.init_guild(guild.id)
+            guild_limits = self.bot.guild_limits.get(guild.id)
+
+        if not guild_limits:
+            return web.json_response(
+                {"error": "Failed to retrieve server limits"},
+                status=500,
+            )
+
         return web.json_response(
             {
                 "id": str(guild.id),
@@ -217,6 +232,20 @@ class APICog(commands.Cog):
                     }
                     for emoji in guild.emojis
                 ],
+                "limits": {
+                    "bad_word_rules": guild_limits.bad_word_rules,
+                    "bad_word_list_size": guild_limits.bad_word_list_size,
+                    "message_spam_rules": guild_limits.message_spam_rules,
+                    "mention_spam_rules": guild_limits.mention_spam_rules,
+                    "word_spam_rules": guild_limits.word_spam_rules,
+                    "new_line_spam_rules": guild_limits.new_line_spam_rules,
+                    "link_spam_rules": guild_limits.link_spam_rules,
+                    "attachment_spam_rules": guild_limits.attachment_spam_rules,
+                    "emoji_spam_rules": guild_limits.emoji_spam_rules,
+                    "bouncer_rules": guild_limits.bouncer_rules,
+                    "fireboards": guild_limits.fireboards,
+                    "server_counters": guild_limits.server_counters,
+                },
             }
         )
 
@@ -374,7 +403,7 @@ class APICog(commands.Cog):
         return web.json_response(
             {
                 "total_count": total_count,
-                "cases": [
+                "errors": [
                     {
                         "id": str(error.id),
                         "module": error.module,
@@ -508,6 +537,7 @@ class APICog(commands.Cog):
                     {"error": "Failed to retrieve server configuration from DB"},
                     status=500,
                 )
+
             db_config.confession_enabled = validated_settings.modules.confession
             db_config.moderation_enabled = validated_settings.modules.moderation
             db_config.automod_enabled = validated_settings.modules.automod
@@ -515,6 +545,7 @@ class APICog(commands.Cog):
             db_config.logging_enabled = validated_settings.modules.logging
             db_config.fireboard_enabled = validated_settings.modules.fireboard
             db_config.server_counters_enabled = validated_settings.modules.server_counters
+
             db_config.loading_reaction = validated_settings.settings.loading_reaction
 
             prefixes.prefixes = validated_settings.prefixes
@@ -838,7 +869,9 @@ class APICog(commands.Cog):
                         channel_ids.append(int(new_channel.id))
 
                     if new_channel.id is None:
-                        new_name = resolve_counter(guild, new_channel.type, new_channel.name)
+                        new_name = resolve_counter(
+                            guild, new_channel.type, new_channel.name, new_channel.activity_name
+                        )
 
                         discord_channel = await guild.create_voice_channel(
                             name=new_name,
@@ -866,7 +899,9 @@ class APICog(commands.Cog):
 
                             session.add(existing_channel)
                         else:
-                            new_name = resolve_counter(guild, new_channel.type, new_channel.name)
+                            new_name = resolve_counter(
+                                guild, new_channel.type, new_channel.name, new_channel.activity_name
+                            )
 
                             try:
                                 discord_channel = await guild.create_voice_channel(

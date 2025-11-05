@@ -68,7 +68,7 @@ class ModerationCasesCog(commands.Cog):
                     if embeds == []:
                         return await ctx.reply(
                             embed=Embed(
-                                title="No Cases Found",
+                                title=f"{self.bot.error_emoji} No Cases Found",
                                 description="This user has no moderation cases.",
                                 colour=Colour.red(),
                             )
@@ -83,7 +83,7 @@ class ModerationCasesCog(commands.Cog):
                     return await ctx.reply(
                         embed=Embed(
                             title=f"{str(self.bot.error_emoji)} Permission Denied",
-                            description="You do not have permission to view cases for other users. Please ensure you have the 'Manage Server' permission.",
+                            description="You do not have permission to view cases for other users. Please ensure you have the `Manage Server` permission.",
                             colour=Colour.red(),
                         )
                     )
@@ -94,7 +94,7 @@ class ModerationCasesCog(commands.Cog):
                 if embeds == []:
                     return await ctx.reply(
                         embed=Embed(
-                            title="No Cases Found",
+                            title=f"{self.bot.error_emoji} No Cases Found",
                             description="You have no moderation cases.",
                             colour=Colour.red(),
                         )
@@ -177,9 +177,9 @@ class ModerationCasesCog(commands.Cog):
                 embeds = [case_embed(self.bot, case, creator, target)]
                 embeds.append(
                     Embed(
-                        title="Are you sure?",
+                        title=f"{self.bot.warn_emoji} Are you sure?",
                         description="This will delete the case and cannot be undone.",
-                        colour=Colour.red(),
+                        colour=Colour.orange(),
                     )
                 )
 

@@ -83,7 +83,7 @@ def unmuted(
 ) -> Embed:
     embed = Embed(
         title=f"{str(bot.success_emoji)} Unmuted • `{case.id}`",
-        description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
+        description=f"**Target:** {user.mention}",
         colour=Colour.green(),
     )
 
@@ -172,8 +172,8 @@ def unbanned(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Unbanned • `{case.id}`",
-        description=f"**Target:** @{user.name} (`{user.id}`)\n**Reason:** {case.description or 'No reason provided.'}",
+        title=f"{str(bot.success_emoji)}",
+        description=f"**Target:** @{user.name} (`{user.id}`)",
         colour=Colour.green(),
     )
 
