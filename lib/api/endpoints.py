@@ -32,8 +32,10 @@ def moderation_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> w
     if not config.moderation_settings:
         return web.json_response(
             {
-                "delete_confirmation": True,
+                "delete_confirmation": False,
                 "dm_users": True,
+                "external_cases": True,
+                "external_case_dms": False,
             }
         )
 
@@ -42,6 +44,8 @@ def moderation_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> w
         {
             "delete_confirmation": moderation_settings.delete_confirmation,
             "dm_users": moderation_settings.dm_users,
+            "external_cases": moderation_settings.external_cases,
+            "external_case_dms": moderation_settings.external_case_dms,
         }
     )
 
@@ -75,6 +79,7 @@ def automod_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.
                         {
                             "type": action.action_type,
                             "duration": action.duration,
+                            "role_id": str(action.role_id) if action.role_id else None,
                             "reason": action.reason,
                         }
                         for action in (rule.actions or [])

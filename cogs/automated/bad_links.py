@@ -60,23 +60,26 @@ class BadLinkFetcherCog(commands.Cog):
     # Phishing update task
     @tasks.loop(hours=6)
     async def phishing_update(self) -> None:
-        async with aiohttp.ClientSession() as session:
-            self.logger.info("Fetching phishing links...")
+        # FIXME: Disabled for now as the source is down
+        pass
 
-            async with session.get(
-                "https://phish.co.za/latest/phishing-domains-ACTIVE.txt"
-            ) as response:
-                if response.status == 200:
-                    new_phishing_links = (await response.text()).splitlines()
+        # async with aiohttp.ClientSession() as session:
+        #     self.logger.info("Fetching phishing links...")
 
-                    self.bot.phishing_links = new_phishing_links
+        #     async with session.get(
+        #         "https://phish.co.za/latest/phishing-domains-ACTIVE.txt"
+        #     ) as response:
+        #         if response.status == 200:
+        #             new_phishing_links = (await response.text()).splitlines()
 
-                    self.logger.info(
-                        f"Updated phishing links • {len(new_phishing_links)} links fetched."
-                    )
-                else:
-                    self.logger.error("Failed to fetch phishing links:", response.status)
-                    return
+        #             self.bot.phishing_links = new_phishing_links
+
+        #             self.logger.info(
+        #                 f"Updated phishing links • {len(new_phishing_links)} links fetched."
+        #             )
+        #         else:
+        #             self.logger.error("Failed to fetch phishing links:", response.status)
+        #             return
 
 
 async def setup(bot: "TitaniumBot") -> None:

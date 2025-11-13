@@ -45,12 +45,15 @@ class ConfessionConfigModel(BaseModel):
 class ModerationConfigModel(BaseModel):
     delete_confirmation: bool
     dm_users: bool
+    external_cases: bool
+    external_case_dms: bool
 
 
 class AutomodActionModel(BaseModel):
     type: Literal["warn", "mute", "kick", "ban", "delete", "add_role", "remove_role", "toggle_role"]
     duration: Optional[int] = None
     reason: Optional[str] = None
+    role_id: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_mute_duration(self):
@@ -65,6 +68,7 @@ class AutomodActionModel(BaseModel):
             action_type=self.type,
             duration=self.duration,
             reason=self.reason,
+            role_id=self.role_id,
         )
 
 
@@ -132,12 +136,14 @@ class BouncerCriterionModel(BaseModel):
     type: Literal["username", "tag", "age", "avatar"]
     account_age: Optional[int] = None
     words: Optional[list[str]] = None
-    match_whole_word: Optional[bool] = None
-    case_sensitive: Optional[bool] = None
+    match_whole_word: bool = False
+    case_sensitive: bool = False
 
 
 class BouncerActionModel(BaseModel):
-    type: Literal["warn", "mute", "kick", "ban", "add_role", "remove_role", "toggle_role"]
+    type: Literal[
+        "warn", "mute", "kick", "ban", "reset_nick", "add_role", "remove_role", "toggle_role"
+    ]
     duration: Optional[int] = None
     role_id: Optional[str] = None
     reason: Optional[str] = None

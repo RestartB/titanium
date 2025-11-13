@@ -48,7 +48,7 @@ class ScheduledTasksCog(commands.Cog):
                 await log_error(
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
-                    error="An internal unexpected error occurred while processing a scheduled task",
+                    error="An unexpected internal error occurred while processing a scheduled task",
                     details=f"Task ID: {task.id}\nType: {task.type}\nUser ID: {task.user_id}\nChannel ID: {task.channel_id}\nRole ID: {task.role_id}\nMessage ID: {task.message_id}\nCase ID: {task.case_id}",
                     exc=e,
                 )
