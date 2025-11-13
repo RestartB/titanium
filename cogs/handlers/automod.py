@@ -239,7 +239,7 @@ class AutomodMonitorCog(commands.Cog):
             embeds: list[discord.Embed] = []
 
             async with get_session() as session:
-                manager = GuildModCaseManager(message.guild, session)
+                manager = GuildModCaseManager(self.bot, message.guild, session)
 
                 for punishment in punishments:
                     if str(punishment.action_type) == "delete":

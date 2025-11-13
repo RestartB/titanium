@@ -9,15 +9,17 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class ImageCog(commands.Cog):
+class ImageCog(commands.Cog, name="Images", description="Image processing commands."):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot: "TitaniumBot" = bot
 
     @commands.hybrid_group(name="image", description="Image processing commands.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def image_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.send_help(ctx.command)
+        raise commands.CommandNotFound
 
-    @commands.hybrid_command(
+    @image_group.command(
         name="convert",
         description="Convert an uploaded image to a different format.",
     )
@@ -25,7 +27,7 @@ class ImageCog(commands.Cog):
         image="Upload the image you want to convert.",
         output_format="Select the target image format.",
     )
-    async def image_converter(
+    async def convert_image(
         self,
         ctx: commands.Context["TitaniumBot"],
         image: Attachment,

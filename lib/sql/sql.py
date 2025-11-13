@@ -35,43 +35,49 @@ logger = logging.getLogger("sql")
 class GuildSettings(Base):
     __tablename__ = "guild_settings"
     guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    loading_reaction: Mapped[bool] = MappedColumn(Boolean, default=True)
-    moderation_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
+    loading_reaction: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    dashboard_managers: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    case_managers: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    moderation_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     moderation_settings: Mapped["GuildModerationSettings"] = relationship(
         "GuildModerationSettings",
         cascade="all, delete-orphan",
         back_populates="guild_settings",
         uselist=False,
     )
-    automod_enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
+    automod_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     automod_settings: Mapped["GuildAutomodSettings"] = relationship(
         "GuildAutomodSettings",
         cascade="all, delete-orphan",
         back_populates="guild_settings",
         uselist=False,
     )
-    bouncer_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    bouncer_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     bouncer_settings: Mapped["GuildBouncerSettings"] = relationship(
         "GuildBouncerSettings",
         cascade="all, delete-orphan",
         back_populates="guild_settings",
         uselist=False,
     )
-    logging_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    logging_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     logging_settings: Mapped["GuildLoggingSettings"] = relationship(
         "GuildLoggingSettings",
         cascade="all, delete-orphan",
         back_populates="guild_settings",
         uselist=False,
     )
-    fireboard_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    fireboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     fireboard_settings: Mapped["GuildFireboardSettings"] = relationship(
         "GuildFireboardSettings",
         cascade="all, delete-orphan",
         back_populates="guild_settings",
         uselist=False,
     )
-    server_counters_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    server_counters_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     server_counters_settings: Mapped["GuildServerCounterSettings"] = relationship(
         "GuildServerCounterSettings",
         back_populates="guild",
@@ -80,7 +86,7 @@ class GuildSettings(Base):
     )
 
     # confession settings
-    confession_enabled: Mapped[bool] = MappedColumn(Boolean, default=False)
+    confession_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     confession_settings: Mapped["GuildConfessionSettings"] = relationship(
         "GuildConfessionSettings",
         cascade="all, delete-orphan",
@@ -104,18 +110,18 @@ class GuildConfessionSettings(Base):
 class GuildLimits(Base):
     __tablename__ = "guild_limits"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    bad_word_rules: Mapped[int] = MappedColumn(Integer, default=10)
-    bad_word_list_size: Mapped[int] = MappedColumn(Integer, default=1500)
-    message_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
-    mention_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
-    word_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
-    new_line_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
-    link_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
-    attachment_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
-    emoji_spam_rules: Mapped[int] = MappedColumn(Integer, default=5)
-    bouncer_rules: Mapped[int] = MappedColumn(Integer, default=10)
-    fireboards: Mapped[int] = MappedColumn(Integer, default=10)
-    server_counters: Mapped[int] = MappedColumn(Integer, default=20)
+    bad_word_rules: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
+    bad_word_list_size: Mapped[int] = MappedColumn(Integer, server_default=text("1500"))
+    message_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+    mention_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+    word_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+    new_line_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+    link_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+    attachment_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+    emoji_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+    bouncer_rules: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
+    fireboards: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
+    server_counters: Mapped[int] = MappedColumn(Integer, server_default=text("20"))
 
 
 class GuildPrefixes(Base):
@@ -145,10 +151,12 @@ class GuildModerationSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="moderation_settings", uselist=False
     )
-    delete_confirmation: Mapped[bool] = MappedColumn(Boolean, default=True)
-    dm_users: Mapped[bool] = MappedColumn(Boolean, default=True)
+    delete_confirmation: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    dm_users: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    external_cases: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    external_case_dms: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     immune_roles: Mapped[list[int]] = MappedColumn(
-        ARRAY(Integer), server_default=text("ARRAY[]::bigint[]")
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
 
 
@@ -199,8 +207,8 @@ class AutomodRule(Base):
     words: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
     )
-    match_whole_word: Mapped[bool] = MappedColumn(Boolean, default=False)
-    case_sensitive: Mapped[bool] = MappedColumn(Boolean, default=False)
+    match_whole_word: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    case_sensitive: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     threshold: Mapped[int] = MappedColumn(Integer)  # number of occurrences to trigger
     duration: Mapped[int] = MappedColumn(Integer)  # duration to look for occurrences
     actions: Mapped[list["AutomodAction"]] = relationship(
@@ -227,6 +235,7 @@ class AutomodAction(Base):
     action_type: Mapped[str] = MappedColumn(String(length=32))
     duration: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     reason: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+    role_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     rule: Mapped["AutomodRule"] = relationship(
         "AutomodRule", back_populates="actions", uselist=False
     )
@@ -252,7 +261,7 @@ class BouncerRule(Base):
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("guild_bouncer_settings.guild_id"))
     rule_name: Mapped[str] = MappedColumn(String(length=100), nullable=True)
-    enabled: Mapped[bool] = MappedColumn(Boolean, default=True)
+    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     criteria: Mapped[list["BouncerCriteria"]] = relationship(
         "BouncerCriteria",
         back_populates="rule",
@@ -279,8 +288,8 @@ class BouncerCriteria(Base):
     words: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
     )
-    match_whole_word: Mapped[bool] = MappedColumn(Boolean, default=False)
-    case_sensitive: Mapped[bool] = MappedColumn(Boolean, default=False)
+    match_whole_word: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    case_sensitive: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     rule: Mapped["BouncerRule"] = relationship(
         "BouncerRule", back_populates="criteria", uselist=False
     )
@@ -303,8 +312,7 @@ class BouncerAction(Base):
 
     # Send message action
     message_content: Mapped[str] = MappedColumn(String(length=2000), nullable=True)
-    dm_user: Mapped[bool] = MappedColumn(Boolean, default=False)
-
+    dm_user: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     rule: Mapped["BouncerRule"] = relationship(
         "BouncerRule", back_populates="actions", uselist=False
     )
@@ -414,10 +422,10 @@ class FireboardBoard(Base):
         "GuildFireboardSettings", back_populates="fireboard_boards", uselist=False
     )
     channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    reaction: Mapped[str] = MappedColumn(String(), default="🔥")
-    threshold: Mapped[int] = MappedColumn(Integer, default=5)
-    ignore_bots: Mapped[bool] = MappedColumn(Boolean, default=True)
-    ignore_self_reactions: Mapped[bool] = MappedColumn(Boolean, default=True)
+    reaction: Mapped[str] = MappedColumn(String(), server_default=text("'🔥'"))
+    threshold: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+    ignore_bots: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    ignore_self_reactions: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     ignored_roles: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
@@ -467,7 +475,7 @@ class ServerCounterChannel(Base):
     )
     count_type: Mapped[str] = MappedColumn(String(length=32))
     activity_name: Mapped[str] = MappedColumn(String(length=50), nullable=True)
-    name: Mapped[str] = MappedColumn(String(length=50), default="{value}")
+    name: Mapped[str] = MappedColumn(String(length=50), server_default=text("'{value}'"))
 
 
 class ModCase(Base):
@@ -484,8 +492,8 @@ class ModCase(Base):
     time_updated: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
     time_expires: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
     description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
-    external: Mapped[bool] = MappedColumn(Boolean, default=False)
-    resolved: Mapped[bool] = MappedColumn(Boolean, default=False)
+    external: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    resolved: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     comments: Mapped[list["ModCaseComment"]] = relationship(
         "ModCaseComment", back_populates="case", cascade="all, delete-orphan"
     )
@@ -520,8 +528,8 @@ class GameStat(Base):
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     game_id: Mapped[int] = MappedColumn(ForeignKey("games.id"), nullable=False)
-    played: Mapped[int] = MappedColumn(Integer, default=0)
-    win: Mapped[int] = MappedColumn(Integer, default=0)
+    played: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
+    win: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
 
     game = relationship("Game")
 
@@ -544,7 +552,7 @@ class ScheduledTask(Base):
     case: Mapped["ModCase"] = relationship(
         "ModCase", back_populates="scheduled_tasks", uselist=False
     )
-    time_scheduled: Mapped[datetime] = MappedColumn(DateTime)
+    time_scheduled: Mapped[datetime] = MappedColumn(DateTime, index=True)
 
 
 class ErrorLog(Base):
@@ -554,7 +562,7 @@ class ErrorLog(Base):
     module: Mapped[str] = MappedColumn(String(length=100))
     error: Mapped[str] = MappedColumn(String(length=512))
     details: Mapped[str] = MappedColumn(String(length=1024), nullable=True)
-    time_occurred: Mapped[datetime] = MappedColumn(DateTime, default=datetime.now)
+    time_occurred: Mapped[datetime] = MappedColumn(DateTime, server_default=text("NOW()"))
 
 
 load_dotenv()

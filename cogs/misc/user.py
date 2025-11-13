@@ -8,13 +8,15 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class UserCommandsCog(commands.Cog):
+class UserCommandsCog(commands.Cog, name="Users", description="Get user information."):
     """User related commands"""
 
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
     @commands.hybrid_command(name="pfp", description="Get a user's profile picture.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def pfp(
         self, ctx: commands.Context["TitaniumBot"], user: Optional[User | Member]
     ) -> None:
@@ -44,6 +46,7 @@ class UserCommandsCog(commands.Cog):
 
     @commands.hybrid_command(name="server-pfp", description="Get a user's server profile picture.")
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=True)
     async def server_pfp(
         self, ctx: commands.Context["TitaniumBot"], user: Optional[Member]
     ) -> None:
@@ -83,15 +86,14 @@ class UserCommandsCog(commands.Cog):
             await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="banner", description="Get the banner of a user.")
-    @app_commands.describe(user="The user whose banner you want to see.")
+    @app_commands.describe(user="The user to get the banner of.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def banner(
         self,
         ctx: commands.Context["TitaniumBot"],
         user: Optional[Member | User],
     ) -> None:
-        """
-        Get the banner of a user and display it in an embed.
-        """
         await ctx.defer()
 
         user = user or ctx.author

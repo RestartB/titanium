@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class ModerationCasesCog(commands.Cog):
+class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderation cases."):
     """Moderation case management commands"""
 
     def __init__(self, bot: "TitaniumBot") -> None:
@@ -46,6 +46,7 @@ class ModerationCasesCog(commands.Cog):
         name="cases", aliases=["warns"], description="View your moderation cases."
     )
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.describe(
         user="The user to search for, you can only provide this if you have the 'Manage Server' permission."
     )
@@ -58,7 +59,7 @@ class ModerationCasesCog(commands.Cog):
         await defer(self.bot, ctx)
 
         async with get_session() as session:
-            case_manager = GuildModCaseManager(ctx.guild, session)
+            case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
             if user:
                 if ctx.channel.permissions_for(ctx.author).manage_guild:
@@ -110,6 +111,7 @@ class ModerationCasesCog(commands.Cog):
         name="case", fallback="view", description="View and manage moderation cases."
     )
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(manage_guild=True)
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(case_id="The case ID to search for.")
@@ -123,7 +125,9 @@ class ModerationCasesCog(commands.Cog):
 
         try:
             async with get_session() as session:
-                case = await GuildModCaseManager(ctx.guild, session).get_case_by_id(case_id)
+                case = await GuildModCaseManager(self.bot, ctx.guild, session).get_case_by_id(
+                    case_id
+                )
 
             # Get creator
             creator = self.bot.get_user(case.creator_user_id)  # pyright: ignore[reportArgumentType]
@@ -145,6 +149,7 @@ class ModerationCasesCog(commands.Cog):
 
     @case_group.command(name="delete", description="Delete a case by its ID.")
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(manage_guild=True)
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(case_id="The case ID to delete.")
@@ -156,7 +161,7 @@ class ModerationCasesCog(commands.Cog):
 
         try:
             async with get_session() as session:
-                case_manager = GuildModCaseManager(ctx.guild, session)
+                case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
                 case = await case_manager.get_case_by_id(case_id)
 
                 if not case:

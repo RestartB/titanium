@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger("games")
 
 
-class GameCog(commands.Cog):
+class GameCog(commands.Cog, name="Games", description="Play various simple games."):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot: "TitaniumBot" = bot
         self.game_cache: dict[str, int] = {}
@@ -44,9 +44,10 @@ class GameCog(commands.Cog):
             self.game_cache = {g.name: g.id for g in games}
 
     @commands.hybrid_group(name="game", description="Game related command group.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def game(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        """Send the command Group Help, if no sub commands matched."""
-        await ctx.send_help(ctx)
+        raise commands.CommandNotFound
 
     @game.command(name="stats", aliases=["stat"], description="Get the all games stats.")
     @app_commands.describe(user="Whos game stats to be show.")

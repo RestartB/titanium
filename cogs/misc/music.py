@@ -21,7 +21,9 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class SpotifyCommandsCog(commands.GroupCog):
+class MusicCommandsCog(
+    commands.Cog, name="Music", description="Search Spotify and get song lyrics."
+):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot: "TitaniumBot" = bot
         self.auth_manager = SpotifyClientCredentials(
@@ -30,10 +32,11 @@ class SpotifyCommandsCog(commands.GroupCog):
         )
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
 
-    @commands.hybrid_group(name="spotify", description="Spotify related commands.")
+    @commands.hybrid_group(name="spotify")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def spotify_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        """Send the command Group Help, if no sub commands matched."""
-        await ctx.send_help(ctx)
+        raise commands.CommandNotFound
 
     async def song_search_autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -1060,4 +1063,4 @@ async def setup(bot: "TitaniumBot") -> None:
     # Only load if Spotify API keys are present
     if os.getenv("SPOTIFY_API_ID") is not None and os.getenv("SPOTIFY_API_SECRET") is not None:
         if os.getenv("SPOTIFY_API_ID") != "" and os.getenv("SPOTIFY_API_SECRET") != "":
-            await bot.add_cog(SpotifyCommandsCog(bot))
+            await bot.add_cog(MusicCommandsCog(bot))

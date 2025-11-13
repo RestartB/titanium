@@ -14,11 +14,13 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class UtilityCog(commands.Cog):
+class UtilityCog(commands.Cog, name="Utility", description="General utility commands."):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot: "TitaniumBot" = bot
 
     @app_commands.command(name="feedback", description="Share any suggestions or feedback.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def feedback(self, interaction: Interaction["TitaniumBot"]) -> None:
         """
         This command allows you to provide feedback or share your suggestions or maybe any bug/issue with the bot's developers.
@@ -52,8 +54,10 @@ class UtilityCog(commands.Cog):
         await ctx.reply(embed=e)
 
     @commands.hybrid_group(name="base64", description="Base64 encoding and decoding.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def base64_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.send_help(ctx.command)
+        raise commands.CommandNotFound
 
     @base64_group.command(name="encode", description="Convert text to Base64.")
     @app_commands.describe(
@@ -102,6 +106,8 @@ class UtilityCog(commands.Cog):
         await ctx.reply(embed=e)
 
     @commands.hybrid_command(name="qrcode", description="Generate a QR code from a string.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(data="Data to be included in the QR code.")
     async def qrcode(
         self,
@@ -123,7 +129,9 @@ class UtilityCog(commands.Cog):
         await ctx.reply(embed=embed, file=file)
 
     @commands.hybrid_command(name="file-info", description="Get info of a file.")
-    @app_commands.describe(file="The file attachment to analyze.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.describe(file="The file attachment to analyse.")
     async def file_info(self, ctx: commands.Context["TitaniumBot"], *, file: Attachment) -> None:
         """Get detailed information of a file."""
         await ctx.defer()

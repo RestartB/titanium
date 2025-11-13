@@ -662,7 +662,9 @@ class QuoteView(View):
             )
 
 
-class QuoteCommandsCog(commands.Cog):
+class QuoteCommandsCog(
+    commands.Cog, name="Quotes", description="Generate quote images from messages or custom input."
+):
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot: "TitaniumBot" = bot
 

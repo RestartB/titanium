@@ -1,19 +1,21 @@
 from typing import TYPE_CHECKING
 
-from discord import Colour, Embed
+from discord import Colour, Embed, app_commands
 from discord.ext import commands
 
 if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class BasicCommandsCog(commands.Cog):
-    """Basic commands"""
+class BasicCommandsCog(commands.Cog, name="Basic", description="General bot commands."):
+    """Basic commands."""
 
     def __init__(self, bot: "TitaniumBot") -> None:
         self.bot = bot
 
     @commands.hybrid_command(name="ping", description="Get the bot's ping.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def ping(self, ctx: commands.Context["TitaniumBot"]) -> None:
         await ctx.defer()
 
@@ -25,7 +27,11 @@ class BasicCommandsCog(commands.Cog):
             )
         )
 
-    @commands.hybrid_command(name="info", description="Get information about the bot.")
+    @commands.hybrid_command(
+        name="info", description="Get information about the bot.", aliases=["about"]
+    )
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def info(self, ctx: commands.Context["TitaniumBot"]) -> None:
         await ctx.defer()
 
@@ -39,6 +45,8 @@ class BasicCommandsCog(commands.Cog):
 
     @commands.hybrid_command(name="prefixes", description="Get the bot's command prefixes.")
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     async def prefixes(self, ctx: commands.Context["TitaniumBot"]) -> None:
         if not ctx.guild or not self.bot.user:
             return

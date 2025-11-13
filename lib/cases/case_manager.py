@@ -1,5 +1,6 @@
+import logging
 from datetime import datetime, timedelta
-from typing import Annotated, Literal, Optional, Sequence
+from typing import TYPE_CHECKING, Annotated, Literal, Optional, Sequence
 
 from discord import Guild
 from sqlalchemy import select
@@ -9,15 +10,20 @@ from sqlalchemy.orm import selectinload
 from ..duration import DurationConverter
 from ..sql.sql import ModCase, ScheduledTask
 
+if TYPE_CHECKING:
+    from main import TitaniumBot
+
 
 class CaseNotFoundException(Exception):
     """Exception raised when a case is not found."""
 
 
 class GuildModCaseManager:
-    def __init__(self, guild: Guild, session: AsyncSession):
+    def __init__(self, bot: "TitaniumBot", guild: Guild, session: AsyncSession) -> None:
+        self.bot = bot
         self.guild = guild
         self.session = session
+        self.logger = logging.getLogger("cases")
 
     async def get_cases(self) -> Sequence[ModCase]:
         stmt = (
@@ -67,7 +73,18 @@ class GuildModCaseManager:
         reason: Optional[str],
         duration: Annotated[timedelta, DurationConverter] | None = None,
         external: bool = False,
-    ) -> ModCase:
+    ) -> ModCase | None:
+        if external:
+            # Check if external cases are enabled
+            if (
+                self.guild.id not in self.bot.guild_configs
+                or not self.bot.guild_configs[self.guild.id].automod_settings
+            ):
+                self.logger.debug(
+                    f"External cases are disabled in {self.guild.id}, skipping this event"
+                )
+                return
+
         case = ModCase(
             guild_id=self.guild.id,
             type=action,

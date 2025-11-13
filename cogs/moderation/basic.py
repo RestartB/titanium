@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class ModerationBasicCog(commands.Cog):
+class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate server members."):
     """Basic moderation commands"""
 
     def __init__(self, bot: "TitaniumBot") -> None:
@@ -49,6 +49,7 @@ class ModerationBasicCog(commands.Cog):
 
     @commands.hybrid_command(name="warn", description="Warn a member for a specified reason.")
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(manage_guild=True)
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(member="The member to warn.", reason="The reason for the warning.")
@@ -78,7 +79,7 @@ class ModerationBasicCog(commands.Cog):
         try:
             # Create case
             async with get_session() as session:
-                manager = GuildModCaseManager(ctx.guild, session)
+                manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                 case = await manager.create_case(
                     action="warn",
@@ -128,6 +129,7 @@ class ModerationBasicCog(commands.Cog):
         description="Mute a member for a specified duration.",
     )
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(moderate_members=True)
     @app_commands.default_permissions(moderate_members=True)
     @app_commands.describe(
@@ -216,7 +218,7 @@ class ModerationBasicCog(commands.Cog):
 
             # Create case
             async with get_session() as session:
-                manager = GuildModCaseManager(ctx.guild, session)
+                manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                 case = await manager.create_case(
                     action="mute",
@@ -267,6 +269,7 @@ class ModerationBasicCog(commands.Cog):
         description="Unmute a member.",
     )
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(moderate_members=True)
     @app_commands.default_permissions(moderate_members=True)
     @app_commands.describe(member="The member to unmute.")
@@ -324,7 +327,7 @@ class ModerationBasicCog(commands.Cog):
 
             # Get last ummute case
             async with get_session() as session:
-                manager = GuildModCaseManager(ctx.guild, session)
+                manager = GuildModCaseManager(self.bot, ctx.guild, session)
                 cases = await manager.get_cases_by_user(member.id)
 
                 case = next((c for c in cases if str(c.type) == "mute"), None)
@@ -372,6 +375,7 @@ class ModerationBasicCog(commands.Cog):
 
     @commands.hybrid_command(name="kick", description="Kick a member from the server.")
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(kick_members=True)
     @app_commands.default_permissions(kick_members=True)
     @app_commands.describe(member="The member to kick.", reason="The reason for the kick.")
@@ -427,7 +431,7 @@ class ModerationBasicCog(commands.Cog):
 
             # Create case
             async with get_session() as session:
-                manager = GuildModCaseManager(ctx.guild, session)
+                manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                 case = await manager.create_case(
                     action="kick",
@@ -473,6 +477,7 @@ class ModerationBasicCog(commands.Cog):
 
     @commands.hybrid_command(name="ban", description="Ban a user from the server.")
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(ban_members=True)
     @app_commands.default_permissions(ban_members=True)
     @app_commands.describe(
@@ -556,7 +561,7 @@ class ModerationBasicCog(commands.Cog):
 
             # Create case
             async with get_session() as session:
-                manager = GuildModCaseManager(ctx.guild, session)
+                manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                 case = await manager.create_case(
                     action="ban",
@@ -603,6 +608,7 @@ class ModerationBasicCog(commands.Cog):
 
     @commands.hybrid_command(name="unban", description="Unban a member from the server.")
     @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(ban_members=True)
     @app_commands.default_permissions(ban_members=True)
     @app_commands.describe(user="The user to unban.")
@@ -658,7 +664,7 @@ class ModerationBasicCog(commands.Cog):
 
             # Get last ban case
             async with get_session() as session:
-                manager = GuildModCaseManager(ctx.guild, session)
+                manager = GuildModCaseManager(self.bot, ctx.guild, session)
                 cases = await manager.get_cases_by_user(user.id)
 
                 case = next((c for c in cases if str(c.type) == "ban"), None)

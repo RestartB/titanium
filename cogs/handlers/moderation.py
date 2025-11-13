@@ -39,10 +39,10 @@ class ModMonitorCog(commands.Cog):
                     return
 
                 async with get_session() as session:
-                    case_manager = GuildModCaseManager(after.guild, session)
+                    case_manager = GuildModCaseManager(self.bot, after.guild, session)
 
                     # Create a case
-                    _ = await case_manager.create_case(
+                    await case_manager.create_case(
                         action="mute",
                         user_id=after.id,
                         creator_user_id=entry.user_id,
@@ -77,7 +77,7 @@ class ModMonitorCog(commands.Cog):
                 return
 
             async with get_session() as session:
-                case_manager = GuildModCaseManager(member.guild, session)
+                case_manager = GuildModCaseManager(self.bot, member.guild, session)
 
                 # Create a case
                 _ = await case_manager.create_case(
@@ -110,7 +110,7 @@ class ModMonitorCog(commands.Cog):
                 return
 
             async with get_session() as session:
-                case_manager = GuildModCaseManager(guild, session)
+                case_manager = GuildModCaseManager(self.bot, guild, session)
 
                 # Create a case
                 _ = await case_manager.create_case(
@@ -143,7 +143,7 @@ class ModMonitorCog(commands.Cog):
                 return
 
             async with get_session() as session:
-                case_manager = GuildModCaseManager(guild, session)
+                case_manager = GuildModCaseManager(self.bot, guild, session)
 
                 # Get the latest not resolved ban case for this user
                 cases = await case_manager.get_cases_by_user(user.id)

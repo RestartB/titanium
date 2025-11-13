@@ -16,6 +16,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from lib.classes.automod_message import AutomodMessage
+from lib.helpers.hybrid_adapters import SlashCommandOnly
 from lib.helpers.log_error import log_error
 from lib.setup_logger import setup_logging
 
@@ -237,6 +238,12 @@ class TitaniumBot(commands.Bot):
 
         init_logger.info("Getting custom emojis...")
         try:
+            info_emoji = os.getenv("INFO_EMOJI")
+            if info_emoji and info_emoji.strip() != "":
+                self.info_emoji = await self.fetch_application_emoji(int(info_emoji))
+            else:
+                self.info_emoji = "ℹ️"
+
             success_emoji = os.getenv("SUCCESS_EMOJI")
             if success_emoji and success_emoji.strip() != "":
                 self.success_emoji = await self.fetch_application_emoji(int(success_emoji))
@@ -315,7 +322,11 @@ async def get_prefix(bot: "TitaniumBot", message: discord.Message):
 
 
 bot = TitaniumBot(
-    intents=intents, command_prefix=get_prefix, case_insensitive=True, max_messages=2500
+    intents=intents,
+    command_prefix=get_prefix,
+    case_insensitive=True,
+    max_messages=2500,
+    help_command=None,
 )
 
 
@@ -376,6 +387,13 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
 
         if not ctx.interaction:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
+    elif isinstance(error, SlashCommandOnly):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Slash Command Only",
+            description="This command is only available as a slash command. Please use the slash command version instead.",
+            colour=discord.Colour.red(),
+        )
+        await ctx.reply(embed=embed)
     else:
         error_id = await log_error(
             module="Commands",

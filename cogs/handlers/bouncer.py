@@ -130,7 +130,7 @@ class BouncerMonitorCog(commands.Cog):
         punishment_types = list(set(action.action_type for action in punishments))
 
         async with get_session() as session:
-            manager = GuildModCaseManager(member.guild, session)
+            manager = GuildModCaseManager(self.bot, member.guild, session)
 
             for punishment in punishments:
                 if str(punishment.action_type) == "add_role":
