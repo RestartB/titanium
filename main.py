@@ -410,6 +410,13 @@ async def on_app_command_error(
 
         await asyncio.sleep(5)
         await msg.delete()
+    elif isinstance(error, discord.app_commands.MissingAnyRole):
+        await interaction.response.defer(ephemeral=True)
+
+        embed = discord.Embed(
+            title="Missing Role", description=error, color=Color.red()
+        )
+        msg = await interaction.followup.send(embed=embed, wait=True)
     # Missing Perms
     elif isinstance(error, discord.app_commands.errors.MissingPermissions):
         await interaction.response.defer(ephemeral=True)

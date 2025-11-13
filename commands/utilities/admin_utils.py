@@ -138,6 +138,33 @@ class CogUtils(commands.Cog):
         )
         await interaction.edit_original_response(embed=embed)
 
+    # Guild tree sync command
+    @adminGroup.command(
+        name="sync-guild",
+        description="Admin Only: sync the command tree for a specific guild.",
+    )
+    async def guild_tree_sync(self, interaction: discord.Interaction, guild_id: str):
+        # Loading prompt
+        embed = discord.Embed(
+            title="Syncing tree...",
+            description=f"{self.bot.options['loading-emoji']} This may take a moment.",
+            color=Color.orange(),
+        )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+        # Control Server Sync
+        logging.info(f"[INIT] Syncing guild command tree ({guild_id})...")
+        guild = await self.bot.fetch_guild(int(guild_id))
+        sync = await self.bot.tree.sync(guild=guild)
+        logging.info(f"[INIT] {guild_id} tree synced. {len(sync)} commands total.")
+
+        embed = discord.Embed(
+            title="Success!",
+            description=f"Tree synced. {len(sync)} commands loaded.",
+            color=Color.green(),
+        )
+        await interaction.edit_original_response(embed=embed)
+
     # Enable auto status command
     @adminGroup.command(
         name="auto-status-enable", description="Admin Only: enable auto status."
