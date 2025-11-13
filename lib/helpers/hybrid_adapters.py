@@ -50,3 +50,9 @@ async def stop_loading(bot: "TitaniumBot", ctx: commands.Context["TitaniumBot"])
         pass
 
     return
+
+
+class SlashCommandOnly(commands.CommandError):
+    """Exception for when a command is only available as slash command"""
+
+    pass
