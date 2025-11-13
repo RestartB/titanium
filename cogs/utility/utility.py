@@ -28,31 +28,6 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         modal = FeedbackModal()
         await interaction.response.send_modal(modal)
 
-    @commands.hybrid_command(
-        name="membercount",
-        aliases=["memcount", "mcount"],
-        description="Get current server member count.",
-    )
-    @commands.guild_only()
-    async def members_count(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        """
-        Get the current count of members and bots in the server.
-        """
-
-        # make the type checker happy
-        if not ctx.guild:
-            return
-
-        total_members = ctx.guild.member_count
-        bot_count = sum(member.bot for member in ctx.guild.members)
-
-        e = Embed(
-            colour=Colour.blue(),
-            title="👨‍👩‍👧‍👦 Member Counts",
-            description=f"👨‍👩‍👧‍👦 Total Members: **{total_members}** | 🤖 Bot Count: **{bot_count}**",
-        )
-        await ctx.reply(embed=e)
-
     @commands.hybrid_group(name="base64", description="Base64 encoding and decoding.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -75,12 +50,22 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         await ctx.defer()
 
         encoded = base64.b64encode(text.encode("utf-8")).decode("utf-8")
-        e = Embed(
-            colour=Colour.blue(),
-            title="🔒 Base64 Encoded",
-            description=f"```{encoded[:3000]}```",
+
+        if len(encoded) > 4090:
+            embed = Embed(
+                colour=Colour.red(),
+                title=f"{self.bot.error_emoji} Too Long",
+                description="The encoded text is too long to display.",
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        embed = Embed(
+            colour=Colour.green(),
+            title=f"{self.bot.success_emoji} Base64 Encoded",
+            description=f"```{encoded}```",
         )
-        await ctx.reply(embed=e)
+        await ctx.reply(embed=embed)
 
     @base64_group.command(name="decode", description="Convert text from Base64.")
     @app_commands.describe(
@@ -98,12 +83,22 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         await ctx.defer()
 
         decoded = base64.b64decode(base_64.encode("utf-8")).decode("utf-8")
-        e = Embed(
-            colour=Colour.blue(),
-            title="🔒 Base64 Decoded",
-            description=f"```{decoded[:3000]}```",
+
+        if len(decoded) > 4090:
+            embed = Embed(
+                colour=Colour.red(),
+                title=f"{self.bot.error_emoji} Too Long",
+                description="The decoded text is too long to display.",
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        embed = Embed(
+            colour=Colour.green(),
+            title=f"{self.bot.success_emoji} Base64 Decoded",
+            description=f"```{decoded}```",
         )
-        await ctx.reply(embed=e)
+        await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="qrcode", description="Generate a QR code from a string.")
     @app_commands.allowed_installs(guilds=True, users=True)
