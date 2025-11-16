@@ -24,8 +24,8 @@ if TYPE_CHECKING:
 class MusicCommandsCog(
     commands.Cog, name="Music", description="Search Spotify and get song lyrics."
 ):
-    def __init__(self, bot: "TitaniumBot") -> None:
-        self.bot: "TitaniumBot" = bot
+    def __init__(self, bot: TitaniumBot) -> None:
+        self.bot: TitaniumBot = bot
         self.auth_manager = SpotifyClientCredentials(
             client_id=os.getenv("SPOTIFY_API_ID"),
             client_secret=os.getenv("SPOTIFY_API_SECRET"),
@@ -1059,7 +1059,7 @@ class MusicCommandsCog(
             await stop_loading(self.bot, ctx)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     # Only load if Spotify API keys are present
     if os.getenv("SPOTIFY_API_ID") is not None and os.getenv("SPOTIFY_API_SECRET") is not None:
         if os.getenv("SPOTIFY_API_ID") != "" and os.getenv("SPOTIFY_API_SECRET") != "":

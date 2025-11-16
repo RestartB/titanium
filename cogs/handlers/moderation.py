@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class ModMonitorCog(commands.Cog):
     """Monitors external moderation actions and creates Titanium cases for them"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
     # Listen for mutes
@@ -159,5 +159,5 @@ class ModMonitorCog(commands.Cog):
                 await case_manager.close_case(ban_case.id)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(ModMonitorCog(bot))

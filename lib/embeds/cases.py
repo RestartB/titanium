@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 def cases(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     cases: list[ModCase] | Sequence[ModCase],
     total: int,
     current_page: int,
@@ -48,7 +48,7 @@ def cases(
 
 
 def case_embed(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     case: ModCase,
     creator: User | int | Column[int],
     target: User | int | Column[int],
@@ -79,7 +79,7 @@ def case_embed(
     return embed
 
 
-def case_not_found(bot: "TitaniumBot", case: str) -> Embed:
+def case_not_found(bot: TitaniumBot, case: str) -> Embed:
     return Embed(
         title=f"{str(bot.error_emoji)} Case Not Found",
         description=f"Couldn't find a case with the ID `{case}` in this server.",
@@ -87,7 +87,7 @@ def case_not_found(bot: "TitaniumBot", case: str) -> Embed:
     )
 
 
-def case_deleted(bot: "TitaniumBot", case_id: str) -> Embed:
+def case_deleted(bot: TitaniumBot, case_id: str) -> Embed:
     return Embed(
         title=f"{str(bot.success_emoji)} Case Deleted",
         description=f"Case `{case_id}` has been successfully deleted.",

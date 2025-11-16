@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 def warned(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User,
     creator: Member | User | ClientUser,
     case: ModCase,
@@ -36,7 +36,7 @@ def warned(
 
 
 def muted(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User,
     creator: Member | User | ClientUser,
     case: ModCase,
@@ -62,7 +62,7 @@ def muted(
 
 
 def already_muted(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
@@ -74,7 +74,7 @@ def already_muted(
 
 
 def unmuted(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User,
     creator: Member | User | ClientUser,
     case: ModCase,
@@ -100,7 +100,7 @@ def unmuted(
 
 
 def already_unmuted(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
@@ -112,7 +112,7 @@ def already_unmuted(
 
 
 def kicked(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User,
     creator: Member | User | ClientUser,
     case: ModCase,
@@ -138,7 +138,7 @@ def kicked(
 
 
 def banned(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User,
     creator: Member | User | ClientUser,
     case: ModCase,
@@ -164,7 +164,7 @@ def banned(
 
 
 def unbanned(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User,
     creator: Member | User | ClientUser,
     case: ModCase,
@@ -191,7 +191,7 @@ def unbanned(
 
 # Fallback done
 def done(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User,
     creator: Member | User | ClientUser,
     dm_success: bool,
@@ -215,7 +215,7 @@ def done(
 
 
 def already_banned(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
@@ -227,7 +227,7 @@ def already_banned(
 
 
 def already_unbanned(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
@@ -238,7 +238,7 @@ def already_unbanned(
     return embed
 
 
-def already_punishing(bot: "TitaniumBot", user: Member | User | ClientUser) -> Embed:
+def already_punishing(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"{user.mention} is already being punished. Please wait.",
@@ -247,7 +247,7 @@ def already_punishing(bot: "TitaniumBot", user: Member | User | ClientUser) -> E
     return embed
 
 
-def forbidden(bot: "TitaniumBot", user: Member | User | ClientUser) -> Embed:
+def forbidden(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"Titanium does not have permission to perform this action on {user.mention}.",
@@ -256,7 +256,7 @@ def forbidden(bot: "TitaniumBot", user: Member | User | ClientUser) -> Embed:
     return embed
 
 
-def http_exception(bot: "TitaniumBot", user: Member | User | ClientUser) -> Embed:
+def http_exception(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"An error occurred while trying to perform this action on {user.mention}.",

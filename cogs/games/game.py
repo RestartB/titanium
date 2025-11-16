@@ -15,8 +15,8 @@ logger: logging.Logger = logging.getLogger("games")
 
 
 class GameCog(commands.Cog, name="Games", description="Play various simple games."):
-    def __init__(self, bot: "TitaniumBot") -> None:
-        self.bot: "TitaniumBot" = bot
+    def __init__(self, bot: TitaniumBot) -> None:
+        self.bot: TitaniumBot = bot
         self.game_cache: dict[str, int] = {}
         self.available_games: list[str] = ["dice", "coin-flip"]
 
@@ -185,5 +185,5 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
             await session.commit()
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(GameCog(bot))

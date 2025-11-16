@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class WebSearchCommandsCog(commands.Cog):
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
     context = discord.app_commands.AppCommandContext(
@@ -232,5 +232,5 @@ class WebSearchCommandsCog(commands.Cog):
         await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(WebSearchCommandsCog(bot))

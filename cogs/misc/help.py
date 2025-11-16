@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class HelpCommandCog(commands.Cog):
     """Help commands"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
     @commands.hybrid_group(name="help", description="Show help information for commands.")
@@ -37,5 +37,5 @@ class HelpCommandCog(commands.Cog):
         await ctx.reply(embed=embed, ephemeral=True)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(HelpCommandCog(bot))

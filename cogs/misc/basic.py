@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 class BasicCommandsCog(commands.Cog, name="Basic", description="General bot commands."):
     """Basic commands."""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
     @commands.hybrid_command(name="ping", description="Get the bot's ping.")
@@ -82,5 +82,5 @@ class BasicCommandsCog(commands.Cog, name="Basic", description="General bot comm
         await ctx.reply(embed=embed)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(BasicCommandsCog(bot))

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class AnimalCommandsCog(commands.Cog):
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
         self.cat_titles = [
@@ -157,5 +157,5 @@ class AnimalCommandsCog(commands.Cog):
         await ctx.reply(embed=embed)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(AnimalCommandsCog(bot))

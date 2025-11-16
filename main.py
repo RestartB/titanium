@@ -305,7 +305,7 @@ class TitaniumBot(commands.Bot):
             self.last_disconnect = datetime.datetime.now()
 
 
-async def get_prefix(bot: "TitaniumBot", message: discord.Message):
+async def get_prefix(bot: TitaniumBot, message: discord.Message):
     base = []
 
     if message.guild:

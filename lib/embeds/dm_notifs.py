@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def warned_dm(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     case: ModCase,
 ) -> Embed:
@@ -24,7 +24,7 @@ def warned_dm(
 
 
 def muted_dm(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     case: ModCase,
 ) -> Embed:
@@ -36,7 +36,7 @@ def muted_dm(
 
 
 def unmuted_dm(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     case: ModCase,
 ) -> Embed:
@@ -48,7 +48,7 @@ def unmuted_dm(
 
 
 def kicked_dm(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     case: ModCase,
 ) -> Embed:
@@ -60,7 +60,7 @@ def kicked_dm(
 
 
 def banned_dm(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     case: ModCase,
 ) -> Embed:
@@ -72,7 +72,7 @@ def banned_dm(
 
 
 def unbanned_dm(
-    bot: "TitaniumBot",
+    bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     case: ModCase,
 ) -> Embed:

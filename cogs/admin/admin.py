@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class AdminCog(commands.Cog):
     """Private bot admin only commands"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("admin")
 
@@ -321,5 +321,5 @@ class AdminCog(commands.Cog):
             await stop_loading(self.bot, ctx)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(AdminCog(bot))

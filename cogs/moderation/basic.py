@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate server members."):
     """Basic moderation commands"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
     @commands.hybrid_command(name="warn", description="Warn a member for a specified reason.")
@@ -711,5 +711,5 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             await stop_loading(self.bot, ctx)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(ModerationBasicCog(bot))

@@ -20,8 +20,8 @@ if TYPE_CHECKING:
 
 # Song element function
 async def song(
-    bot: "TitaniumBot",
-    sp: "spotipy.Spotify",
+    bot: TitaniumBot,
+    sp: spotipy.Spotify,
     item: dict | Any,
     ctx: commands.Context["TitaniumBot"],
     add_button_url: Optional[str] = None,
@@ -98,7 +98,7 @@ async def song(
 
 # Artist element function
 async def artist(
-    sp: "spotipy.Spotify",
+    sp: spotipy.Spotify,
     item: dict | Any,
     top_tracks: dict | Any,
     ctx: commands.Context["TitaniumBot"],
@@ -177,7 +177,7 @@ async def artist(
 
 # Album element function
 async def album(
-    sp: "spotipy.Spotify",
+    sp: spotipy.Spotify,
     item: dict | Any,
     ctx: commands.Context["TitaniumBot"],
     add_button_url: Optional[str] = None,

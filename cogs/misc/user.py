@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class UserCommandsCog(commands.Cog, name="Users", description="Get user information."):
     """User related commands"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
     @commands.hybrid_command(name="pfp", description="Get a user's profile picture.")
@@ -128,5 +128,5 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
             await ctx.reply(embed=e)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(UserCommandsCog(bot))

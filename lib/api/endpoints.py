@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 from lib.api.validators import LoggingConfigModel
 
 
-def confession_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
+def confession_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
     if not config.confession_settings:
         return web.json_response(
@@ -26,7 +26,7 @@ def confession_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> w
     )
 
 
-def moderation_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
+def moderation_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.moderation_settings:
@@ -50,7 +50,7 @@ def moderation_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> w
     )
 
 
-def automod_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
+def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.automod_settings:
@@ -97,7 +97,7 @@ def automod_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.
     )
 
 
-def bouncer_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
+def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.bouncer_settings:
@@ -138,7 +138,7 @@ def bouncer_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.
     )
 
 
-def logging_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
+def logging_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.logging_settings:
@@ -161,7 +161,7 @@ def logging_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.
     return web.json_response(response_data)
 
 
-def fireboard_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
+def fireboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.fireboard_settings:
@@ -199,7 +199,7 @@ def fireboard_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> we
     )
 
 
-def server_counters_info(bot: "TitaniumBot", request: web.Request, guild: Guild) -> web.Response:
+def server_counters_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
 
     if not config.server_counters_settings:

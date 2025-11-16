@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 class StatsUpdateCog(commands.Cog):
     """Automatic task to update bot stats for server count, member count and user install count"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.showing_info: bool = True
 
@@ -72,5 +72,5 @@ class StatsUpdateCog(commands.Cog):
         self.showing_info = not self.showing_info
 
 
-async def setup(bot: "TitaniumBot"):
+async def setup(bot: TitaniumBot):
     await bot.add_cog(StatsUpdateCog(bot))

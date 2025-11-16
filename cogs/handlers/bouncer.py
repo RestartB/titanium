@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class BouncerMonitorCog(commands.Cog):
     """Monitors joiners and member updates for bouncer triggers and creates cases/punishments"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("bouncer")
         self.event_queue: asyncio.Queue[discord.Member] = asyncio.Queue()
@@ -369,5 +369,5 @@ class BouncerMonitorCog(commands.Cog):
             return
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(BouncerMonitorCog(bot))

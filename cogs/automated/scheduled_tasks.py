@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class ScheduledTasksCog(commands.Cog):
     """Scheduled tasks handler - reads database for scheduled tasks and executes them"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("tasks")
         self.queued_tasks: list[int] = []
@@ -153,5 +153,5 @@ class ScheduledTasksCog(commands.Cog):
                 await self.task_queue.put(task)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(ScheduledTasksCog(bot))

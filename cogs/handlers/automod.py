@@ -35,7 +35,7 @@ class AutomodMonitorCog(commands.Cog):
     # Edited messages: only the edited message will be checked for triggers
     # -------------------------
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("automod")
 
@@ -490,5 +490,5 @@ class AutomodMonitorCog(commands.Cog):
         await self.handle_message(message)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(AutomodMonitorCog(bot))

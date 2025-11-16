@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 
 class ModToggleButton(Button["SettingsView"]):
-    def __init__(self, bot: "TitaniumBot", settings: GuildSettings) -> None:
+    def __init__(self, bot: TitaniumBot, settings: GuildSettings) -> None:
         super().__init__(label="\N{BELL}", style=ButtonStyle.green)
 
         self.bot = bot
@@ -71,7 +71,7 @@ class ModToggleButton(Button["SettingsView"]):
 
 
 class AutomodToggleButton(Button["SettingsView"]):
-    def __init__(self, bot: "TitaniumBot", settings: GuildSettings) -> None:
+    def __init__(self, bot: TitaniumBot, settings: GuildSettings) -> None:
         super().__init__(label="\N{BELL}", style=ButtonStyle.green)
 
         self.bot = bot
@@ -110,7 +110,7 @@ class AutomodToggleButton(Button["SettingsView"]):
 
 
 class LoggingToggleButton(Button["SettingsView"]):
-    def __init__(self, bot: "TitaniumBot", settings: GuildSettings) -> None:
+    def __init__(self, bot: TitaniumBot, settings: GuildSettings) -> None:
         super().__init__(label="\N{BELL}", style=ButtonStyle.green)
 
         self.bot = bot
@@ -151,9 +151,7 @@ class LoggingToggleButton(Button["SettingsView"]):
 class SettingsView(LayoutView):
     """Settings quick option commands"""
 
-    def __init__(
-        self, interaction: Interaction, bot: "TitaniumBot", settings: GuildSettings
-    ) -> None:
+    def __init__(self, interaction: Interaction, bot: TitaniumBot, settings: GuildSettings) -> None:
         super().__init__()
 
         if interaction.guild is None:
@@ -198,7 +196,7 @@ class SettingsView(LayoutView):
 
 
 class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server settings."):
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
     @commands.command(name="settings", description="Please use the slash command version instead.")
@@ -362,5 +360,5 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
         )
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(GuildSettingsCog(bot))

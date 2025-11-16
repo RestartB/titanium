@@ -10,8 +10,8 @@ if TYPE_CHECKING:
 
 
 class ImageCog(commands.Cog, name="Images", description="Image processing commands."):
-    def __init__(self, bot: "TitaniumBot") -> None:
-        self.bot: "TitaniumBot" = bot
+    def __init__(self, bot: TitaniumBot) -> None:
+        self.bot: TitaniumBot = bot
 
     @commands.hybrid_group(name="image", description="Image processing commands.")
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -52,5 +52,5 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         await ctx.reply(file=file)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(ImageCog(bot))

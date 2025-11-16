@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class BadLinkFetcherCog(commands.Cog):
     """Automatic tasks to fetch and update bad / phishing links"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("links")
 
@@ -82,5 +82,5 @@ class BadLinkFetcherCog(commands.Cog):
         #             return
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(BadLinkFetcherCog(bot))

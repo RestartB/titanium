@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class ServerCountersCog(commands.Cog):
     """Automatic task to update server counter channel names"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
         # Start tasks
@@ -72,5 +72,5 @@ class ServerCountersCog(commands.Cog):
                 )
 
 
-async def setup(bot: "TitaniumBot"):
+async def setup(bot: TitaniumBot):
     await bot.add_cog(ServerCountersCog(bot))

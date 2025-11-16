@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class GuildLogger:
     """Server logging class, used to log Discord events to server webhooks"""
 
-    def __init__(self, bot: "TitaniumBot", guild: discord.Guild | discord.PartialInviteGuild):
+    def __init__(self, bot: TitaniumBot, guild: discord.Guild | discord.PartialInviteGuild):
         self.bot = bot
         self.guild = guild
         self.config = bot.guild_configs.get(guild.id)

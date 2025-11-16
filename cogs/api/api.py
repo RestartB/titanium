@@ -57,8 +57,8 @@ from lib.helpers.log_error import log_error
 class APICog(commands.Cog):
     """API server for dashboard, website and status page"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
-        self.bot: "TitaniumBot" = bot
+    def __init__(self, bot: TitaniumBot) -> None:
+        self.bot: TitaniumBot = bot
         self.app = None
         self.runner = None
         self.site = None
@@ -516,6 +516,10 @@ class APICog(commands.Cog):
                     "loading_reaction": config.loading_reaction,
                 },
                 "prefixes": prefixes.prefixes,
+                "permissions": {
+                    "dashboard_managers": [str(role_id) for role_id in config.dashboard_managers],
+                    "case_managers": [str(role_id) for role_id in config.case_managers],
+                },
             }
         )
 
@@ -1022,5 +1026,5 @@ class APICog(commands.Cog):
             await self.runner.cleanup()
 
 
-async def setup(bot: "TitaniumBot"):
+async def setup(bot: TitaniumBot):
     await bot.add_cog(APICog(bot))

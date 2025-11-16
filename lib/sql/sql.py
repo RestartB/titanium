@@ -504,7 +504,7 @@ class ModCase(Base):
 
 class ModCaseComment(Base):
     __tablename__ = "mod_case_comments"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(BigInteger)
     case_id: Mapped[str] = MappedColumn(String(length=8), ForeignKey("mod_cases.id"))
     user_id: Mapped[int] = MappedColumn(BigInteger)

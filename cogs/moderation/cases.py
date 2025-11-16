@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderation cases."):
     """Moderation case management commands"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
     async def _build_embeds(
@@ -206,5 +206,5 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             await stop_loading(self.bot, ctx)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(ModerationCasesCog(bot))

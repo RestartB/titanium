@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 import discord
 import jinja2
-import pillow_avif  # noqa: F401
 from discord import app_commands
 from discord.ext import commands
 from discord.ui import View
@@ -207,7 +206,7 @@ async def create_quote_image(
 class QuoteView(View):
     def __init__(
         self,
-        titanium: "TitaniumBot",
+        titanium: TitaniumBot,
         user_id: int,
         content: str,
         user_mentions: Sequence[discord.abc.User],
@@ -665,8 +664,8 @@ class QuoteView(View):
 class QuoteCommandsCog(
     commands.Cog, name="Quotes", description="Generate quote images from messages or custom input."
 ):
-    def __init__(self, bot: "TitaniumBot") -> None:
-        self.bot: "TitaniumBot" = bot
+    def __init__(self, bot: TitaniumBot) -> None:
+        self.bot: TitaniumBot = bot
 
         # Quote option
         self.quote_ctx = app_commands.ContextMenu(
@@ -973,5 +972,5 @@ class QuoteCommandsCog(
             await interaction.followup.send(file=file, view=view)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(QuoteCommandsCog(bot))

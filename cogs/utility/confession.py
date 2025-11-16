@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
 
 class ConfessionCog(commands.Cog, name="Confession", description="Anonymous message commands."):
-    def __init__(self, bot: "TitaniumBot") -> None:
-        self.bot: "TitaniumBot" = bot
+    def __init__(self, bot: TitaniumBot) -> None:
+        self.bot: TitaniumBot = bot
 
     @commands.command(
         name="confession", description="Please use the slash command version instead."
@@ -137,5 +137,5 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         )
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(ConfessionCog(bot))

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class FireboardCog(commands.Cog):
     """Server fireboard system"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.event_queue: asyncio.Queue[
             discord.RawMessageUpdateEvent
@@ -505,5 +505,5 @@ class FireboardCog(commands.Cog):
             return
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(FireboardCog(bot))

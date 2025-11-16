@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class EventLoggingCog(commands.Cog):
     """Monitors Discord events from servers and logs them"""
 
-    def __init__(self, bot: "TitaniumBot") -> None:
+    def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("guild_logger")
 
@@ -372,5 +372,5 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.voice_undeafen(member, before, after)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(EventLoggingCog(bot))

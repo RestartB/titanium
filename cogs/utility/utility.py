@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 
 
 class UtilityCog(commands.Cog, name="Utility", description="General utility commands."):
-    def __init__(self, bot: "TitaniumBot") -> None:
-        self.bot: "TitaniumBot" = bot
+    def __init__(self, bot: TitaniumBot) -> None:
+        self.bot: TitaniumBot = bot
 
     @app_commands.command(name="feedback", description="Share any suggestions or feedback.")
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -148,5 +148,5 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         await ctx.reply(embed=embed)
 
 
-async def setup(bot: "TitaniumBot") -> None:
+async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(UtilityCog(bot))

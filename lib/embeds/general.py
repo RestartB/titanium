@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-def not_in_guild(bot: "TitaniumBot", user: Member | User) -> Embed:
+def not_in_guild(bot: TitaniumBot, user: Member | User) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"@{user.name} is not in this server.",
@@ -15,7 +15,7 @@ def not_in_guild(bot: "TitaniumBot", user: Member | User) -> Embed:
     return embed
 
 
-def cancelled(bot: "TitaniumBot") -> Embed:
+def cancelled(bot: TitaniumBot) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Cancelled.",
         colour=Colour.red(),

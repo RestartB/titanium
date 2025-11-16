@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 class ConfirmView(View):
     def __init__(
         self,
-        bot: "TitaniumBot",
+        bot: TitaniumBot,
         timeout: float = 60.0,
     ):
         super().__init__(timeout=timeout)

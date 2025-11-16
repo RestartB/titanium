@@ -19,7 +19,7 @@ class CaseNotFoundException(Exception):
 
 
 class GuildModCaseManager:
-    def __init__(self, bot: "TitaniumBot", guild: Guild, session: AsyncSession) -> None:
+    def __init__(self, bot: TitaniumBot, guild: Guild, session: AsyncSession) -> None:
         self.bot = bot
         self.guild = guild
         self.session = session
