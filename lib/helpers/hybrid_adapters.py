@@ -46,7 +46,7 @@ async def stop_loading(bot: TitaniumBot, ctx: commands.Context["TitaniumBot"]) -
             return
 
         await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
-    except (discord.HTTPException, discord.Forbidden, discord.NotFound, TypeError):
+    except discord.HTTPException, discord.Forbidden, discord.NotFound, TypeError:
         pass
 
     return

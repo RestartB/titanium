@@ -170,7 +170,7 @@ class FireboardCog(commands.Cog):
                         self.bot.fireboard_messages[reaction.message.guild.id].remove(user_message)
 
                         continue
-                except (discord.NotFound, discord.Forbidden):
+                except discord.NotFound, discord.Forbidden:
                     continue
 
         for board in self.bot.guild_configs[

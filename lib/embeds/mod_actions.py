@@ -189,6 +189,23 @@ def unbanned(
     return embed
 
 
+# Purged
+def purged(
+    bot: TitaniumBot,
+    creator: Member | User | ClientUser,
+    messages: int,
+) -> Embed:
+    embed = Embed(
+        title=f"{str(bot.success_emoji)} Purged",
+        description=f"Purged {messages} messages.",
+        colour=Colour.green(),
+    )
+
+    embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
+
+    return embed
+
+
 # Fallback done
 def done(
     bot: TitaniumBot,
@@ -242,6 +259,15 @@ def already_punishing(bot: TitaniumBot, user: Member | User | ClientUser) -> Emb
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
         description=f"{user.mention} is already being punished. Please wait.",
+        colour=Colour.red(),
+    )
+    return embed
+
+
+def cannot_purge(bot: TitaniumBot) -> Embed:
+    embed = Embed(
+        title=f"{str(bot.error_emoji)} Error",
+        description="Messages in this channel cannot be purged.",
         colour=Colour.red(),
     )
     return embed

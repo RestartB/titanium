@@ -335,7 +335,7 @@ class MusicCommandsCog(
 
                 if result is None:
                     raise ValueError
-            except (spotipy.exceptions.SpotifyException, ValueError):
+            except spotipy.exceptions.SpotifyException, ValueError:
                 return [
                     app_commands.Choice(
                         name="Spotify error, send command now to search again",
@@ -416,7 +416,7 @@ class MusicCommandsCog(
                 )
 
                 return
-            except (spotipy.exceptions.SpotifyException, ValueError):
+            except spotipy.exceptions.SpotifyException, ValueError:
                 pass
 
         # Search Spotify
@@ -547,7 +547,7 @@ class MusicCommandsCog(
 
                 if result is None:
                     raise ValueError
-            except (spotipy.exceptions.SpotifyException, ValueError):
+            except spotipy.exceptions.SpotifyException, ValueError:
                 return [
                     app_commands.Choice(
                         name="Spotify error, send command now to search again",
