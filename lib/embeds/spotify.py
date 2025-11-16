@@ -279,6 +279,9 @@ async def album(
         )
 
     if responded and respond_msg:
-        await respond_msg.edit(embed=page_embeds[0], view=view)
+        await respond_msg.edit(embed=page_embeds[0], view=view if view else None)
     else:
-        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+        if view:
+            await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+        else:
+            await ctx.reply(embed=page_embeds[0], ephemeral=ephemeral)

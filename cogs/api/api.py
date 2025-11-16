@@ -429,7 +429,7 @@ class APICog(commands.Cog):
         if not user_id or not user_id.isdigit():
             return web.json_response({"error": "user_id required"}, status=400)
 
-        member = guild.get_member(int(user_id))
+        member: discord.Member | None = guild.get_member(int(user_id))
         if not member:
             return web.json_response(
                 {
@@ -438,11 +438,39 @@ class APICog(commands.Cog):
                 }
             )
 
-        # TODO: add role based permission check
+        # Get permissions
+        config = self.bot.guild_configs.get(guild.id)
+
+        if not config:
+            await self.bot.refresh_guild_config_cache(guild.id)
+            config = self.bot.guild_configs.get(guild.id)
+
+            if not config:
+                config = await self.bot.init_guild(guild.id)
+
+                if not config:
+                    return web.json_response(
+                        {"error": "Failed to retrieve server configuration"},
+                        status=500,
+                    )
+
+        dashboard_manager = member.guild_permissions.administrator
+        case_manager = member.guild_permissions.manage_guild
+
+        for role in member.roles:
+            if role.id == guild.id:
+                continue
+
+            if role.id in config.dashboard_managers:
+                dashboard_manager = True
+
+            if role.id in config.case_managers:
+                case_manager = True
+
         return web.json_response(
             {
-                "dashboard_manager": member.guild_permissions.administrator,
-                "case_manager": member.guild_permissions.manage_guild,
+                "dashboard_manager": dashboard_manager,
+                "case_manager": case_manager,
             }
         )
 

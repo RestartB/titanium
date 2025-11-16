@@ -41,6 +41,8 @@ class PaginationView(View):
 
         self.first_button.disabled = True
         self.prev_button.disabled = True
+        self.next_button.disabled = False
+        self.last_button.disabled = False
 
         await self._set_footer(interaction)
         await interaction.edit_original_response(
@@ -57,6 +59,9 @@ class PaginationView(View):
         if self.current_page == 0:
             self.first_button.disabled = True
             self.prev_button.disabled = True
+
+        self.next_button.disabled = False
+        self.last_button.disabled = False
 
         await self._set_footer(interaction)
         await interaction.response.edit_message(
@@ -79,6 +84,9 @@ class PaginationView(View):
             self.next_button.disabled = True
             self.last_button.disabled = True
 
+        self.first_button.disabled = False
+        self.prev_button.disabled = False
+
         await self._set_footer(interaction)
         await interaction.response.edit_message(
             embeds=self.embeds[self.current_page],
@@ -91,6 +99,8 @@ class PaginationView(View):
         self.current_page = len(self.embeds) - 1
         self.page_count.label = f"{self.current_page + 1}/{len(self.embeds)}"
 
+        self.first_button.disabled = False
+        self.prev_button.disabled = False
         self.next_button.disabled = True
         self.last_button.disabled = True
 
