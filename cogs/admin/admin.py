@@ -320,6 +320,47 @@ class AdminCog(commands.Cog):
         finally:
             await stop_loading(self.bot, ctx)
 
+    @admin_group.command(name="getserverowner", aliases=["get-server-owner"], hidden=True)
+    @commands.is_owner()
+    async def get_server_owner(self, ctx: commands.Context["TitaniumBot"], guild_id: int) -> None:
+        """Get the owner ID of a specified server."""
+        await defer(self.bot, ctx, ephemeral=True)
+
+        try:
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                raise ValueError(f"Guild with ID {guild_id} not found.")
+
+            if guild.owner_id is None:
+                raise ValueError(f"Guild with ID {guild_id} has no owner ID.")
+
+            owner = guild.owner
+
+            if owner is None:
+                owner = await self.bot.fetch_user(guild.owner_id)
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{str(self.bot.success_emoji)} Server Owner",
+                    description=f"`@{owner.name}` (`{owner.id}`)",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error(f"Error retrieving owner for server {guild_id}", exc_info=e)
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} Error Retrieving Server Owner",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
+        finally:
+            await stop_loading(self.bot, ctx)
+
 
 async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(AdminCog(bot))
