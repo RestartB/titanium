@@ -3,7 +3,7 @@
 Welcome to the Titanium v2 branch! This branch is used for Titanium v2 development, and will eventually become the main Titanium branch.
 
 > [!CAUTION]
-> Titanium v2 currently in active development. Many features are constantly changing, haven't been tested yet, and may be removed at any time. It is certain that there will be unfixed bugs. It is not recommended at this time to use Titanium v2 in production.
+> Titanium v2 currently in active development. Many features are constantly changing, haven't been tested yet, and may be removed at any time. It is certain that there will be unfixed bugs. It is not recommended at this time to use Titanium v2 in production. I will not provide any support for discovered bugs at this time, and the terms of service / privacy policies for Titanium v1 do not apply to Titanium v2.
 
 > [!IMPORTANT]
 > This project is in highly active development. Therefore, I am not accepting PRs or code edits for this repo at this time. Once the initial version has been released, I will be happy to accept new PRs again.
