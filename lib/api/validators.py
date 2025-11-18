@@ -14,6 +14,7 @@ class ModuleModel(BaseModel):
     fireboard: bool
     server_counters: bool
     confession: bool
+    leaderboard: bool
 
 
 class SettingsModel(BaseModel):

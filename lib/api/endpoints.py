@@ -219,3 +219,54 @@ def server_counters_info(bot: TitaniumBot, request: web.Request, guild: Guild) -
             ]
         }
     )
+
+
+def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
+    config = bot.guild_configs[guild.id]
+
+    if not config.leaderboard_settings:
+        return web.json_response(
+            {
+                "mode": None,
+                "cooldown": 5,
+                "xp": 10,
+                "min_xp": 15,
+                "max_xp": 25,
+                "xp_mult": 1.0,
+                "levelup_notifications": True,
+                "notification_channel": None,
+                "web_leaderboard_enabled": True,
+                "web_login_required": False,
+                "delete_leavers": False,
+                "levels": [],
+            }
+        )
+
+    lb_settings = config.leaderboard_settings
+    lb_settings.levels.sort(key=lambda level: level.xp)
+
+    return web.json_response(
+        {
+            "mode": lb_settings.mode.value,
+            "cooldown": lb_settings.cooldown,
+            "xp": lb_settings.base_xp,
+            "min_xp": lb_settings.min_xp,
+            "max_xp": lb_settings.max_xp,
+            "xp_mult": lb_settings.xp_mult,
+            "levelup_notifications": lb_settings.levelup_notifications,
+            "notification_channel": str(lb_settings.notification_channel)
+            if lb_settings.notification_channel
+            else None,
+            "web_leaderboard_enabled": lb_settings.web_leaderboard_enabled,
+            "web_login_required": lb_settings.web_login_required,
+            "delete_leavers": lb_settings.delete_leavers,
+            "levels": [
+                {
+                    "level": i + 1,
+                    "xp_required": level.xp,
+                    "reward_roles": [str(role_id) for role_id in level.reward_roles],
+                }
+                for i, level in enumerate(lb_settings.levels)
+            ],
+        }
+    )

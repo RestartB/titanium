@@ -16,6 +16,7 @@ from lib.api.endpoints import (
     bouncer_info,
     confession_info,
     fireboard_info,
+    leaderboard_info,
     logging_info,
     moderation_info,
     server_counters_info,
@@ -43,6 +44,7 @@ from lib.sql.sql import (
     GuildModerationSettings,
     GuildServerCounterSettings,
     GuildSettings,
+    LeaderboardUserStats,
     ModCase,
     ServerCounterChannel,
     get_session,
@@ -101,6 +103,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
         self.app.router.add_get("/guild/{guild_id}/cases", self.guild_cases)
         self.app.router.add_get("/guild/{guild_id}/errors", self.guild_errors)
+        self.app.router.add_get("/guild/{guild_id}/leaderboard", self.guild_leaderboard)
         self.app.router.add_get("/guild/{guild_id}/perms/{user_id}", self.guild_perm_check)
         self.app.router.add_get("/guild/{guild_id}/settings", self.guild_settings)
         self.app.router.add_put("/guild/{guild_id}/settings", self.update_guild_settings)
@@ -416,6 +419,64 @@ class APICog(commands.Cog):
             }
         )
 
+    async def guild_leaderboard(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        # Get permissions
+        config = self.bot.guild_configs.get(guild.id)
+
+        if not config:
+            await self.bot.refresh_guild_config_cache(guild.id)
+            config = self.bot.guild_configs.get(guild.id)
+
+            if not config:
+                config = await self.bot.init_guild(guild.id)
+
+                if not config:
+                    return web.json_response(
+                        {"error": "Failed to retrieve server configuration"},
+                        status=500,
+                    )
+
+        lb_config = config.leaderboard_settings
+
+        if not lb_config or not config.leaderboard_enabled:
+            return web.json_response({"error": "leaderboard module not enabled"}, status=403)
+
+        limit = max(min(int(request.query.get("limit", 25)), 100), 1)
+        offset = max(int(request.query.get("offset", 0)), 0)
+
+        async with get_session() as session:
+            result = await session.execute(
+                select(LeaderboardUserStats)
+                .where(LeaderboardUserStats.guild_id == guild.id)
+                .order_by(LeaderboardUserStats.xp.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+            leaderboard = result.scalars().all()
+
+        return web.json_response(
+            {
+                "leaderboard": [
+                    {
+                        "user_id": str(user_stat.user_id),
+                        "xp": str(user_stat.xp),
+                        "level": user_stat.level,
+                        "historical": user_stat.daily_snapshots,
+                    }
+                    for user_stat in leaderboard
+                ],
+                "auth_required": lb_config.web_login_required,
+            }
+        )
+
     async def guild_perm_check(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
         if not guild_id or not guild_id.isdigit():
@@ -435,6 +496,7 @@ class APICog(commands.Cog):
                 {
                     "dashboard_manager": False,
                     "case_manager": False,
+                    "member": False,
                 }
             )
 
@@ -471,6 +533,7 @@ class APICog(commands.Cog):
             {
                 "dashboard_manager": dashboard_manager,
                 "case_manager": case_manager,
+                "member": True,
             }
         )
 
@@ -511,6 +574,7 @@ class APICog(commands.Cog):
                     "fireboard": config.fireboard_enabled,
                     "server_counters": config.server_counters_enabled,
                     "confession": config.confession_enabled,
+                    "leaderboard": config.leaderboard_enabled,
                 },
                 "settings": {
                     "loading_reaction": config.loading_reaction,
@@ -577,6 +641,7 @@ class APICog(commands.Cog):
             db_config.logging_enabled = validated_settings.modules.logging
             db_config.fireboard_enabled = validated_settings.modules.fireboard
             db_config.server_counters_enabled = validated_settings.modules.server_counters
+            db_config.leaderboard_enabled = validated_settings.modules.leaderboard
 
             db_config.loading_reaction = validated_settings.settings.loading_reaction
 
@@ -624,6 +689,8 @@ class APICog(commands.Cog):
             return fireboard_info(self.bot, request, guild)
         elif module_name == "server_counters":
             return server_counters_info(self.bot, request, guild)
+        elif module_name == "leaderboard":
+            return leaderboard_info(self.bot, request, guild)
         else:
             return web.json_response({"error": "Module not found"}, status=404)
 
