@@ -27,9 +27,10 @@ Welcome to the Titanium v2 branch! This branch is used for Titanium v2 developme
 
 When developing, you may modify, add or remove tables. To migrate the database to the new schema, follow these steps:
 
-1. Run `atlas migrate diff --env sqlalchemy` - this will create a migration file in the `/migrations` folder
-2. Review the created migration file to ensure that it looks ok
-3. Run the `t!admin migrate-db` command or restart the bot to migrate the database
+1. If you're adding or removing a table, make sure to also add / remove it from the `lib/sql/atlas.py` file.
+2. Run `atlas migrate diff --env sqlalchemy` - this will create a migration file in the `/migrations` folder
+3. Review the created migration file to ensure that it looks good
+4. Run the `t!admin migrate-db` command or restart the bot to migrate the database
 
 ## Running the bot
 
