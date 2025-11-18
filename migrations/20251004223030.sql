@@ -269,7 +269,7 @@ CREATE TABLE "mod_cases" (
 );
 -- Create "mod_case_comments" table
 CREATE TABLE "mod_case_comments" (
-  "id" bigserial NOT NULL,
+  "id" uuid NOT NULL,
   "guild_id" bigint NOT NULL,
   "case_id" character varying(8) NOT NULL,
   "user_id" bigint NOT NULL,

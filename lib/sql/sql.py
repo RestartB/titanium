@@ -12,6 +12,8 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     DateTime,
+    Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -20,6 +22,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Mapped, MappedColumn, declarative_base, relationship
+
+from lib.enums.leaderboard import CalcType
 
 Base = declarative_base()
 
@@ -84,8 +88,13 @@ class GuildSettings(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
-
-    # confession settings
+    leaderboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    leaderboard_settings: Mapped["GuildLeaderboardSettings"] = relationship(
+        "GuildLeaderboardSettings",
+        cascade="all, delete-orphan",
+        back_populates="guild_settings",
+        uselist=False,
+    )
     confession_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     confession_settings: Mapped["GuildConfessionSettings"] = relationship(
         "GuildConfessionSettings",
@@ -476,6 +485,57 @@ class ServerCounterChannel(Base):
     count_type: Mapped[str] = MappedColumn(String(length=32))
     activity_name: Mapped[str] = MappedColumn(String(length=50), nullable=True)
     name: Mapped[str] = MappedColumn(String(length=50), server_default=text("'{value}'"))
+
+
+class GuildLeaderboardSettings(Base):
+    __tablename__ = "guild_leaderboard_settings"
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id"), primary_key=True
+    )
+    guild_settings: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="leaderboard_settings", uselist=False
+    )
+    mode: Mapped[CalcType] = MappedColumn(Enum(CalcType), nullable=False)
+    cooldown: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+    base_xp: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
+    min_xp: Mapped[int] = MappedColumn(Integer, server_default=text("15"))
+    max_xp: Mapped[int] = MappedColumn(Integer, server_default=text("25"))
+    xp_mult: Mapped[float] = MappedColumn(Float, server_default=text("1.0"))
+    levelup_notifications: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    notification_channel: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    web_leaderboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    web_login_required: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    delete_leavers: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    levels: Mapped[list["LeaderboardLevels"]] = relationship(
+        "LeaderboardLevels", back_populates="guild_settings", cascade="all, delete-orphan"
+    )
+
+
+class LeaderboardLevels(Base):
+    __tablename__ = "leaderboard_levels"
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_leaderboard_settings.guild_id")
+    )
+    guild_settings: Mapped["GuildLeaderboardSettings"] = relationship(
+        "GuildLeaderboardSettings", back_populates="levels", uselist=False
+    )
+    xp: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
+    reward_roles: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+
+
+class LeaderboardUserStats(Base):
+    __tablename__ = "leaderboard_user_stats"
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
+    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
+    xp: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
+    level: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
+    daily_snapshots: Mapped[list[int]] = MappedColumn(
+        ARRAY(Integer), server_default=text("ARRAY[]::integer[]")
+    )
 
 
 class ModCase(Base):
