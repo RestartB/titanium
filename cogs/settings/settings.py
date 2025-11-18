@@ -31,17 +31,19 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class ModToggleButton(Button["SettingsView"]):
-    def __init__(self, bot: TitaniumBot, settings: GuildSettings) -> None:
+class FeatureToggleButton(Button["SettingsView"]):
+    def __init__(self, bot: TitaniumBot, settings: GuildSettings, feature_attr: str) -> None:
         super().__init__(label="\N{BELL}", style=ButtonStyle.green)
 
         self.bot = bot
         self.settings = settings
+        self.feature_attr = feature_attr
 
         self.update_button()
 
     def update_button(self):
-        if self.settings.moderation_enabled:
+        enabled = getattr(self.settings, self.feature_attr)
+        if enabled:
             self.label = "Enabled"
             self.emoji = self.bot.success_emoji
             self.style = ButtonStyle.green
@@ -54,7 +56,9 @@ class ModToggleButton(Button["SettingsView"]):
         if not interaction.guild_id:
             return
 
-        self.settings.moderation_enabled = not self.settings.moderation_enabled
+        current_value = getattr(self.settings, self.feature_attr)
+        new_value = not current_value
+        setattr(self.settings, self.feature_attr, new_value)
 
         async with get_session() as session:
             guild_settings = await session.get(GuildSettings, interaction.guild_id)
@@ -63,85 +67,7 @@ class ModToggleButton(Button["SettingsView"]):
                 guild_settings = GuildSettings(guild_id=interaction.guild_id)
                 session.add(guild_settings)
 
-            guild_settings.moderation_enabled = self.settings.moderation_enabled
-
-        await self.bot.refresh_guild_config_cache(interaction.guild_id)
-        self.update_button()
-        await interaction.response.edit_message(view=self.view)
-
-
-class AutomodToggleButton(Button["SettingsView"]):
-    def __init__(self, bot: TitaniumBot, settings: GuildSettings) -> None:
-        super().__init__(label="\N{BELL}", style=ButtonStyle.green)
-
-        self.bot = bot
-        self.settings = settings
-
-        self.update_button()
-
-    def update_button(self):
-        if self.settings.automod_enabled:
-            self.label = "Enabled"
-            self.emoji = self.bot.success_emoji
-            self.style = ButtonStyle.green
-        else:
-            self.label = "Disabled"
-            self.emoji = self.bot.error_emoji
-            self.style = ButtonStyle.red
-
-    async def callback(self, interaction: Interaction) -> None:
-        if not interaction.guild_id:
-            return
-
-        self.settings.automod_enabled = not self.settings.automod_enabled
-
-        async with get_session() as session:
-            guild_settings = await session.get(GuildSettings, interaction.guild_id)
-
-            if not guild_settings:
-                guild_settings = GuildSettings(guild_id=interaction.guild_id)
-                session.add(guild_settings)
-
-            guild_settings.automod_enabled = self.settings.automod_enabled
-
-        await self.bot.refresh_guild_config_cache(interaction.guild_id)
-        self.update_button()
-        await interaction.response.edit_message(view=self.view)
-
-
-class LoggingToggleButton(Button["SettingsView"]):
-    def __init__(self, bot: TitaniumBot, settings: GuildSettings) -> None:
-        super().__init__(label="\N{BELL}", style=ButtonStyle.green)
-
-        self.bot = bot
-        self.settings = settings
-
-        self.update_button()
-
-    def update_button(self):
-        if self.settings.logging_enabled:
-            self.label = "Enabled"
-            self.emoji = self.bot.success_emoji
-            self.style = ButtonStyle.green
-        else:
-            self.label = "Disabled"
-            self.emoji = self.bot.error_emoji
-            self.style = ButtonStyle.red
-
-    async def callback(self, interaction: Interaction) -> None:
-        if not interaction.guild_id:
-            return
-
-        self.settings.logging_enabled = not self.settings.logging_enabled
-
-        async with get_session() as session:
-            guild_settings = await session.get(GuildSettings, interaction.guild_id)
-
-            if not guild_settings:
-                guild_settings = GuildSettings(guild_id=interaction.guild_id)
-                session.add(guild_settings)
-
-            guild_settings.logging_enabled = self.settings.logging_enabled
+            setattr(guild_settings, self.feature_attr, new_value)
 
         await self.bot.refresh_guild_config_cache(interaction.guild_id)
         self.update_button()
@@ -174,23 +100,45 @@ class SettingsView(LayoutView):
         container.add_item(top_section)
         container.add_item(Separator(spacing=SeparatorSpacing.large))
 
-        mod_section = Section(accessory=ModToggleButton(bot, settings))
+        mod_section = Section(accessory=FeatureToggleButton(bot, settings, "moderation_enabled"))
         mod_section.add_item(
             TextDisplay("### Moderation\nModerate your server members and create cases.")
         )
         container.add_item(mod_section)
 
-        automod_section = Section(accessory=ModToggleButton(bot, settings))
+        automod_section = Section(accessory=FeatureToggleButton(bot, settings, "automod_enabled"))
         automod_section.add_item(
             TextDisplay("### Auto Moderation\nAllow Titanium to moderate your server for you.")
         )
         container.add_item(automod_section)
 
-        logging_section = Section(accessory=LoggingToggleButton(bot, settings))
+        bouncer_section = Section(accessory=FeatureToggleButton(bot, settings, "bouncer_enabled"))
+        bouncer_section.add_item(
+            TextDisplay("### Bouncer\nAllow Titanium to monitor users as they join.")
+        )
+        container.add_item(bouncer_section)
+
+        logging_section = Section(accessory=FeatureToggleButton(bot, settings, "logging_enabled"))
         logging_section.add_item(
             TextDisplay("### Logging\nLog various events that happen in your server.")
         )
         container.add_item(logging_section)
+
+        fireboard_section = Section(
+            accessory=FeatureToggleButton(bot, settings, "fireboard_enabled")
+        )
+        fireboard_section.add_item(
+            TextDisplay("### Fireboard\nLet server members highlight messages they love.")
+        )
+        container.add_item(fireboard_section)
+
+        server_counters_section = Section(accessory=FeatureToggleButton(bot, settings, "server_counters_enabled"))
+        server_counters_section.add_item(
+            TextDisplay(
+                "### Server Counters\nDisplay various server statistics and counters in your channel list."
+            )
+        )
+        container.add_item(server_counters_section)
 
         self.add_item(container)
 
