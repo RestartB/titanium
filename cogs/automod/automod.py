@@ -19,6 +19,7 @@ from lib.embeds.mod_actions import (
     muted,
     warned,
 )
+from lib.enums.automod import AutomodActionType, AutomodAntispamType
 from lib.helpers.log_error import log_error
 from lib.helpers.send_dm import send_dm
 from lib.sql.sql import AutomodAction, AutomodRule, get_session
@@ -161,20 +162,20 @@ class AutomodMonitorCog(commands.Cog):
                         if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
                     ]
 
-                    if str(rule.antispam_type) == "message_spam":
+                    if rule.antispam_type == AutomodAntispamType.MESSAGE:
                         count = len(list(filtered_messages))
-                    elif str(rule.antispam_type) == "mention_spam":
+                    elif rule.antispam_type == AutomodAntispamType.MENTION:
                         count = sum(m.mention_count for m in filtered_messages)
-                    elif str(rule.antispam_type) == "word_spam":
+                    elif rule.antispam_type == AutomodAntispamType.WORD:
                         # FIXME: seems to trigger at 6 words if you set threshold to 5
                         count = sum(m.word_count for m in filtered_messages)
-                    elif str(rule.antispam_type) == "newline_spam":
+                    elif rule.antispam_type == AutomodAntispamType.NEWLINE:
                         count = sum(m.newline_count for m in filtered_messages)
-                    elif str(rule.antispam_type) == "link_spam":
+                    elif rule.antispam_type == AutomodAntispamType.LINK:
                         count = sum(m.link_count for m in filtered_messages)
-                    elif str(rule.antispam_type) == "attachment_spam":
+                    elif rule.antispam_type == AutomodAntispamType.ATTACHMENT:
                         count = sum(m.attachment_count for m in filtered_messages)
-                    elif str(rule.antispam_type) == "emoji_spam":
+                    elif rule.antispam_type == AutomodAntispamType.EMOJI:
                         count = sum(m.emoji_count for m in filtered_messages)
                     else:
                         continue
@@ -240,9 +241,9 @@ class AutomodMonitorCog(commands.Cog):
                 manager = GuildModCaseManager(self.bot, message.guild, session)
 
                 for punishment in punishments:
-                    if str(punishment.action_type) == "delete":
+                    if punishment.action_type == AutomodActionType.DELETE:
                         await message.delete()
-                    elif str(punishment.action_type) == "warn":
+                    elif punishment.action_type == AutomodActionType.WARN:
                         case = await manager.create_case(
                             action="warn",
                             user_id=message.author.id,
@@ -268,7 +269,7 @@ class AutomodMonitorCog(commands.Cog):
                                 dm_error=dm_error,
                             )
                         )
-                    elif str(punishment.action_type) == "mute":
+                    elif punishment.action_type == AutomodActionType.MUTE:
                         # Check if user is already timed out
                         if message.author.is_timed_out():
                             continue
@@ -333,7 +334,10 @@ class AutomodMonitorCog(commands.Cog):
                             )
                             embeds.append(http_exception(self.bot, message.author))
 
-                    elif str(punishment.action_type) == "kick" and "ban" not in punishment_types:
+                    elif (
+                        punishment.action_type == AutomodActionType.KICK
+                        and AutomodActionType.BAN not in punishment_types
+                    ):
                         # Kick user
                         try:
                             await message.author.kick(
@@ -381,7 +385,7 @@ class AutomodMonitorCog(commands.Cog):
                                 details=e.text,
                             )
                             embeds.append(http_exception(self.bot, message.author))
-                    elif str(punishment.action_type) == "ban":
+                    elif punishment.action_type == AutomodActionType.BAN:
                         # Ban user
                         try:
                             await message.author.ban(

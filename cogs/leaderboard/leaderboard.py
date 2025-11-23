@@ -8,7 +8,7 @@ from discord.ext import commands, tasks
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
-from lib.enums.leaderboard import CalcType
+from lib.enums.leaderboard import LeaderboardCalcType
 from lib.sql.sql import LeaderboardUserStats, get_session
 from lib.views.pagination import PaginationView
 
@@ -69,11 +69,11 @@ class LeaderboardCog(commands.Cog):
 
         to_assign = 0
 
-        if mode == CalcType.FIXED:
+        if mode == LeaderboardCalcType.FIXED:
             to_assign = xp
-        elif mode == CalcType.RANDOM:
+        elif mode == LeaderboardCalcType.RANDOM:
             to_assign = random.randint(min_xp, max_xp)
-        elif mode == CalcType.LENGTH:
+        elif mode == LeaderboardCalcType.LENGTH:
             to_assign = min(int(length / 100) * xp, max_xp)
 
         async with get_session() as session:

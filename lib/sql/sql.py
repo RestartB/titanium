@@ -23,7 +23,10 @@ from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Mapped, MappedColumn, declarative_base, relationship
 
-from lib.enums.leaderboard import CalcType
+from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
+from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
+from lib.enums.leaderboard import LeaderboardCalcType
+from lib.enums.server_counters import ServerCounterType
 
 Base = declarative_base()
 
@@ -210,8 +213,10 @@ class AutomodRule(Base):
     __tablename__ = "automod_rules"
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("guild_automod_settings.guild_id"))
-    rule_type: Mapped[str] = MappedColumn(String(length=32))
-    antispam_type: Mapped[str] = MappedColumn(String(length=32), nullable=True)
+    rule_type: Mapped[AutomodRuleType] = MappedColumn(Enum(AutomodRuleType))
+    antispam_type: Mapped[AutomodAntispamType] = MappedColumn(
+        Enum(AutomodAntispamType), nullable=True
+    )
     rule_name: Mapped[str] = MappedColumn(String(length=100), nullable=True)
     words: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
@@ -240,8 +245,8 @@ class AutomodAction(Base):
         ForeignKey("guild_automod_settings.guild_id"),
     )
     rule_id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), ForeignKey("automod_rules.id"))
-    rule_type: Mapped[str] = MappedColumn(String(length=32))
-    action_type: Mapped[str] = MappedColumn(String(length=32))
+    rule_type: Mapped[AutomodRuleType] = MappedColumn(Enum(AutomodRuleType))
+    action_type: Mapped[AutomodActionType] = MappedColumn(Enum(AutomodActionType))
     duration: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     reason: Mapped[str] = MappedColumn(String(length=512), nullable=True)
     role_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
@@ -292,7 +297,7 @@ class BouncerCriteria(Base):
     __tablename__ = "bouncer_criteria"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
     rule_id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), ForeignKey("bouncer_rules.id"))
-    criteria_type: Mapped[str] = MappedColumn(String(length=32))
+    criteria_type: Mapped[BouncerCriteriaType] = MappedColumn(Enum(BouncerCriteriaType))
     account_age: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     words: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
@@ -308,7 +313,7 @@ class BouncerAction(Base):
     __tablename__ = "bouncer_actions"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
     rule_id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), ForeignKey("bouncer_rules.id"))
-    action_type: Mapped[str] = MappedColumn(String(length=32))
+    action_type: Mapped[BouncerActionType] = MappedColumn(Enum(BouncerActionType))
 
     # Actions with duration
     duration: Mapped[int] = MappedColumn(BigInteger, nullable=True)
@@ -483,7 +488,7 @@ class ServerCounterChannel(Base):
     settings: Mapped["GuildServerCounterSettings"] = relationship(
         "GuildServerCounterSettings", back_populates="channels", uselist=False
     )
-    count_type: Mapped[str] = MappedColumn(String(length=32))
+    count_type: Mapped[ServerCounterType] = MappedColumn(Enum(ServerCounterType))
     activity_name: Mapped[str] = MappedColumn(String(length=50), nullable=True)
     name: Mapped[str] = MappedColumn(String(length=50), server_default=text("'{value}'"))
 
@@ -496,7 +501,7 @@ class GuildLeaderboardSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="leaderboard_settings", uselist=False
     )
-    mode: Mapped[CalcType] = MappedColumn(Enum(CalcType), nullable=False)
+    mode: Mapped[LeaderboardCalcType] = MappedColumn(Enum(LeaderboardCalcType), nullable=False)
     cooldown: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
     base_xp: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
     min_xp: Mapped[int] = MappedColumn(Integer, server_default=text("15"))

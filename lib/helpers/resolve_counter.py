@@ -3,54 +3,56 @@ from typing import Optional
 import discord
 import humanize
 
+from lib.enums.server_counters import ServerCounterType
+
 
 def resolve_counter(
-    guild: discord.Guild, type: str, name: str, target_activity: Optional[str] = None
+    guild: discord.Guild, type: ServerCounterType, name: str, target_activity: Optional[str] = None
 ) -> str:
     """Resolve the server counter name for a channel."""
 
-    if type == "total_members":
+    if type == ServerCounterType.TOTAL_MEMBERS:
         updated_value = 0
 
         if guild.member_count:
             updated_value = guild.member_count
-    elif type == "users":
+    elif type == ServerCounterType.USERS:
         updated_value = 0
 
         for member in guild.members:
             if not member.bot:
                 updated_value += 1
-    elif type == "bots":
+    elif type == ServerCounterType.BOTS:
         updated_value = 0
 
         for member in guild.members:
             if member.bot:
                 updated_value += 1
-    elif type == "online_members":
+    elif type == ServerCounterType.ONLINE_MEMBERS:
         updated_value = 0
 
         for member in guild.members:
             if member.status != discord.Status.offline:
                 updated_value += 1
-    elif type == "members_status_online":
+    elif type == ServerCounterType.MEMBERS_STATUS_ONLINE:
         updated_value = 0
 
         for member in guild.members:
             if member.status == discord.Status.online:
                 updated_value += 1
-    elif type == "members_status_idle":
+    elif type == ServerCounterType.MEMBERS_STATUS_IDLE:
         updated_value = 0
 
         for member in guild.members:
             if member.status == discord.Status.idle:
                 updated_value += 1
-    elif type == "members_status_dnd":
+    elif type == ServerCounterType.MEMBERS_STATUS_DND:
         updated_value = 0
 
         for member in guild.members:
             if member.status == discord.Status.dnd:
                 updated_value += 1
-    elif type == "members_activity":
+    elif type == ServerCounterType.MEMBERS_ACTIVITY:
         updated_value = 0
 
         for member in guild.members:
@@ -59,7 +61,7 @@ def resolve_counter(
                     if activity.type != discord.ActivityType.custom:
                         updated_value += 1
                         break
-    elif type == "members_custom_status":
+    elif type == ServerCounterType.MEMBERS_CUSTOM_STATUS:
         updated_value = 0
 
         for member in guild.members:
@@ -68,20 +70,20 @@ def resolve_counter(
                     if activity.type == discord.ActivityType.custom:
                         updated_value += 1
                         break
-    elif type == "offline_members":
+    elif type == ServerCounterType.OFFLINE_MEMBERS:
         updated_value = 0
 
         for member in guild.members:
             if member.status == discord.Status.offline:
                 updated_value += 1
-    elif type == "channels":
+    elif type == ServerCounterType.CHANNELS:
         updated_value = (
             len(guild.text_channels)
             + len(guild.voice_channels)
             + len(guild.stage_channels)
             + len(guild.forums)
         )
-    elif type == "activity":
+    elif type == ServerCounterType.ACTIVITY:
         updated_value = 0
 
         if target_activity is not None:

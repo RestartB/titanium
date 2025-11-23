@@ -1,8 +1,11 @@
 import uuid
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from lib.enums.automod import AutomodActionType, AutomodRuleType
+from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
+from lib.enums.server_counters import ServerCounterType
 from lib.sql.sql import AutomodAction, AutomodRule, BouncerAction, BouncerCriteria, BouncerRule
 
 
@@ -51,7 +54,7 @@ class ModerationConfigModel(BaseModel):
 
 
 class AutomodActionModel(BaseModel):
-    type: Literal["warn", "mute", "kick", "ban", "delete", "add_role", "remove_role", "toggle_role"]
+    type: AutomodActionType
     duration: Optional[int] = None
     reason: Optional[str] = None
     role_id: Optional[str] = None
@@ -62,7 +65,7 @@ class AutomodActionModel(BaseModel):
             raise ValueError("Mute actions must have a positive duration")
         return self
 
-    def to_sqlalchemy(self, rule_type: str, guild_id: int) -> AutomodAction:
+    def to_sqlalchemy(self, rule_type: AutomodRuleType, guild_id: int) -> AutomodAction:
         return AutomodAction(
             guild_id=guild_id,
             rule_type=rule_type,
@@ -75,12 +78,7 @@ class AutomodActionModel(BaseModel):
 
 class AutomodRuleModel(BaseModel):
     id: Optional[str] = None
-    rule_type: Literal[
-        "badword_detection",
-        "spam_detection",
-        "malicious_link",
-        "phishing_link",
-    ]
+    rule_type: AutomodRuleType
     rule_name: str = ""
     words: Optional[list[str]] = Field(default_factory=list)
     match_whole_word: bool = False
@@ -134,7 +132,7 @@ class AutomodConfigModel(BaseModel):
 
 
 class BouncerCriterionModel(BaseModel):
-    type: Literal["username", "tag", "age", "avatar"]
+    type: BouncerCriteriaType
     account_age: Optional[int] = None
     words: Optional[list[str]] = None
     match_whole_word: bool = False
@@ -142,9 +140,7 @@ class BouncerCriterionModel(BaseModel):
 
 
 class BouncerActionModel(BaseModel):
-    type: Literal[
-        "warn", "mute", "kick", "ban", "reset_nick", "add_role", "remove_role", "toggle_role"
-    ]
+    type: BouncerActionType
     duration: Optional[int] = None
     role_id: Optional[str] = None
     reason: Optional[str] = None
@@ -309,20 +305,7 @@ class FireboardConfigModel(BaseModel):
 class ServerCounterChannelModel(BaseModel):
     id: Optional[str] = None
     name: str
-    type: Literal[
-        "total_members",
-        "users",
-        "bots",
-        "online_members",
-        "members_status_online",
-        "members_status_idle",
-        "members_status_dnd",
-        "members_activity",
-        "members_custom_status",
-        "offline_members",
-        "channels",
-        "activity",
-    ]
+    type: ServerCounterType
     activity_name: Optional[str] = None
 
     @field_validator("id")
