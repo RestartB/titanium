@@ -66,6 +66,26 @@ class AutomodMonitorCog(commands.Cog):
 
             config = self.bot.guild_configs[message.guild.id].automod_settings
 
+            triggered_word_rule_amount = {}
+            malicious_link_count = 0
+            phishing_link_count = 0
+
+            for rule in config.badword_detection_rules:
+                triggered_word_rule_amount[rule.id] = 0
+                if any(
+                    word.lower() if not rule.case_sensitive else word in rule.words
+                    for word in rule.words
+                ):
+                    triggered_word_rule_amount[rule.id] += 1
+
+            for link in self.bot.malicious_links:
+                if link in message.content:
+                    malicious_link_count += 1
+
+            for link in self.bot.phishing_links:
+                if link in message.content:
+                    phishing_link_count += 1
+
             if event_type == "new":
                 self.bot.automod_messages.setdefault(message.guild.id, {}).setdefault(
                     message.author.id, []
@@ -74,7 +94,9 @@ class AutomodMonitorCog(commands.Cog):
                         user_id=message.author.id,
                         message_id=message.id,
                         channel_id=message.channel.id,
-                        content=message.content,
+                        triggered_word_rule_amount=triggered_word_rule_amount,
+                        malicious_link_count=malicious_link_count,
+                        phishing_link_count=phishing_link_count,
                         mention_count=len(message.mentions)
                         + len(message.role_mentions)
                         + (1 if message.mention_everyone else 0),
@@ -108,7 +130,9 @@ class AutomodMonitorCog(commands.Cog):
                         user_id=message.author.id,
                         message_id=message.id,
                         channel_id=message.channel.id,
-                        content=message.content,
+                        triggered_word_rule_amount=triggered_word_rule_amount,
+                        malicious_link_count=malicious_link_count,
+                        phishing_link_count=phishing_link_count,
                         mention_count=len(message.mentions)
                         + len(message.role_mentions)
                         + (1 if message.mention_everyone else 0),
@@ -168,13 +192,8 @@ class AutomodMonitorCog(commands.Cog):
                     for m in current_state
                     if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
                 ]
-                spotted = 0
 
-                for filtered_msg in filtered_messages:
-                    if any(link in filtered_msg.content for link in self.bot.malicious_links):
-                        spotted += 1
-
-                if spotted >= rule.threshold:
+                if sum(msg.malicious_link_count for msg in filtered_messages) >= rule.threshold:
                     triggers.append(rule)
                     for action in rule.actions:
                         punishments.append(action)
@@ -187,18 +206,8 @@ class AutomodMonitorCog(commands.Cog):
                     for m in current_state
                     if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
                 ]
-                spotted = 0
 
-                for filtered_msg in filtered_messages:
-                    if any(
-                        f"http://{link}" in filtered_msg.content for link in self.bot.phishing_links
-                    ) or any(
-                        f"https://{link}" in filtered_msg.content
-                        for link in self.bot.phishing_links
-                    ):
-                        spotted += 1
-
-                if spotted >= rule.threshold:
+                if sum(msg.phishing_link_count for msg in filtered_messages) >= rule.threshold:
                     triggers.append(rule)
                     for action in rule.actions:
                         punishments.append(action)
@@ -214,22 +223,11 @@ class AutomodMonitorCog(commands.Cog):
                     for m in current_state
                     if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
                 ]
-                spotted = 0
 
-                for filtered_msg in filtered_messages:
-                    content_list = (
-                        filtered_msg.content.lower().split()
-                        if not rule.case_sensitive
-                        else filtered_msg.content.split()
-                    )
-
-                    if any(
-                        word.lower() if not rule.case_sensitive else word in content_list
-                        for word in rule.words
-                    ):
-                        spotted += 1
-
-                if spotted >= rule.threshold:
+                if (
+                    sum(msg.triggered_word_rule_amount.get(rule.id, 0) for msg in filtered_messages)
+                    >= rule.threshold
+                ):
                     triggers.append(rule)
                     for action in rule.actions:
                         punishments.append(action)
