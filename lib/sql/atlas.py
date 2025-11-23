@@ -6,7 +6,7 @@ print_ddl(
     "postgresql",
     [
         sql.GuildSettings,
-        sql.GuildConfessionSettings,
+        sql.GuildConfessionsSettings,
         sql.GuildLimits,
         sql.GuildPrefixes,
         sql.AvailableWebhook,

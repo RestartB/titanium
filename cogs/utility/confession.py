@@ -5,6 +5,7 @@ from discord import Colour, Embed, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
 
+from lib.classes.guild_logger import GuildLogger
 from lib.helpers.hybrid_adapters import SlashCommandOnly
 
 if TYPE_CHECKING:
@@ -49,7 +50,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             return
 
         guild_settings = self.bot.guild_configs.get(interaction.guild.id)
-        if not guild_settings or not guild_settings.confession_enabled:
+        if not guild_settings or not guild_settings.confessions_enabled:
             await interaction.followup.send(
                 embed=Embed(
                     color=Colour.red(),
@@ -59,7 +60,15 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             )
             return
 
-        channel = self.bot.get_channel(guild_settings.confession_settings.confession_channel_id)
+        channel = interaction.channel
+        if (
+            not guild_settings.confessions_settings.confessions_in_channel
+            and guild_settings.confessions_settings.confessions_channel_id
+        ):
+            channel = self.bot.get_channel(
+                guild_settings.confessions_settings.confessions_channel_id
+            )
+
         if not channel:
             await interaction.followup.send(
                 embed=Embed(
@@ -92,33 +101,8 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             )
         )
 
-        log_channel = self.bot.get_channel(
-            guild_settings.confession_settings.confession_log_channel_id
-        )
-
-        if log_channel:
-            if not isinstance(
-                log_channel,
-                (
-                    discord.ForumChannel,
-                    discord.abc.PrivateChannel,
-                    discord.CategoryChannel,
-                ),
-            ):
-                log_embed = Embed(
-                    title="New Confession",
-                    description=message,
-                    color=Colour.green(),
-                )
-                log_embed.add_field(
-                    name="Author",
-                    value=f"{interaction.user.mention}",
-                )
-                log_embed.add_field(
-                    name="Jump To Confession",
-                    value=f"[Click Here]({conf_msg.jump_url})",
-                )
-                await log_channel.send(embed=log_embed)
+        logger = GuildLogger(self.bot, interaction.guild)
+        await logger.titanium_confession(interaction, message)
 
         await interaction.followup.send(
             embed=Embed(

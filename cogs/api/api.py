@@ -14,7 +14,7 @@ from sqlalchemy.orm import selectinload
 from lib.api.endpoints import (
     automod_info,
     bouncer_info,
-    confession_info,
+    confessions_info,
     fireboard_info,
     leaderboard_info,
     logging_info,
@@ -24,7 +24,8 @@ from lib.api.endpoints import (
 from lib.api.validators import (
     AutomodConfigModel,
     AutomodRuleModel,
-    ConfessionConfigModel,
+    BouncerConfigModel,
+    ConfessionsConfigModel,
     FireboardConfigModel,
     GuildSettingsModel,
     LoggingConfigModel,
@@ -35,10 +36,12 @@ from lib.helpers.resolve_counter import resolve_counter
 from lib.sql.sql import (
     AutomodAction,
     AutomodRule,
+    BouncerRule,
     ErrorLog,
     FireboardBoard,
     GuildAutomodSettings,
-    GuildConfessionSettings,
+    GuildBouncerSettings,
+    GuildConfessionsSettings,
     GuildFireboardSettings,
     GuildLoggingSettings,
     GuildModerationSettings,
@@ -573,7 +576,7 @@ class APICog(commands.Cog):
                     "logging": config.logging_enabled,
                     "fireboard": config.fireboard_enabled,
                     "server_counters": config.server_counters_enabled,
-                    "confession": config.confession_enabled,
+                    "confession": config.confessions_enabled,
                     "leaderboard": config.leaderboard_enabled,
                 },
                 "settings": {
@@ -634,7 +637,7 @@ class APICog(commands.Cog):
                     status=500,
                 )
 
-            db_config.confession_enabled = validated_settings.modules.confession
+            db_config.confessions_enabled = validated_settings.modules.confessions
             db_config.moderation_enabled = validated_settings.modules.moderation
             db_config.automod_enabled = validated_settings.modules.automod
             db_config.bouncer_enabled = validated_settings.modules.bouncer
@@ -675,8 +678,8 @@ class APICog(commands.Cog):
             if not config:
                 config = await self.bot.init_guild(guild.id)
 
-        if module_name == "confession":
-            return confession_info(self.bot, request, guild)
+        if module_name == "confessions":
+            return confessions_info(self.bot, request, guild)
         elif module_name == "moderation":
             return moderation_info(self.bot, request, guild)
         elif module_name == "automod":
@@ -717,51 +720,46 @@ class APICog(commands.Cog):
             if not config:
                 config = await self.bot.init_guild(guild.id)
 
-        if module_name == "confession":
-            guild_config = self.bot.guild_configs[guild.id]
-            try:
-                data = await request.json()
-                validated_config = ConfessionConfigModel(**data)
-            except ValidationError as e:
-                return web.json_response(
-                    {"error": "Validation failed", "details": e.errors()}, status=400
-                )
-            except ValueError as e:
-                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
-            if guild_config.confession_enabled and not validated_config.confession_channel_id:
-                return web.json_response(
-                    {
-                        "error": "Invalid data",
-                        "message": "confession_channel_id is required when the confesssion_enabled for the guild",
-                    },
-                    status=400,
-                )
-            async with get_session() as session:
-                db_config = await session.get(GuildConfessionSettings, guild.id)
-                if not db_config:
-                    db_config = GuildConfessionSettings(guild_id=guild.id)
+        try:
+            data = await request.json()
 
-                if validated_config.confession_channel_id is not None:
-                    db_config.confession_channel_id = int(validated_config.confession_channel_id)
-                if validated_config.confession_log_channel_id is not None:
-                    db_config.confession_log_channel_id = int(
-                        validated_config.confession_log_channel_id
-                    )
+            if module_name == "confessions":
+                validated_config = ConfessionsConfigModel(**data)
+            elif module_name == "moderation":
+                validated_config = ModerationConfigModel(**data)
+            elif module_name == "automod":
+                validated_config = AutomodConfigModel(**data)
+            elif module_name == "bouncer":
+                validated_config = BouncerConfigModel(**data)
+            elif module_name == "logging":
+                validated_config = LoggingConfigModel(**data)
+            elif module_name == "fireboard":
+                validated_config = FireboardConfigModel(**data)
+            elif module_name == "server_counters":
+                validated_config = ServerCountersConfigModel(**data)
+        except ValidationError as e:
+            return web.json_response(
+                {"error": "Validation failed", "details": e.errors()}, status=400
+            )
+        except ValueError as e:
+            return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
+
+        if module_name == "confessions" and isinstance(validated_config, ConfessionsConfigModel):
+            async with get_session() as session:
+                db_config = await session.get(GuildConfessionsSettings, guild.id)
+                if not db_config:
+                    db_config = GuildConfessionsSettings(guild_id=guild.id)
+
+                db_config.confessions_in_channel = validated_config.confessions_in_channel
+                db_config.confessions_channel_id = (
+                    int(validated_config.confessions_channel_id)
+                    if validated_config.confessions_channel_id
+                    else None
+                )
 
             await self.bot.refresh_guild_config_cache(guild.id)
             return web.Response(status=204)
-
-        elif module_name == "moderation":
-            try:
-                data = await request.json()
-                validated_config = ModerationConfigModel(**data)
-            except ValidationError as e:
-                return web.json_response(
-                    {"error": "Validation failed", "details": e.errors()}, status=400
-                )
-            except ValueError as e:
-                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
-
+        elif module_name == "moderation" and isinstance(validated_config, ModerationConfigModel):
             async with get_session() as session:
                 db_config = await session.get(GuildModerationSettings, guild.id)
                 if not db_config:
@@ -775,17 +773,7 @@ class APICog(commands.Cog):
 
             await self.bot.refresh_guild_config_cache(guild.id)
             return web.Response(status=204)
-        elif module_name == "automod":
-            try:
-                data = await request.json()
-                validated_config = AutomodConfigModel(**data)
-            except ValidationError as e:
-                return web.json_response(
-                    {"error": "Validation failed", "details": e.errors()}, status=400
-                )
-            except ValueError as e:
-                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
-
+        elif module_name == "automod" and isinstance(validated_config, AutomodConfigModel):
             async with get_session() as session:
                 automod_settings = await session.get(GuildAutomodSettings, int(guild_id))
 
@@ -839,17 +827,24 @@ class APICog(commands.Cog):
                 )
 
             return web.Response(status=204)
-        elif module_name == "logging":
-            try:
-                data = await request.json()
-                validated_config = LoggingConfigModel(**data)
-            except ValidationError as e:
-                return web.json_response(
-                    {"error": "Validation failed", "details": e.errors()}, status=400
-                )
-            except ValueError as e:
-                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
+        elif module_name == "bouncer" and isinstance(validated_config, BouncerConfigModel):
+            async with get_session() as session:
+                db_config = await session.get(GuildBouncerSettings, guild.id)
+                if not db_config:
+                    db_config = GuildBouncerSettings(guild_id=guild.id)
 
+                await session.execute(delete(BouncerRule).where(BouncerRule.guild_id == guild_id))
+
+                for rule in validated_config.rules:
+                    bouncer_rule = rule.to_sqlalchemy(guild_id)
+                    session.add(bouncer_rule)
+
+                session.add(db_config)
+                await session.commit()
+
+            await self.bot.refresh_guild_config_cache(guild.id)
+            return web.Response(status=204)
+        elif module_name == "logging" and isinstance(validated_config, LoggingConfigModel):
             async with get_session() as session:
                 db_config = await session.get(GuildLoggingSettings, guild.id)
                 if not db_config:
@@ -868,17 +863,7 @@ class APICog(commands.Cog):
 
             await self.bot.refresh_guild_config_cache(guild.id)
             return web.Response(status=204)
-        elif module_name == "fireboard":
-            try:
-                data = await request.json()
-                validated_config = FireboardConfigModel(**data)
-            except ValidationError as e:
-                return web.json_response(
-                    {"error": "Validation failed", "details": e.errors()}, status=400
-                )
-            except ValueError as e:
-                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
-
+        elif module_name == "fireboard" and isinstance(validated_config, FireboardConfigModel):
             async with get_session() as session:
                 db_config = await session.get(GuildSettings, guild.id)
                 if not db_config:
@@ -927,17 +912,9 @@ class APICog(commands.Cog):
 
             await self.bot.refresh_guild_config_cache(guild.id)
             return web.Response(status=204)
-        elif module_name == "server_counters":
-            try:
-                data = await request.json()
-                validated_config = ServerCountersConfigModel(**data)
-            except ValidationError as e:
-                return web.json_response(
-                    {"error": "Validation failed", "details": e.errors()}, status=400
-                )
-            except ValueError as e:
-                return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
-
+        elif module_name == "server_counters" and isinstance(
+            validated_config, ServerCountersConfigModel
+        ):
             async with get_session() as session:
                 db_config = await session.get(GuildSettings, guild.id)
                 if not db_config:

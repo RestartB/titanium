@@ -9,19 +9,19 @@ if TYPE_CHECKING:
 from lib.api.validators import LoggingConfigModel
 
 
-def confession_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
+def confessions_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
-    if not config.confession_settings:
+    if not config.confessions_settings:
         return web.json_response(
             {
-                "confession_channel_id": None,
-                "confession_log_channel_id": None,
+                "confessions_in_channel": True,
+                "confessions_channel_id": None,
             }
         )
     return web.json_response(
         {
-            "confession_channel_id": str(config.confession_settings.confession_channel_id),
-            "confession_log_channel_id": str(config.confession_settings.confession_log_channel_id),
+            "confessions_in_channel": config.confessions_settings.confessions_in_channel,
+            "confessions_channel_id": str(config.confessions_settings.confessions_channel_id),
         }
     )
 

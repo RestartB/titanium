@@ -2023,3 +2023,37 @@ class GuildLogger:
             await self._find_webhook(self.config.logging_settings.titanium_automod_trigger_id),
             embed=embed,
         )
+
+    async def titanium_confession(self, interaction: discord.Interaction, message: str) -> None:
+        if not self._exists_and_enabled("titanium_confession_id"):
+            return
+
+        if isinstance(interaction.channel, (discord.DMChannel, discord.GroupChannel)):
+            return
+
+        embed = discord.Embed(
+            title="Confession Created",
+            description=(
+                f"**User:** {interaction.user.mention} (`@{interaction.user.name}`, `{interaction.user.id}`)\n"
+                + (
+                    f"**Channel:** {interaction.channel.mention} (`#{interaction.channel.name}`, `{interaction.channel.id}`)\n"
+                    if interaction.channel
+                    else "**Channel:** `Unknown`\n"
+                )
+                + f"**Message ID:** `{interaction.id}`"
+            ),
+            color=discord.Color.green(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        embed.add_field(
+            name="Content",
+            value=shorten(message or "*No content*", width=1024, placeholder="..."),
+            inline=False,
+        )
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(self.config.logging_settings.titanium_confession_id),
+            embed=embed,
+        )

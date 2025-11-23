@@ -95,25 +95,25 @@ class GuildSettings(Base):
         back_populates="guild_settings",
         uselist=False,
     )
-    confession_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    confession_settings: Mapped["GuildConfessionSettings"] = relationship(
-        "GuildConfessionSettings",
+    confessions_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    confessions_settings: Mapped["GuildConfessionsSettings"] = relationship(
+        "GuildConfessionsSettings",
         cascade="all, delete-orphan",
         back_populates="guild_settings",
         uselist=False,
     )
 
 
-class GuildConfessionSettings(Base):
+class GuildConfessionsSettings(Base):
     __tablename__ = "guild_confession_settings"
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_settings.guild_id"), primary_key=True
     )
     guild_settings: Mapped["GuildSettings"] = relationship(
-        "GuildSettings", back_populates="confession_settings", uselist=False
+        "GuildSettings", back_populates="confessions_settings", uselist=False
     )
-    confession_channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    confession_log_channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    confessions_in_channel: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    confessions_channel_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
 
 
 class GuildLimits(Base):
@@ -400,6 +400,7 @@ class GuildLoggingSettings(Base):
     titanium_case_delete_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     titanium_case_comment_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     titanium_automod_trigger_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    titanium_confession_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
 
 
 class GuildFireboardSettings(Base):
@@ -545,9 +546,6 @@ class ModCase(Base):
     guild_id: Mapped[int] = MappedColumn(BigInteger)
     user_id: Mapped[int] = MappedColumn(BigInteger)
     creator_user_id: Mapped[int] = MappedColumn(BigInteger)
-    proof_msg_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    proof_channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    proof_text: Mapped[str] = MappedColumn(String, nullable=True)
     time_created: Mapped[datetime] = MappedColumn(DateTime)
     time_updated: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
     time_expires: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
@@ -636,8 +634,6 @@ SQLALCHEMY_DATABASE_URL = URL.create(
     database=os.getenv("DB_DATABASE_NAME", ""),
 )
 
-logger.info(f"Connecting to database at {SQLALCHEMY_DATABASE_URL}, password is hidden")
-
 # -- Engine --
 engine = create_async_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -654,6 +650,8 @@ async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit
 
 
 async def init_db():
+    logger.info(f"Connecting to database at {SQLALCHEMY_DATABASE_URL}, password is hidden")
+
     try:
         logger.info("Applying database migrations...")
         result = await asyncio.create_subprocess_exec(

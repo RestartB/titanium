@@ -3,7 +3,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from lib.sql.sql import AutomodAction, AutomodRule
+from lib.sql.sql import AutomodAction, AutomodRule, BouncerAction, BouncerCriteria, BouncerRule
 
 
 class ModuleModel(BaseModel):
@@ -13,7 +13,7 @@ class ModuleModel(BaseModel):
     logging: bool
     fireboard: bool
     server_counters: bool
-    confession: bool
+    confessions: bool
     leaderboard: bool
 
 
@@ -38,9 +38,9 @@ class GuildSettingsModel(BaseModel):
         return v
 
 
-class ConfessionConfigModel(BaseModel):
-    confession_channel_id: Optional[str] = None
-    confession_log_channel_id: Optional[str] = None
+class ConfessionsConfigModel(BaseModel):
+    confessions_in_channel: bool
+    confessions_channel_id: Optional[str] = None
 
 
 class ModerationConfigModel(BaseModel):
@@ -175,6 +175,40 @@ class BouncerRuleModel(BaseModel):
             raise ValueError("Each action type in a rule must be unique")
 
         return self
+
+    def to_sqlalchemy(self, guild_id: int) -> BouncerRule:
+        rule = BouncerRule(
+            id=uuid.UUID(self.id),
+            guild_id=guild_id,
+            enabled=True,
+        )
+
+        for criterion_model in self.criteria:
+            criterion = BouncerCriteria(
+                guild_id=guild_id,
+                rule_id=rule.id,
+                criterion_type=criterion_model.type,
+                account_age=criterion_model.account_age,
+                words=criterion_model.words or [],
+                match_whole_word=criterion_model.match_whole_word,
+                case_sensitive=criterion_model.case_sensitive,
+            )
+            rule.criteria.append(criterion)
+
+        for action_model in self.actions:
+            action = BouncerAction(
+                guild_id=guild_id,
+                rule_id=rule.id,
+                action_type=action_model.type,
+                duration=action_model.duration,
+                role_id=action_model.role_id,
+                reason=action_model.reason,
+                message_content=action_model.message_content,
+                dm_user=action_model.dm_user,
+            )
+            rule.actions.append(action)
+
+        return rule
 
 
 class BouncerConfigModel(BaseModel):
