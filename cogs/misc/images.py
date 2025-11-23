@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from discord import Attachment, Colour, Embed, app_commands
 from discord.ext import commands
 
-from lib.helpers.img_tools import ImageConverter
+from lib.enums.images import ImageFormats
+from lib.helpers.img_tools import ImageTools
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -24,30 +25,31 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         description="Convert an uploaded image to a different format.",
     )
     @app_commands.describe(
-        image="Upload the image you want to convert.",
-        output_format="Select the target image format.",
+        image="The image to convert.",
+        output_format="The format to convert to.",
     )
     async def convert_image(
         self,
         ctx: commands.Context["TitaniumBot"],
         image: Attachment,
-        output_format: Literal["PNG", "JPEG", "WEBP", "GIF"],
+        output_format: ImageFormats,
     ) -> None:
-        """Convert a image to "PNG", "JPEG", "WEBP", "GIF" """
+        """Convert a image to various formats."""
         await ctx.defer()
 
-        valid_output_formats = ImageConverter.format_types()
-        requested_output_format = output_format.upper()
+        valid_output_formats = ImageTools.format_types()
+        requested_output_format = output_format
+
         if requested_output_format not in valid_output_formats:
             e = Embed(
                 color=Colour.red(),
-                title="Invalid Output Format",
-                description=f"Please specify a valid output format: {', '.join(valid_output_formats)}.",
+                title=f"{self.bot.error_emoji} Invalid Output Format",
+                description=f"Please specify a valid output format: `{', '.join(valid_output_formats)}`.",
             )
             await ctx.reply(embed=e)
             return
 
-        converter = ImageConverter(image)
+        converter = ImageTools(image)
         file = await converter.convert(requested_output_format)
         await ctx.reply(file=file)
 
