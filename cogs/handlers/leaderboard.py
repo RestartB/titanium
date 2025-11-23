@@ -3,12 +3,14 @@ import random
 from typing import TYPE_CHECKING
 
 import discord
+from discord import app_commands
 from discord.ext import commands, tasks
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
 from lib.enums.leaderboard import CalcType
 from lib.sql.sql import LeaderboardUserStats, get_session
+from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -149,6 +151,133 @@ class LeaderboardCog(commands.Cog):
             if user_stats:
                 await session.delete(user_stats)
                 await session.commit()
+
+    # Leaderboard command
+    @commands.hybrid_command(name="leaderboard", aliases=["lb", "top"])
+    @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
+    async def leaderboard_command(self, ctx: commands.Context["TitaniumBot"]):
+        """Gets the leaderboard for the server."""
+        if not ctx.guild:
+            return
+
+        await ctx.defer()
+
+        guild_settings = self.bot.guild_configs.get(ctx.guild.id)
+        if (
+            not guild_settings
+            or not guild_settings.leaderboard_settings
+            or not guild_settings.leaderboard_enabled
+        ):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Leaderboard Disabled",
+                description="The leaderboard system is not enabled on this server.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+            return
+
+        async with get_session() as session:
+            stmt = (
+                select(LeaderboardUserStats)
+                .where(LeaderboardUserStats.guild_id == ctx.guild.id)
+                .order_by(LeaderboardUserStats.xp.desc())
+            )
+            result = await session.execute(stmt)
+            top_users = result.scalars().all()
+
+            if not top_users:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} No Data",
+                    description="No users have recorded XP or levels yet.",
+                    color=discord.Color.red(),
+                )
+                await ctx.send(embed=embed)
+                return
+
+            pages = []
+            page_size = 20
+            for i in range(0, len(top_users), page_size):
+                embed = discord.Embed(
+                    title="Leaderboard",
+                    description="",
+                    color=discord.Color.random(),
+                )
+                embed.set_author(
+                    name=ctx.guild.name,
+                    icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+                )
+
+                chunk = top_users[i : i + page_size]
+                for rank, user_stats in enumerate(chunk, start=i + 1):
+                    member = ctx.guild.get_member(user_stats.user_id)
+
+                    if embed.description:
+                        embed.description += f"{rank}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP, Level {user_stats.level}"
+
+                pages.append(embed)
+
+            view = PaginationView(embeds=pages, timeout=240)
+            await ctx.send(embed=pages[0], view=view)
+
+    # Level command
+    @commands.hybrid_command(name="level", aliases=["lvl"])
+    @commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=False)
+    async def level_command(
+        self, ctx: commands.Context["TitaniumBot"], member: discord.Member | None = None
+    ):
+        """Check your level and XP or another member's level and XP."""
+        if not ctx.guild:
+            return
+
+        await ctx.defer()
+
+        user = member or ctx.author
+
+        guild_settings = self.bot.guild_configs.get(ctx.guild.id)
+        if (
+            not guild_settings
+            or not guild_settings.leaderboard_settings
+            or not guild_settings.leaderboard_enabled
+        ):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Leaderboard Disabled",
+                description="The leaderboard system is not enabled on this server.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+            return
+
+        async with get_session() as session:
+            stmt = (
+                select(LeaderboardUserStats)
+                .where(
+                    LeaderboardUserStats.guild_id == ctx.guild.id,
+                    LeaderboardUserStats.user_id == user.id,
+                )
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            user_stats = result.scalar_one_or_none()
+
+            if not user_stats:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} No Data",
+                    description=f"**{user.display_name}** has no recorded XP or level.",
+                    color=discord.Color.red(),
+                )
+                await ctx.send(embed=embed)
+                return
+
+            embed = discord.Embed(
+                title=f"{user.display_name}'s Level Info",
+                color=discord.Color.blue(),
+            )
+            embed.add_field(name="Level", value=str(user_stats.level), inline=True)
+            embed.add_field(name="XP", value=str(user_stats.xp), inline=True)
+
+            await ctx.send(embed=embed)
 
 
 async def setup(bot: TitaniumBot) -> None:
