@@ -182,27 +182,27 @@ class GuildAutomodSettings(Base):
     )
     badword_detection_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
-        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='badword_detection')",
+        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='BADWORD_DETECTION')",
         back_populates="guild",
         cascade="all, delete-orphan",
     )
     spam_detection_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
-        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='spam_detection')",
+        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='SPAM_DETECTION')",
         back_populates="guild",
         cascade="all, delete-orphan",
         overlaps="badword_detection_rules",
     )
     malicious_link_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
-        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='malicious_link')",
+        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='MALICIOUS_LINK')",
         back_populates="guild",
         cascade="all, delete-orphan",
         overlaps="badword_detection_rules,spam_detection_rules",
     )
     phishing_link_rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
-        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='phishing_link')",
+        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(AutomodRule.guild_id), AutomodRule.rule_type=='PHISHING_LINK')",
         back_populates="guild",
         cascade="all, delete-orphan",
         overlaps="badword_detection_rules,malicious_link_rules,spam_detection_rules",

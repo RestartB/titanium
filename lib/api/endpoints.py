@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 from lib.api.validators import LoggingConfigModel
+from lib.enums.leaderboard import LeaderboardCalcType
 
 
 def confessions_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
@@ -227,7 +228,7 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
     if not config.leaderboard_settings:
         return web.json_response(
             {
-                "mode": None,
+                "mode": LeaderboardCalcType.FIXED.value,
                 "cooldown": 5,
                 "xp": 10,
                 "min_xp": 15,
