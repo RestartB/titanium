@@ -56,7 +56,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not ctx.guild or not self.bot.user or isinstance(ctx.author, User):
             return
 
-        await defer(self.bot, ctx)
+        await defer(ctx)
 
         async with get_session() as session:
             case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
@@ -121,7 +121,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(self.bot, ctx)
+        await defer(ctx)
 
         try:
             async with get_session() as session:
@@ -145,7 +145,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         except CaseNotFoundException:
             return await ctx.reply(embed=case_not_found(self.bot, str(case_id)))
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @case_group.command(name="delete", description="Delete a case by its ID.")
     @commands.guild_only()
@@ -157,7 +157,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(self.bot, ctx)
+        await defer(ctx)
 
         try:
             async with get_session() as session:
@@ -194,7 +194,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                     embeds=embeds,
                     view=view,
                 )
-                await stop_loading(self.bot, ctx)
+                await stop_loading(ctx)
                 await view.wait()
 
                 if not view.value:
@@ -203,7 +203,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 await case_manager.delete_case(case_id)
                 await ctx.send(embed=case_deleted(self.bot, case_id))
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
 
 async def setup(bot: TitaniumBot) -> None:

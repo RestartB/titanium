@@ -1,16 +1,20 @@
-from typing import TYPE_CHECKING
+import os
+from typing import TYPE_CHECKING, Literal
 
-from discord import Attachment, Colour, Embed, app_commands
+from discord import Attachment, app_commands
 from discord.ext import commands
 
+from lib.classes.img_tools import ImageTools
 from lib.enums.images import ImageFormats
-from lib.helpers.img_tools import ImageTools
+from lib.helpers.hybrid_adapters import defer, stop_loading
 
 if TYPE_CHECKING:
     from main import TitaniumBot
 
 
 class ImageCog(commands.Cog, name="Images", description="Image processing commands."):
+    STANDARD_QUALITY = 95
+
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
 
@@ -35,23 +39,219 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format: ImageFormats,
     ) -> None:
         """Convert a image to various formats."""
-        await ctx.defer()
+        try:
+            await defer(ctx)
 
-        valid_output_formats = ImageTools.format_types()
-        requested_output_format = output_format
+            converter = ImageTools(image)
+            file = await converter.convert(output_format, self.STANDARD_QUALITY)
+            await ctx.reply(file=file)
+        finally:
+            await stop_loading(ctx)
 
-        if requested_output_format not in valid_output_formats:
-            e = Embed(
-                color=Colour.red(),
-                title=f"{self.bot.error_emoji} Invalid Output Format",
-                description=f"Please specify a valid output format: `{', '.join(valid_output_formats)}`.",
+    @image_group.command(
+        name="resize",
+        description="Resize an uploaded image.",
+    )
+    @app_commands.describe(
+        image="The image to resize.",
+        width="The new width of the image.",
+        height="The new height of the image.",
+    )
+    async def resize_image(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        image: Attachment,
+        width: commands.Range[int, 1, 5000],
+        height: commands.Range[int, 1, 5000],
+    ) -> None:
+        """Resize an image to the specified dimensions."""
+        try:
+            await defer(ctx)
+
+            converter = ImageTools(image)
+            file = await converter.resize(ImageFormats.PNG, width, height)
+            await ctx.reply(file=file)
+        finally:
+            await stop_loading(ctx)
+
+    @image_group.command(
+        name="deepfry",
+        description="Deepfry an uploaded image.",
+    )
+    @app_commands.describe(
+        image="The image to deepfry.",
+        intensity_scale="Optional: the intensity scale to apply (0 to 100). Defaults to 100.",
+        red_filter="Optional: whether to apply a red filter. Defaults to True.",
+    )
+    async def deepfry_image(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        image: Attachment,
+        intensity_scale: commands.Range[float, 0, 100] = 100,
+        red_filter: bool = True,
+    ) -> None:
+        """Deepfry an image."""
+        try:
+            await defer(ctx)
+
+            intensity_scale /= 100.0
+
+            converter = ImageTools(image)
+            file = await converter.deepfry(ImageFormats.PNG, intensity_scale, red_filter)
+            await ctx.reply(file=file)
+        finally:
+            await stop_loading(ctx)
+
+    @image_group.command(
+        name="invert",
+        description="Invert the colors of an uploaded image.",
+    )
+    @app_commands.describe(
+        image="The image to invert.",
+    )
+    async def invert_image(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        image: Attachment,
+    ) -> None:
+        """Invert the colors of an image."""
+        try:
+            await defer(ctx)
+
+            converter = ImageTools(image)
+            file = await converter.invert(ImageFormats.PNG)
+            await ctx.reply(file=file)
+        finally:
+            await stop_loading(ctx)
+
+    @image_group.command(
+        name="grayscale",
+        description="Convert an uploaded image to grayscale.",
+    )
+    @app_commands.describe(
+        image="The image to convert to grayscale.",
+    )
+    async def grayscale_image(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        image: Attachment,
+    ) -> None:
+        """Convert an image to grayscale."""
+        try:
+            await defer(ctx)
+
+            converter = ImageTools(image)
+            file = await converter.grayscale(ImageFormats.PNG)
+            await ctx.reply(file=file)
+        finally:
+            await stop_loading(ctx)
+
+    @image_group.command(
+        name="rotate",
+        description="Rotate an uploaded image.",
+    )
+    @app_commands.describe(
+        image="The image to rotate.",
+        angle="The angle to rotate the image by (in degrees).",
+    )
+    async def rotate_image(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        image: Attachment,
+        angle: int,
+    ) -> None:
+        """Rotate an image by the specified angle."""
+        try:
+            await defer(ctx)
+
+            converter = ImageTools(image)
+            file = await converter.rotate(ImageFormats.PNG, angle)
+            await ctx.reply(file=file)
+        finally:
+            await stop_loading(ctx)
+
+    @image_group.command(
+        name="speechbubble",
+        description="Add a speech bubble effect to an uploaded image.",
+    )
+    @app_commands.describe(
+        image="The image to add a speech bubble to.",
+        direction="Optional: the direction the speech bubble points to. Defaults to right.",
+        colour="Optional: the colour of the speech bubble. Defaults to white.",
+    )
+    @app_commands.choices(
+        direction=[
+            app_commands.Choice(name="Left", value="left"),
+            app_commands.Choice(name="Right", value="right"),
+        ],
+        colour=[
+            app_commands.Choice(name="Black", value="black"),
+            app_commands.Choice(name="White", value="white"),
+            app_commands.Choice(name="Transparent", value="transparent"),
+        ],
+    )
+    async def speechbubble_image(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        image: Attachment,
+        direction: Literal["left", "right"] = "right",
+        colour: Literal["black", "white", "transparent"] = "white",
+    ) -> None:
+        """Add a speech bubble effect to an image."""
+        try:
+            await defer(ctx)
+
+            converter = ImageTools(image)
+            file = await converter.speech_bubble(ImageFormats.PNG, direction, colour)
+            await ctx.reply(file=file)
+        finally:
+            await stop_loading(ctx)
+
+    @image_group.command(
+        name="caption",
+        description="Add a caption to an uploaded image.",
+    )
+    @app_commands.describe(
+        image="The image to caption.",
+        caption="The caption text to add to the image.",
+        font="Optional: the font to use for the caption. Defaults to Figtree.",
+    )
+    @app_commands.choices(
+        position=[
+            app_commands.Choice(name="Top", value="top"),
+            app_commands.Choice(name="Bottom", value="bottom"),
+        ],
+        font=[
+            app_commands.Choice(name="Futura Condensed", value="futura"),
+            app_commands.Choice(name="Impact", value="impact"),
+            app_commands.Choice(name="Figtree", value="figtree"),
+        ],
+    )
+    async def caption_image(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        image: Attachment,
+        caption: str,
+        font: Literal["futura", "impact", "figtree"] = "figtree",
+        position: Literal["top", "bottom"] = "top",
+    ) -> None:
+        """Add a caption to an image."""
+        try:
+            await defer(ctx)
+
+            if font == "futura":
+                selected_font = os.path.join("lib", "fonts", "futura.otf")
+            else:
+                selected_font = os.path.join("lib", "fonts", f"{font}.ttf")
+
+            converter = ImageTools(image)
+            file = await converter.caption(
+                ImageFormats.GIF, caption.lower(), selected_font, position
             )
-            await ctx.reply(embed=e)
-            return
+            await ctx.reply(file=file)
 
-        converter = ImageTools(image)
-        file = await converter.convert(requested_output_format)
-        await ctx.reply(file=file)
+        finally:
+            await stop_loading(ctx)
 
 
 async def setup(bot: TitaniumBot) -> None:

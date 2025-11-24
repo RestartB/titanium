@@ -31,12 +31,12 @@ class AdminCog(commands.Cog):
         try:
             raise ValueError("This is a test exception for error logging.")
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @admin_group.command(name="clear", hidden=True)
     @commands.is_owner()
     async def clear_console(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         try:
             os.system("cls" if os.name == "nt" else "clear")
@@ -59,7 +59,7 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @admin_group.command(name="sync", hidden=True)
     @commands.is_owner()
@@ -67,7 +67,7 @@ class AdminCog(commands.Cog):
         self,
         ctx: commands.Context["TitaniumBot"],
     ) -> None:
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         # Sync commands
         self.logger.info("Syncing commands...")
@@ -97,12 +97,12 @@ class AdminCog(commands.Cog):
             )
             await ctx.message.remove_reaction(self.bot.loading_emoji, ctx.me)
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @admin_group.command(name="reload", hidden=True)
     @commands.is_owner()
     async def reload_cogs(self, ctx: commands.Context["TitaniumBot"], cog: str) -> None:
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         try:
             await self.bot.reload_extension(f"cogs.{cog}")
@@ -126,12 +126,12 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @admin_group.command(name="load", hidden=True)
     @commands.is_owner()
     async def load_cog(self, ctx: commands.Context["TitaniumBot"], cog_name: str) -> None:
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         try:
             await ctx.bot.load_extension(f"cogs.{cog_name}")
@@ -153,12 +153,12 @@ class AdminCog(commands.Cog):
                 )
             )
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @admin_group.command(name="unload", hidden=True)
     @commands.is_owner()
     async def unload_cog(self, ctx: commands.Context["TitaniumBot"], cog_name: str) -> None:
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         try:
             await ctx.bot.unload_extension(f"cogs.{cog_name}")
@@ -180,12 +180,12 @@ class AdminCog(commands.Cog):
                 )
             )
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @admin_group.command(name="migrate-db", hidden=True)
     @commands.is_owner()
     async def migrate_db(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         try:
             from lib.sql.sql import init_db
@@ -211,13 +211,13 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @admin_group.command(name="reloadserver", aliases=["reload-server"], hidden=True)
     @commands.is_owner()
     async def reload_server(self, ctx: commands.Context["TitaniumBot"], guild_id: int) -> None:
         """Reload a guild's configuration from the database."""
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         try:
             await self.bot.refresh_guild_config_cache(guild_id)
@@ -241,12 +241,12 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @admin_group.command(name="unlockuser", aliases=["unlock-user"], hidden=True)
     @commands.is_owner()
     async def unlock_user(self, ctx: commands.Context["TitaniumBot"], user_id: int) -> None:
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         try:
             for server in self.bot.punishing:
@@ -281,14 +281,14 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @admin_group.command(name="changelogs", aliases=["change-logs"], hidden=True)
     @commands.is_owner()
     async def change_logs_type(
         self, ctx: commands.Context["TitaniumBot"], logger: str, level: str
     ) -> None:
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         try:
             log_level = getattr(logging, level.upper(), None)
@@ -318,13 +318,13 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @admin_group.command(name="getserverowner", aliases=["get-server-owner"], hidden=True)
     @commands.is_owner()
     async def get_server_owner(self, ctx: commands.Context["TitaniumBot"], guild_id: int) -> None:
         """Get the owner ID of a specified server."""
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         try:
             guild = self.bot.get_guild(guild_id)
@@ -359,7 +359,7 @@ class AdminCog(commands.Cog):
                 ephemeral=True,
             )
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
 
 async def setup(bot: TitaniumBot) -> None:

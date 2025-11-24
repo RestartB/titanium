@@ -874,7 +874,7 @@ class QuoteCommandsCog(
     async def quote_command(
         self, ctx: commands.Context["TitaniumBot"], user: discord.User, *, content: str
     ):
-        await defer(self.bot, ctx)
+        await defer(ctx)
 
         embed, file, view = await self._quote_cmd_handler(
             content=content,
@@ -895,7 +895,7 @@ class QuoteCommandsCog(
         else:
             await ctx.reply(file=file, view=view)
 
-        await stop_loading(self.bot, ctx)
+        await stop_loading(ctx)
 
     @app_commands.command(
         name="quote",

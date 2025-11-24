@@ -370,7 +370,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     elif isinstance(error, commands.errors.BadArgument):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bad Argument",
-            description=str(error),
+            description=str(error).replace(str(error)[0], str(error)[0].upper(), 1),
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
@@ -381,6 +381,16 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Argument Missing",
             description=f"You are missing the `{error.param.name}` argument.",
+            colour=discord.Colour.red(),
+        )
+        await ctx.reply(embed=embed)
+
+        if not ctx.interaction:
+            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
+    elif isinstance(error, commands.errors.MissingRequiredAttachment):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Attachment Missing",
+            description=f"You are missing a required attachment (`{error.param.name}`) for this command.",
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)

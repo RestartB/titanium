@@ -1,3 +1,58 @@
+-- Create enum type "leaderboardcalctype"
+CREATE TYPE "leaderboardcalctype" AS ENUM ('FIXED', 'RANDOM', 'LENGTH');
+-- Create enum type "automodantispamtype"
+CREATE TYPE "automodantispamtype" AS ENUM ('MESSAGE', 'MENTION', 'WORD', 'NEWLINE', 'LINK', 'ATTACHMENT', 'EMOJI');
+-- Create enum type "automodactiontype"
+CREATE TYPE "automodactiontype" AS ENUM ('WARN', 'MUTE', 'KICK', 'BAN', 'DELETE', 'ADD_ROLE', 'REMOVE_ROLE', 'TOGGLE_ROLE');
+-- Create enum type "bouncercriteriatype"
+CREATE TYPE "bouncercriteriatype" AS ENUM ('USERNAME', 'TAG', 'AGE', 'AVATAR');
+-- Create enum type "bounceractiontype"
+CREATE TYPE "bounceractiontype" AS ENUM ('WARN', 'MUTE', 'KICK', 'BAN', 'RESET_NICK', 'ADD_ROLE', 'REMOVE_ROLE', 'TOGGLE_ROLE');
+-- Create enum type "servercountertype"
+CREATE TYPE "servercountertype" AS ENUM ('TOTAL_MEMBERS', 'USERS', 'BOTS', 'ONLINE_MEMBERS', 'MEMBERS_STATUS_ONLINE', 'MEMBERS_STATUS_IDLE', 'MEMBERS_STATUS_DND', 'MEMBERS_ACTIVITY', 'MEMBERS_CUSTOM_STATUS', 'OFFLINE_MEMBERS', 'CHANNELS', 'ACTIVITY');
+-- Create "error_logs" table
+CREATE TABLE "error_logs" (
+  "id" uuid NOT NULL,
+  "guild_id" bigint NOT NULL,
+  "module" character varying(100) NOT NULL,
+  "error" character varying(512) NOT NULL,
+  "details" character varying(1024) NULL,
+  "time_occurred" timestamp NOT NULL DEFAULT now(),
+  PRIMARY KEY ("id")
+);
+-- Create "guild_limits" table
+CREATE TABLE "guild_limits" (
+  "id" bigserial NOT NULL,
+  "bad_word_rules" integer NOT NULL DEFAULT 10,
+  "bad_word_list_size" integer NOT NULL DEFAULT 1500,
+  "message_spam_rules" integer NOT NULL DEFAULT 5,
+  "mention_spam_rules" integer NOT NULL DEFAULT 5,
+  "word_spam_rules" integer NOT NULL DEFAULT 5,
+  "new_line_spam_rules" integer NOT NULL DEFAULT 5,
+  "link_spam_rules" integer NOT NULL DEFAULT 5,
+  "attachment_spam_rules" integer NOT NULL DEFAULT 5,
+  "emoji_spam_rules" integer NOT NULL DEFAULT 5,
+  "bouncer_rules" integer NOT NULL DEFAULT 10,
+  "fireboards" integer NOT NULL DEFAULT 10,
+  "server_counters" integer NOT NULL DEFAULT 20,
+  PRIMARY KEY ("id")
+);
+-- Create "guild_settings" table
+CREATE TABLE "guild_settings" (
+  "guild_id" bigserial NOT NULL,
+  "loading_reaction" boolean NOT NULL DEFAULT true,
+  "dashboard_managers" bigint[] NOT NULL DEFAULT ARRAY[]::bigint[],
+  "case_managers" bigint[] NOT NULL DEFAULT ARRAY[]::bigint[],
+  "moderation_enabled" boolean NOT NULL DEFAULT true,
+  "automod_enabled" boolean NOT NULL DEFAULT true,
+  "bouncer_enabled" boolean NOT NULL DEFAULT false,
+  "logging_enabled" boolean NOT NULL DEFAULT false,
+  "fireboard_enabled" boolean NOT NULL DEFAULT false,
+  "server_counters_enabled" boolean NOT NULL DEFAULT false,
+  "leaderboard_enabled" boolean NOT NULL DEFAULT false,
+  "confessions_enabled" boolean NOT NULL DEFAULT false,
+  PRIMARY KEY ("guild_id")
+);
 -- Create "available_webhooks" table
 CREATE TABLE "available_webhooks" (
   "id" bigserial NOT NULL,
@@ -6,39 +61,28 @@ CREATE TABLE "available_webhooks" (
   "webhook_url" character varying NOT NULL,
   PRIMARY KEY ("id")
 );
--- Create "guild_settings" table
-CREATE TABLE "guild_settings" (
-  "guild_id" bigserial NOT NULL,
-  "loading_reaction" boolean NOT NULL,
-  "reply_ping" boolean NOT NULL,
-  "moderation_enabled" boolean NOT NULL,
-  "automod_enabled" boolean NOT NULL,
-  "bouncer_enabled" boolean NOT NULL,
-  "logging_enabled" boolean NOT NULL,
-  "fireboard_enabled" boolean NOT NULL,
-  "server_counters_enabled" boolean NOT NULL,
-  PRIMARY KEY ("guild_id")
+-- Create "leaderboard_user_stats" table
+CREATE TABLE "leaderboard_user_stats" (
+  "id" uuid NOT NULL,
+  "guild_id" bigint NOT NULL,
+  "user_id" bigint NOT NULL,
+  "xp" integer NOT NULL DEFAULT 0,
+  "level" integer NOT NULL DEFAULT 0,
+  "daily_snapshots" integer[] NOT NULL DEFAULT ARRAY[]::integer[],
+  PRIMARY KEY ("id")
 );
+-- Create index "ix_leaderboard_user_stats_guild_id" to table: "leaderboard_user_stats"
+CREATE INDEX "ix_leaderboard_user_stats_guild_id" ON "leaderboard_user_stats" ("guild_id");
+-- Create index "ix_leaderboard_user_stats_user_id" to table: "leaderboard_user_stats"
+CREATE INDEX "ix_leaderboard_user_stats_user_id" ON "leaderboard_user_stats" ("user_id");
 -- Create "guild_prefixes" table
 CREATE TABLE "guild_prefixes" (
   "guild_id" bigserial NOT NULL,
   "prefixes" character varying(5)[] NOT NULL DEFAULT ARRAY['t!'::character varying],
   PRIMARY KEY ("guild_id")
 );
--- Create "guild_limits" table
-CREATE TABLE "guild_limits" (
-  "id" bigserial NOT NULL,
-  "bad_word_rules" integer NOT NULL,
-  "bad_word_list_size" integer NOT NULL,
-  "message_spam_rules" integer NOT NULL,
-  "mention_spam_rules" integer NOT NULL,
-  "word_spam_rules" integer NOT NULL,
-  "new_line_spam_rules" integer NOT NULL,
-  "link_spam_rules" integer NOT NULL,
-  "attachment_spam_rules" integer NOT NULL,
-  "emoji_spam_rules" integer NOT NULL,
-  PRIMARY KEY ("id")
-);
+-- Create enum type "automodruletype"
+CREATE TYPE "automodruletype" AS ENUM ('BADWORD_DETECTION', 'SPAM_DETECTION', 'MALICIOUS_LINK', 'PHISHING_LINK');
 -- Create "guild_automod_settings" table
 CREATE TABLE "guild_automod_settings" (
   "guild_id" bigint NOT NULL,
@@ -49,12 +93,12 @@ CREATE TABLE "guild_automod_settings" (
 CREATE TABLE "automod_rules" (
   "id" uuid NOT NULL,
   "guild_id" bigint NOT NULL,
-  "rule_type" character varying(32) NOT NULL,
-  "antispam_type" character varying(32) NULL,
+  "rule_type" "automodruletype" NOT NULL,
+  "antispam_type" "automodantispamtype" NULL,
   "rule_name" character varying(100) NULL,
   "words" character varying(100)[] NOT NULL DEFAULT ARRAY[]::character varying[],
-  "match_whole_word" boolean NOT NULL,
-  "case_sensitive" boolean NOT NULL,
+  "match_whole_word" boolean NOT NULL DEFAULT false,
+  "case_sensitive" boolean NOT NULL DEFAULT false,
   "threshold" integer NOT NULL,
   "duration" integer NOT NULL,
   PRIMARY KEY ("id"),
@@ -65,10 +109,11 @@ CREATE TABLE "automod_actions" (
   "id" bigserial NOT NULL,
   "guild_id" bigint NOT NULL,
   "rule_id" uuid NOT NULL,
-  "rule_type" character varying(32) NOT NULL,
-  "action_type" character varying(32) NOT NULL,
+  "rule_type" "automodruletype" NOT NULL,
+  "action_type" "automodactiontype" NOT NULL,
   "duration" bigint NULL,
   "reason" character varying(512) NULL,
+  "role_id" bigint NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "automod_actions_guild_id_fkey" FOREIGN KEY ("guild_id") REFERENCES "guild_automod_settings" ("guild_id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "automod_actions_rule_id_fkey" FOREIGN KEY ("rule_id") REFERENCES "automod_rules" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
@@ -84,7 +129,7 @@ CREATE TABLE "bouncer_rules" (
   "id" uuid NOT NULL,
   "guild_id" bigint NOT NULL,
   "rule_name" character varying(100) NULL,
-  "enabled" boolean NOT NULL,
+  "enabled" boolean NOT NULL DEFAULT true,
   PRIMARY KEY ("id"),
   CONSTRAINT "bouncer_rules_guild_id_fkey" FOREIGN KEY ("guild_id") REFERENCES "guild_bouncer_settings" ("guild_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
@@ -92,12 +137,12 @@ CREATE TABLE "bouncer_rules" (
 CREATE TABLE "bouncer_actions" (
   "id" bigserial NOT NULL,
   "rule_id" uuid NOT NULL,
-  "action_type" character varying(32) NOT NULL,
+  "action_type" "bounceractiontype" NOT NULL,
   "duration" bigint NULL,
   "role_id" bigint NULL,
   "reason" character varying(512) NULL,
   "message_content" character varying(2000) NULL,
-  "dm_user" boolean NOT NULL,
+  "dm_user" boolean NOT NULL DEFAULT false,
   PRIMARY KEY ("id"),
   CONSTRAINT "bouncer_actions_rule_id_fkey" FOREIGN KEY ("rule_id") REFERENCES "bouncer_rules" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
@@ -105,11 +150,11 @@ CREATE TABLE "bouncer_actions" (
 CREATE TABLE "bouncer_criteria" (
   "id" bigserial NOT NULL,
   "rule_id" uuid NOT NULL,
-  "criteria_type" character varying(32) NOT NULL,
+  "criteria_type" "bouncercriteriatype" NOT NULL,
   "account_age" bigint NULL,
   "words" character varying(100)[] NOT NULL DEFAULT ARRAY[]::character varying[],
-  "match_whole_word" boolean NOT NULL,
-  "case_sensitive" boolean NOT NULL,
+  "match_whole_word" boolean NOT NULL DEFAULT false,
+  "case_sensitive" boolean NOT NULL DEFAULT false,
   PRIMARY KEY ("id"),
   CONSTRAINT "bouncer_criteria_rule_id_fkey" FOREIGN KEY ("rule_id") REFERENCES "bouncer_rules" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
@@ -126,10 +171,10 @@ CREATE TABLE "fireboard_boards" (
   "id" bigserial NOT NULL,
   "guild_id" bigint NOT NULL,
   "channel_id" bigint NOT NULL,
-  "reaction" character varying NOT NULL,
-  "threshold" integer NOT NULL,
-  "ignore_bots" boolean NOT NULL,
-  "ignore_self_reactions" boolean NOT NULL,
+  "reaction" character varying NOT NULL DEFAULT '🔥',
+  "threshold" integer NOT NULL DEFAULT 5,
+  "ignore_bots" boolean NOT NULL DEFAULT true,
+  "ignore_self_reactions" boolean NOT NULL DEFAULT true,
   "ignored_roles" bigint[] NOT NULL DEFAULT ARRAY[]::bigint[],
   "ignored_channels" bigint[] NOT NULL DEFAULT ARRAY[]::bigint[],
   PRIMARY KEY ("id"),
@@ -158,10 +203,35 @@ CREATE TABLE "game_stats" (
   "id" bigserial NOT NULL,
   "user_id" bigint NOT NULL,
   "game_id" integer NOT NULL,
-  "played" integer NOT NULL,
-  "win" integer NOT NULL,
+  "played" integer NOT NULL DEFAULT 0,
+  "win" integer NOT NULL DEFAULT 0,
   PRIMARY KEY ("id"),
   CONSTRAINT "game_stats_game_id_fkey" FOREIGN KEY ("game_id") REFERENCES "games" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- Create "guild_confession_settings" table
+CREATE TABLE "guild_confession_settings" (
+  "guild_id" bigint NOT NULL,
+  "confessions_in_channel" boolean NOT NULL DEFAULT true,
+  "confessions_channel_id" bigint NULL,
+  PRIMARY KEY ("guild_id"),
+  CONSTRAINT "guild_confession_settings_guild_id_fkey" FOREIGN KEY ("guild_id") REFERENCES "guild_settings" ("guild_id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- Create "guild_leaderboard_settings" table
+CREATE TABLE "guild_leaderboard_settings" (
+  "guild_id" bigint NOT NULL,
+  "mode" "leaderboardcalctype" NOT NULL,
+  "cooldown" integer NOT NULL DEFAULT 5,
+  "base_xp" integer NOT NULL DEFAULT 10,
+  "min_xp" integer NOT NULL DEFAULT 15,
+  "max_xp" integer NOT NULL DEFAULT 25,
+  "xp_mult" double precision NOT NULL DEFAULT 1.0,
+  "levelup_notifications" boolean NOT NULL DEFAULT true,
+  "notification_channel" bigint NULL,
+  "web_leaderboard_enabled" boolean NOT NULL DEFAULT true,
+  "web_login_required" boolean NOT NULL DEFAULT false,
+  "delete_leavers" boolean NOT NULL DEFAULT false,
+  PRIMARY KEY ("guild_id"),
+  CONSTRAINT "guild_leaderboard_settings_guild_id_fkey" FOREIGN KEY ("guild_id") REFERENCES "guild_settings" ("guild_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "guild_logging_settings" table
 CREATE TABLE "guild_logging_settings" (
@@ -231,15 +301,18 @@ CREATE TABLE "guild_logging_settings" (
   "titanium_case_delete_id" bigint NULL,
   "titanium_case_comment_id" bigint NULL,
   "titanium_automod_trigger_id" bigint NULL,
+  "titanium_confession_id" bigint NULL,
   PRIMARY KEY ("guild_id"),
   CONSTRAINT "guild_logging_settings_guild_id_fkey" FOREIGN KEY ("guild_id") REFERENCES "guild_settings" ("guild_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "guild_moderation_settings" table
 CREATE TABLE "guild_moderation_settings" (
   "guild_id" bigint NOT NULL,
-  "delete_confirmation" boolean NOT NULL,
-  "dm_users" boolean NOT NULL,
-  "immune_roles" integer[] NOT NULL DEFAULT ARRAY[]::bigint[],
+  "delete_confirmation" boolean NOT NULL DEFAULT false,
+  "dm_users" boolean NOT NULL DEFAULT true,
+  "external_cases" boolean NOT NULL DEFAULT true,
+  "external_case_dms" boolean NOT NULL DEFAULT false,
+  "immune_roles" bigint[] NOT NULL DEFAULT ARRAY[]::bigint[],
   PRIMARY KEY ("guild_id"),
   CONSTRAINT "guild_moderation_settings_guild_id_fkey" FOREIGN KEY ("guild_id") REFERENCES "guild_settings" ("guild_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
@@ -249,6 +322,15 @@ CREATE TABLE "guild_server_counter_settings" (
   PRIMARY KEY ("guild_id"),
   CONSTRAINT "guild_server_counter_settings_guild_id_fkey" FOREIGN KEY ("guild_id") REFERENCES "guild_settings" ("guild_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- Create "leaderboard_levels" table
+CREATE TABLE "leaderboard_levels" (
+  "id" uuid NOT NULL,
+  "guild_id" bigint NOT NULL,
+  "xp" integer NOT NULL DEFAULT 0,
+  "reward_roles" bigint[] NOT NULL DEFAULT ARRAY[]::bigint[],
+  PRIMARY KEY ("id"),
+  CONSTRAINT "leaderboard_levels_guild_id_fkey" FOREIGN KEY ("guild_id") REFERENCES "guild_leaderboard_settings" ("guild_id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
 -- Create "mod_cases" table
 CREATE TABLE "mod_cases" (
   "id" character varying(8) NOT NULL,
@@ -256,15 +338,12 @@ CREATE TABLE "mod_cases" (
   "guild_id" bigint NOT NULL,
   "user_id" bigint NOT NULL,
   "creator_user_id" bigint NOT NULL,
-  "proof_msg_id" bigint NULL,
-  "proof_channel_id" bigint NULL,
-  "proof_text" character varying NULL,
   "time_created" timestamp NOT NULL,
   "time_updated" timestamp NULL,
   "time_expires" timestamp NULL,
   "description" character varying(512) NULL,
-  "external" boolean NOT NULL,
-  "resolved" boolean NOT NULL,
+  "external" boolean NOT NULL DEFAULT false,
+  "resolved" boolean NOT NULL DEFAULT false,
   PRIMARY KEY ("id")
 );
 -- Create "mod_case_comments" table
@@ -293,12 +372,15 @@ CREATE TABLE "scheduled_tasks" (
   PRIMARY KEY ("id"),
   CONSTRAINT "scheduled_tasks_case_id_fkey" FOREIGN KEY ("case_id") REFERENCES "mod_cases" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- Create index "ix_scheduled_tasks_time_scheduled" to table: "scheduled_tasks"
+CREATE INDEX "ix_scheduled_tasks_time_scheduled" ON "scheduled_tasks" ("time_scheduled");
 -- Create "server_counter_channels" table
 CREATE TABLE "server_counter_channels" (
   "id" bigserial NOT NULL,
   "guild_id" bigint NOT NULL,
-  "count_type" character varying(32) NOT NULL,
-  "name" character varying(50) NOT NULL,
+  "count_type" "servercountertype" NOT NULL,
+  "activity_name" character varying(50) NULL,
+  "name" character varying(50) NOT NULL DEFAULT '{value}',
   PRIMARY KEY ("id"),
   CONSTRAINT "server_counter_channels_guild_id_fkey" FOREIGN KEY ("guild_id") REFERENCES "guild_server_counter_settings" ("guild_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );

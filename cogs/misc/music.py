@@ -165,7 +165,7 @@ class MusicCommandsCog(
         search: commands.Range[str, 0, 100],
         ephemeral: bool = False,
     ) -> None:
-        await defer(self.bot, ctx, ephemeral=ephemeral)
+        await defer(ctx, ephemeral=ephemeral)
 
         search = search.strip()
         options_list = []
@@ -383,7 +383,7 @@ class MusicCommandsCog(
         search: commands.Range[str, 0, 100],
         ephemeral: bool = False,
     ) -> None:
-        await defer(self.bot, ctx, ephemeral=ephemeral)
+        await defer(ctx, ephemeral=ephemeral)
 
         search = search.strip()
         options_list = []
@@ -602,7 +602,7 @@ class MusicCommandsCog(
         search: commands.Range[str, 0, 100],
         ephemeral: bool = False,
     ) -> None:
-        await defer(self.bot, ctx, ephemeral=ephemeral)
+        await defer(ctx, ephemeral=ephemeral)
 
         search = search.strip()
         options_list = []
@@ -726,7 +726,7 @@ class MusicCommandsCog(
     async def spotify_image(
         self, ctx: commands.Context["TitaniumBot"], url: str, ephemeral: bool = False
     ) -> None:
-        await defer(bot=self.bot, ctx=ctx, ephemeral=ephemeral)
+        await defer(ctx, ephemeral=ephemeral)
 
         if "spotify.link" in url:
             try:
@@ -761,7 +761,7 @@ class MusicCommandsCog(
                     icon_url=ctx.author.display_avatar.url,
                 )
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
-                await stop_loading(self.bot, ctx)
+                await stop_loading(ctx)
 
                 return
 
@@ -1056,7 +1056,7 @@ class MusicCommandsCog(
             )
             await ctx.reply(embed=embed, ephemeral=ephemeral)
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
 
 async def setup(bot: TitaniumBot) -> None:

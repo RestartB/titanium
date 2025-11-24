@@ -78,7 +78,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         # Check if member is in guild
         if member.guild.id != ctx.guild.id:
@@ -137,7 +137,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             if ctx.guild.id in self.bot.punishing:
                 self.bot.punishing[ctx.guild.id].remove(member.id)
 
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @commands.hybrid_command(
         name="mute",
@@ -164,7 +164,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         # Check if guild for type checking
         if not ctx.guild:
@@ -278,7 +278,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             if ctx.guild.id in self.bot.punishing:
                 self.bot.punishing[ctx.guild.id].remove(member.id)
 
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @commands.hybrid_command(
         name="unmute",
@@ -298,7 +298,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         # Check if guild for type checking
         if not ctx.guild:
@@ -389,7 +389,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             if ctx.guild.id in self.bot.punishing:
                 self.bot.punishing[ctx.guild.id].remove(member.id)
 
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @commands.hybrid_command(name="kick", description="Kick a member from the server.")
     @commands.guild_only()
@@ -409,7 +409,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         # Check if guild for type checking
         if not ctx.guild:
@@ -494,7 +494,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             if ctx.guild.id in self.bot.punishing:
                 self.bot.punishing[ctx.guild.id].remove(member.id)
 
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @commands.hybrid_command(name="ban", description="Ban a user from the server.")
     @commands.guild_only()
@@ -517,7 +517,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         # Check if guild for type checking
         if not ctx.guild:
@@ -626,7 +626,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             if ctx.guild.id in self.bot.punishing:
                 self.bot.punishing[ctx.guild.id].remove(user.id)
 
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @commands.hybrid_command(name="unban", description="Unban a member from the server.")
     @commands.guild_only()
@@ -642,7 +642,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         # Check if guild for type checking
         if not ctx.guild:
@@ -731,7 +731,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             if ctx.guild.id in self.bot.punishing:
                 self.bot.punishing[ctx.guild.id].remove(user.id)
 
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
     @commands.hybrid_command(
         name="purge",
@@ -755,7 +755,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(self.bot, ctx, ephemeral=True)
+        await defer(ctx, ephemeral=True)
 
         if isinstance(
             ctx.channel, (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel)
@@ -793,7 +793,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
             return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, ctx.author))
         finally:
-            await stop_loading(self.bot, ctx)
+            await stop_loading(ctx)
 
 
 async def setup(bot: TitaniumBot) -> None:

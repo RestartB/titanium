@@ -1962,7 +1962,7 @@ class GuildLogger:
         embed.add_field(
             name="Triggered Rules",
             value="\n".join(
-                f"**{rule.rule_type.replace('_', ' ').capitalize()}**{f' ({rule.antispam_type.replace("_", " ").lower()})' if rule.antispam_type else ''} - **{rule.threshold} occurrences** in **{rule.duration} seconds**"
+                f"**{rule.rule_type.value.replace('_', ' ').capitalize()}**{f' ({rule.antispam_type.value.replace("_", " ").lower()})' if rule.antispam_type else ''} - **{rule.threshold} occurrences** in **{rule.duration} seconds**"
                 for rule in rules
             ),
             inline=False,
@@ -1971,7 +1971,7 @@ class GuildLogger:
         embed.add_field(
             name="Actions Taken",
             value="\n".join(
-                f"**{action.action_type.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`){': ' + shorten(action.reason, width=100, placeholder='...') if action.reason else ''}"
+                f"**{action.action_type.value.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`){': ' + shorten(action.reason, width=100, placeholder='...') if action.reason else ''}"
                 for action in actions
             ),
             inline=False,
@@ -2002,7 +2002,7 @@ class GuildLogger:
         embed.add_field(
             name="Triggered Criteria",
             value="\n".join(
-                f"**{criteria.criteria_type.capitalize()}**"
+                f"**{criteria.criteria_type.value.capitalize()}**"
                 for rule in rules
                 for criteria in rule.criteria
             ),
@@ -2012,7 +2012,7 @@ class GuildLogger:
         embed.add_field(
             name="Actions Taken",
             value="\n".join(
-                f"**{action.action_type.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`){': ' + shorten(action.reason, width=100, placeholder='...') if action.reason else ''}"
+                f"**{action.action_type.value.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`){': ' + shorten(action.reason, width=100, placeholder='...') if action.reason else ''}"
                 for action in actions
             ),
             inline=False,
