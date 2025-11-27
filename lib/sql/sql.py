@@ -4,6 +4,7 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
+from typing import Optional
 
 import shortuuid
 from dotenv import load_dotenv
@@ -17,6 +18,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    UniqueConstraint,
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
@@ -503,12 +505,12 @@ class GuildLeaderboardSettings(Base):
     )
     mode: Mapped[LeaderboardCalcType] = MappedColumn(Enum(LeaderboardCalcType), nullable=False)
     cooldown: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
-    base_xp: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
-    min_xp: Mapped[int] = MappedColumn(Integer, server_default=text("15"))
-    max_xp: Mapped[int] = MappedColumn(Integer, server_default=text("25"))
-    xp_mult: Mapped[float] = MappedColumn(Float, server_default=text("1.0"))
+    base_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("10"))
+    min_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("15"))
+    max_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("25"))
+    xp_mult: Mapped[Optional[float]] = MappedColumn(Float, server_default=text("1.0"))
     levelup_notifications: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    notification_channel: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    notification_channel: Mapped[Optional[int]] = MappedColumn(BigInteger, nullable=True)
     web_leaderboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     web_login_required: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     delete_leavers: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
@@ -534,6 +536,8 @@ class LeaderboardLevels(Base):
 
 class LeaderboardUserStats(Base):
     __tablename__ = "leaderboard_user_stats"
+    __table_args__ = (UniqueConstraint("guild_id", "user_id", name="uq_leaderboard_guild_user"),)
+
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)

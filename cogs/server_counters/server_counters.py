@@ -40,6 +40,10 @@ class ServerCountersCog(commands.Cog):
                 continue
 
             config = self.bot.guild_configs.get(guild.id)
+            if not config:
+                await self.bot.refresh_guild_config_cache(guild.id)
+                config = self.bot.guild_configs.get(guild.id)
+
             if not config or not config.server_counters_enabled:
                 continue
 

@@ -28,6 +28,7 @@ from lib.api.validators import (
     ConfessionsConfigModel,
     FireboardConfigModel,
     GuildSettingsModel,
+    LeaderboardConfigModel,
     LoggingConfigModel,
     ModerationConfigModel,
     ServerCountersConfigModel,
@@ -43,10 +44,12 @@ from lib.sql.sql import (
     GuildBouncerSettings,
     GuildConfessionsSettings,
     GuildFireboardSettings,
+    GuildLeaderboardSettings,
     GuildLoggingSettings,
     GuildModerationSettings,
     GuildServerCounterSettings,
     GuildSettings,
+    LeaderboardLevels,
     LeaderboardUserStats,
     ModCase,
     ServerCounterChannel,
@@ -576,7 +579,7 @@ class APICog(commands.Cog):
                     "logging": config.logging_enabled,
                     "fireboard": config.fireboard_enabled,
                     "server_counters": config.server_counters_enabled,
-                    "confession": config.confessions_enabled,
+                    "confessions": config.confessions_enabled,
                     "leaderboard": config.leaderboard_enabled,
                 },
                 "settings": {
@@ -737,6 +740,8 @@ class APICog(commands.Cog):
                 validated_config = FireboardConfigModel(**data)
             elif module_name == "server_counters":
                 validated_config = ServerCountersConfigModel(**data)
+            elif module_name == "leaderboard":
+                validated_config = LeaderboardConfigModel(**data)
         except ValidationError as e:
             return web.json_response(
                 {"error": "Validation failed", "details": e.errors()}, status=400
@@ -933,10 +938,6 @@ class APICog(commands.Cog):
 
                 if not existing_config:
                     existing_config = GuildServerCounterSettings(guild_id=guild.id)
-                    session.add(existing_config)
-
-                    await session.commit()
-                    await session.refresh(existing_config)
 
                 channel_ids = []
 
@@ -1055,6 +1056,56 @@ class APICog(commands.Cog):
                         await session.delete(existing_channel)
 
             await self.bot.refresh_guild_config_cache(guild.id)
+            return web.Response(status=204)
+        elif module_name == "leaderboard" and isinstance(validated_config, LeaderboardConfigModel):
+            async with get_session() as session:
+                db_config = await session.get(GuildSettings, guild.id)
+                if not db_config:
+                    return web.json_response(
+                        {"error": "Failed to retrieve server configuration from DB"},
+                        status=500,
+                    )
+
+                # Get existing configs
+                result = await session.execute(
+                    select(GuildLeaderboardSettings)
+                    .where(GuildLeaderboardSettings.guild_id == guild.id)
+                    .options(selectinload(GuildLeaderboardSettings.levels))
+                )
+                existing_config = result.scalar_one_or_none()
+
+                if not existing_config:
+                    existing_config = GuildLeaderboardSettings(guild_id=guild.id)
+
+                existing_config.mode = validated_config.mode
+                existing_config.base_xp = validated_config.base_xp
+                existing_config.min_xp = validated_config.min_xp
+                existing_config.max_xp = validated_config.max_xp
+                existing_config.xp_mult = validated_config.xp_mult
+                existing_config.cooldown = validated_config.cooldown
+                existing_config.levelup_notifications = validated_config.levelup_notifications
+                existing_config.notification_channel = (
+                    int(validated_config.notification_channel)
+                    if validated_config.notification_channel
+                    else None
+                )
+                existing_config.web_leaderboard_enabled = validated_config.web_leaderboard_enabled
+                existing_config.web_login_required = validated_config.web_login_required
+                existing_config.delete_leavers = validated_config.delete_leavers
+                existing_config.levels = [
+                    LeaderboardLevels(
+                        xp=level.xp_required,
+                        reward_roles=level.reward_roles,
+                    )
+                    for level in validated_config.levels
+                ]
+
+                session.add(existing_config)
+                await session.commit()
+
+                await session.commit()
+                await session.refresh(existing_config)
+
             return web.Response(status=204)
         else:
             return web.json_response({"error": "Module not found"}, status=404)

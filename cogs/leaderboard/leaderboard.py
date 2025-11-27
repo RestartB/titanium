@@ -1,5 +1,6 @@
 import logging
 import random
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import discord
@@ -22,6 +23,7 @@ class LeaderboardCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("leaderboard")
+        self.member_last_trigger: dict[int, dict[int, datetime]] = {}
 
         self.take_daily_snapshots.start()
 
@@ -52,6 +54,10 @@ class LeaderboardCog(commands.Cog):
             return
 
         guild_settings = self.bot.guild_configs.get(message.guild.id)
+        if not guild_settings:
+            await self.bot.refresh_guild_config_cache(message.guild.id)
+            guild_settings = self.bot.guild_configs.get(message.guild.id)
+
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -65,15 +71,26 @@ class LeaderboardCog(commands.Cog):
         xp = lb_settings.base_xp
         min_xp = lb_settings.min_xp
         max_xp = lb_settings.max_xp
+        cooldown = lb_settings.cooldown
         length = len(message.content)
+
+        if cooldown > 0:
+            created_at = message.created_at
+            user_cooldowns = self.member_last_trigger.setdefault(message.guild.id, {})
+            last_trigger = user_cooldowns.get(message.author.id)
+
+            if last_trigger and (created_at - last_trigger).total_seconds() < cooldown:
+                return
+
+            user_cooldowns[message.author.id] = created_at
 
         to_assign = 0
 
-        if mode == LeaderboardCalcType.FIXED:
+        if mode == LeaderboardCalcType.FIXED and xp:
             to_assign = xp
-        elif mode == LeaderboardCalcType.RANDOM:
+        elif mode == LeaderboardCalcType.RANDOM and min_xp and max_xp:
             to_assign = random.randint(min_xp, max_xp)
-        elif mode == LeaderboardCalcType.LENGTH:
+        elif mode == LeaderboardCalcType.LENGTH and xp and max_xp:
             to_assign = min(int(length / 100) * xp, max_xp)
 
         async with get_session() as session:
@@ -129,6 +146,10 @@ class LeaderboardCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
         guild_settings = self.bot.guild_configs.get(member.guild.id)
+        if not guild_settings:
+            await self.bot.refresh_guild_config_cache(member.guild.id)
+            guild_settings = self.bot.guild_configs.get(member.guild.id)
+
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -164,6 +185,10 @@ class LeaderboardCog(commands.Cog):
         await ctx.defer()
 
         guild_settings = self.bot.guild_configs.get(ctx.guild.id)
+        if not guild_settings:
+            await self.bot.refresh_guild_config_cache(ctx.guild.id)
+            guild_settings = self.bot.guild_configs.get(ctx.guild.id)
+
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -171,7 +196,7 @@ class LeaderboardCog(commands.Cog):
         ):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
-                description="The leaderboard system is not enabled on this server.",
+                description="The leaderboard system is not enabled in this server.",
                 color=discord.Color.red(),
             )
             await ctx.send(embed=embed)
@@ -182,6 +207,7 @@ class LeaderboardCog(commands.Cog):
                 select(LeaderboardUserStats)
                 .where(LeaderboardUserStats.guild_id == ctx.guild.id)
                 .order_by(LeaderboardUserStats.xp.desc())
+                .limit(1000)
             )
             result = await session.execute(stmt)
             top_users = result.scalars().all()
@@ -195,30 +221,43 @@ class LeaderboardCog(commands.Cog):
                 await ctx.send(embed=embed)
                 return
 
+            embed = discord.Embed(
+                title="Leaderboard",
+                color=discord.Color.random(),
+            )
+
             pages = []
             page_size = 20
-            for i in range(0, len(top_users), page_size):
-                embed = discord.Embed(
-                    title="Leaderboard",
-                    description="",
-                    color=discord.Color.random(),
-                )
-                embed.set_author(
-                    name=ctx.guild.name,
-                    icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
-                )
+            for i, user_stats in enumerate(top_users, start=1):
+                member = ctx.guild.get_member(user_stats.user_id)
+                if not member:
+                    continue
 
-                chunk = top_users[i : i + page_size]
-                for rank, user_stats in enumerate(chunk, start=i + 1):
-                    member = ctx.guild.get_member(user_stats.user_id)
+                if embed.description:
+                    embed.description += (
+                        f"\n{i}. {member.mention} - {user_stats.xp}XP, Level {user_stats.level}"
+                    )
+                else:
+                    embed.description = (
+                        f"{i}. {member.mention} - {user_stats.xp}XP, Level {user_stats.level}"
+                    )
 
-                    if embed.description:
-                        embed.description += f"{rank}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP, Level {user_stats.level}"
+                if i % page_size == 0:
+                    pages.append(embed)
+                    embed = discord.Embed(
+                        title="Leaderboard",
+                        color=discord.Color.random(),
+                    )
 
+            if embed.description:
                 pages.append(embed)
 
             view = PaginationView(embeds=pages, timeout=240)
-            await ctx.send(embed=pages[0], view=view)
+
+            if len(pages) > 1:
+                await ctx.send(embed=pages[0], view=view)
+            else:
+                await ctx.send(embed=pages[0])
 
     # Level command
     @commands.hybrid_command(name="level", aliases=["lvl"])
@@ -236,6 +275,10 @@ class LeaderboardCog(commands.Cog):
         user = member or ctx.author
 
         guild_settings = self.bot.guild_configs.get(ctx.guild.id)
+        if not guild_settings:
+            await self.bot.refresh_guild_config_cache(ctx.guild.id)
+            guild_settings = self.bot.guild_configs.get(ctx.guild.id)
+
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -243,7 +286,7 @@ class LeaderboardCog(commands.Cog):
         ):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
-                description="The leaderboard system is not enabled on this server.",
+                description="The leaderboard system is not enabled in this server.",
                 color=discord.Color.red(),
             )
             await ctx.send(embed=embed)
@@ -271,11 +314,23 @@ class LeaderboardCog(commands.Cog):
                 return
 
             embed = discord.Embed(
-                title=f"{user.display_name}'s Level Info",
+                title="Level Info",
                 color=discord.Color.blue(),
             )
             embed.add_field(name="Level", value=str(user_stats.level), inline=True)
             embed.add_field(name="XP", value=str(user_stats.xp), inline=True)
+
+            embed.set_author(
+                name=f"@{user.display_name}",
+                icon_url=user.display_avatar.url,
+            )
+            embed.set_footer(
+                text=f"@{ctx.author.display_name}",
+                icon_url=ctx.author.display_avatar.url,
+            )
+            embed.set_thumbnail(
+                url=user.display_avatar.url,
+            )
 
             await ctx.send(embed=embed)
 
