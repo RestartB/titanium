@@ -80,7 +80,7 @@ class ModMonitorCog(commands.Cog):
                 case_manager = GuildModCaseManager(self.bot, member.guild, session)
 
                 # Create a case
-                _ = await case_manager.create_case(
+                await case_manager.create_case(
                     action="kick",
                     user_id=member.id,
                     creator_user_id=entry.user_id,
@@ -113,7 +113,7 @@ class ModMonitorCog(commands.Cog):
                 case_manager = GuildModCaseManager(self.bot, guild, session)
 
                 # Create a case
-                _ = await case_manager.create_case(
+                await case_manager.create_case(
                     action="ban",
                     user_id=user.id,
                     creator_user_id=entry.user_id,

@@ -3,9 +3,12 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Annotated, Literal, Optional, Sequence
 
 from discord import Guild
+from discord.ui import View
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+from lib.embeds.dm_notifs import banned_dm, jump_button, kicked_dm, muted_dm
 
 from ..duration import DurationConverter
 from ..sql.sql import ModCase, ScheduledTask
@@ -75,11 +78,13 @@ class GuildModCaseManager:
         external: bool = False,
     ) -> ModCase | None:
         if external:
+            guild_settings = self.bot.guild_configs.get(self.guild.id)
+            if not guild_settings:
+                await self.bot.refresh_guild_config_cache(self.guild.id)
+                guild_settings = self.bot.guild_configs.get(self.guild.id)
+
             # Check if external cases are enabled
-            if (
-                self.guild.id not in self.bot.guild_configs
-                or not self.bot.guild_configs[self.guild.id].automod_settings
-            ):
+            if guild_settings and not guild_settings.moderation_settings.external_cases:
                 self.logger.debug(
                     f"External cases are disabled in {self.guild.id}, skipping this event"
                 )
@@ -131,6 +136,35 @@ class GuildModCaseManager:
                 )
             )
             await self.session.commit()
+
+        if external and guild_settings and guild_settings.moderation_settings.external_case_dms:
+            member = self.guild.get_member(user_id)
+            if not member:
+                try:
+                    member = await self.guild.fetch_member(user_id)
+                except Exception as e:
+                    self.logger.error(
+                        f"Failed to fetch user {user_id} for DM notification", exc_info=e
+                    )
+                    return case
+
+            try:
+                if action == "ban":
+                    embed = banned_dm(self.bot, member, case)
+                elif action == "kick":
+                    embed = kicked_dm(self.bot, member, case)
+                elif action == "mute":
+                    embed = muted_dm(self.bot, member, case)
+                else:
+                    embed = None
+
+                if embed:
+                    await member.send(
+                        embed=embed,
+                        view=View().add_item(jump_button(self.guild)),
+                    )
+            except Exception as e:
+                self.logger.error(f"Failed to send DM to user {user_id}: {e}")
 
         return case
 
