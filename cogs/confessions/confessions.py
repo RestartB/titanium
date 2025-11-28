@@ -33,7 +33,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         interaction: discord.Interaction["TitaniumBot"],
         message: str,
     ) -> None:
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         if interaction.guild is None:
             return
@@ -60,7 +60,8 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
                     color=Colour.red(),
                     title=f"{self.bot.error_emoji} Confessions Disabled",
                     description="The confession module is disabled. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
-                )
+                ),
+                ephemeral=True,
             )
             return
 
@@ -81,7 +82,8 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
                     description=(
                         "The confession channel is not set or could not be found. Ask a server admin to configure it using the Titanium Dashboard."
                     ),
-                )
+                ),
+                ephemeral=True,
             )
             return
 

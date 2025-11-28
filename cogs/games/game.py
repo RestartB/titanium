@@ -80,6 +80,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
             description="\n".join(lines),
             color=Colour.blue(),
         )
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
         await ctx.reply(embed=embed)
 
     @game.command(name="dice", description="Roll a dice and try your luck!")
@@ -108,6 +109,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
                 description=f"🎲 You guessed `{guess}`, but rolled `{roll}`!",
             )
 
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
         await ctx.reply(embed=embed)
 
     @game.command(name="coin-flip", description="Flip a coin!")
@@ -127,6 +129,8 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
                 title="Invalid Choice",
                 description="Please pick **Head** or **Tails**.",
             )
+            embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
             setattr(ctx, "valid_invoke", False)  # setting this so we dont inc the played by +1
             await ctx.reply(embed=embed)
 
@@ -148,6 +152,8 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
                 title=f"{self.bot.error_emoji} You Lost",
                 description=f"🪙 You chose **{choice}**, but the coin landed on **{flip_result.title()}**!",
             )
+
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
         await ctx.reply(embed=embed)
 
     @dice_game.after_invoke

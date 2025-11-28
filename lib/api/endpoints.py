@@ -250,7 +250,7 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
         {
             "mode": lb_settings.mode.value,
             "cooldown": lb_settings.cooldown,
-            "xp": lb_settings.base_xp,
+            "base_xp": lb_settings.base_xp,
             "min_xp": lb_settings.min_xp,
             "max_xp": lb_settings.max_xp,
             "xp_mult": lb_settings.xp_mult,
@@ -263,11 +263,10 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
             "delete_leavers": lb_settings.delete_leavers,
             "levels": [
                 {
-                    "level": i + 1,
                     "xp_required": level.xp,
                     "reward_roles": [str(role_id) for role_id in level.reward_roles],
                 }
-                for i, level in enumerate(lb_settings.levels)
+                for level in lb_settings.levels
             ],
         }
     )

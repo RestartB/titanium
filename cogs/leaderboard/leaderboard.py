@@ -63,6 +63,7 @@ class LeaderboardCog(commands.Cog):
             or not guild_settings.leaderboard_settings
             or not guild_settings.leaderboard_enabled
         ):
+            self.logger.debug(f"Leaderboard disabled for guild {message.guild.id}")
             return
 
         lb_settings = guild_settings.leaderboard_settings
@@ -80,6 +81,9 @@ class LeaderboardCog(commands.Cog):
             last_trigger = user_cooldowns.get(message.author.id)
 
             if last_trigger and (created_at - last_trigger).total_seconds() < cooldown:
+                self.logger.debug(
+                    f"User {message.author.id} in guild {message.guild.id} is on cooldown"
+                )
                 return
 
             user_cooldowns[message.author.id] = created_at
@@ -129,9 +133,13 @@ class LeaderboardCog(commands.Cog):
                 channel = message.guild.get_channel(lb_settings.notification_channel)
 
             if not channel:
+                self.logger.debug(f"Notification channel not found for guild {message.guild.id}")
                 return
 
             if not isinstance(channel, discord.abc.Messageable):
+                self.logger.debug(
+                    f"Notification channel not messageable in guild {message.guild.id}"
+                )
                 return
 
             await channel.send(

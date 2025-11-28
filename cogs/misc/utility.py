@@ -57,6 +57,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
                 title=f"{self.bot.error_emoji} Too Long",
                 description="The encoded text is too long to display.",
             )
+            embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
             await ctx.reply(embed=embed)
             return
 
@@ -65,6 +66,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
             title=f"{self.bot.success_emoji} Base64 Encoded",
             description=f"```{encoded}```",
         )
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
         await ctx.reply(embed=embed)
 
     @base64_group.command(name="decode", description="Convert text from Base64.")
@@ -90,6 +92,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
                 title=f"{self.bot.error_emoji} Too Long",
                 description="The decoded text is too long to display.",
             )
+            embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
             await ctx.reply(embed=embed)
             return
 
@@ -98,6 +101,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
             title=f"{self.bot.success_emoji} Base64 Decoded",
             description=f"```{decoded}```",
         )
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
         await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="qrcode", description="Generate a QR code from a string.")
@@ -121,6 +125,8 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
             color=Colour.green(),
         )
         embed.set_image(url="attachment://titanium_qrcode.png")
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
         await ctx.reply(embed=embed, file=file)
 
     @commands.hybrid_command(name="file-info", description="Get info of a file.")
@@ -137,14 +143,16 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
             color=Colour.blue(),
             title="File Information",
         )
+        embed.set_thumbnail(url=file.url)
         embed.add_field(name="ID", value=f"`{file.id}`")
         embed.add_field(name="File Name", value=f"`{file.filename}`")
         embed.add_field(name="File Size", value=f"`{size_hr}`")
         embed.add_field(name="Content Type", value=f"`{file.content_type}`" or "`Unknown`")
         embed.add_field(name="URL", value=f"[Click here]({file.url})")
         embed.add_field(name="Proxy URL", value=f"[Click here]({file.proxy_url})")
-        embed.set_thumbnail(url=file.url)
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
         embed.timestamp = datetime.now()
+
         await ctx.reply(embed=embed)
 
 

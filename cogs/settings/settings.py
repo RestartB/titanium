@@ -132,7 +132,9 @@ class SettingsView(LayoutView):
         )
         container.add_item(fireboard_section)
 
-        server_counters_section = Section(accessory=FeatureToggleButton(bot, settings, "server_counters_enabled"))
+        server_counters_section = Section(
+            accessory=FeatureToggleButton(bot, settings, "server_counters_enabled")
+        )
         server_counters_section.add_item(
             TextDisplay(
                 "### Server Counters\nDisplay various server statistics and counters in your channel list."

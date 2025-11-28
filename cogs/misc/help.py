@@ -28,6 +28,7 @@ class HelpCommandCog(commands.Cog):
             "\n**Need more help? Join our [Support Server](https://titaniumbot.me/server)**",
             color=discord.Color.blue(),
         )
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
         if self.bot.user:
             embed.set_author(
