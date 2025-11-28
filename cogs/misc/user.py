@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+import discord
 from discord import ButtonStyle, Colour, Embed, Member, Optional, User, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
@@ -13,6 +14,92 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
+
+    @commands.hybrid_command(
+        name="user", aliases=["userinfo"], description="Get information about a user."
+    )
+    @app_commands.describe(
+        user="Optional: the user to get information about. Defaults to yourself."
+    )
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def user(
+        self, ctx: commands.Context["TitaniumBot"], user: Optional[User | Member]
+    ) -> None:
+        await ctx.defer()
+
+        if not user:
+            user = ctx.author
+
+        creation_date = int(user.created_at.timestamp())
+        join_date = (
+            int(user.joined_at.timestamp()) if isinstance(user, Member) and user.joined_at else None
+        )
+
+        embed = Embed(title="User Info", colour=user.accent_colour)
+        embed.set_author(
+            name=f"{user.display_name} (@{user.name})",
+            icon_url=user.display_avatar.url,
+        )
+        embed.set_thumbnail(url=user.display_avatar.url)
+
+        if user.banner is not None:
+            embed.set_image(url=user.banner.url)
+
+        embed.add_field(name="ID", value=f"`{user.id}`")
+        embed.add_field(
+            name="Joined Discord",
+            value=f"<t:{creation_date}:R> (<t:{creation_date}:f>)",
+        )
+        if join_date:
+            embed.add_field(
+                name="Joined Server",
+                value=f"<t:{join_date}:R> (<t:{join_date}:f>)",
+            )
+
+        if isinstance(user, Member) and ctx.guild:
+            embed.add_field(
+                name="Roles",
+                value=", ".join(role.mention for role in user.roles if role.id != ctx.guild.id)
+                or "No Roles",
+            )
+
+        if ctx.interaction and ctx.interaction.is_user_integration():
+            embed.set_footer(
+                text=f"@{ctx.author.name} - add Titanium to the server for more info",
+                icon_url=ctx.author.display_avatar.url,
+            )
+        elif isinstance(user, User):
+            embed.set_footer(
+                text=f"@{ctx.author.name} - user isn't in the server, showing limited info",
+                icon_url=ctx.author.display_avatar.url,
+            )
+        else:
+            embed.set_footer(
+                text=f"@{ctx.author.name}",
+                icon_url=ctx.author.display_avatar.url,
+            )
+
+        view = View()
+        view.add_item(
+            discord.ui.Button(
+                label="User URL",
+                style=discord.ButtonStyle.url,
+                url=f"https://discord.com/users/{user.id}",
+                row=0,
+            )
+        )
+        view.add_item(
+            discord.ui.Button(
+                label="Open PFP in Browser",
+                style=discord.ButtonStyle.url,
+                url=user.display_avatar.url,
+                row=0,
+            )
+        )
+
+        # Send Embed
+        await ctx.reply(embed=embed, view=view)
 
     @commands.hybrid_command(name="pfp", description="Get a user's profile picture.")
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -30,12 +117,15 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
             name=f"@{user.name}'s PFP",
             icon_url=user.display_avatar.url,
         )
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
-        embed.set_image(url=user.display_avatar.url)
+        url = user.avatar.url if user.avatar else user.default_avatar.url
 
-        png_url = user.display_avatar.url + "?format=png"
-        jpg_url = user.display_avatar.url + "?format=jpg"
-        webp_url = user.display_avatar.url + "?format=webp"
+        embed.set_image(url=url)
+
+        png_url = url + "?format=png"
+        jpg_url = url + "?format=jpg"
+        webp_url = url + "?format=webp"
         formats = {"PNG": png_url, "JPG": jpg_url, "WEBP": webp_url}
 
         view = View()
@@ -63,6 +153,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
             name=f"@{user.name}'s Server PFP",
             icon_url=user.display_avatar.url,
         )
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
         if user.guild_avatar:
             embed.set_image(url=user.guild_avatar.url)
@@ -80,7 +171,9 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
 
             await ctx.reply(embed=embed, view=view)
         else:
-            embed.description = f"{user.mention} does not have a server profile picture."
+            embed.description = (
+                f"{self.bot.error_emoji} {user.mention} does not have a server profile picture."
+            )
             embed.colour = Colour.red()
 
             await ctx.reply(embed=embed)
@@ -105,6 +198,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
             name=f"@{user.name}'s Banner",
             icon_url=user.display_avatar.url,
         )
+        e.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
         if banner:
             e.set_image(url=banner)
@@ -122,7 +216,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
 
             await ctx.reply(embed=e, view=view)
         else:
-            e.description = f"{str(self.bot.error_emoji)} {user.mention} does not have a banner."
+            e.description = f"{self.bot.error_emoji} {user.mention} does not have a banner."
             e.colour = Colour.red()
 
             await ctx.reply(embed=e)
