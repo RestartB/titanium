@@ -50,6 +50,11 @@ class GuildSettingsModel(BaseModel):
         return v
 
 
+class GuildPermissionsModel(BaseModel):
+    dashboard_managers: list[str] = Field(default_factory=list)
+    case_managers: list[str] = Field(default_factory=list)
+
+
 class ConfessionsConfigModel(BaseModel):
     confessions_in_channel: bool
     confessions_channel_id: Optional[str] = None
@@ -134,10 +139,10 @@ class AutomodRuleModel(BaseModel):
 
 
 class AutomodConfigModel(BaseModel):
-    badword_detection: list[AutomodRuleModel]
-    spam_detection: list[AutomodRuleModel]
-    malicious_link_detection: list[AutomodRuleModel]
-    phishing_link_detection: list[AutomodRuleModel]
+    badword_detection: list["AutomodRuleModel"]
+    spam_detection: list["AutomodRuleModel"]
+    malicious_link_detection: list["AutomodRuleModel"]
+    phishing_link_detection: list["AutomodRuleModel"]
 
 
 class BouncerCriterionModel(BaseModel):

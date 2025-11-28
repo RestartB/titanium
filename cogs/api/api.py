@@ -27,6 +27,7 @@ from lib.api.validators import (
     BouncerConfigModel,
     ConfessionsConfigModel,
     FireboardConfigModel,
+    GuildPermissionsModel,
     GuildSettingsModel,
     LeaderboardConfigModel,
     LoggingConfigModel,
@@ -105,12 +106,18 @@ class APICog(commands.Cog):
         self.app.router.add_get("/ping", self.ping)
         self.app.router.add_get("/status", self.status)
         self.app.router.add_get("/stats", self.stats)
+
         self.app.router.add_get("/user/{user_id}/guilds", self.mutual_guilds)
+
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
         self.app.router.add_get("/guild/{guild_id}/cases", self.guild_cases)
         self.app.router.add_get("/guild/{guild_id}/errors", self.guild_errors)
         self.app.router.add_get("/guild/{guild_id}/leaderboard", self.guild_leaderboard)
+
+        self.app.router.add_get("/guild/{guild_id}/perms", self.guild_perms)
+        self.app.router.add_put("/guild/{guild_id}/perms", self.set_guild_perms)
         self.app.router.add_get("/guild/{guild_id}/perms/{user_id}", self.guild_perm_check)
+
         self.app.router.add_get("/guild/{guild_id}/settings", self.guild_settings)
         self.app.router.add_put("/guild/{guild_id}/settings", self.update_guild_settings)
         self.app.router.add_get("/guild/{guild_id}/module/{module_name}", self.module_get)
@@ -483,6 +490,89 @@ class APICog(commands.Cog):
             }
         )
 
+    async def guild_perms(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        config = self.bot.guild_configs.get(guild.id)
+
+        if not config:
+            await self.bot.refresh_guild_config_cache(guild.id)
+            config = self.bot.guild_configs.get(guild.id)
+
+            if not config:
+                config = await self.bot.init_guild(guild.id)
+
+                if not config:
+                    return web.json_response(
+                        {"error": "Failed to retrieve server configuration"},
+                        status=500,
+                    )
+
+        return web.json_response(
+            {
+                "dashboard_managers": [str(role_id) for role_id in config.dashboard_managers],
+                "case_managers": [str(role_id) for role_id in config.case_managers],
+            }
+        )
+
+    async def set_guild_perms(self, request: web.Request) -> web.Response:
+        await self.bot.wait_until_ready()
+
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        config = self.bot.guild_configs.get(guild.id)
+
+        if not config:
+            await self.bot.refresh_guild_config_cache(guild.id)
+            config = self.bot.guild_configs.get(guild.id)
+
+            if not config:
+                config = await self.bot.init_guild(guild.id)
+
+                if not config:
+                    return web.json_response(
+                        {"error": "Failed to retrieve server configuration"},
+                        status=500,
+                    )
+
+        try:
+            data = await request.json()
+            validated_perms = GuildPermissionsModel(**data)
+        except ValidationError as e:
+            return web.json_response(
+                {"error": "Validation failed", "details": e.errors()}, status=400
+            )
+        except ValueError as e:
+            return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
+
+        async with get_session() as session:
+            db_config = await session.get(GuildSettings, guild.id)
+            if not db_config:
+                return web.json_response(
+                    {"error": "Failed to retrieve server configuration from DB"},
+                    status=500,
+                )
+
+            db_config.dashboard_managers = [
+                int(role_id) for role_id in validated_perms.dashboard_managers
+            ]
+            db_config.case_managers = [int(role_id) for role_id in validated_perms.case_managers]
+
+        await self.bot.refresh_guild_config_cache(guild.id)
+        return web.Response(status=204)
+
     async def guild_perm_check(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
         if not guild_id or not guild_id.isdigit():
@@ -524,6 +614,8 @@ class APICog(commands.Cog):
 
         dashboard_manager = member.guild_permissions.administrator
         case_manager = member.guild_permissions.manage_guild
+
+        print(config.dashboard_managers)
 
         for role in member.roles:
             if role.id == guild.id:
@@ -656,7 +748,6 @@ class APICog(commands.Cog):
             session.add(prefixes)
 
         await self.bot.refresh_guild_config_cache(guild.id)
-
         return web.Response(status=204)
 
     async def module_get(self, request: web.Request) -> web.Response:
@@ -761,9 +852,6 @@ class APICog(commands.Cog):
                     if validated_config.confessions_channel_id
                     else None
                 )
-
-            await self.bot.refresh_guild_config_cache(guild.id)
-            return web.Response(status=204)
         elif module_name == "moderation" and isinstance(validated_config, ModerationConfigModel):
             async with get_session() as session:
                 db_config = await session.get(GuildModerationSettings, guild.id)
@@ -774,10 +862,6 @@ class APICog(commands.Cog):
                 db_config.dm_users = validated_config.dm_users
 
                 session.add(db_config)
-                await session.commit()
-
-            await self.bot.refresh_guild_config_cache(guild.id)
-            return web.Response(status=204)
         elif module_name == "automod" and isinstance(validated_config, AutomodConfigModel):
             async with get_session() as session:
                 automod_settings = await session.get(GuildAutomodSettings, int(guild_id))
@@ -830,8 +914,6 @@ class APICog(commands.Cog):
                     {"error": "Failed to retrieve server configuration from cache"},
                     status=500,
                 )
-
-            return web.Response(status=204)
         elif module_name == "bouncer" and isinstance(validated_config, BouncerConfigModel):
             async with get_session() as session:
                 db_config = await session.get(GuildBouncerSettings, guild.id)
@@ -845,10 +927,6 @@ class APICog(commands.Cog):
                     session.add(bouncer_rule)
 
                 session.add(db_config)
-                await session.commit()
-
-            await self.bot.refresh_guild_config_cache(guild.id)
-            return web.Response(status=204)
         elif module_name == "logging" and isinstance(validated_config, LoggingConfigModel):
             async with get_session() as session:
                 db_config = await session.get(GuildLoggingSettings, guild.id)
@@ -864,10 +942,6 @@ class APICog(commands.Cog):
                         )
 
                 session.add(db_config)
-                await session.commit()
-
-            await self.bot.refresh_guild_config_cache(guild.id)
-            return web.Response(status=204)
         elif module_name == "fireboard" and isinstance(validated_config, FireboardConfigModel):
             async with get_session() as session:
                 db_config = await session.get(GuildSettings, guild.id)
@@ -914,9 +988,6 @@ class APICog(commands.Cog):
                         ],
                     )
                     session.add(board)
-
-            await self.bot.refresh_guild_config_cache(guild.id)
-            return web.Response(status=204)
         elif module_name == "server_counters" and isinstance(
             validated_config, ServerCountersConfigModel
         ):
@@ -1054,9 +1125,6 @@ class APICog(commands.Cog):
                                 )
 
                         await session.delete(existing_channel)
-
-            await self.bot.refresh_guild_config_cache(guild.id)
-            return web.Response(status=204)
         elif module_name == "leaderboard" and isinstance(validated_config, LeaderboardConfigModel):
             async with get_session() as session:
                 db_config = await session.get(GuildSettings, guild.id)
@@ -1101,14 +1169,11 @@ class APICog(commands.Cog):
                 ]
 
                 session.add(existing_config)
-                await session.commit()
-
-                await session.commit()
-                await session.refresh(existing_config)
-
-            return web.Response(status=204)
         else:
             return web.json_response({"error": "Module not found"}, status=404)
+
+        await self.bot.refresh_guild_config_cache(guild.id)
+        return web.Response(status=204)
 
     async def cog_unload(self):
         if self.server_task:
