@@ -300,7 +300,7 @@ class LoggingConfigModel(BaseModel):
 
 
 class FireboardBoardModel(BaseModel):
-    id: Optional[str] = None
+    id: Optional[uuid.UUID] = None
     channel_id: str
     reaction: str
     threshold: int
@@ -308,12 +308,6 @@ class FireboardBoardModel(BaseModel):
     ignore_self_reactions: bool
     ignored_roles: list[str] = Field(default_factory=list)
     ignored_channels: list[str] = Field(default_factory=list)
-
-    @field_validator("id")
-    def validate_id(cls, v: str):
-        if v.strip() == "":
-            return None
-        return v
 
 
 class FireboardConfigModel(BaseModel):

@@ -431,7 +431,7 @@ class GuildFireboardSettings(Base):
 
 class FireboardBoard(Base):
     __tablename__ = "fireboard_boards"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_fireboard_settings.guild_id")
     )
@@ -461,7 +461,9 @@ class FireboardMessage(Base):
     channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     fireboard_message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    fireboard_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("fireboard_boards.id"))
+    fireboard_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("fireboard_boards.id")
+    )
     fireboard: Mapped["FireboardBoard"] = relationship(
         "FireboardBoard", back_populates="messages", uselist=False
     )

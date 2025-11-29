@@ -950,7 +950,12 @@ class APICog(commands.Cog):
                     )
 
                 # Get existing configs
-                existing_configs = await session.get(GuildFireboardSettings, guild.id)
+                result = await session.execute(
+                    select(GuildFireboardSettings)
+                    .where(GuildFireboardSettings.guild_id == guild.id)
+                    .options(selectinload(GuildFireboardSettings.fireboard_boards))
+                )
+                existing_configs = result.scalar_one_or_none()
 
                 if not existing_configs:
                     existing_configs = GuildFireboardSettings(guild_id=guild.id)
@@ -962,16 +967,45 @@ class APICog(commands.Cog):
                     int(role) for role in validated_config.global_ignored_roles
                 ]
 
-                session.add(existing_configs)
-                await session.execute(
-                    delete(FireboardBoard).where(FireboardBoard.guild_id == guild.id)
-                )
+                # Update existing boards and remove deleted ones
+                for existing_board in existing_configs.fireboard_boards:
+                    # Check if board was removed
+                    if existing_board.id not in [
+                        new_board.id for new_board in validated_config.boards
+                    ]:
+                        await session.delete(existing_board)
+                        continue
 
+                    # Update existing board
+                    for new_board in validated_config.boards:
+                        if new_board.id != existing_board.id:
+                            continue
+
+                        existing_board.channel_id = int(new_board.channel_id)
+                        existing_board.reaction = new_board.reaction
+                        existing_board.threshold = new_board.threshold
+                        existing_board.ignore_bots = new_board.ignore_bots
+                        existing_board.ignore_self_reactions = new_board.ignore_self_reactions
+                        existing_board.ignored_roles = [
+                            int(role_id) for role_id in new_board.ignored_roles
+                        ]
+                        existing_board.ignored_channels = [
+                            int(channel_id) for channel_id in new_board.ignored_channels
+                        ]
+
+                # New boards
                 for new_board in validated_config.boards:
                     channel = guild.get_channel(int(new_board.channel_id))
 
                     if not channel:
                         raise web.HTTPBadRequest(reason="Invalid channel ID for fireboard board")
+
+                    # Check if board has already been handled
+                    if new_board.id is not None and any(
+                        existing_board.id == new_board.id
+                        for existing_board in existing_configs.fireboard_boards
+                    ):
+                        continue
 
                     board = FireboardBoard(
                         guild_id=guild.id,

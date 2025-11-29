@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import uuid
 from typing import TYPE_CHECKING
 
 import discord
@@ -145,7 +146,7 @@ class FireboardCog(commands.Cog):
             self.logger.debug("Ignoring reaction")
             return
 
-        processed_boards: list[int] = []
+        processed_boards: list[uuid.UUID] = []
         self.logger.debug(
             f"Processing {len(self.bot.fireboard_messages.get(reaction.message.guild.id, []))} existing fireboard messages"
         )
