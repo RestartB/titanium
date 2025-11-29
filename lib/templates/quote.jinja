@@ -165,7 +165,7 @@
 
 <body>
     <section class="avatar">
-        <img src="{{ user.display_avatar.url }}" alt="Failed to load avatar" style="width: 100%; height: 100%" />
+        <img src="{{ user.display_avatar.url | replace('.gif', '.png') }}" alt="Failed to load avatar" style="width: 100%; height: 100%" />
     </section>
     <section class="quote">
         <h1 class="content">{{ content|safe }}</h1>
@@ -187,6 +187,7 @@
             {% elif bot %}
             <p style="color: red !important;">Bot or Webhook Message</p>
             {% endif %}
+
             <p>https://titaniumbot.me</p>
         </div>
     </section>

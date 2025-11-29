@@ -109,6 +109,10 @@ class FireboardCog(commands.Cog):
     async def _reaction_add_remove(
         self, reaction: discord.Reaction, user: discord.User | discord.Member
     ):
+        self.logger.debug(
+            f"Handling reaction add/remove. Reaction: {reaction.emoji}, User: {user.id}, Message id: {reaction.message.id}"
+        )
+
         if (
             self.bot.user is None
             or reaction.message.guild is None
@@ -251,6 +255,7 @@ class FireboardCog(commands.Cog):
             or len(self.bot.guild_configs[payload.guild_id].fireboard_settings.fireboard_boards)
             == 0
         ):
+            self.logger.debug("No fireboard boards found")
             return
 
         if isinstance(payload.message.channel, (discord.DMChannel, discord.GroupChannel)):
@@ -301,6 +306,10 @@ class FireboardCog(commands.Cog):
                     continue
 
     async def message_delete_handler(self, payload: discord.RawMessageDeleteEvent):
+        self.logger.debug(
+            f"Handling message delete. Message id: {payload.message_id}, channel id: {payload.channel_id}, guild id: {payload.guild_id}"
+        )
+
         if (
             payload.guild_id is None
             or payload.guild_id not in self.bot.guild_configs
@@ -308,6 +317,7 @@ class FireboardCog(commands.Cog):
             or len(self.bot.guild_configs[payload.guild_id].fireboard_settings.fireboard_boards)
             == 0
         ):
+            self.logger.debug("No fireboard boards found")
             return
 
         for message in self.bot.fireboard_messages.get(payload.guild_id, []):
@@ -351,6 +361,10 @@ class FireboardCog(commands.Cog):
                     continue
 
     async def reaction_clear_handler(self, message: discord.Message):
+        self.logger.debug(
+            f"Handling reaction clear. Message id: {message.id}, channel id: {message.channel.id}, guild id: {message.guild.id if message.guild else 'DM'}"
+        )
+
         if (
             message.guild is None
             or message.guild.id not in self.bot.guild_configs
@@ -358,6 +372,7 @@ class FireboardCog(commands.Cog):
             or len(self.bot.guild_configs[message.guild.id].fireboard_settings.fireboard_boards)
             == 0
         ):
+            self.logger.debug("No fireboard boards found")
             return
 
         for message in self.bot.fireboard_messages.get(message.guild.id, []):
@@ -399,6 +414,10 @@ class FireboardCog(commands.Cog):
                     continue
 
     async def reaction_emoji_clear_handler(self, reaction: discord.Reaction):
+        self.logger.debug(
+            f"Handling reaction emoji clear. Message id: {reaction.message.id}, channel id: {reaction.message.channel.id}, guild id: {reaction.message.guild.id if reaction.message.guild else 'DM'}"
+        )
+
         if (
             reaction.message.guild is None
             or reaction.message.guild.id not in self.bot.guild_configs
@@ -410,6 +429,7 @@ class FireboardCog(commands.Cog):
             )
             == 0
         ):
+            self.logger.debug("No fireboard boards found")
             return
 
         for message in self.bot.fireboard_messages.get(reaction.message.guild.id, []):
@@ -457,6 +477,10 @@ class FireboardCog(commands.Cog):
     async def on_reaction_add(
         self, reaction: discord.Reaction, user: discord.User | discord.Member
     ):
+        self.logger.debug(
+            f"Reaction added: {reaction.emoji} by {user.id} on message {reaction.message.id}"
+        )
+
         try:
             await self.event_queue.put((reaction, user))
         except asyncio.QueueShutDown:
@@ -467,6 +491,10 @@ class FireboardCog(commands.Cog):
     async def on_reaction_remove(
         self, reaction: discord.Reaction, user: discord.User | discord.Member
     ):
+        self.logger.debug(
+            f"Reaction removed: {reaction.emoji} by {user.id} on message {reaction.message.id}"
+        )
+
         try:
             await self.event_queue.put((reaction, user))
         except asyncio.QueueShutDown:
@@ -475,6 +503,8 @@ class FireboardCog(commands.Cog):
     # Listen for message edits
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
+        self.logger.debug(f"Message edited: {payload.message_id} in channel {payload.channel_id}")
+
         try:
             await self.event_queue.put(payload)
         except asyncio.QueueShutDown:
@@ -483,6 +513,8 @@ class FireboardCog(commands.Cog):
     # Listen for message delete
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        self.logger.debug(f"Message deleted: {payload.message_id} in channel {payload.channel_id}")
+
         try:
             await self.event_queue.put(payload)
         except asyncio.QueueShutDown:
@@ -491,6 +523,10 @@ class FireboardCog(commands.Cog):
     # Listen for reactions cleared
     @commands.Cog.listener()
     async def on_reaction_clear(self, message: discord.Message, reactions: list[discord.Reaction]):
+        self.logger.debug(
+            f"Reactions cleared on message {message.id} in channel {message.channel.id}"
+        )
+
         try:
             await self.event_queue.put(message)
         except asyncio.QueueShutDown:
@@ -499,6 +535,10 @@ class FireboardCog(commands.Cog):
     # Listen for specific reaction cleared
     @commands.Cog.listener()
     async def on_reaction_clear_emoji(self, reaction: discord.Reaction):
+        self.logger.debug(
+            f"Reactions cleared for emoji {reaction.emoji} on message {reaction.message.id} in channel {reaction.message.channel.id}"
+        )
+
         try:
             await self.event_queue.put(reaction)
         except asyncio.QueueShutDown:
