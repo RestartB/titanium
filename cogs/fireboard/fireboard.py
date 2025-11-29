@@ -34,7 +34,7 @@ class FireboardCog(commands.Cog):
 
     def _normalize_emoji(self, emoji: str) -> str:
         # Remove variation selector-16 (U+FE0F) which makes emojis render as colorful
-        return emoji.replace('\uFE0F', '')
+        return emoji.replace("\ufe0f", "")
 
     def _fireboard_embed(
         self,
@@ -180,7 +180,7 @@ class FireboardCog(commands.Cog):
                         user_message.fireboard.ignore_bots,
                     )
 
-                    content = f"{count} {user_message.fireboard.reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
+                    content = f"{count} {reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
                     self.logger.debug(
                         f"Count: {count}, Threshold: {user_message.fireboard.threshold}"
                     )
@@ -214,8 +214,11 @@ class FireboardCog(commands.Cog):
         ].fireboard_settings.fireboard_boards:
             normalized_board_reaction = self._normalize_emoji(board.reaction)
             normalized_reaction_emoji = self._normalize_emoji(str(reaction.emoji))
-            
-            if board.id in processed_boards or normalized_board_reaction != normalized_reaction_emoji:
+
+            if (
+                board.id in processed_boards
+                or normalized_board_reaction != normalized_reaction_emoji
+            ):
                 self.logger.debug(
                     f"Skipping board {board.id}: already processed or wrong emoji ({board.reaction} != {reaction.emoji})"
                 )
@@ -237,7 +240,7 @@ class FireboardCog(commands.Cog):
                 )
             ):
                 self.logger.debug(f"Creating new fireboard entry on board {board.id}")
-                content = f"{count} {board.reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
+                content = f"{count} {reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
                 channel = self.bot.get_channel(board.channel_id)
 
                 if channel is None or isinstance(
@@ -518,8 +521,11 @@ class FireboardCog(commands.Cog):
         for message in self.bot.fireboard_messages.get(reaction.message.guild.id, []):
             normalized_board_reaction = self._normalize_emoji(message.fireboard.reaction)
             normalized_reaction_emoji = self._normalize_emoji(str(reaction.emoji))
-            
-            if message.message_id == reaction.message.id and normalized_board_reaction == normalized_reaction_emoji:
+
+            if (
+                message.message_id == reaction.message.id
+                and normalized_board_reaction == normalized_reaction_emoji
+            ):
                 self.logger.debug(
                     f"Found matching fireboard message {message.fireboard_message_id} for emoji {reaction.emoji}"
                 )
