@@ -283,25 +283,50 @@ class AdminCog(commands.Cog):
         finally:
             await stop_loading(ctx)
 
-    @admin_group.command(name="changelogs", aliases=["change-logs"], hidden=True)
+    @admin_group.command(name="debuglogs", aliases=["debug-logs", "debuglog"], hidden=True)
     @commands.is_owner()
-    async def change_logs_type(
-        self, ctx: commands.Context["TitaniumBot"], logger: str, level: str
-    ) -> None:
+    async def debug_logs(self, ctx: commands.Context["TitaniumBot"], logger: str) -> None:
         await defer(ctx, ephemeral=True)
 
         try:
-            log_level = getattr(logging, level.upper(), None)
-            if not isinstance(log_level, int):
-                raise ValueError(f"Invalid log level: {level}")
-
             target_logger = logging.getLogger(logger)
-            target_logger.setLevel(log_level)
+            target_logger.setLevel(logging.DEBUG)
 
             await ctx.reply(
                 embed=discord.Embed(
                     title=f"{str(self.bot.success_emoji)} Log Level Changed",
-                    description=f"Successfully changed log level of `{logger}` to `{level.upper()}`.",
+                    description=f"Enabled debug logging for `{logger}`.",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error(f"Error changing log level for {logger}", exc_info=e)
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} Error Changing Log Level",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
+        finally:
+            await stop_loading(ctx)
+
+    @admin_group.command(name="info_logs", aliases=["info-logs", "infolog"], hidden=True)
+    @commands.is_owner()
+    async def info_logs(self, ctx: commands.Context["TitaniumBot"], logger: str) -> None:
+        await defer(ctx, ephemeral=True)
+
+        try:
+            target_logger = logging.getLogger(logger)
+            target_logger.setLevel(logging.INFO)
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{str(self.bot.success_emoji)} Log Level Changed",
+                    description=f"Enabled info logging for `{logger}`.",
                     colour=discord.Colour.green(),
                 ),
                 ephemeral=True,
