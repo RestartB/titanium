@@ -27,6 +27,14 @@ class PaginationView(View):
         self.page_count.label = f"1/{len(embeds)}"
         self.current_page = min(max(page_offset - 1, 0), len(embeds) - 1)
 
+        if self.current_page == 0:
+            self.first_button.disabled = True
+            self.prev_button.disabled = True
+
+        if self.current_page == len(embeds) - 1:
+            self.next_button.disabled = True
+            self.last_button.disabled = True
+
     async def _set_footer(self, interaction: Interaction):
         self.embeds[self.current_page][self.footer_embed].set_footer(
             text=f"Controlling: @{interaction.user.name}",
@@ -36,6 +44,8 @@ class PaginationView(View):
     # First page
     @button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
     async def first_button(self, interaction: Interaction, button: Button):
+        await interaction.response.defer()
+
         self.current_page = 0
         self.page_count.label = f"1/{len(self.embeds)}"
 
@@ -53,7 +63,9 @@ class PaginationView(View):
     # Prev Page
     @button(emoji="⏪", style=ButtonStyle.primary, custom_id="prev")
     async def prev_button(self, interaction: Interaction, button: Button):
-        self.current_page = min(self.current_page - 1, 0)
+        await interaction.response.defer()
+
+        self.current_page = max(self.current_page - 1, 0)
         self.page_count.label = f"{self.current_page + 1}/{len(self.embeds)}"
 
         if self.current_page == 0:
@@ -64,7 +76,7 @@ class PaginationView(View):
         self.last_button.disabled = False
 
         await self._set_footer(interaction)
-        await interaction.response.edit_message(
+        await interaction.edit_original_response(
             embeds=self.embeds[self.current_page],
             view=self,
         )
@@ -77,7 +89,9 @@ class PaginationView(View):
     # Next page
     @button(emoji="⏩", style=ButtonStyle.primary, custom_id="next")
     async def next_button(self, interaction: Interaction, button: Button):
-        self.current_page = max(self.current_page + 1, len(self.embeds) - 1)
+        await interaction.response.defer()
+
+        self.current_page = min(self.current_page + 1, len(self.embeds) - 1)
         self.page_count.label = f"{self.current_page + 1}/{len(self.embeds)}"
 
         if self.current_page == len(self.embeds) - 1:
@@ -88,7 +102,7 @@ class PaginationView(View):
         self.prev_button.disabled = False
 
         await self._set_footer(interaction)
-        await interaction.response.edit_message(
+        await interaction.edit_original_response(
             embeds=self.embeds[self.current_page],
             view=self,
         )
@@ -96,6 +110,8 @@ class PaginationView(View):
     # Last page
     @button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
     async def last_button(self, interaction: Interaction, button: Button):
+        await interaction.response.defer()
+
         self.current_page = len(self.embeds) - 1
         self.page_count.label = f"{self.current_page + 1}/{len(self.embeds)}"
 
@@ -105,7 +121,7 @@ class PaginationView(View):
         self.last_button.disabled = True
 
         await self._set_footer(interaction)
-        await interaction.response.edit_message(
+        await interaction.edit_original_response(
             embeds=self.embeds[self.current_page],
             view=self,
         )
