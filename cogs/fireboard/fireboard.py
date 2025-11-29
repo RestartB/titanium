@@ -209,7 +209,9 @@ class FireboardCog(commands.Cog):
             reaction.message.guild.id
         ].fireboard_settings.fireboard_boards:
             if board.id in processed_boards or board.reaction != str(reaction.emoji):
-                self.logger.debug(f"Skipping board {board.id}: already processed or wrong emoji")
+                self.logger.debug(
+                    f"Skipping board {board.id}: already processed or wrong emoji ({board.reaction} != {reaction.emoji})"
+                )
                 continue
 
             self.logger.debug(f"Evaluating board {board.id} for new fireboard entry")
