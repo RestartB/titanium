@@ -304,6 +304,8 @@ class FireboardCog(commands.Cog):
                         exc=e,
                     )
                     continue
+        
+        self.logger.debug("Done")
 
     async def message_delete_handler(self, payload: discord.RawMessageDeleteEvent):
         self.logger.debug(
