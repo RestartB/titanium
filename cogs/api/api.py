@@ -615,8 +615,6 @@ class APICog(commands.Cog):
         dashboard_manager = member.guild_permissions.administrator
         case_manager = member.guild_permissions.manage_guild
 
-        print(config.dashboard_managers)
-
         for role in member.roles:
             if role.id == guild.id:
                 continue

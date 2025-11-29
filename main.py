@@ -318,13 +318,13 @@ async def get_prefix(bot: TitaniumBot, message: discord.Message):
     else:
         base.append("t!")
 
-    base.extend([f"{prefix} " for prefix in base])
     return commands.when_mentioned_or(*base)(bot, message)
 
 
 bot = TitaniumBot(
     intents=intents,
     command_prefix=get_prefix,
+    strip_after_prefix=True,
     case_insensitive=True,
     max_messages=2500,
     help_command=None,
