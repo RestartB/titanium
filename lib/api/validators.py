@@ -42,11 +42,17 @@ class GuildSettingsModel(BaseModel):
     def validate_prefixes(cls, v):
         if not v or len(v) == 0:
             raise ValueError("At least one prefix is required")
+
         if len(v) > 5:
             raise ValueError("A maximum of 5 prefixes are allowed")
+
         for prefix in v:
             if not (1 <= len(prefix) <= 5):
                 raise ValueError("Each prefix must be between 1 and 5 characters long")
+
+        if len(v) != len(set(v)):
+            raise ValueError("Prefixes must be unique")
+
         return v
 
 
