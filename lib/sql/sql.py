@@ -407,6 +407,7 @@ class GuildLoggingSettings(Base):
     titanium_case_delete_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     titanium_case_comment_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     titanium_automod_trigger_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    titanium_bouncer_trigger_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     titanium_confession_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
 
 

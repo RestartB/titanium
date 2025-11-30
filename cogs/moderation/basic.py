@@ -5,7 +5,7 @@ import discord
 from discord import Message, app_commands
 from discord.ext import commands
 
-from lib.cases.case_manager import GuildModCaseManager
+from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
 from lib.duration import DurationConverter
 from lib.embeds.dm_notifs import (

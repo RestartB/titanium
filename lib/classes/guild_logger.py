@@ -2027,7 +2027,12 @@ class GuildLogger:
             embed=embed,
         )
 
-    async def titanium_confession(self, interaction: discord.Interaction, message: str) -> None:
+    async def titanium_confession(
+        self,
+        interaction: discord.Interaction,
+        confession_channel: discord.abc.GuildChannel,
+        message: str,
+    ) -> None:
         if not self._exists_and_enabled("titanium_confession_id"):
             return
 
@@ -2053,6 +2058,15 @@ class GuildLogger:
             name="Content",
             value=shorten(message or "*No content*", width=1024, placeholder="..."),
             inline=False,
+        )
+
+        view = discord.ui.View()
+        view.add_item(
+            discord.ui.Button(
+                label="Jump to Channel",
+                url=confession_channel.jump_url,
+                style=discord.ButtonStyle.url,
+            )
         )
 
         assert self.config is not None and self.config.logging_settings is not None

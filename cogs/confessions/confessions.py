@@ -107,8 +107,9 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             )
         )
 
-        logger = GuildLogger(self.bot, interaction.guild)
-        await logger.titanium_confession(interaction, message)
+        if isinstance(channel, discord.abc.GuildChannel):
+            logger = GuildLogger(self.bot, interaction.guild)
+            await logger.titanium_confession(interaction, channel, message)
 
         await interaction.followup.send(
             embed=Embed(

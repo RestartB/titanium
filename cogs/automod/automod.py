@@ -7,8 +7,8 @@ import discord
 import emoji
 from discord.ext import commands
 
-from lib.cases.case_manager import GuildModCaseManager
 from lib.classes.automod_message import AutomodMessage
+from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
 from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, warned_dm
 from lib.embeds.mod_actions import (

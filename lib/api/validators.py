@@ -297,6 +297,8 @@ class LoggingConfigModel(BaseModel):
     titanium_case_delete_id: Optional[str]
     titanium_case_comment_id: Optional[str]
     titanium_automod_trigger_id: Optional[str]
+    titanium_bouncer_trigger_id: Optional[str]
+    titanium_confession_id: Optional[str]
 
 
 class FireboardBoardModel(BaseModel):

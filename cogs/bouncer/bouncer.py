@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from lib.cases.case_manager import GuildModCaseManager
+from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
 from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, warned_dm
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType

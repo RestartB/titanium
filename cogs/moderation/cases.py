@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Sequence
 from discord import Colour, Embed, Member, Message, User, app_commands
 from discord.ext import commands
 
-from lib.cases.case_manager import CaseNotFoundException, GuildModCaseManager
+from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.embeds.cases import case_deleted, case_embed, case_not_found, cases
 from lib.embeds.general import cancelled
 from lib.helpers.hybrid_adapters import defer, stop_loading
