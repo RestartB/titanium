@@ -15,10 +15,6 @@ class ImageTooSmallError(Exception):
     """Raised when the image is too small for the operation."""
 
 
-class InvalidFormatError(Exception):
-    """Raised when the image format is invalid for the operation."""
-
-
 class OperationTooLargeError(Exception):
     """Raised when the operation would result in an image that is too large."""
 

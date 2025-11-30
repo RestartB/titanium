@@ -1,10 +1,11 @@
 import os
 from typing import TYPE_CHECKING, Literal
 
+import discord
 from discord import Attachment, app_commands
 from discord.ext import commands
 
-from lib.classes.img_tools import ImageTools
+from lib.classes.img_tools import ImageTools, ImageTooSmallError, OperationTooLargeError
 from lib.enums.images import ImageFormats
 from lib.helpers.hybrid_adapters import defer, stop_loading
 
@@ -17,6 +18,18 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
+
+    async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        embed = discord.Embed(title=f"{self.bot.error_emoji} Error", color=discord.Color.red())
+
+        if isinstance(error, ImageTooSmallError):
+            embed.description = "The provided image is too small for this operation."
+        elif isinstance(error, OperationTooLargeError):
+            embed.description = "The resulting image would be too large to process. Please ensure that the result image is below 10000x10000px."
+        else:
+            raise error
+
+        await ctx.reply(embed=embed)
 
     @commands.hybrid_group(name="image", description="Image processing commands.")
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -87,7 +100,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         self,
         ctx: commands.Context["TitaniumBot"],
         image: Attachment,
-        intensity_scale: commands.Range[float, 0, 100] = 100,
+        intensity_scale: commands.Range[float, 1, 100] = 100,
         red_filter: bool = True,
     ) -> None:
         """Deepfry an image."""
