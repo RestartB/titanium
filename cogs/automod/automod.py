@@ -177,14 +177,12 @@ class AutomodMonitorCog(commands.Cog):
                     elif rule.antispam_type == AutomodAntispamType.MENTION:
                         count = sum(m.mention_count for m in filtered_messages)
                     elif rule.antispam_type == AutomodAntispamType.WORD:
-                        # FIXME: seems to trigger at 6 words if you set threshold to 5
                         count = sum(m.word_count for m in filtered_messages)
                     elif rule.antispam_type == AutomodAntispamType.NEWLINE:
                         count = sum(m.newline_count for m in filtered_messages)
                     elif rule.antispam_type == AutomodAntispamType.LINK:
                         count = sum(m.link_count for m in filtered_messages)
                     elif rule.antispam_type == AutomodAntispamType.ATTACHMENT:
-                        # FIXME: broken
                         count = sum(m.attachment_count for m in filtered_messages)
                     elif rule.antispam_type == AutomodAntispamType.EMOJI:
                         count = sum(m.emoji_count for m in filtered_messages)

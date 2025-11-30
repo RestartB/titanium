@@ -115,7 +115,11 @@ class GuildLogger:
                     view=view,
                 )
             else:
-                result = await webhook.send(embed=embed)
+                result = await webhook.send(
+                    username=self.bot.user.name if self.bot.user else "Titanium",
+                    avatar_url=self.bot.user.display_avatar.url if self.bot.user else None,
+                    embed=embed,
+                )
 
             return result
         except discord.NotFound:
@@ -899,7 +903,6 @@ class GuildLogger:
             view,
         )
 
-    # FIXME: doesn't work
     async def message_delete(self, event: discord.RawMessageDeleteEvent) -> None:
         if not self._exists_and_enabled("message_delete_id"):
             return
