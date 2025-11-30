@@ -73,11 +73,21 @@ class AutomodMonitorCog(commands.Cog):
 
             for rule in config.badword_detection_rules:
                 triggered_word_rule_amount[rule.id] = 0
-                if any(
-                    word.lower() if not rule.case_sensitive else word in rule.words
-                    for word in rule.words
-                ):
-                    triggered_word_rule_amount[rule.id] += 1
+                content_to_check = (
+                    message.content.lower() if not rule.case_sensitive else message.content
+                )
+
+                for word in rule.words:
+                    check_word = word.lower() if not rule.case_sensitive else word
+
+                    if rule.match_whole_word:
+                        pattern = r"\b" + re.escape(check_word) + r"\b"
+                        matches = re.findall(pattern, content_to_check)
+                    else:
+                        pattern = re.escape(check_word)
+                        matches = re.findall(pattern, content_to_check)
+
+                    triggered_word_rule_amount[rule.id] += len(matches)
 
             for link in self.bot.malicious_links:
                 if link in message.content:
@@ -174,6 +184,7 @@ class AutomodMonitorCog(commands.Cog):
                     elif rule.antispam_type == AutomodAntispamType.LINK:
                         count = sum(m.link_count for m in filtered_messages)
                     elif rule.antispam_type == AutomodAntispamType.ATTACHMENT:
+                        # FIXME: broken
                         count = sum(m.attachment_count for m in filtered_messages)
                     elif rule.antispam_type == AutomodAntispamType.EMOJI:
                         count = sum(m.emoji_count for m in filtered_messages)
@@ -248,7 +259,7 @@ class AutomodMonitorCog(commands.Cog):
                             action="warn",
                             user_id=message.author.id,
                             creator_user_id=self.bot.user.id,
-                            reason=f"Automod: {punishment.reason}",
+                            reason=f"Automod: {punishment.reason if punishment.reason else 'No reason provided'}",
                         )
 
                         dm_success, dm_error = await send_dm(
@@ -284,14 +295,14 @@ class AutomodMonitorCog(commands.Cog):
                                     <= 2419200
                                     else timedelta(seconds=2419200)
                                 ),
-                                reason=f"Automod: {punishment.reason}",
+                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                             )
 
                             case = await manager.create_case(
                                 action="mute",
                                 user_id=message.author.id,
                                 creator_user_id=self.bot.user.id,
-                                reason=f"Automod: {punishment.reason}",
+                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                                 duration=(
                                     timedelta(seconds=punishment.duration)
                                     if punishment.duration > 0
@@ -341,14 +352,14 @@ class AutomodMonitorCog(commands.Cog):
                         # Kick user
                         try:
                             await message.author.kick(
-                                reason=f"Automod: {punishment.reason}",
+                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                             )
 
                             case = await manager.create_case(
                                 action="kick",
                                 user_id=message.author.id,
                                 creator_user_id=self.bot.user.id,
-                                reason=f"Automod: {punishment.reason}",
+                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                             )
 
                             dm_success, dm_error = await send_dm(
@@ -389,14 +400,14 @@ class AutomodMonitorCog(commands.Cog):
                         # Ban user
                         try:
                             await message.author.ban(
-                                reason=f"Automod: {punishment.reason}",
+                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                             )
 
                             case = await manager.create_case(
                                 action="ban",
                                 user_id=message.author.id,
                                 creator_user_id=self.bot.user.id,
-                                reason=f"Automod: {punishment.reason}",
+                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                                 duration=(
                                     timedelta(seconds=punishment.duration)
                                     if punishment.duration > 0

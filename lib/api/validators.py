@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from lib.enums.automod import AutomodActionType, AutomodRuleType
+from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
 from lib.enums.leaderboard import LeaderboardCalcType
 from lib.enums.server_counters import ServerCounterType
@@ -103,7 +103,7 @@ class AutomodRuleModel(BaseModel):
     words: Optional[list[str]] = Field(default_factory=list)
     match_whole_word: bool = False
     case_sensitive: bool = False
-    antispam_type: Optional[str] = None
+    antispam_type: Optional[AutomodAntispamType] = None
     threshold: int
     duration: int
     actions: list[AutomodActionModel]

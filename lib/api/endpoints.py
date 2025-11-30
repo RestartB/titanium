@@ -69,8 +69,8 @@ def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
             detection_type: [
                 {
                     "id": str(rule.id),
-                    "rule_type": rule.rule_type,
-                    "antispam_type": rule.antispam_type,
+                    "rule_type": rule.rule_type.value,
+                    "antispam_type": rule.antispam_type.value if rule.antispam_type else None,
                     "words": rule.words,
                     "match_whole_word": rule.match_whole_word,
                     "case_sensitive": rule.case_sensitive,
@@ -78,7 +78,7 @@ def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                     "duration": rule.duration,
                     "actions": [
                         {
-                            "type": action.action_type,
+                            "type": action.action_type.value,
                             "duration": action.duration,
                             "role_id": str(action.role_id) if action.role_id else None,
                             "reason": action.reason,
