@@ -103,9 +103,19 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             await ctx.reply(embed=embed)
             return
 
-        embed.set_image(url=ctx.guild.icon.url)
+        image = ctx.guild.icon.url
+        embed.set_image(url=image)
 
-        await ctx.reply(embed=embed)
+        png_url = image + "?format=png"
+        jpg_url = image + "?format=jpg"
+        webp_url = image + "?format=webp"
+        formats = {"PNG": png_url, "JPG": jpg_url, "WEBP": webp_url}
+
+        view = View()
+        for format_name, format_url in formats.items():
+            view.add_item(Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link))
+
+        await ctx.reply(embed=embed, view=view)
 
     @commands.hybrid_command(
         name="boosts", aliases=["boostinfo"], description="Get the server's boost information."
@@ -131,7 +141,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
         embed.add_field(name="Total Boosts", value=f"`{ctx.guild.premium_subscription_count}`")
-        embed.add_field(name="Boost Level", value=f"`{ctx.guild.premium_tier}`", inline=True)
+        embed.add_field(name="Boost Level", value=f"`Level {ctx.guild.premium_tier}`", inline=True)
 
         await ctx.reply(embed=embed)
 

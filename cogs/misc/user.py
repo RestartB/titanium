@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import discord
-from discord import ButtonStyle, Colour, Embed, Member, Optional, User, app_commands
+from discord import ButtonStyle, Embed, Member, Optional, User, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
 
@@ -28,8 +28,13 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
     ) -> None:
         await ctx.defer()
 
-        if not user:
-            user = ctx.author
+        user = user or ctx.author
+
+        in_guild = False
+        if ctx.guild:
+            in_guild = True if ctx.guild.get_member(user.id) else False
+
+        user = await ctx.bot.fetch_user(user.id)
 
         creation_date = int(user.created_at.timestamp())
         join_date = (
@@ -69,7 +74,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
                 text=f"@{ctx.author.name} - add Titanium to the server for more info",
                 icon_url=ctx.author.display_avatar.url,
             )
-        elif isinstance(user, User):
+        elif not in_guild:
             embed.set_footer(
                 text=f"@{ctx.author.name} - user isn't in the server, showing limited info",
                 icon_url=ctx.author.display_avatar.url,
@@ -109,8 +114,8 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
     ) -> None:
         await ctx.defer()
 
-        if not user:
-            user = ctx.author
+        user = user or ctx.author
+        user = await ctx.bot.fetch_user(user.id)
 
         embed = Embed(colour=user.accent_colour)
         embed.set_author(
@@ -174,8 +179,6 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
             embed.description = (
                 f"{self.bot.error_emoji} {user.mention} does not have a server profile picture."
             )
-            embed.colour = Colour.red()
-
             await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="banner", description="Get the banner of a user.")
@@ -190,18 +193,18 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
         await ctx.defer()
 
         user = user or ctx.author
-        user_obj = await ctx.bot.fetch_user(user.id)
-        banner = user_obj.banner.url if user_obj.banner else None
+        user = await ctx.bot.fetch_user(user.id)
+        banner = user.banner.url if user.banner else None
 
-        e = Embed(colour=user.accent_colour)
-        e.set_author(
+        embed = Embed(colour=user.accent_colour)
+        embed.set_author(
             name=f"@{user.name}'s Banner",
             icon_url=user.display_avatar.url,
         )
-        e.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
         if banner:
-            e.set_image(url=banner)
+            embed.set_image(url=banner)
 
             png_url = banner + "?format=png"
             jpg_url = banner + "?format=jpg"
@@ -214,12 +217,10 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
                     Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link)
                 )
 
-            await ctx.reply(embed=e, view=view)
+            await ctx.reply(embed=embed, view=view)
         else:
-            e.description = f"{self.bot.error_emoji} {user.mention} does not have a banner."
-            e.colour = Colour.red()
-
-            await ctx.reply(embed=e)
+            embed.description = f"{self.bot.error_emoji} {user.mention} does not have a banner."
+            await ctx.reply(embed=embed)
 
 
 async def setup(bot: TitaniumBot) -> None:

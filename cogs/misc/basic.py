@@ -57,9 +57,10 @@ class BasicCommandsCog(commands.Cog, name="Basic", description="General bot comm
         if self.bot.guild_prefixes.get(ctx.guild.id):
             for i, prefix in enumerate(self.bot.guild_prefixes[ctx.guild.id].prefixes):
                 if i == 0:
-                    prefix_str += f"`{prefix}`"
-                else:
-                    prefix_str += f", `{prefix}`"
+                    prefix_str = f"`{prefix}`"
+                    continue
+
+                prefix_str += f", `{prefix}`"
         else:
             prefix_str = "`t!`"
 
@@ -69,7 +70,7 @@ class BasicCommandsCog(commands.Cog, name="Basic", description="General bot comm
 
         embed = Embed(
             title="Command Prefixes",
-            description=f"**{self.bot.user.name} will respond to the following prefixes in this server:**\n{prefix_str}",
+            description=prefix_str,
             colour=Colour.green(),
         )
 

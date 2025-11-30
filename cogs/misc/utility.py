@@ -28,21 +28,13 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         modal = FeedbackModal()
         await interaction.response.send_modal(modal)
 
-    @commands.hybrid_group(name="base64", description="Base64 encoding and decoding.")
+    @commands.hybrid_group(name="base64", description="Convert text to Base64.", fallback="encode")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def base64_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        raise commands.CommandNotFound
-
-    @base64_group.command(name="encode", description="Convert text to Base64.")
     @app_commands.describe(
-        text="Text to encode to Base64.",
+        text="Text to convert to Base64.",
     )
-    async def base64_encode(
-        self,
-        ctx: commands.Context["TitaniumBot"],
-        text: str,
-    ) -> None:
+    async def base64_group(self, ctx: commands.Context["TitaniumBot"], *, text: str) -> None:
         """
         Encode text to Base64.
         """
@@ -76,6 +68,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
     async def base64_decode(
         self,
         ctx: commands.Context["TitaniumBot"],
+        *,
         base_64: str,
     ) -> None:
         """
