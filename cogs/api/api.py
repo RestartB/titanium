@@ -850,6 +850,8 @@ class APICog(commands.Cog):
                     if validated_config.confessions_channel_id
                     else None
                 )
+
+                session.add(db_config)
         elif module_name == "moderation" and isinstance(validated_config, ModerationConfigModel):
             async with get_session() as session:
                 db_config = await session.get(GuildModerationSettings, guild.id)

@@ -22,7 +22,9 @@ def confessions_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
     return web.json_response(
         {
             "confessions_in_channel": config.confessions_settings.confessions_in_channel,
-            "confessions_channel_id": str(config.confessions_settings.confessions_channel_id),
+            "confessions_channel_id": str(config.confessions_settings.confessions_channel_id)
+            if config.confessions_settings.confessions_channel_id
+            else None,
         }
     )
 
