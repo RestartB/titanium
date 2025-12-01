@@ -14,7 +14,7 @@ dependencies = [
     "psutil==7.0.0",
     "py-cpuinfo==9.0.0",
     "pygit2==1.18.2",
-    "spotipy==2.25.1",
+    "spotipy==2.25.2",
     "thefuzz==0.22.1",
     "url-cleaner==0.1.5",
     "pilmoji",
