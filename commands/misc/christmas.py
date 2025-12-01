@@ -111,7 +111,7 @@ class Christmas(commands.Cog):
 
         # Get image, store in memory
         async with aiohttp.ClientSession() as session:
-            async with session.get(user.display_avatar.url) as request:
+            async with session.get(user.display_avatar.url.replace(".gif", ".png")) as request:
                 image_data = BytesIO()
 
                 async for chunk in request.content.iter_chunked(10):
