@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from datetime import timedelta
+from enum import Enum
 from typing import TYPE_CHECKING
 
 import discord
@@ -18,13 +19,18 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+class BouncerEventType(Enum):
+    JOIN = 0
+    UPDATE = 1
+
+
 class BouncerMonitorCog(commands.Cog):
     """Monitors joiners and member updates for bouncer triggers and creates cases/punishments"""
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("bouncer")
-        self.event_queue: asyncio.Queue[discord.Member] = asyncio.Queue()
+        self.event_queue: asyncio.Queue[tuple[discord.Member, BouncerEventType]] = asyncio.Queue()
         self.event_queue_task = self.bot.loop.create_task(self.queue_worker())
 
     def cog_unload(self) -> None:
@@ -40,19 +46,20 @@ class BouncerMonitorCog(commands.Cog):
                 return
 
             try:
-                await self.event_handler(event)
+                await self.event_handler(event[0], event[1])
             except Exception as e:
                 await log_error(
                     module="Bouncer",
-                    guild_id=event.guild.id if event.guild else None,
-                    error=f"An unknown error occurred while processing bouncer for member @{event.name} ({event.id})",
+                    guild_id=event[0].guild.id if event[0].guild else None,
+                    error=f"An unknown error occurred while processing bouncer for member @{event[0].name} ({event[0].id})",
                     exc=e,
                 )
             finally:
                 self.event_queue.task_done()
 
-    async def event_handler(self, member: discord.Member):
+    async def event_handler(self, member: discord.Member, event_type: BouncerEventType):
         self.logger.debug(f"Processing member join/update: {member.id}")
+
         # Check for server ID in config list
         if (
             not member.guild
@@ -78,6 +85,9 @@ class BouncerMonitorCog(commands.Cog):
             spotted = False
 
             if not rule.enabled:
+                continue
+
+            if event_type == BouncerEventType.UPDATE and not rule.evaluate_for_existing_members:
                 continue
 
             for criteria in rule.criteria:
@@ -112,7 +122,10 @@ class BouncerMonitorCog(commands.Cog):
                     ):
                         spotted = True
                         break
-                elif criteria.criteria_type == BouncerCriteriaType.AGE:
+                elif (
+                    criteria.criteria_type == BouncerCriteriaType.AGE
+                    and event_type == BouncerEventType.JOIN
+                ):
                     if (discord.utils.utcnow() - member.created_at).seconds <= criteria.account_age:
                         spotted = True
                         break
@@ -360,7 +373,7 @@ class BouncerMonitorCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         try:
-            await self.event_queue.put(member)
+            await self.event_queue.put((member, BouncerEventType.JOIN))
         except asyncio.QueueShutDown:
             return
 
@@ -368,7 +381,7 @@ class BouncerMonitorCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         try:
-            await self.event_queue.put(after)
+            await self.event_queue.put((after, BouncerEventType.UPDATE))
         except asyncio.QueueShutDown:
             return
 

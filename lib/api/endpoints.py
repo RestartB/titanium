@@ -113,6 +113,7 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                 {
                     "id": str(rule.id),
                     "enabled": rule.enabled,
+                    "evaluate_for_existing_members": rule.evaluate_for_existing_members,
                     "criteria": [
                         {
                             "type": criterion.criteria_type,

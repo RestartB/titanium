@@ -278,6 +278,7 @@ class BouncerRule(Base):
     guild_id: Mapped[int] = MappedColumn(BigInteger, ForeignKey("guild_bouncer_settings.guild_id"))
     rule_name: Mapped[str] = MappedColumn(String(length=100), nullable=True)
     enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    evaluate_for_existing_members: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     criteria: Mapped[list["BouncerCriteria"]] = relationship(
         "BouncerCriteria",
         back_populates="rule",

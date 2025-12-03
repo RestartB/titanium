@@ -171,6 +171,7 @@ class BouncerActionModel(BaseModel):
 class BouncerRuleModel(BaseModel):
     id: str
     enabled: bool
+    evaluate_for_existing_members: bool
     criteria: list[BouncerCriterionModel]
     actions: list[BouncerActionModel]
 
