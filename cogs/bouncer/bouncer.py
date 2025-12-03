@@ -67,6 +67,7 @@ class BouncerMonitorCog(commands.Cog):
             or not self.bot.guild_configs[member.guild.id].bouncer_settings
             or not member
             or not isinstance(member, discord.Member)
+            or member.guild_permissions.administrator
             or not self.bot.user
         ):
             self.logger.debug("Bouncer initial checks failed, skipping member")

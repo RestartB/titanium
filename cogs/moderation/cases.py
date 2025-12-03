@@ -58,19 +58,46 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
         await defer(ctx)
 
-        async with get_session() as session:
-            case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
+        try:
+            async with get_session() as session:
+                case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
-            if user:
-                if ctx.channel.permissions_for(ctx.author).manage_guild:
-                    cases_list = await case_manager.get_cases_by_user(user.id)
-                    embeds = await self._build_embeds(cases_list, target=user, user=ctx.author)
+                if user:
+                    if ctx.channel.permissions_for(ctx.author).manage_guild:
+                        cases_list = await case_manager.get_cases_by_user(user.id)
+                        embeds = await self._build_embeds(cases_list, target=user, user=ctx.author)
+
+                        if embeds == []:
+                            return await ctx.reply(
+                                embed=Embed(
+                                    title=f"{self.bot.error_emoji} No Cases Found",
+                                    description="This user has no moderation cases.",
+                                    colour=Colour.red(),
+                                )
+                            )
+
+                        if len(embeds) > 1:
+                            view = PaginationView(embeds, 120)
+                            await ctx.reply(embed=embeds[0], view=view)
+                        else:
+                            await ctx.reply(embed=embeds[0])
+                    else:
+                        return await ctx.reply(
+                            embed=Embed(
+                                title=f"{str(self.bot.error_emoji)} Permission Denied",
+                                description="You do not have permission to view cases for other users. Please ensure you have the `Manage Server` permission.",
+                                colour=Colour.red(),
+                            )
+                        )
+                else:
+                    cases_list = await case_manager.get_cases_by_user(ctx.author.id)
+                    embeds = await self._build_embeds(cases_list, ctx.author, ctx.author)
 
                     if embeds == []:
                         return await ctx.reply(
                             embed=Embed(
                                 title=f"{self.bot.error_emoji} No Cases Found",
-                                description="This user has no moderation cases.",
+                                description="You have no moderation cases.",
                                 colour=Colour.red(),
                             )
                         )
@@ -80,32 +107,8 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                         await ctx.reply(embed=embeds[0], view=view)
                     else:
                         await ctx.reply(embed=embeds[0])
-                else:
-                    return await ctx.reply(
-                        embed=Embed(
-                            title=f"{str(self.bot.error_emoji)} Permission Denied",
-                            description="You do not have permission to view cases for other users. Please ensure you have the `Manage Server` permission.",
-                            colour=Colour.red(),
-                        )
-                    )
-            else:
-                cases_list = await case_manager.get_cases_by_user(ctx.author.id)
-                embeds = await self._build_embeds(cases_list, ctx.author, ctx.author)
-
-                if embeds == []:
-                    return await ctx.reply(
-                        embed=Embed(
-                            title=f"{self.bot.error_emoji} No Cases Found",
-                            description="You have no moderation cases.",
-                            colour=Colour.red(),
-                        )
-                    )
-
-                if len(embeds) > 1:
-                    view = PaginationView(embeds, 120)
-                    await ctx.reply(embed=embeds[0], view=view)
-                else:
-                    await ctx.reply(embed=embeds[0])
+        finally:
+            await stop_loading(ctx)
 
     @commands.hybrid_group(
         name="case", fallback="view", description="View and manage moderation cases."

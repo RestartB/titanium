@@ -77,10 +77,10 @@ def case_embed(
     )
 
     if isinstance(creator, int) or isinstance(creator, Column):
-        embed.set_author(name=creator)
+        embed.set_footer(text=creator)
     else:
-        embed.set_author(
-            name=f"@{creator.name} ({creator.id})",
+        embed.set_footer(
+            text=f"@{creator.name} ({creator.id})",
             icon_url=creator.display_avatar.url,
         )
 

@@ -53,6 +53,7 @@ class AutomodMonitorCog(commands.Cog):
                 or not self.bot.guild_configs[message.guild.id].automod_settings
                 or not message.author
                 or not isinstance(message.author, discord.Member)
+                or message.author.guild_permissions.administrator
                 or not self.bot.user
             ):
                 self.logger.debug("Automod initial checks failed, skipping message")

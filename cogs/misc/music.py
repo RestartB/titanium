@@ -167,123 +167,126 @@ class MusicCommandsCog(
     ) -> None:
         await defer(ctx, ephemeral=ephemeral)
 
-        search = search.strip()
-        options_list = []
+        try:
+            search = search.strip()
+            options_list = []
 
-        if not search or search == "":
-            embed = discord.Embed(
-                title=f"{str(self.bot.error_emoji)} No search term provided.",
-                color=Color.red(),
-            )
-
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
-            return
-
-        # Check if search is Spotify ID
-        if len(search) == 22 and " " not in search:
-            try:
-                item = self.sp.track(search)
-
-                await elements.song(
-                    bot=self.bot,
-                    sp=self.sp,
-                    item=item,
-                    ctx=ctx,
-                    ephemeral=ephemeral,
+            if not search or search == "":
+                embed = discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} No search term provided.",
+                    color=Color.red(),
                 )
 
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
-            except spotipy.exceptions.SpotifyException:
-                pass
 
-        # Search Spotify
-        result = self.sp.search(search, type="track", limit=10)
+            # Check if search is Spotify ID
+            if len(search) == 22 and " " not in search:
+                try:
+                    item = self.sp.track(search)
 
-        if result is None:
-            embed = discord.Embed(
-                title=f"{str(self.bot.error_emoji)} No results found.",
-                color=Color.red(),
-            )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
-            return
+                    await elements.song(
+                        bot=self.bot,
+                        sp=self.sp,
+                        item=item,
+                        ctx=ctx,
+                        ephemeral=ephemeral,
+                    )
 
-        # Check if result is blank
-        if len(result["tracks"]["items"]) == 0:
-            embed = discord.Embed(
-                title=f"{str(self.bot.error_emoji)} No results found.",
-                color=Color.red(),
-            )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
-        else:
-            # Sort through request data
-            i = 0
-            for item in result["tracks"]["items"]:
-                if item["explicit"]:
-                    if len(item["name"]) > 86:
-                        label = item["name"][:86] + "... (Explicit)"
-                    else:
-                        label = item["name"] + " (Explicit)"
-                else:
-                    if len(item["name"]) > 100:
-                        label = item["name"][:97] + "..."
-                    else:
-                        label = item["name"]
+                    return
+                except spotipy.exceptions.SpotifyException:
+                    pass
 
-                artist_string = ""
+            # Search Spotify
+            result = self.sp.search(search, type="track", limit=10)
 
-                for artist in item["artists"]:
-                    if artist_string == "":
-                        artist_string = artist["name"]
-                    else:
-                        artist_string += f", {artist['name']}"
-
-                if len(f"{artist_string} - {item['album']['name']}") > 100:
-                    description = f"{artist_string} - {item['album']['name']}"[:97] + "..."
-                else:
-                    description = f"{artist_string} - {item['album']['name']}"
-
-                options_list.append(
-                    discord.SelectOption(label=label, description=description, value=str(i))
+            if result is None:
+                embed = discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} No results found.",
+                    color=Color.red(),
                 )
-                i += 1
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return
 
-            # Define options
-            select = Select(options=options_list)
+            # Check if result is blank
+            if len(result["tracks"]["items"]) == 0:
+                embed = discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} No results found.",
+                    color=Color.red(),
+                )
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+            else:
+                # Sort through request data
+                i = 0
+                for item in result["tracks"]["items"]:
+                    if item["explicit"]:
+                        if len(item["name"]) > 86:
+                            label = item["name"][:86] + "... (Explicit)"
+                        else:
+                            label = item["name"] + " (Explicit)"
+                    else:
+                        if len(item["name"]) > 100:
+                            label = item["name"][:97] + "..."
+                        else:
+                            label = item["name"]
 
-            embed = discord.Embed(
-                title="Select Song",
-                description=f'Showing {len(result["tracks"]["items"])} results for "{search}"',
-                color=Color.random(),
-            )
-            embed.set_footer(
-                text=f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
-            )
+                    artist_string = ""
 
-            # Response to user selection
-            async def response(interaction: discord.Interaction):
-                await interaction.response.defer(ephemeral=ephemeral)
+                    for artist in item["artists"]:
+                        if artist_string == "":
+                            artist_string = artist["name"]
+                        else:
+                            artist_string += f", {artist['name']}"
 
-                # Find unique ID of selection in the list
-                item = result["tracks"]["items"][int(select.values[0])]
+                    if len(f"{artist_string} - {item['album']['name']}") > 100:
+                        description = f"{artist_string} - {item['album']['name']}"[:97] + "..."
+                    else:
+                        description = f"{artist_string} - {item['album']['name']}"
 
-                await elements.song(
-                    bot=self.bot,
-                    sp=self.sp,
-                    item=item,
-                    ctx=ctx,
-                    ephemeral=ephemeral,
-                    responded=True,
-                    respond_msg=msg,
+                    options_list.append(
+                        discord.SelectOption(label=label, description=description, value=str(i))
+                    )
+                    i += 1
+
+                # Define options
+                select = Select(options=options_list)
+
+                embed = discord.Embed(
+                    title="Select Song",
+                    description=f'Showing {len(result["tracks"]["items"])} results for "{search}"',
+                    color=Color.random(),
+                )
+                embed.set_footer(
+                    text=f"@{ctx.author.name}",
+                    icon_url=ctx.author.display_avatar.url,
                 )
 
-        # Set up list with provided values
-        select.callback = response
-        view = View()
-        view.add_item(select)
+                # Response to user selection
+                async def response(interaction: discord.Interaction):
+                    await interaction.response.defer(ephemeral=ephemeral)
 
-        # Edit initial message to show dropdown
-        msg = await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+                    # Find unique ID of selection in the list
+                    item = result["tracks"]["items"][int(select.values[0])]
+
+                    await elements.song(
+                        bot=self.bot,
+                        sp=self.sp,
+                        item=item,
+                        ctx=ctx,
+                        ephemeral=ephemeral,
+                        responded=True,
+                        respond_msg=msg,
+                    )
+
+            # Set up list with provided values
+            select.callback = response
+            view = View()
+            view.add_item(select)
+
+            # Edit initial message to show dropdown
+            msg = await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+        finally:
+            await stop_loading(ctx)
 
     async def artist_search_autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -385,110 +388,113 @@ class MusicCommandsCog(
     ) -> None:
         await defer(ctx, ephemeral=ephemeral)
 
-        search = search.strip()
-        options_list = []
+        try:
+            search = search.strip()
+            options_list = []
 
-        if not search or search == "":
-            embed = discord.Embed(
-                title=f"{str(self.bot.error_emoji)} No search term provided.",
-                color=Color.red(),
-            )
-
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
-            return
-
-        # Check if search is Spotify ID
-        if len(search) == 22 and " " not in search:
-            try:
-                item = self.sp.artist(search)
-
-                if item is None:
-                    raise ValueError
-
-                top_tracks = self.sp.artist_top_tracks(item["id"])
-
-                await elements.artist(
-                    sp=self.sp,
-                    item=item,
-                    top_tracks=top_tracks,
-                    ctx=ctx,
-                    ephemeral=ephemeral,
+            if not search or search == "":
+                embed = discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} No search term provided.",
+                    color=Color.red(),
                 )
 
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
-            except spotipy.exceptions.SpotifyException, ValueError:
-                pass
 
-        # Search Spotify
-        result = self.sp.search(search, type="artist", limit=10)
+            # Check if search is Spotify ID
+            if len(search) == 22 and " " not in search:
+                try:
+                    item = self.sp.artist(search)
 
-        if result is None:
-            embed = discord.Embed(
-                title=f"{str(self.bot.error_emoji)} No results found.",
-                color=Color.red(),
-            )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
-            return
+                    if item is None:
+                        raise ValueError
 
-        # Check if result is blank
-        if len(result["artists"]["items"]) == 0:
-            embed = discord.Embed(
-                title=f"{str(self.bot.error_emoji)} No results found.",
-                color=Color.red(),
-            )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
-        else:
-            # Sort through request data
-            i = 0
-            for item in result["artists"]["items"]:
-                if len(item["name"]) > 100:
-                    title = item["name"][:97] + "..."
-                else:
-                    title = item["name"]
+                    top_tracks = self.sp.artist_top_tracks(item["id"])
 
-                options_list.append(discord.SelectOption(label=title, value=str(i)))
-                i += 1
+                    await elements.artist(
+                        sp=self.sp,
+                        item=item,
+                        top_tracks=top_tracks,
+                        ctx=ctx,
+                        ephemeral=ephemeral,
+                    )
 
-            # Define options
-            select = Select(options=options_list)
+                    return
+                except spotipy.exceptions.SpotifyException, ValueError:
+                    pass
 
-            embed = discord.Embed(
-                title="Select Artist",
-                description=f'Showing {len(result["artists"]["items"])} results for "{search}"',
-                color=Color.random(),
-            )
-            embed.set_footer(
-                text=f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
-            )
+            # Search Spotify
+            result = self.sp.search(search, type="artist", limit=10)
 
-            # Response to user selection
-            async def response(interaction: discord.Interaction):
-                await interaction.response.defer(ephemeral=ephemeral)
+            if result is None:
+                embed = discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} No results found.",
+                    color=Color.red(),
+                )
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return
 
-                item = result["artists"]["items"][int(select.values[0])]
+            # Check if result is blank
+            if len(result["artists"]["items"]) == 0:
+                embed = discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} No results found.",
+                    color=Color.red(),
+                )
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+            else:
+                # Sort through request data
+                i = 0
+                for item in result["artists"]["items"]:
+                    if len(item["name"]) > 100:
+                        title = item["name"][:97] + "..."
+                    else:
+                        title = item["name"]
 
-                result_info = self.sp.artist(item["id"])
+                    options_list.append(discord.SelectOption(label=title, value=str(i)))
+                    i += 1
 
-                result_top_tracks = self.sp.artist_top_tracks(item["id"])
+                # Define options
+                select = Select(options=options_list)
 
-                await elements.artist(
-                    sp=self.sp,
-                    item=result_info,
-                    top_tracks=result_top_tracks,
-                    ctx=ctx,
-                    ephemeral=ephemeral,
-                    responded=True,
-                    respond_msg=msg,
+                embed = discord.Embed(
+                    title="Select Artist",
+                    description=f'Showing {len(result["artists"]["items"])} results for "{search}"',
+                    color=Color.random(),
+                )
+                embed.set_footer(
+                    text=f"@{ctx.author.name}",
+                    icon_url=ctx.author.display_avatar.url,
                 )
 
-            # Set up list with provided values
-            select.callback = response
-            view = View()
-            view.add_item(select)
+                # Response to user selection
+                async def response(interaction: discord.Interaction):
+                    await interaction.response.defer(ephemeral=ephemeral)
 
-            # Edit initial message to show dropdown
-            msg = await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+                    item = result["artists"]["items"][int(select.values[0])]
+
+                    result_info = self.sp.artist(item["id"])
+
+                    result_top_tracks = self.sp.artist_top_tracks(item["id"])
+
+                    await elements.artist(
+                        sp=self.sp,
+                        item=result_info,
+                        top_tracks=result_top_tracks,
+                        ctx=ctx,
+                        ephemeral=ephemeral,
+                        responded=True,
+                        respond_msg=msg,
+                    )
+
+                # Set up list with provided values
+                select.callback = response
+                view = View()
+                view.add_item(select)
+
+                # Edit initial message to show dropdown
+                msg = await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+        finally:
+            await stop_loading(ctx)
 
     async def album_search_autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -604,115 +610,118 @@ class MusicCommandsCog(
     ) -> None:
         await defer(ctx, ephemeral=ephemeral)
 
-        search = search.strip()
-        options_list = []
+        try:
+            search = search.strip()
+            options_list = []
 
-        if not search or search == "":
-            embed = discord.Embed(
-                title=f"{str(self.bot.error_emoji)} No search term provided.",
-                color=Color.red(),
-            )
-
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
-            return
-
-        # Check if search is Spotify ID
-        if len(search) == 22 and " " not in search:
-            try:
-                item = self.sp.album(search)
-
-                await elements.album(
-                    sp=self.sp,
-                    item=item,
-                    ctx=ctx,
-                    ephemeral=ephemeral,
+            if not search or search == "":
+                embed = discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} No search term provided.",
+                    color=Color.red(),
                 )
 
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
-            except spotipy.exceptions.SpotifyException:
-                pass
 
-        # Search Spotify
-        result = self.sp.search(search, type="album", limit=10)
+            # Check if search is Spotify ID
+            if len(search) == 22 and " " not in search:
+                try:
+                    item = self.sp.album(search)
 
-        if result is None:
-            embed = discord.Embed(
-                title=f"{str(self.bot.error_emoji)} No results found.",
-                color=Color.red(),
-            )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
-            return
+                    await elements.album(
+                        sp=self.sp,
+                        item=item,
+                        ctx=ctx,
+                        ephemeral=ephemeral,
+                    )
 
-        # Check if result is blank
-        if len(result["albums"]["items"]) == 0:
-            embed = discord.Embed(
-                title=f"{str(self.bot.error_emoji)} No results found.",
-                color=Color.red(),
-            )
-            await ctx.reply(embed=embed)
-        else:
-            # Sort through request data
-            i = 0
-            for item in result["albums"]["items"]:
-                artist_string = ""
-                for artist in item["artists"]:
-                    if artist_string == "":
-                        artist_string = escape_markdown(artist["name"])
+                    return
+                except spotipy.exceptions.SpotifyException:
+                    pass
+
+            # Search Spotify
+            result = self.sp.search(search, type="album", limit=10)
+
+            if result is None:
+                embed = discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} No results found.",
+                    color=Color.red(),
+                )
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return
+
+            # Check if result is blank
+            if len(result["albums"]["items"]) == 0:
+                embed = discord.Embed(
+                    title=f"{str(self.bot.error_emoji)} No results found.",
+                    color=Color.red(),
+                )
+                await ctx.reply(embed=embed)
+            else:
+                # Sort through request data
+                i = 0
+                for item in result["albums"]["items"]:
+                    artist_string = ""
+                    for artist in item["artists"]:
+                        if artist_string == "":
+                            artist_string = escape_markdown(artist["name"])
+                        else:
+                            artist_string += f", {escape_markdown(artist['name'])}"
+
+                    if len(item["name"]) > 100:
+                        title = item["name"][:97] + "..."
                     else:
-                        artist_string += f", {escape_markdown(artist['name'])}"
+                        title = item["name"]
 
-                if len(item["name"]) > 100:
-                    title = item["name"][:97] + "..."
-                else:
-                    title = item["name"]
+                    if len(artist_string) > 100:
+                        description = artist_string[:97] + "..."
+                    else:
+                        description = artist_string
 
-                if len(artist_string) > 100:
-                    description = artist_string[:97] + "..."
-                else:
-                    description = artist_string
+                    options_list.append(
+                        discord.SelectOption(label=title, description=description, value=str(i))
+                    )
+                    i += 1
 
-                options_list.append(
-                    discord.SelectOption(label=title, description=description, value=str(i))
+                # Define options
+                select = Select(options=options_list)
+
+                embed = discord.Embed(
+                    title="Select Album",
+                    description=f'Showing {len(result["albums"]["items"])} results for "{search}"',
+                    color=Color.random(),
                 )
-                i += 1
-
-            # Define options
-            select = Select(options=options_list)
-
-            embed = discord.Embed(
-                title="Select Album",
-                description=f'Showing {len(result["albums"]["items"])} results for "{search}"',
-                color=Color.random(),
-            )
-            embed.set_footer(
-                text=f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
-            )
-
-            # Response to user selection
-            async def response(interaction: discord.Interaction):
-                await interaction.response.defer(ephemeral=ephemeral)
-
-                item = result["albums"]["items"][int(select.values[0])]
-
-                result_info = self.sp.album(item["id"])
-
-                await elements.album(
-                    sp=self.sp,
-                    item=result_info,
-                    ctx=ctx,
-                    ephemeral=ephemeral,
-                    responded=True,
-                    respond_msg=msg,
+                embed.set_footer(
+                    text=f"@{ctx.author.name}",
+                    icon_url=ctx.author.display_avatar.url,
                 )
 
-            # Set up list with provided values
-            select.callback = response
-            view = View()
-            view.add_item(select)
+                # Response to user selection
+                async def response(interaction: discord.Interaction):
+                    await interaction.response.defer(ephemeral=ephemeral)
 
-            # Edit initial message to show dropdown
-            msg = await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+                    item = result["albums"]["items"][int(select.values[0])]
+
+                    result_info = self.sp.album(item["id"])
+
+                    await elements.album(
+                        sp=self.sp,
+                        item=result_info,
+                        ctx=ctx,
+                        ephemeral=ephemeral,
+                        responded=True,
+                        respond_msg=msg,
+                    )
+
+                # Set up list with provided values
+                select.callback = response
+                view = View()
+                view.add_item(select)
+
+                # Edit initial message to show dropdown
+                msg = await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+        finally:
+            await stop_loading(ctx)
 
     # Spotify Image command
     @spotify_group.command(
@@ -730,7 +739,6 @@ class MusicCommandsCog(
 
         if "spotify.link" in url:
             try:
-                # noinspection HttpUrlsUsage
                 url = (
                     url.replace("www.", "")
                     .replace("http://", "")

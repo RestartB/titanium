@@ -25,10 +25,12 @@ from lib.embeds.mod_actions import (
     already_unmuted,
     banned,
     cannot_purge,
+    cant_mod_self,
     forbidden,
     http_exception,
     kicked,
     muted,
+    not_allowed,
     purged,
     unbanned,
     unmuted,
@@ -75,23 +77,35 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         *,
         reason: str = "",
     ) -> None | Message:
-        if not ctx.guild or not self.bot.user:
+        if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
         await defer(ctx, ephemeral=True)
 
-        # Check if member is in guild
-        if member.guild.id != ctx.guild.id:
-            return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
-
-        # Check if member is already being punished
-        if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-            return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
-
-        # Add member to punishing list
-        self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
-
         try:
+            # Check if member is in guild
+            if member.guild.id != ctx.guild.id:
+                return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+
+            # Check if moderating self
+            if member.id == ctx.author.id:
+                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+
+            # Check if target doesn't have higher role
+            if (
+                member.top_role.position >= ctx.author.top_role.position
+                or member.guild_permissions.administrator
+                and ctx.author != ctx.guild.owner
+            ):
+                return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+
+            # Check if member is already being punished
+            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
+                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
+
+            # Add member to punishing list
+            self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
+
             # Create case
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
@@ -134,7 +148,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             )
         finally:
             # Remove member from punishing list
-            if ctx.guild.id in self.bot.punishing:
+            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
                 self.bot.punishing[ctx.guild.id].remove(member.id)
 
             await stop_loading(ctx)
@@ -161,27 +175,39 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         *,
         reason: str = "",
     ) -> None | Message:
-        if not ctx.guild or not self.bot.user:
+        if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
         await defer(ctx, ephemeral=True)
 
-        # Check if guild for type checking
-        if not ctx.guild:
-            return
-
-        # Check if member is in guild
-        if member.guild.id != ctx.guild.id:
-            return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
-
-        # Check if member is already being punished
-        if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-            return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
-
-        # Add member to punishing list
-        self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
-
         try:
+            # Check if guild for type checking
+            if not ctx.guild:
+                return
+
+            # Check if member is in guild
+            if member.guild.id != ctx.guild.id:
+                return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+
+            # Check if moderating self
+            if member.id == ctx.author.id:
+                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+
+            # Check if target doesn't have higher role
+            if (
+                member.top_role.position >= ctx.author.top_role.position
+                or member.guild_permissions.administrator
+                and ctx.author != ctx.guild.owner
+            ):
+                return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+
+            # Check if member is already being punished
+            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
+                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
+
+            # Add member to punishing list
+            self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
+
             processed_reason = reason
             processed_duration = None
 
@@ -275,7 +301,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             )
         finally:
             # Remove member from punishing list
-            if ctx.guild.id in self.bot.punishing:
+            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
                 self.bot.punishing[ctx.guild.id].remove(member.id)
 
             await stop_loading(ctx)
@@ -295,27 +321,39 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         ctx: commands.Context["TitaniumBot"],
         member: discord.Member,
     ) -> None | Message:
-        if not ctx.guild or not self.bot.user:
+        if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
         await defer(ctx, ephemeral=True)
 
-        # Check if guild for type checking
-        if not ctx.guild:
-            return
-
-        # Check if member is in guild
-        if member.guild.id != ctx.guild.id:
-            return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
-
-        # Check if member is already being punished
-        if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-            return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
-
-        # Add member to punishing list
-        self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
-
         try:
+            # Check if guild for type checking
+            if not ctx.guild:
+                return
+
+            # Check if member is in guild
+            if member.guild.id != ctx.guild.id:
+                return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+
+            # Check if moderating self
+            if member.id == ctx.author.id:
+                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+
+            # Check if target doesn't have higher role
+            if (
+                member.top_role.position >= ctx.author.top_role.position
+                or member.guild_permissions.administrator
+                and ctx.author != ctx.guild.owner
+            ):
+                return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+
+            # Check if member is already being punished
+            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
+                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
+
+            # Add member to punishing list
+            self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
+
             # Check if user is not muted
             if not member.is_timed_out():
                 return await ctx.reply(ephemeral=True, embed=already_unmuted(self.bot, member))
@@ -386,7 +424,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             )
         finally:
             # Remove member from punishing list
-            if ctx.guild.id in self.bot.punishing:
+            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
                 self.bot.punishing[ctx.guild.id].remove(member.id)
 
             await stop_loading(ctx)
@@ -406,27 +444,39 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         *,
         reason: str = "",
     ) -> None | Message:
-        if not ctx.guild or not self.bot.user:
+        if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
         await defer(ctx, ephemeral=True)
 
-        # Check if guild for type checking
-        if not ctx.guild:
-            return
-
-        # Check if member is in guild
-        if member.guild.id != ctx.guild.id:
-            return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
-
-        # Check if member is already being punished
-        if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-            return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
-
-        # Add member to punishing list
-        self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
-
         try:
+            # Check if guild for type checking
+            if not ctx.guild:
+                return
+
+            # Check if member is in guild
+            if member.guild.id != ctx.guild.id:
+                return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+
+            # Check if moderating self
+            if member.id == ctx.author.id:
+                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+
+            # Check if target doesn't have higher role
+            if (
+                member.top_role.position >= ctx.author.top_role.position
+                or member.guild_permissions.administrator
+                and ctx.author != ctx.guild.owner
+            ):
+                return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+
+            # Check if member is already being punished
+            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
+                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
+
+            # Add member to punishing list
+            self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
+
             # Kick user
             try:
                 await member.kick(reason=f"@{ctx.author.name}: {reason}")
@@ -491,7 +541,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             )
         finally:
             # Remove member from punishing list
-            if ctx.guild.id in self.bot.punishing:
+            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
                 self.bot.punishing[ctx.guild.id].remove(member.id)
 
             await stop_loading(ctx)
@@ -514,23 +564,46 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         *,
         reason: str = "",
     ) -> None | Message:
-        if not ctx.guild or not self.bot.user:
+        if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
         await defer(ctx, ephemeral=True)
 
-        # Check if guild for type checking
-        if not ctx.guild:
-            return
-
-        # Check if member is already being punished
-        if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
-            return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, user))
-
-        # Add member to punishing list
-        self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
-
         try:
+            # Check if guild for type checking
+            if not ctx.guild:
+                return
+
+            # Check if moderating self
+            if user.id == ctx.author.id:
+                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+
+            # Try to get member from guild
+            member = ctx.guild.get_member(user.id)
+            if not member:
+                try:
+                    member = await ctx.guild.fetch_member(user.id)
+                except discord.NotFound:
+                    member = None
+
+            # Check if target doesn't have higher role
+            if (
+                isinstance(member, discord.Member)
+                and (
+                    member.top_role.position >= ctx.author.top_role.position
+                    or member.guild_permissions.administrator
+                )
+                and ctx.author != ctx.guild.owner
+            ):
+                return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, user))
+
+            # Check if member is already being punished
+            if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
+                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, user))
+
+            # Add member to punishing list
+            self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
+
             processed_reason = reason
             processed_duration = None
 
@@ -623,7 +696,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             )
         finally:
             # Remove member from punishing list
-            if ctx.guild.id in self.bot.punishing:
+            if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
                 self.bot.punishing[ctx.guild.id].remove(user.id)
 
             await stop_loading(ctx)
@@ -644,18 +717,22 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
         await defer(ctx, ephemeral=True)
 
-        # Check if guild for type checking
-        if not ctx.guild:
-            return
-
-        # Check if user is already being punished
-        if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
-            return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, user))
-
-        # Add user to punishing list
-        self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
-
         try:
+            # Check if guild for type checking
+            if not ctx.guild:
+                return
+
+            # Check if moderating self
+            if user.id == ctx.author.id:
+                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+
+            # Check if user is already being punished
+            if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
+                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, user))
+
+            # Add user to punishing list
+            self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
+
             # Check if user is not banned
             try:
                 await ctx.guild.fetch_ban(user)
@@ -728,7 +805,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             )
         finally:
             # Remove user from punishing list
-            if ctx.guild.id in self.bot.punishing:
+            if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
                 self.bot.punishing[ctx.guild.id].remove(user.id)
 
             await stop_loading(ctx)
@@ -757,15 +834,15 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
         await defer(ctx, ephemeral=True)
 
-        if isinstance(
-            ctx.channel, (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel)
-        ):
-            await ctx.reply(ephemeral=True, embed=cannot_purge(self.bot))
-            return
-
-        limit = amount if ctx.interaction else amount + 1
-
         try:
+            if isinstance(
+                ctx.channel, (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel)
+            ):
+                await ctx.reply(ephemeral=True, embed=cannot_purge(self.bot))
+                return
+
+            limit = amount if ctx.interaction else amount + 1
+
             deleted = await ctx.channel.purge(
                 limit=limit,
                 bulk=True,
@@ -775,21 +852,27 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
             await ctx.reply(ephemeral=True, embed=purged(self.bot, ctx.author, len(deleted)))
         except discord.Forbidden as e:
-            await log_error(
-                module="Moderation",
-                guild_id=ctx.guild.id,
-                error=f"Titanium was not allowed to purge messages in #{ctx.channel.name} ({ctx.channel.id})",
-                details=e.text,
-            )
+            if not isinstance(
+                ctx.channel, (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel)
+            ):
+                await log_error(
+                    module="Moderation",
+                    guild_id=ctx.guild.id,
+                    error=f"Titanium was not allowed to purge messages in #{ctx.channel.name} ({ctx.channel.id})",
+                    details=e.text,
+                )
 
             return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, ctx.author))
         except discord.HTTPException as e:
-            await log_error(
-                module="Moderation",
-                guild_id=ctx.guild.id,
-                error=f"Unknown Discord error while purging messages in #{ctx.channel.name} ({ctx.channel.id})",
-                details=e.text,
-            )
+            if not isinstance(
+                ctx.channel, (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel)
+            ):
+                await log_error(
+                    module="Moderation",
+                    guild_id=ctx.guild.id,
+                    error=f"Unknown Discord error while purging messages in #{ctx.channel.name} ({ctx.channel.id})",
+                    details=e.text,
+                )
 
             return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, ctx.author))
         finally:

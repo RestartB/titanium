@@ -31,6 +31,20 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
 
         await ctx.reply(embed=embed)
 
+    async def cog_app_command_error(
+        self, interaction: discord.Interaction[discord.Client], error: app_commands.AppCommandError
+    ) -> None:
+        embed = discord.Embed(title=f"{self.bot.error_emoji} Error", color=discord.Color.red())
+
+        if isinstance(error, ImageTooSmallError):
+            embed.description = "The provided image is too small for this operation."
+        elif isinstance(error, OperationTooLargeError):
+            embed.description = "The resulting image would be too large to process. Please ensure that the result image is below 10000x10000px."
+        else:
+            raise error
+
+        await interaction.edit_original_response(embed=embed)
+
     @commands.hybrid_group(name="image", description="Image processing commands.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -52,11 +66,12 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format: ImageFormats,
     ) -> None:
         """Convert a image to various formats."""
-        try:
-            await defer(ctx)
+        await defer(ctx)
 
+        try:
             converter = ImageTools(image)
             file = await converter.convert(output_format, self.STANDARD_QUALITY)
+
             await ctx.reply(file=file)
         finally:
             await stop_loading(ctx)
@@ -78,11 +93,12 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         height: commands.Range[int, 1, 5000],
     ) -> None:
         """Resize an image to the specified dimensions."""
-        try:
-            await defer(ctx)
+        await defer(ctx)
 
+        try:
             converter = ImageTools(image)
             file = await converter.resize(ImageFormats.PNG, width, height)
+
             await ctx.reply(file=file)
         finally:
             await stop_loading(ctx)
@@ -104,13 +120,15 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         red_filter: bool = True,
     ) -> None:
         """Deepfry an image."""
-        try:
-            await defer(ctx)
 
+        await defer(ctx)
+
+        try:
             intensity_scale /= 100.0
 
             converter = ImageTools(image)
             file = await converter.deepfry(ImageFormats.PNG, intensity_scale, red_filter)
+
             await ctx.reply(file=file)
         finally:
             await stop_loading(ctx)
@@ -128,11 +146,12 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         image: Attachment,
     ) -> None:
         """Invert the colors of an image."""
-        try:
-            await defer(ctx)
+        await defer(ctx)
 
+        try:
             converter = ImageTools(image)
             file = await converter.invert(ImageFormats.PNG)
+
             await ctx.reply(file=file)
         finally:
             await stop_loading(ctx)
@@ -150,11 +169,12 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         image: Attachment,
     ) -> None:
         """Convert an image to grayscale."""
-        try:
-            await defer(ctx)
+        await defer(ctx)
 
+        try:
             converter = ImageTools(image)
             file = await converter.grayscale(ImageFormats.PNG)
+
             await ctx.reply(file=file)
         finally:
             await stop_loading(ctx)
@@ -174,11 +194,12 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         angle: int,
     ) -> None:
         """Rotate an image by the specified angle."""
-        try:
-            await defer(ctx)
+        await defer(ctx)
 
+        try:
             converter = ImageTools(image)
             file = await converter.rotate(ImageFormats.PNG, angle)
+
             await ctx.reply(file=file)
         finally:
             await stop_loading(ctx)
@@ -211,11 +232,12 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         colour: Literal["black", "white", "transparent"] = "white",
     ) -> None:
         """Add a speech bubble effect to an image."""
-        try:
-            await defer(ctx)
+        await defer(ctx)
 
+        try:
             converter = ImageTools(image)
             file = await converter.speech_bubble(ImageFormats.PNG, direction, colour)
+
             await ctx.reply(file=file)
         finally:
             await stop_loading(ctx)
@@ -249,9 +271,9 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         position: Literal["top", "bottom"] = "top",
     ) -> None:
         """Add a caption to an image."""
-        try:
-            await defer(ctx)
+        await defer(ctx)
 
+        try:
             if font == "futura":
                 selected_font = os.path.join("lib", "fonts", "futura.otf")
             else:
@@ -261,8 +283,8 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
             file = await converter.caption(
                 ImageFormats.GIF, caption.lower(), selected_font, position
             )
-            await ctx.reply(file=file)
 
+            await ctx.reply(file=file)
         finally:
             await stop_loading(ctx)
 

@@ -876,26 +876,27 @@ class QuoteCommandsCog(
     ):
         await defer(ctx)
 
-        embed, file, view = await self._quote_cmd_handler(
-            content=content,
-            user=user,
-            runner_user=ctx.author,
-            output_format="PNG",
-            nickname=False,
-            fade=True,
-            light_mode=False,
-            bw_mode=False,
-            filename="",
-            spoiler=False,
-            guild=ctx.guild,
-        )
+        try:
+            embed, file, view = await self._quote_cmd_handler(
+                content=content,
+                user=user,
+                runner_user=ctx.author,
+                output_format="PNG",
+                nickname=False,
+                fade=True,
+                light_mode=False,
+                bw_mode=False,
+                filename="",
+                spoiler=False,
+                guild=ctx.guild,
+            )
 
-        if embed:
-            await ctx.reply(embed=embed, file=file, view=view)
-        else:
-            await ctx.reply(file=file, view=view)
-
-        await stop_loading(ctx)
+            if embed:
+                await ctx.reply(embed=embed, file=file, view=view)
+            else:
+                await ctx.reply(file=file, view=view)
+        finally:
+            await stop_loading(ctx)
 
     @app_commands.command(
         name="quote",

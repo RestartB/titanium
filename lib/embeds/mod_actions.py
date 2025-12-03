@@ -273,6 +273,24 @@ def cannot_purge(bot: TitaniumBot) -> Embed:
     return embed
 
 
+def cant_mod_self(bot: TitaniumBot) -> Embed:
+    embed = Embed(
+        title=f"{str(bot.error_emoji)} Error",
+        description="You cannot moderate yourself.",
+        colour=Colour.red(),
+    )
+    return embed
+
+
+def not_allowed(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
+    embed = Embed(
+        title=f"{str(bot.error_emoji)} Error",
+        description=f"You do not have permission to perform this action on {user.mention}.",
+        colour=Colour.red(),
+    )
+    return embed
+
+
 def forbidden(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
         title=f"{str(bot.error_emoji)} Error",
