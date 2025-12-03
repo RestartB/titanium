@@ -80,7 +80,7 @@ class ReviewsCommandsCog(commands.Cog):
 
         for i, review in enumerate(review_list, start=1):
             page.add_field(
-                name=f"{i}. @{review['sender']['username']} - <t:{review['timestamp']}:d>",
+                name=f"{i}. @{discord.utils.escape_markdown(review['sender']['username'])} - <t:{review['timestamp']}:d>",
                 value=f"{review['comment'] if len(review['comment']) <= 1024 else review['comment'][:1021] + '...'}",
                 inline=False,
             )
@@ -165,7 +165,7 @@ class ReviewsCommandsCog(commands.Cog):
 
         for i, review in enumerate(review_list, start=1):
             page.add_field(
-                name=f"{i}. @{review['sender']['username']} - <t:{review['timestamp']}:d>",
+                name=f"{i}. @{discord.utils.escape_markdown(review['sender']['username'])} - <t:{review['timestamp']}:d>",
                 value=f"{review['comment'] if len(review['comment']) <= 1024 else review['comment'][:1021] + '...'}",
                 inline=False,
             )
