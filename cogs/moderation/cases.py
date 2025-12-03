@@ -190,7 +190,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
                 view = ConfirmView(self.bot)
 
-                await ctx.reply(
+                msg = await ctx.reply(
                     embeds=embeds,
                     view=view,
                 )
@@ -198,10 +198,10 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 await view.wait()
 
                 if not view.value:
-                    return await ctx.send(embed=cancelled(self.bot))
+                    return await msg.edit(embed=cancelled(self.bot), view=None)
 
                 await case_manager.delete_case(case_id)
-                await ctx.send(embed=case_deleted(self.bot, case_id))
+                await msg.edit(embed=case_deleted(self.bot, case_id), view=None)
         finally:
             await stop_loading(ctx)
 
