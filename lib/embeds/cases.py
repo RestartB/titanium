@@ -28,7 +28,7 @@ def cases(
     )
 
     embed.set_author(
-        name=target.name,
+        name=f"@{target.name}",
         icon_url=target.display_avatar.url,
     )
 
@@ -53,25 +53,34 @@ def case_embed(
     creator: User | int | Column[int],
     target: User | int | Column[int],
 ) -> Embed:
+    description_lines = [
+        f"**Status:** {str(bot.error_emoji) if bool(case.resolved) else str(bot.success_emoji)} {'Closed' if bool(case.resolved) else 'Open'}",
+        f"**Type:** {case.type}",
+        f"**Target:** {f'<@{target}> (`{target}`)' if isinstance(target, int) or isinstance(target, Column) else f'{target.mention} (`{target.id}`)'}",
+        f"**Time Created:** <t:{int(case.time_created.timestamp())}:f>",
+    ]
+
+    if case.time_updated:
+        description_lines.append(f"**Time Updated:** <t:{int(case.time_updated.timestamp())}:f>")
+
+    description_lines.extend(
+        [
+            f"**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}",
+            f"**Reason:** {case.description or 'No reason provided.'}",
+        ]
+    )
+
     embed = Embed(
         title=f"Case `{case.id}`",
-        description=f"""
-        **Status:** {str(bot.error_emoji) if bool(case.resolved) else str(bot.success_emoji)} {"Closed" if bool(case.resolved) else "Open"}
-        **Type:** {case.type}
-        **Target:** {f"<@{target}> (`{target}`)" if isinstance(target, int) or isinstance(target, Column) else f"{target.mention} (`{target.id}`)"}
-        **Time Created:** <t:{int(case.time_created.timestamp())}:f>
-        {f"**Time Updated:** <t:{int(case.time_updated.timestamp())}:f>" if case.time_updated else ""}
-        **Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else "Permanent"}
-        **Reason:** {case.description or "No reason provided."}
-        """,
+        description="\n".join(description_lines),
         colour=Colour.blue(),
     )
 
     if isinstance(creator, int) or isinstance(creator, Column):
-        embed.set_footer(text=f"by {creator}")
+        embed.set_author(name=creator)
     else:
-        embed.set_footer(
-            text=f"by @{creator.name} ({creator.id})",
+        embed.set_author(
+            name=f"@{creator.name} ({creator.id})",
             icon_url=creator.display_avatar.url,
         )
 
