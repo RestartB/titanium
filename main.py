@@ -272,10 +272,9 @@ class TitaniumBot(commands.Bot):
             if explicit_emoji and explicit_emoji.strip() != "":
                 self.explicit_emoji = await self.fetch_application_emoji(int(explicit_emoji))
             else:
-                self.explicit_emoji = "🔞"
+                self.explicit_emoji = "🇪"
         except discord.HTTPException as e:
-            init_logger.error("Failed to fetch emojis")
-            init_logger.exception(e)
+            init_logger.error("Failed to fetch emojis", exc_info=e)
             raise
         init_logger.info("Custom emojis loaded.")
 
@@ -288,8 +287,14 @@ class TitaniumBot(commands.Bot):
                     filename = filename.replace("\\", "/").replace("/", ".")[:-3]
 
                     init_logger.debug(f"Loading normal cog: {filename}...")
-                    await bot.load_extension(filename)
-                    init_logger.debug(f"Loaded normal cog: {filename}")
+
+                    try:
+                        await bot.load_extension(filename)
+                        init_logger.debug(f"Loaded normal cog: {filename}")
+                    except Exception as e:
+                        init_logger.error(f"Failed to load normal cog: {filename}", exc_info=e)
+
+                        continue
         init_logger.info("Loading cogs complete.")
 
     async def on_connect(self):
@@ -445,8 +450,7 @@ async def on_app_command_error(
             )
         except Exception as log_exc:
             error_id = "Unknown"
-            logging.error("Failed to log error to database.")
-            logging.exception(log_exc)
+            logging.error("Failed to log error to database", exc_info=log_exc)
             logging.exception(error)
 
         embed = discord.Embed(
@@ -480,5 +484,4 @@ if __name__ == "__main__":
     except discord.LoginFailure:
         logging.error("Invalid bot token provided. Please check your .env file.")
     except Exception as e:
-        logging.error("An error occurred while starting the bot:")
-        logging.exception(e)
+        logging.error("An error occurred while starting the bot", exc_info=e)
