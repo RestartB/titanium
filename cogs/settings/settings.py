@@ -198,7 +198,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
         if len(prefix) > 5:
             return await interaction.followup.send(
                 embed=Embed(
-                    title=f"{str(self.bot.error_emoji)} Invalid Prefix",
+                    title=f"{self.bot.error_emoji} Invalid Prefix",
                     description="The prefix must be between 1 and 5 characters long.",
                     colour=Colour.red(),
                 ),
@@ -218,7 +218,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
             if prefix.lower() in prefixes.prefixes:
                 return await interaction.followup.send(
                     embed=Embed(
-                        title=f"{str(self.bot.error_emoji)} Already Exists",
+                        title=f"{self.bot.error_emoji} Already Exists",
                         description=f"The `{prefix.lower()}` prefix has already been added.",
                         colour=Colour.red(),
                     ),
@@ -232,7 +232,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
 
         await interaction.followup.send(
             embed=Embed(
-                title=f"{str(self.bot.success_emoji)} Added",
+                title=f"{self.bot.success_emoji} Added",
                 description=f"Added the `{prefix.lower()}` prefix.",
                 colour=Colour.green(),
             ),
@@ -268,7 +268,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
         if len(prefix) > 5:
             return await interaction.followup.send(
                 embed=Embed(
-                    title=f"{str(self.bot.error_emoji)} Invalid Prefix",
+                    title=f"{self.bot.error_emoji} Invalid Prefix",
                     description="The prefix must be between 1 and 5 characters long.",
                     colour=Colour.red(),
                 ),
@@ -288,7 +288,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
             if prefix.lower() not in prefixes.prefixes:
                 return await interaction.followup.send(
                     embed=Embed(
-                        title=f"{str(self.bot.error_emoji)} Not Found",
+                        title=f"{self.bot.error_emoji} Not Found",
                         description=f"The `{prefix.lower()}` prefix does not exist.",
                         colour=Colour.red(),
                     ),
@@ -302,7 +302,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
 
         await interaction.followup.send(
             embed=Embed(
-                title=f"{str(self.bot.success_emoji)} Removed",
+                title=f"{self.bot.success_emoji} Removed",
                 description=f"Removed the `{prefix.lower()}` prefix.",
                 colour=Colour.green(),
             ),

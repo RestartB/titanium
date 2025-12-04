@@ -42,7 +42,7 @@ class AdminCog(commands.Cog):
             os.system("cls" if os.name == "nt" else "clear")
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.success_emoji)} Console Cleared",
+                    title=f"{self.bot.success_emoji} Console Cleared",
                     colour=discord.Colour.green(),
                 ),
                 ephemeral=True,
@@ -52,7 +52,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.error_emoji)} Error Clearing Console",
+                    title=f"{self.bot.error_emoji} Error Clearing Console",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.red(),
                 ),
@@ -77,7 +77,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.success_emoji)} Commands Synced",
+                    title=f"{self.bot.success_emoji} Commands Synced",
                     description=f"Synced {len(tree)} commands.",
                     colour=discord.Colour.green(),
                 ),
@@ -89,7 +89,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.error_emoji)} Failed to sync",
+                    title=f"{self.bot.error_emoji} Failed to sync",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.green(),
                 ),
@@ -108,7 +108,7 @@ class AdminCog(commands.Cog):
             await self.bot.reload_extension(f"cogs.{cog}")
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.success_emoji)} Reloaded",
+                    title=f"{self.bot.success_emoji} Reloaded",
                     description=f"Successfully reloaded `{cog}`.",
                     colour=discord.Colour.green(),
                 ),
@@ -119,7 +119,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.error_emoji)} Error Reloading",
+                    title=f"{self.bot.error_emoji} Error Reloading",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.red(),
                 ),
@@ -193,7 +193,7 @@ class AdminCog(commands.Cog):
             await init_db()
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.success_emoji)} Database Migrated",
+                    title=f"{self.bot.success_emoji} Database Migrated",
                     description="Database migrations completed successfully.",
                     colour=discord.Colour.green(),
                 ),
@@ -204,7 +204,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.error_emoji)} Error Migrating Database",
+                    title=f"{self.bot.error_emoji} Error Migrating Database",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.red(),
                 ),
@@ -223,7 +223,7 @@ class AdminCog(commands.Cog):
             await self.bot.refresh_guild_config_cache(guild_id)
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.success_emoji)} Server Reloaded",
+                    title=f"{self.bot.success_emoji} Server Reloaded",
                     description=f"Successfully reloaded configuration for guild ID `{guild_id}`.",
                     colour=discord.Colour.green(),
                 ),
@@ -234,7 +234,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.error_emoji)} Error Reloading Server",
+                    title=f"{self.bot.error_emoji} Error Reloading Server",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.red(),
                 ),
@@ -254,7 +254,7 @@ class AdminCog(commands.Cog):
                     self.bot.punishing[server].remove(user_id)
                     await ctx.reply(
                         embed=discord.Embed(
-                            title=f"{str(self.bot.success_emoji)} User Unlocked",
+                            title=f"{self.bot.success_emoji} User Unlocked",
                             description=f"Successfully unlocked user ID `{user_id}`.",
                             colour=discord.Colour.green(),
                         ),
@@ -263,7 +263,7 @@ class AdminCog(commands.Cog):
             else:
                 await ctx.reply(
                     embed=discord.Embed(
-                        title=f"{str(self.bot.error_emoji)} User Not Locked",
+                        title=f"{self.bot.error_emoji} User Not Locked",
                         description=f"User ID `{user_id}` is not locked.",
                         colour=discord.Colour.red(),
                     ),
@@ -274,7 +274,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.error_emoji)} Error Unlocking User",
+                    title=f"{self.bot.error_emoji} Error Unlocking User",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.red(),
                 ),
@@ -294,7 +294,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.success_emoji)} Log Level Changed",
+                    title=f"{self.bot.success_emoji} Log Level Changed",
                     description=f"Enabled debug logging for `{logger}`.",
                     colour=discord.Colour.green(),
                 ),
@@ -305,7 +305,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.error_emoji)} Error Changing Log Level",
+                    title=f"{self.bot.error_emoji} Error Changing Log Level",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.red(),
                 ),
@@ -325,7 +325,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.success_emoji)} Log Level Changed",
+                    title=f"{self.bot.success_emoji} Log Level Changed",
                     description=f"Enabled info logging for `{logger}`.",
                     colour=discord.Colour.green(),
                 ),
@@ -336,7 +336,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.error_emoji)} Error Changing Log Level",
+                    title=f"{self.bot.error_emoji} Error Changing Log Level",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.red(),
                 ),
@@ -366,7 +366,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.success_emoji)} Server Owner",
+                    title=f"{self.bot.success_emoji} Server Owner",
                     description=f"`@{owner.name}` (`{owner.id}`)",
                     colour=discord.Colour.green(),
                 ),
@@ -377,7 +377,7 @@ class AdminCog(commands.Cog):
 
             await ctx.reply(
                 embed=discord.Embed(
-                    title=f"{str(self.bot.error_emoji)} Error Retrieving Server Owner",
+                    title=f"{self.bot.error_emoji} Error Retrieving Server Owner",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.red(),
                 ),

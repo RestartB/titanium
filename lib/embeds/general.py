@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 def not_in_guild(bot: TitaniumBot, user: Member | User) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description=f"@{user.name} is not in this server.",
         colour=Colour.red(),
     )
@@ -17,7 +17,7 @@ def not_in_guild(bot: TitaniumBot, user: Member | User) -> Embed:
 
 def cancelled(bot: TitaniumBot) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Cancelled.",
+        title=f"{bot.error_emoji} Cancelled.",
         colour=Colour.red(),
     )
     return embed

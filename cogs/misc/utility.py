@@ -113,7 +113,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         file: File = await asyncio.to_thread(generate_qrcode, data)
 
         embed = Embed(
-            title=f"{str(self.bot.success_emoji)} QR Code Generated",
+            title=f"{self.bot.success_emoji} QR Code Generated",
             description=f"QR code generated for:\n```{data}```",
             color=Colour.green(),
         )

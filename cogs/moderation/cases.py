@@ -84,7 +84,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                     else:
                         return await ctx.reply(
                             embed=Embed(
-                                title=f"{str(self.bot.error_emoji)} Permission Denied",
+                                title=f"{self.bot.error_emoji} Permission Denied",
                                 description="You do not have permission to view cases for other users. Please ensure you have the `Manage Server` permission.",
                                 colour=Colour.red(),
                             )

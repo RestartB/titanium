@@ -18,7 +18,7 @@ def warned(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Warned • `{case.id}`",
+        title=f"{bot.success_emoji} Warned • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
         colour=Colour.green(),
     )
@@ -44,7 +44,7 @@ def muted(
     dm_error: str = "",
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Muted • `{case.id}`",
+        title=f"{bot.success_emoji} Muted • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
         colour=Colour.green(),
     )
@@ -66,7 +66,7 @@ def already_muted(
     user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description=f"{user.mention} is already muted.",
         colour=Colour.red(),
     )
@@ -82,7 +82,7 @@ def unmuted(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Unmuted • `{case.id}`",
+        title=f"{bot.success_emoji} Unmuted • `{case.id}`",
         description=f"**Target:** {user.mention}",
         colour=Colour.green(),
     )
@@ -104,7 +104,7 @@ def already_unmuted(
     user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description=f"{user.mention} is not muted.",
         colour=Colour.red(),
     )
@@ -120,7 +120,7 @@ def kicked(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Kicked • `{case.id}`",
+        title=f"{bot.success_emoji} Kicked • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Reason:** {case.description or 'No reason provided.'}",
         colour=Colour.green(),
     )
@@ -146,7 +146,7 @@ def banned(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Banned • `{case.id}`",
+        title=f"{bot.success_emoji} Banned • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
         colour=Colour.green(),
     )
@@ -171,7 +171,7 @@ def unbanned(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)}",
+        title=f"{bot.success_emoji}",
         description=f"**Target:** @{user.name} (`{user.id}`)",
         colour=Colour.green(),
     )
@@ -195,7 +195,7 @@ def purged(
     messages: int,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Purged",
+        title=f"{bot.success_emoji} Purged",
         description=f"Purged {messages} messages.",
         colour=Colour.green(),
     )
@@ -214,7 +214,7 @@ def done(
     dm_error: str,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji)} Done",
+        title=f"{bot.success_emoji} Done",
         colour=Colour.green(),
     )
 
@@ -235,7 +235,7 @@ def already_banned(
     user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description=f"{user.mention} is already banned.",
         colour=Colour.red(),
     )
@@ -247,7 +247,7 @@ def already_unbanned(
     user: Member | User | ClientUser,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description=f"{user.mention} is not banned.",
         colour=Colour.red(),
     )
@@ -256,7 +256,7 @@ def already_unbanned(
 
 def already_punishing(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description=f"{user.mention} is already being punished. Please wait.",
         colour=Colour.red(),
     )
@@ -265,7 +265,7 @@ def already_punishing(bot: TitaniumBot, user: Member | User | ClientUser) -> Emb
 
 def cannot_purge(bot: TitaniumBot) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description="Messages in this channel cannot be purged.",
         colour=Colour.red(),
     )
@@ -274,7 +274,7 @@ def cannot_purge(bot: TitaniumBot) -> Embed:
 
 def cant_mod_self(bot: TitaniumBot) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description="You cannot moderate yourself.",
         colour=Colour.red(),
     )
@@ -283,7 +283,7 @@ def cant_mod_self(bot: TitaniumBot) -> Embed:
 
 def not_allowed(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description=f"You do not have permission to perform this action on {user.mention}.",
         colour=Colour.red(),
     )
@@ -292,7 +292,7 @@ def not_allowed(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
 
 def forbidden(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description=f"Titanium does not have permission to perform this action on {user.mention}.",
         colour=Colour.red(),
     )
@@ -301,7 +301,7 @@ def forbidden(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
 
 def http_exception(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
-        title=f"{str(bot.error_emoji)} Error",
+        title=f"{bot.error_emoji} Error",
         description=f"An error occurred while trying to perform this action on {user.mention}.",
         colour=Colour.red(),
     )

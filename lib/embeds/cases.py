@@ -34,7 +34,7 @@ def cases(
 
     for case in cases:
         embed.add_field(
-            name=f"`{case.id}` • {str(bot.error_emoji) if bool(case.resolved) else str(bot.success_emoji)} {'Closed' if case.resolved else 'Open'}",
+            name=f"`{case.id}` • {bot.error_emoji if bool(case.resolved) else bot.success_emoji} {'Closed' if case.resolved else 'Open'}",
             value=f"-# Created <t:{int(case.time_created.timestamp())}:f>\n{case.description}",
             inline=False,
         )
@@ -54,7 +54,7 @@ def case_embed(
     target: User | int | Column[int],
 ) -> Embed:
     description_lines = [
-        f"**Status:** {str(bot.error_emoji) if bool(case.resolved) else str(bot.success_emoji)} {'Closed' if bool(case.resolved) else 'Open'}",
+        f"**Status:** {bot.error_emoji if bool(case.resolved) else bot.success_emoji} {'Closed' if bool(case.resolved) else 'Open'}",
         f"**Type:** {case.type}",
         f"**Target:** {f'<@{target}> (`{target}`)' if isinstance(target, int) or isinstance(target, Column) else f'{target.mention} (`{target.id}`)'}",
         f"**Time Created:** <t:{int(case.time_created.timestamp())}:f>",
@@ -90,7 +90,7 @@ def case_embed(
 
 def case_not_found(bot: TitaniumBot, case: str) -> Embed:
     return Embed(
-        title=f"{str(bot.error_emoji)} Case Not Found",
+        title=f"{bot.error_emoji} Case Not Found",
         description=f"Couldn't find a case with the ID `{case}` in this server.",
         colour=Colour.red(),
     )
@@ -98,7 +98,7 @@ def case_not_found(bot: TitaniumBot, case: str) -> Embed:
 
 def case_deleted(bot: TitaniumBot, case_id: str) -> Embed:
     return Embed(
-        title=f"{str(bot.success_emoji)} Case Deleted",
+        title=f"{bot.success_emoji} Case Deleted",
         description=f"Case `{case_id}` has been successfully deleted.",
         colour=Colour.green(),
     )

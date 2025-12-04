@@ -52,7 +52,7 @@ async def song(
 
     # Set up new embed
     embed = discord.Embed(
-        title=f"{item['name']}{f' {str(bot.explicit_emoji)}' if explicit else ''}",
+        title=f"{item['name']}{f' {bot.explicit_emoji}' if explicit else ''}",
         description=f"on **[{escape_markdown(item['album']['name'])}](<{item['album']['external_urls']['spotify']}>) • {item['album']['release_date'].split('-', 1)[0]}**",
     )
 
