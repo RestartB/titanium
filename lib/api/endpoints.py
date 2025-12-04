@@ -116,7 +116,7 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                     "evaluate_for_existing_members": rule.evaluate_for_existing_members,
                     "criteria": [
                         {
-                            "type": criterion.criteria_type,
+                            "type": criterion.criteria_type.value,
                             "account_age": criterion.account_age,
                             "words": criterion.words,
                             "match_whole_word": criterion.match_whole_word,
@@ -126,7 +126,7 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                     ],
                     "actions": [
                         {
-                            "type": action.action_type,
+                            "type": action.action_type.value,
                             "duration": action.duration,
                             "role_id": str(action.role_id) if action.role_id else None,
                             "reason": action.reason,

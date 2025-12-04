@@ -169,7 +169,6 @@ class BouncerActionModel(BaseModel):
 
 
 class BouncerRuleModel(BaseModel):
-    id: str
     enabled: bool
     evaluate_for_existing_members: bool
     criteria: list[BouncerCriterionModel]
@@ -195,16 +194,14 @@ class BouncerRuleModel(BaseModel):
 
     def to_sqlalchemy(self, guild_id: int) -> BouncerRule:
         rule = BouncerRule(
-            id=uuid.UUID(self.id),
             guild_id=guild_id,
             enabled=True,
         )
 
         for criterion_model in self.criteria:
             criterion = BouncerCriteria(
-                guild_id=guild_id,
                 rule_id=rule.id,
-                criterion_type=criterion_model.type,
+                criteria_type=criterion_model.type,
                 account_age=criterion_model.account_age,
                 words=criterion_model.words or [],
                 match_whole_word=criterion_model.match_whole_word,
@@ -214,7 +211,6 @@ class BouncerRuleModel(BaseModel):
 
         for action_model in self.actions:
             action = BouncerAction(
-                guild_id=guild_id,
                 rule_id=rule.id,
                 action_type=action_model.type,
                 duration=action_model.duration,
