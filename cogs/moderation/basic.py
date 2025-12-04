@@ -768,11 +768,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 case = next((c for c in cases if str(c.type) == "ban"), None)
 
-                if not case:
-                    return
-
-                # Close case
-                case = await manager.close_case(case.id)
+                if case:
+                    # Close case
+                    case = await manager.close_case(case.id)
 
             dm_success, dm_error = await send_dm(
                 embed=unbanned_dm(self.bot, ctx, case),
@@ -786,7 +784,6 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             await guild_logger.titanium_unban(
                 target=user,
                 creator=ctx.author,
-                case=case,
                 dm_success=dm_success,
                 dm_error=dm_error,
             )
@@ -798,7 +795,6 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     self.bot,
                     user=user,
                     creator=ctx.author,
-                    case=case,
                     dm_success=dm_success,
                     dm_error=dm_error,
                 ),
@@ -812,7 +808,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
     @commands.hybrid_command(
         name="purge",
-        description="Purge messages from a channel.",
+        description="Purge up to 100 messages up to 14 days old from a channel.",
         aliases=["clear", "clean", "scrub"],
     )
     @commands.guild_only()
@@ -821,7 +817,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.describe(
         amount="The number of messages to purge (max 100).",
-        user="The user whose messages should be purged (optional).",
+        user="Optional: the user whose messages should be purged.",
     )
     async def purge(
         self,

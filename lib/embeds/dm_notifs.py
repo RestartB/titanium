@@ -74,10 +74,10 @@ def banned_dm(
 def unbanned_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
-    case: ModCase,
+    case: ModCase | None,
 ) -> Embed:
     return Embed(
-        title=f"{str(bot.success_emoji)} You got unbanned • `{case.id}`",
+        title=f"{str(bot.success_emoji)} You got unbanned{f' • `{case.id}`' if case else ''}",
         description=f"A moderator has unbanned you from **{ctx.guild.name if ctx.guild else ''}!**",
         colour=Colour.green(),
     )

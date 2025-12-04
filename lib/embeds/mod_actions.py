@@ -167,7 +167,6 @@ def unbanned(
     bot: TitaniumBot,
     user: Member | User,
     creator: Member | User | ClientUser,
-    case: ModCase,
     dm_success: bool,
     dm_error: str,
 ) -> Embed:
