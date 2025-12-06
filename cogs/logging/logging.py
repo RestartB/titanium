@@ -174,6 +174,7 @@ class EventLoggingCog(commands.Cog):
 
         guild_logger = GuildLogger(self.bot, guild)
         await guild_logger.message_delete(payload)
+        await guild_logger.poll_delete(payload)
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent) -> None:
@@ -194,7 +195,6 @@ class EventLoggingCog(commands.Cog):
 
         guild_logger = GuildLogger(self.bot, message.guild)
         await guild_logger.poll_create(message)
-        await guild_logger.poll_delete(message)
 
     @commands.Cog.listener()
     async def on_reaction_clear(

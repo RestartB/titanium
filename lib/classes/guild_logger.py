@@ -520,7 +520,7 @@ class GuildLogger:
 
         before_ids = {e.id for e in before}
         added = [e for e in after if e.id not in before_ids]
-        embeds = []
+        embeds: list[discord.Embed] = []
 
         for sticker in added:
             embed = discord.Embed(
@@ -534,11 +534,25 @@ class GuildLogger:
             log = await self._get_audit_log_entry(discord.AuditLogAction.sticker_create)
             await self._add_user_footer(embed, log)
 
+            embeds.append(embed)
+
+        embed_groups: list[list[discord.Embed]] = []
+        current_group: list[discord.Embed] = []
+
         for embed in embeds:
+            if len(current_group) >= 10:
+                embed_groups.append(current_group)
+                current_group = []
+            current_group.append(embed)
+
+        if current_group:
+            embed_groups.append(current_group)
+
+        for group in embed_groups:
             assert self.config is not None and self.config.logging_settings is not None
             await self._send_to_webhook(
                 await self._find_webhook(self.config.logging_settings.guild_sticker_create_id),
-                embed,
+                embeds=group,
             )
 
     async def guild_sticker_delete(
@@ -551,7 +565,7 @@ class GuildLogger:
 
         after_ids = {e.id for e in after}
         removed = [e for e in before if e.id not in after_ids]
-        embeds = []
+        embeds: list[discord.Embed] = []
 
         for sticker in removed:
             embed = discord.Embed(
@@ -565,11 +579,25 @@ class GuildLogger:
             log = await self._get_audit_log_entry(discord.AuditLogAction.sticker_delete)
             await self._add_user_footer(embed, log)
 
+            embeds.append(embed)
+
+        embed_groups: list[list[discord.Embed]] = []
+        current_group: list[discord.Embed] = []
+
         for embed in embeds:
+            if len(current_group) >= 10:
+                embed_groups.append(current_group)
+                current_group = []
+            current_group.append(embed)
+
+        if current_group:
+            embed_groups.append(current_group)
+
+        for group in embed_groups:
             assert self.config is not None and self.config.logging_settings is not None
             await self._send_to_webhook(
                 await self._find_webhook(self.config.logging_settings.guild_sticker_delete_id),
-                embed,
+                embeds=group,
             )
 
     async def guild_invite_create(self, invite: discord.Invite) -> None:
@@ -932,6 +960,9 @@ class GuildLogger:
             timestamp=discord.utils.utcnow(),
         )
 
+        if event.cached_message and event.cached_message.poll:
+            return
+
         if event.cached_message and embed.description:
             embed.description += f"\n**Author:** {event.cached_message.author.mention}"
             embed.add_field(
@@ -1007,27 +1038,29 @@ class GuildLogger:
             embed,
         )
 
-    async def poll_delete(self, message: discord.Message) -> None:
+    async def poll_delete(self, event: discord.RawMessageDeleteEvent) -> None:
         if not self._exists_and_enabled("poll_delete_id"):
             return
 
         if (
-            isinstance(message.channel, discord.DMChannel)
-            or isinstance(message.channel, discord.GroupChannel)
-        ) or not message.poll:
+            not event.cached_message
+            or not event.cached_message.poll
+            or isinstance(event.cached_message.channel, discord.DMChannel)
+            or isinstance(event.cached_message.channel, discord.GroupChannel)
+        ):
             return
 
         embed = discord.Embed(
             title="Poll Deleted",
-            description=f"**Message ID:** `{message.id}`\n"
-            f"**Channel:** {message.channel.mention}\n"
-            f"**Author:** {message.author.mention}\n"
-            f"**Question:** {message.poll.question}\n"
-            f"**Total Votes:** `{message.poll.total_votes}`",
+            description=f"**Message ID:** `{event.cached_message.id}`\n"
+            f"**Channel:** {event.cached_message.channel.mention}\n"
+            f"**Author:** {event.cached_message.author.mention}\n"
+            f"**Question:** {event.cached_message.poll.question}\n"
+            f"**Total Votes:** `{event.cached_message.poll.total_votes}`",
             color=discord.Color.red(),
             timestamp=discord.utils.utcnow(),
         )
-        embed.set_thumbnail(url=message.author.display_avatar.url)
+        embed.set_thumbnail(url=event.cached_message.author.display_avatar.url)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
