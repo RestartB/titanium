@@ -53,11 +53,7 @@ class LeaderboardCog(commands.Cog):
         if not message.guild or message.author.bot:
             return
 
-        guild_settings = self.bot.guild_configs.get(message.guild.id)
-        if not guild_settings:
-            await self.bot.refresh_guild_config_cache(message.guild.id)
-            guild_settings = self.bot.guild_configs.get(message.guild.id)
-
+        guild_settings = await self.bot.fetch_guild_config(message.guild.id)
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -153,11 +149,7 @@ class LeaderboardCog(commands.Cog):
     # Member leave event
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
-        guild_settings = self.bot.guild_configs.get(member.guild.id)
-        if not guild_settings:
-            await self.bot.refresh_guild_config_cache(member.guild.id)
-            guild_settings = self.bot.guild_configs.get(member.guild.id)
-
+        guild_settings = await self.bot.fetch_guild_config(member.guild.id)
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -192,11 +184,7 @@ class LeaderboardCog(commands.Cog):
 
         await ctx.defer()
 
-        guild_settings = self.bot.guild_configs.get(ctx.guild.id)
-        if not guild_settings:
-            await self.bot.refresh_guild_config_cache(ctx.guild.id)
-            guild_settings = self.bot.guild_configs.get(ctx.guild.id)
-
+        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -282,11 +270,7 @@ class LeaderboardCog(commands.Cog):
 
         user = member or ctx.author
 
-        guild_settings = self.bot.guild_configs.get(ctx.guild.id)
-        if not guild_settings:
-            await self.bot.refresh_guild_config_cache(ctx.guild.id)
-            guild_settings = self.bot.guild_configs.get(ctx.guild.id)
-
+        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings

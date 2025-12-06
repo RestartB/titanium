@@ -175,12 +175,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
 
         await interaction.response.defer(ephemeral=True)
 
-        await self.bot.refresh_guild_config_cache(interaction.guild_id)
-        guild_settings = self.bot.guild_configs.get(interaction.guild_id)
-
-        if not guild_settings:
-            guild_settings = await self.bot.init_guild(interaction.guild_id)
-
+        guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
         view = SettingsView(interaction, self.bot, guild_settings)
 
         await interaction.followup.send(view=view, ephemeral=True)

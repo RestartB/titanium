@@ -92,7 +92,7 @@ class AutomodActionModel(BaseModel):
             action_type=self.type,
             duration=self.duration,
             reason=self.reason,
-            role_id=self.role_id,
+            role_id=int(self.role_id) if self.role_id else None,
         )
 
 
@@ -214,7 +214,7 @@ class BouncerRuleModel(BaseModel):
                 rule_id=rule.id,
                 action_type=action_model.type,
                 duration=action_model.duration,
-                role_id=action_model.role_id,
+                role_id=int(action_model.role_id) if action_model.role_id else None,
                 reason=action_model.reason,
                 message_content=action_model.message_content,
                 dm_user=action_model.dm_user,

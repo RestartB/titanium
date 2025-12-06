@@ -228,6 +228,15 @@ class TitaniumBot(commands.Bot):
         db_logger.info(f"[INIT] Guild {guild_id} initialized.")
         return self.guild_configs.get(guild_id)
 
+    async def fetch_guild_config(self, guild_id: int) -> GuildSettings | None:
+        guild_settings = self.guild_configs.get(guild_id)
+
+        if not guild_settings:
+            await self.refresh_guild_config_cache(guild_id)
+            guild_settings = self.guild_configs.get(guild_id)
+
+        return guild_settings
+
     async def setup_hook(self):
         try:
             await init_db()

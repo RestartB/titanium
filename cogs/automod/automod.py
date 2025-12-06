@@ -44,13 +44,15 @@ class AutomodMonitorCog(commands.Cog):
         self, message: discord.Message, event_type: Literal["new", "edit"] = "new"
     ):
         self.logger.debug(f"Processing message from {message.author}: {message.id}")
+        config = await self.bot.fetch_guild_config(message.guild.id) if message.guild else None
 
         try:
             # Check for server ID in config list
             if (
                 not message.guild
                 or message.guild.id not in self.bot.guild_configs
-                or not self.bot.guild_configs[message.guild.id].automod_settings
+                or not config
+                or not config.automod_settings
                 or not message.author
                 or not isinstance(message.author, discord.Member)
                 or message.author.guild_permissions.administrator
@@ -62,11 +64,11 @@ class AutomodMonitorCog(commands.Cog):
             triggers: list[AutomodRule] = []
             punishments: list[AutomodAction] = []
 
-            if not self.bot.guild_configs[message.guild.id].automod_enabled:
+            if not config.automod_enabled:
                 self.logger.debug("Automod is not enabled, skipping message")
                 return
 
-            config = self.bot.guild_configs[message.guild.id].automod_settings
+            config = config.automod_settings
 
             triggered_word_rule_amount = {}
             malicious_link_count = 0

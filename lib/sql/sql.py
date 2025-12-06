@@ -283,11 +283,13 @@ class BouncerRule(Base):
         "BouncerCriteria",
         back_populates="rule",
         cascade="all, delete-orphan",
+        passive_deletes=True,
     )
     actions: Mapped[list["BouncerAction"]] = relationship(
         "BouncerAction",
         back_populates="rule",
         cascade="all, delete-orphan",
+        passive_deletes=True,
     )
     guild: Mapped["GuildBouncerSettings"] = relationship(
         "GuildBouncerSettings",
@@ -299,7 +301,9 @@ class BouncerRule(Base):
 class BouncerCriteria(Base):
     __tablename__ = "bouncer_criteria"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
-    rule_id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), ForeignKey("bouncer_rules.id"))
+    rule_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("bouncer_rules.id", ondelete="CASCADE")
+    )
     criteria_type: Mapped[BouncerCriteriaType] = MappedColumn(Enum(BouncerCriteriaType))
     account_age: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     words: Mapped[list[str]] = MappedColumn(
@@ -315,7 +319,9 @@ class BouncerCriteria(Base):
 class BouncerAction(Base):
     __tablename__ = "bouncer_actions"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
-    rule_id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), ForeignKey("bouncer_rules.id"))
+    rule_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("bouncer_rules.id", ondelete="CASCADE")
+    )
     action_type: Mapped[BouncerActionType] = MappedColumn(Enum(BouncerActionType))
 
     # Actions with duration

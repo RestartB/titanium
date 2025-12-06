@@ -49,10 +49,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             )
             return
 
-        guild_settings = self.bot.guild_configs.get(interaction.guild.id)
-        if not guild_settings:
-            await self.bot.refresh_guild_config_cache(interaction.guild.id)
-            guild_settings = self.bot.guild_configs.get(interaction.guild.id)
+        guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
 
         if not guild_settings or not guild_settings.confessions_enabled:
             await interaction.followup.send(

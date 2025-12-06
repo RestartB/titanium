@@ -78,10 +78,7 @@ class GuildModCaseManager:
         external: bool = False,
     ) -> ModCase | None:
         if external:
-            guild_settings = self.bot.guild_configs.get(self.guild.id)
-            if not guild_settings:
-                await self.bot.refresh_guild_config_cache(self.guild.id)
-                guild_settings = self.bot.guild_configs.get(self.guild.id)
+            guild_settings = await self.bot.fetch_guild_config(self.guild.id)
 
             # Check if external cases are enabled
             if guild_settings and not guild_settings.moderation_settings.external_cases:

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from datetime import timedelta
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -59,12 +60,14 @@ class BouncerMonitorCog(commands.Cog):
 
     async def event_handler(self, member: discord.Member, event_type: BouncerEventType):
         self.logger.debug(f"Processing member join/update: {member.id}")
+        config = await self.bot.fetch_guild_config(member.guild.id) if member.guild else None
 
         # Check for server ID in config list
         if (
             not member.guild
             or member.guild.id not in self.bot.guild_configs
-            or not self.bot.guild_configs[member.guild.id].bouncer_settings
+            or not config
+            or not config.bouncer_settings
             or not member
             or not isinstance(member, discord.Member)
             or member.guild_permissions.administrator
@@ -76,62 +79,84 @@ class BouncerMonitorCog(commands.Cog):
         triggers: list[BouncerRule] = []
         punishments: list[BouncerAction] = []
 
-        if not self.bot.guild_configs[member.guild.id].bouncer_enabled:
+        self.logger.debug(f"Bouncer enabled: {config.bouncer_enabled}")
+
+        if not config.bouncer_enabled:
             self.logger.debug("Bouncer is not enabled, skipping member")
             return
 
-        config = self.bot.guild_configs[member.guild.id].bouncer_settings
+        config = config.bouncer_settings
 
         for rule in config.rules:
             spotted = False
 
             if not rule.enabled:
+                self.logger.debug(f"Bouncer rule {rule.id} is disabled, skipping")
                 continue
 
             if event_type == BouncerEventType.UPDATE and not rule.evaluate_for_existing_members:
+                self.logger.debug(
+                    f"Bouncer rule {rule.id} is not set to evaluate existing members, skipping"
+                )
                 continue
 
             for criteria in rule.criteria:
                 if criteria.criteria_type == BouncerCriteriaType.USERNAME:
-                    if criteria.match_whole_word:
-                        for word in (
-                            [w.lower() for w in member.name.split()]
-                            + (
-                                [w.lower() for w in member.global_name.split()]
-                                if member.global_name
-                                else []
-                            )
-                            + [x.lower() for x in member.display_name.split()]
-                        ):
-                            if criteria.match_whole_word and word in criteria.words:
-                                spotted = True
-                                break
-                            elif not criteria.match_whole_word and any(
-                                w in word for w in criteria.words
-                            ):
-                                spotted = True
-                                break
+                    for word in criteria.words:
+                        check_word = word.lower() if not criteria.case_sensitive else word
+                        matches = []
+                        contents_to_check: list[str] = [member.name, member.display_name]
+
+                        if member.global_name:
+                            contents_to_check.append(member.global_name)
+
+                        if member.nick:
+                            contents_to_check.append(member.nick)
+
+                        for content_to_check in contents_to_check:
+                            if not criteria.case_sensitive:
+                                content_to_check = content_to_check.lower()
+
+                            if criteria.match_whole_word:
+                                pattern = r"\b" + re.escape(check_word) + r"\b"
+                                matches = re.findall(pattern, content_to_check)
+                            else:
+                                pattern = re.escape(check_word)
+                                matches = re.findall(pattern, content_to_check)
+
+                        if matches:
+                            self.logger.debug("Username match found")
+                            spotted = True
+                            break
                 elif criteria.criteria_type == BouncerCriteriaType.TAG and member.primary_guild:
-                    if (
-                        criteria.match_whole_word
-                        and str(member.primary_guild.tag) in criteria.words
-                    ):
-                        spotted = True
-                        break
-                    elif not criteria.match_whole_word and any(
-                        w in str(member.primary_guild.tag) for w in criteria.words
-                    ):
-                        spotted = True
-                        break
+                    if not member.primary_guild.tag:
+                        continue
+
+                    for word in criteria.words:
+                        check_word = word.lower() if not criteria.case_sensitive else word
+
+                        if criteria.match_whole_word:
+                            pattern = r"\b" + re.escape(check_word) + r"\b"
+                            matches = re.findall(pattern, member.primary_guild.tag)
+                        else:
+                            pattern = re.escape(check_word)
+                            matches = re.findall(pattern, member.primary_guild.tag)
+
+                        if matches:
+                            self.logger.debug("Tag match found")
+                            spotted = True
+                            break
                 elif (
                     criteria.criteria_type == BouncerCriteriaType.AGE
                     and event_type == BouncerEventType.JOIN
                 ):
                     if (discord.utils.utcnow() - member.created_at).seconds <= criteria.account_age:
+                        self.logger.debug("Account age match found")
                         spotted = True
                         break
                 elif criteria.criteria_type == BouncerCriteriaType.AVATAR:
                     if not member.avatar:
+                        self.logger.debug("No avatar match found")
                         spotted = True
                         break
 

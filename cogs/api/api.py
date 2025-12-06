@@ -442,20 +442,16 @@ class APICog(commands.Cog):
             return web.json_response({"error": "guild not found"}, status=404)
 
         # Get permissions
-        config = self.bot.guild_configs.get(guild.id)
+        config = await self.bot.fetch_guild_config(guild.id)
 
         if not config:
-            await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.guild_configs.get(guild.id)
+            config = await self.bot.init_guild(guild.id)
 
-            if not config:
-                config = await self.bot.init_guild(guild.id)
-
-                if not config:
-                    return web.json_response(
-                        {"error": "Failed to retrieve server configuration"},
-                        status=500,
-                    )
+        if not config:
+            return web.json_response(
+                {"error": "Failed to retrieve server configuration"},
+                status=500,
+            )
 
         lb_config = config.leaderboard_settings
 
@@ -499,20 +495,16 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        config = self.bot.guild_configs.get(guild.id)
+        config = await self.bot.fetch_guild_config(guild.id)
 
         if not config:
-            await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.guild_configs.get(guild.id)
+            config = await self.bot.init_guild(guild.id)
 
-            if not config:
-                config = await self.bot.init_guild(guild.id)
-
-                if not config:
-                    return web.json_response(
-                        {"error": "Failed to retrieve server configuration"},
-                        status=500,
-                    )
+        if not config:
+            return web.json_response(
+                {"error": "Failed to retrieve server configuration"},
+                status=500,
+            )
 
         return web.json_response(
             {
@@ -532,20 +524,16 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        config = self.bot.guild_configs.get(guild.id)
+        config = await self.bot.fetch_guild_config(guild.id)
 
         if not config:
-            await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.guild_configs.get(guild.id)
+            config = await self.bot.init_guild(guild.id)
 
-            if not config:
-                config = await self.bot.init_guild(guild.id)
-
-                if not config:
-                    return web.json_response(
-                        {"error": "Failed to retrieve server configuration"},
-                        status=500,
-                    )
+        if not config:
+            return web.json_response(
+                {"error": "Failed to retrieve server configuration"},
+                status=500,
+            )
 
         try:
             data = await request.json()
@@ -597,20 +585,16 @@ class APICog(commands.Cog):
             )
 
         # Get permissions
-        config = self.bot.guild_configs.get(guild.id)
+        config = await self.bot.fetch_guild_config(guild.id)
 
         if not config:
-            await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.guild_configs.get(guild.id)
+            config = await self.bot.init_guild(guild.id)
 
-            if not config:
-                config = await self.bot.init_guild(guild.id)
-
-                if not config:
-                    return web.json_response(
-                        {"error": "Failed to retrieve server configuration"},
-                        status=500,
-                    )
+        if not config:
+            return web.json_response(
+                {"error": "Failed to retrieve server configuration"},
+                status=500,
+            )
 
         dashboard_manager = member.guild_permissions.administrator
         case_manager = member.guild_permissions.manage_guild
@@ -642,23 +626,18 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        config = self.bot.guild_configs.get(guild.id)
+        config = await self.bot.fetch_guild_config(guild.id)
         prefixes = self.bot.guild_prefixes.get(guild.id)
 
         if not config or not prefixes:
-            await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.guild_configs.get(guild.id)
+            config = await self.bot.init_guild(guild.id)
             prefixes = self.bot.guild_prefixes.get(guild.id)
 
-            if not config or not prefixes:
-                config = await self.bot.init_guild(guild.id)
-                prefixes = self.bot.guild_prefixes.get(guild.id)
-
-                if not config or not prefixes:
-                    return web.json_response(
-                        {"error": "Failed to retrieve server configuration"},
-                        status=500,
-                    )
+        if not config or not prefixes:
+            return web.json_response(
+                {"error": "Failed to retrieve server configuration"},
+                status=500,
+            )
 
         return web.json_response(
             {
@@ -694,23 +673,18 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        config = self.bot.guild_configs.get(guild.id)
+        config = await self.bot.fetch_guild_config(guild.id)
         prefixes = self.bot.guild_prefixes.get(guild.id)
 
         if not config or not prefixes:
-            await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.guild_configs.get(guild.id)
+            config = await self.bot.init_guild(guild.id)
             prefixes = self.bot.guild_prefixes.get(guild.id)
 
-            if not config or not prefixes:
-                config = await self.bot.init_guild(guild.id)
-                prefixes = self.bot.guild_prefixes.get(guild.id)
-
-                if not config or not prefixes:
-                    return web.json_response(
-                        {"error": "Failed to retrieve server configuration"},
-                        status=500,
-                    )
+        if not config or not prefixes:
+            return web.json_response(
+                {"error": "Failed to retrieve server configuration"},
+                status=500,
+            )
 
         try:
             data = await request.json()
@@ -762,13 +736,16 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "Guild not found"}, status=404)
 
-        config = self.bot.guild_configs.get(guild.id)
-        if not config:
-            await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.guild_configs.get(guild.id)
+        config = await self.bot.fetch_guild_config(guild.id)
 
-            if not config:
-                config = await self.bot.init_guild(guild.id)
+        if not config:
+            config = await self.bot.init_guild(guild.id)
+
+        if not config:
+            return web.json_response(
+                {"error": "Failed to retrieve server configuration"},
+                status=500,
+            )
 
         if module_name == "confessions":
             return confessions_info(self.bot, request, guild)
@@ -804,13 +781,16 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "Guild not found"}, status=404)
 
-        config = self.bot.guild_configs.get(guild.id)
-        if not config:
-            await self.bot.refresh_guild_config_cache(guild.id)
-            config = self.bot.guild_configs.get(guild.id)
+        config = await self.bot.fetch_guild_config(guild.id)
 
-            if not config:
-                config = await self.bot.init_guild(guild.id)
+        if not config:
+            config = await self.bot.init_guild(guild.id)
+
+        if not config:
+            return web.json_response(
+                {"error": "Failed to retrieve server configuration"},
+                status=500,
+            )
 
         try:
             data = await request.json()
