@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Annotated, Literal, Optional, Sequence
 
 from discord import Guild
 from discord.ui import View
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -103,33 +103,41 @@ class GuildModCaseManager:
         self.session.add(case)
         await self.session.commit()
 
-        if duration and action == "mute":
-            # Schedule mute refreshes
-            await self._schedule_mute_refreshes(case, duration)
-        elif duration is None and action == "mute":
-            # Permanent mute, schedule refresh every 27 days
-            self.session.add(
-                ScheduledTask(
-                    guild_id=self.guild.id,
-                    user_id=user_id,
-                    case_id=case.id,
-                    type="perma_mute_refresh",
-                    time_scheduled=datetime.now() + timedelta(days=27),
+        if not external:
+            if action == "mute":
+                # Delete old scheduled mute refresh tasks
+                await self.delete_scheduled_tasks_for_user(user_id, "perma_mute_refresh")
+
+            if duration and action == "mute":
+                # Schedule mute refreshes
+                await self._schedule_mute_refreshes(case, duration)
+            elif duration is None and action == "mute":
+                # Permanent mute, schedule refresh every 27 days
+                self.session.add(
+                    ScheduledTask(
+                        guild_id=self.guild.id,
+                        user_id=user_id,
+                        case_id=case.id,
+                        type="perma_mute_refresh",
+                        time_scheduled=datetime.now() + timedelta(days=27),
+                    )
                 )
-            )
-            await self.session.commit()
-        elif duration and action == "ban":
-            # Schedule unban
-            self.session.add(
-                ScheduledTask(
-                    guild_id=self.guild.id,
-                    user_id=user_id,
-                    case_id=case.id,
-                    type="unban",
-                    time_scheduled=datetime.now() + duration,
+                await self.session.commit()
+            elif duration and action == "ban":
+                # Delete old scheduled unban tasks
+                await self.delete_scheduled_tasks_for_user(user_id, "unban")
+
+                # Schedule unban
+                self.session.add(
+                    ScheduledTask(
+                        guild_id=self.guild.id,
+                        user_id=user_id,
+                        case_id=case.id,
+                        type="unban",
+                        time_scheduled=datetime.now() + duration,
+                    )
                 )
-            )
-            await self.session.commit()
+                await self.session.commit()
 
         if external and guild_settings and guild_settings.moderation_settings.external_case_dms:
             member = self.guild.get_member(user_id)
@@ -204,6 +212,17 @@ class GuildModCaseManager:
         case = await self.get_case_by_id(case_id)
 
         await self.session.delete(case)
+        await self.session.commit()
+
+    async def delete_scheduled_tasks_for_user(self, user_id: int, type: str) -> None:
+        """Delete scheduled tasks for a user of a specific type"""
+        await self.session.execute(
+            delete(ScheduledTask).where(
+                ScheduledTask.guild_id == self.guild.id,
+                ScheduledTask.user_id == user_id,
+                ScheduledTask.type == type,
+            )
+        )
         await self.session.commit()
 
     async def _schedule_mute_refreshes(self, case: ModCase, duration: timedelta) -> None:

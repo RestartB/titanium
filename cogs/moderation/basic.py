@@ -388,10 +388,12 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 case = next((c for c in cases if str(c.type) == "mute"), None)
 
                 if not case:
-                    return
+                    return  # FIXME: what???
 
                 # Close case
                 case = await manager.close_case(case.id)
+
+                await manager.delete_scheduled_tasks_for_user(member.id, "perma_mute_refresh")
 
             dm_success, dm_error = await send_dm(
                 embed=unmuted_dm(self.bot, ctx, case),
@@ -771,6 +773,8 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 if case:
                     # Close case
                     case = await manager.close_case(case.id)
+
+                await manager.delete_scheduled_tasks_for_user(user.id, "unban")
 
             dm_success, dm_error = await send_dm(
                 embed=unbanned_dm(self.bot, ctx, case),
