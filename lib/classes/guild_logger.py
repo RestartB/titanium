@@ -98,30 +98,49 @@ class GuildLogger:
     async def _send_to_webhook(
         self,
         url: Optional[str],
-        embed: discord.Embed,
+        embed: discord.Embed | None = None,
+        embeds: list[discord.Embed] | None = None,
         view: discord.ui.View | None = None,
     ) -> None:
         if url is None:
             return
 
+        if embed is None and embeds is None:
+            raise ValueError("Either embed or embeds must be provided")
+
         try:
             webhook = discord.Webhook.from_url(url, client=self.bot)
 
             if view:
-                result = await webhook.send(
-                    username=self.bot.user.name if self.bot.user else "Titanium",
-                    avatar_url=self.bot.user.display_avatar.url if self.bot.user else None,
-                    embed=embed,
-                    view=view,
-                )
+                if embed:
+                    await webhook.send(
+                        username=self.bot.user.name if self.bot.user else "Titanium",
+                        avatar_url=self.bot.user.display_avatar.url if self.bot.user else None,
+                        embed=embed,
+                        view=view,
+                    )
+                elif embeds:
+                    await webhook.send(
+                        username=self.bot.user.name if self.bot.user else "Titanium",
+                        avatar_url=self.bot.user.display_avatar.url if self.bot.user else None,
+                        embeds=embeds,
+                        view=view,
+                    )
             else:
-                result = await webhook.send(
-                    username=self.bot.user.name if self.bot.user else "Titanium",
-                    avatar_url=self.bot.user.display_avatar.url if self.bot.user else None,
-                    embed=embed,
-                )
+                if embed:
+                    await webhook.send(
+                        username=self.bot.user.name if self.bot.user else "Titanium",
+                        avatar_url=self.bot.user.display_avatar.url if self.bot.user else None,
+                        embed=embed,
+                    )
+                elif embeds:
+                    await webhook.send(
+                        username=self.bot.user.name if self.bot.user else "Titanium",
+                        avatar_url=self.bot.user.display_avatar.url if self.bot.user else None,
+                        embeds=embeds,
+                    )
 
-            return result
+            return
         except discord.NotFound:
             async with get_session() as session:
                 await session.execute(
@@ -299,7 +318,7 @@ class GuildLogger:
             changes.append(f"**Position:** `{before.position}` ➔ `{after.position}`")
         if len(before.overwrites) != len(after.overwrites):
             changes.append(
-                f"**Permission Overwrites:** `{len(before.overwrites)} overwrites` ➔ `{len(after.overwrites)}` overwrites"
+                f"**Permission Overwrites:** `{len(before.overwrites)} overwrites` ➔ `{len(after.overwrites)} overwrites`"
             )
 
         if not changes:
@@ -403,10 +422,11 @@ class GuildLogger:
 
         embed = discord.Embed(
             title="Guild Icon Updated",
+            url="https://titaniumbot.me",
             color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
-        embed.set_thumbnail(url=after.icon.url if after.icon else None)
+        embed.set_image(url=before.icon.url if before.icon else None)
 
         embed.description = (
             f"\n\n**Old Icon:** [Link]({before.icon.url})"
@@ -416,6 +436,13 @@ class GuildLogger:
         embed.description += (
             f"\n**New Icon:** [Link]({after.icon.url})" if after.icon else "\n**New Icon:** `None`"
         )
+
+        embeds = [embed]
+        if after.icon:
+            embed_after = discord.Embed(url="https://titaniumbot.me")
+            embed_after.set_image(url=after.icon.url)
+
+            embeds.append(embed_after)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.guild_update)
         await self._add_user_footer(embed, log)
@@ -441,7 +468,7 @@ class GuildLogger:
         for emoji in added:
             embed = discord.Embed(
                 title="Emoji Added",
-                description=f"**Name:** `{emoji.name}` (<:{emoji.id}:>)",
+                description=f"**Name:** `{emoji.name}`\n**ID:** `{emoji.id}`",
                 color=discord.Color.green(),
                 timestamp=discord.utils.utcnow(),
             )
@@ -474,7 +501,7 @@ class GuildLogger:
         for emoji in removed:
             embed = discord.Embed(
                 title="Emoji Removed",
-                description=f"**Name:** `{emoji.name}`",
+                description=f"**Name:** `{emoji.name}`\n**ID:** `{emoji.id}`",
                 color=discord.Color.red(),
                 timestamp=discord.utils.utcnow(),
             )
@@ -578,7 +605,7 @@ class GuildLogger:
             title="Invite Created",
             description=f"**Code:** `{invite.code}`\n"
             f"**Channel:** {channel_display}\n"
-            f"**Max Uses:** `{invite.max_uses}`\n"
+            f"**Max Uses:** `{invite.max_uses if invite.max_uses and invite.max_uses > 0 else 'Unlimited'}`\n"
             f"**Temporary:** `{invite.temporary}`",
             color=discord.Color.green(),
             timestamp=discord.utils.utcnow(),
@@ -624,7 +651,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Member Joined",
             description=f"**User:** {member.mention} (`@{member.name}`)"
-            f"**ID:** `{member.id}`"
+            f"\n**ID:** `{member.id}`"
             f"\n**Account Created:** <t:{int(member.created_at.timestamp())}:R>",
             color=discord.Color.green(),
             timestamp=discord.utils.utcnow(),
@@ -644,7 +671,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Member Left",
             description=f"**User:** {member.mention} (`@{member.name}`)"
-            f"**ID:** `{member.id}`"
+            f"\n**ID:** `{member.id}`"
             f"\n**Account Created:** <t:{int(member.created_at.timestamp())}:R>",
             color=discord.Color.red(),
             timestamp=discord.utils.utcnow(),
@@ -900,7 +927,7 @@ class GuildLogger:
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.message_edit_id),
             embed,
-            view,
+            view=view,
         )
 
     async def message_delete(self, event: discord.RawMessageDeleteEvent) -> None:
@@ -916,7 +943,13 @@ class GuildLogger:
 
         if event.cached_message and embed.description:
             embed.description += f"\n**Author:** {event.cached_message.author.mention}"
-            embed.add_field(name="Content", value=event.cached_message.content, inline=False)
+            embed.add_field(
+                name="Content",
+                value=event.cached_message.content
+                if event.cached_message.content
+                else "No content",
+                inline=False,
+            )
 
             embed.set_author(
                 name=f"@{event.cached_message.author.name}",
@@ -1046,7 +1079,7 @@ class GuildLogger:
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.reaction_clear_id),
             embed,
-            view,
+            view=view,
         )
 
     async def reaction_clear_emoji(self, reaction: discord.Reaction) -> None:
@@ -1084,7 +1117,7 @@ class GuildLogger:
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.reaction_clear_emoji_id),
             embed,
-            view,
+            view=view,
         )
 
     async def role_create(self, role: discord.Role) -> None:
