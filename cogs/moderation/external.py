@@ -145,18 +145,16 @@ class ModMonitorCog(commands.Cog):
             async with get_session() as session:
                 case_manager = GuildModCaseManager(self.bot, guild, session)
 
-                # Get the latest not resolved ban case for this user
+                # Close all open ban cases for this user
                 cases = await case_manager.get_cases_by_user(user.id)
-                ban_case = next(
-                    (c for c in cases if c.type == "ban" and not c.resolved),
-                    None,
-                )
+                ban_cases = [c for c in cases if c.type == "ban" and not c.resolved]
 
-                if not ban_case:
+                if not ban_cases:
                     return
 
-                # Close case
-                await case_manager.close_case(ban_case.id)
+                # Close cases
+                for ban_case in ban_cases:
+                    await case_manager.close_case(ban_case.id)
 
 
 async def setup(bot: TitaniumBot) -> None:

@@ -7,6 +7,7 @@ import discord
 from discord.ext import commands, tasks
 from sqlalchemy import func, select
 
+from lib.classes.case_manager import GuildModCaseManager
 from lib.helpers.log_error import log_error
 from lib.sql.sql import ScheduledTask, get_session
 
@@ -124,6 +125,12 @@ class ScheduledTasksCog(commands.Cog):
                     discord.Object(id=task.user_id),
                     reason=f"{task.case_id} - ban expired",
                 )
+
+                async with get_session() as session:
+                    case_manager = GuildModCaseManager(bot=self.bot, guild=guild, session=session)
+                    await case_manager.close_case(
+                        case_id=task.case_id,
+                    )
             except Exception as e:
                 await log_error(
                     module="ScheduledTasks",

@@ -1927,6 +1927,7 @@ class GuildLogger:
         self,
         creator: discord.User | discord.Member,
         target: discord.User | discord.Member,
+        case: ModCase,
         dm_success: bool,
         dm_error: str,
     ) -> None:
@@ -1936,7 +1937,7 @@ class GuildLogger:
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.titanium_unban_id),
-            unbanned(self.bot, target, creator, dm_success, dm_error),
+            unbanned(self.bot, target, creator, case, dm_success, dm_error),
         )
 
     async def titanium_case_comment(

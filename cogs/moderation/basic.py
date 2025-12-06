@@ -784,6 +784,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             await guild_logger.titanium_unban(
                 target=user,
                 creator=ctx.author,
+                case=case,
                 dm_success=dm_success,
                 dm_error=dm_error,
             )
@@ -795,6 +796,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     self.bot,
                     user=user,
                     creator=ctx.author,
+                    case=case,
                     dm_success=dm_success,
                     dm_error=dm_error,
                 ),
