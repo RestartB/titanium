@@ -2025,7 +2025,18 @@ class GuildLogger:
         embed.add_field(
             name="Actions Taken",
             value="\n".join(
-                f"**{action.action_type.value.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`){': ' + shorten(action.reason, width=100, placeholder='...') if action.reason else ''}"
+                "".join(
+                    [
+                        f"**{action.action_type.value.replace('_', ' ').capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`)",
+                        (
+                            f": <@{action.role_id}> (`{action.role_id}`)"
+                            if "role" in action.action_type.value
+                            else f": {shorten(action.reason, width=100, placeholder='...')}"
+                            if action.reason
+                            else ""
+                        ),
+                    ]
+                )
                 for action in actions
             ),
             inline=False,
@@ -2066,7 +2077,18 @@ class GuildLogger:
         embed.add_field(
             name="Actions Taken",
             value="\n".join(
-                f"**{action.action_type.value.capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`){': ' + shorten(action.reason, width=100, placeholder='...') if action.reason else ''}"
+                "".join(
+                    [
+                        f"**{action.action_type.value.replace('_', ' ').capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`)",
+                        (
+                            f": <@{action.role_id}> (`{action.role_id}`)"
+                            if "role" in action.action_type.value
+                            else f": {shorten(action.reason, width=100, placeholder='...')}"
+                            if action.reason
+                            else ""
+                        ),
+                    ]
+                )
                 for action in actions
             ),
             inline=False,
