@@ -255,9 +255,12 @@ class FireboardCog(commands.Cog):
                     self.logger.debug(f"Board channel {board.channel_id} not found or invalid type")
                     return
 
+                attachments = reaction.message.attachments
+
                 new_message = await channel.send(
                     content=content,
                     embed=self._fireboard_embed(reaction.message),
+                    files=[await attachment.to_file() for attachment in attachments],
                 )
                 self.logger.debug(f"Created fireboard message {new_message.id}")
 
@@ -343,6 +346,7 @@ class FireboardCog(commands.Cog):
                     )
                     await msg.edit(
                         embed=self._fireboard_embed(payload.message),
+                        attachments=payload.message.attachments,
                     )
 
                     self.logger.debug("Edited message")

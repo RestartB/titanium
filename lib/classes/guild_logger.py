@@ -422,11 +422,10 @@ class GuildLogger:
 
         embed = discord.Embed(
             title="Guild Icon Updated",
-            url="https://titaniumbot.me",
             color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
         )
-        embed.set_image(url=before.icon.url if before.icon else None)
+        embed.set_image(url=after.icon.url if after.icon else None)
 
         embed.description = (
             f"\n\n**Old Icon:** [Link]({before.icon.url})"
@@ -437,20 +436,12 @@ class GuildLogger:
             f"\n**New Icon:** [Link]({after.icon.url})" if after.icon else "\n**New Icon:** `None`"
         )
 
-        embeds = [embed]
-        if after.icon:
-            embed_after = discord.Embed(url="https://titaniumbot.me")
-            embed_after.set_image(url=after.icon.url)
-
-            embeds.append(embed_after)
-
         log = await self._get_audit_log_entry(discord.AuditLogAction.guild_update)
         await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.guild_icon_update_id),
-            embed,
+            await self._find_webhook(self.config.logging_settings.guild_icon_update_id), embed
         )
 
     async def guild_emoji_create(
