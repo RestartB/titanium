@@ -617,11 +617,11 @@ class ScheduledTask(Base):
     __tablename__ = "scheduled_tasks"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     type: Mapped[str] = MappedColumn(String)
-    guild_id: Mapped[int] = MappedColumn(BigInteger)
-    user_id: Mapped[int] = MappedColumn(BigInteger)
-    channel_id: Mapped[int] = MappedColumn(BigInteger)
-    role_id: Mapped[int] = MappedColumn(BigInteger)
-    message_id: Mapped[int] = MappedColumn(BigInteger)
+    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    role_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    message_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     case_id: Mapped[str] = MappedColumn(String(length=8), ForeignKey("mod_cases.id"), nullable=True)
     duration: Mapped[int] = MappedColumn(
         BigInteger, nullable=True
