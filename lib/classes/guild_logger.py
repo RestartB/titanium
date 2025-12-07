@@ -1391,14 +1391,16 @@ class GuildLogger:
         if before.emoji != after.emoji:
             changes.append(f"**Emoji:** {before.emoji} ➔ {after.emoji}")
         if before.volume != after.volume:
-            changes.append(f"**Volume:** `{int(before.volume)}%` ➔ `{int(after.volume)}%`")
+            changes.append(
+                f"**Volume:** `{int(before.volume * 100)}%` ➔ `{int(after.volume * 100)}%`"
+            )
 
         embed = discord.Embed(
             title="Soundboard Sound Updated",
             description=(
-                f"**Sound Name:** `{before.name}` ➔ `{after.name}`\n"
-                f"**Sound ID:** `{before.id}`\n"
-                "\n".join(changes)
+                f"**Sound ID:** `{after.id}`\n"
+                + f"**Sound Name:** `{before.name}`{f' ➔ `{after.name}`' if before.name != after.name else ''}\n"
+                + "\n".join(changes)
             ),
             color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
