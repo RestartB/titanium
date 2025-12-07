@@ -482,7 +482,6 @@ class APICog(commands.Cog):
                     }
                     for user_stat in leaderboard
                 ],
-                "auth_required": lb_config.web_login_required,
             }
         )
 

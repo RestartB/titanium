@@ -68,6 +68,7 @@ class LeaderboardCog(commands.Cog):
         xp = lb_settings.base_xp
         min_xp = lb_settings.min_xp
         max_xp = lb_settings.max_xp
+        xp_mult = lb_settings.xp_mult
         cooldown = lb_settings.cooldown
         length = len(message.content)
 
@@ -90,8 +91,8 @@ class LeaderboardCog(commands.Cog):
             to_assign = xp
         elif mode == LeaderboardCalcType.RANDOM and min_xp and max_xp:
             to_assign = random.randint(min_xp, max_xp)
-        elif mode == LeaderboardCalcType.LENGTH and xp and max_xp:
-            to_assign = min(int(length / 100) * xp, max_xp)
+        elif mode == LeaderboardCalcType.LENGTH and xp and xp_mult and max_xp and min_xp:
+            to_assign = int(max(min(int((length / 100) * xp_mult), max_xp), min_xp))
 
         async with get_session() as session:
             levels = guild_settings.leaderboard_settings.levels
