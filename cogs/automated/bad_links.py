@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import TYPE_CHECKING
 
@@ -9,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class BadLinkFetcherCog(commands.Cog):
-    """Automatic tasks to fetch and update bad / phishing links"""
+    """Automatic tasks to fetch and update bad links"""
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
@@ -18,11 +19,31 @@ class BadLinkFetcherCog(commands.Cog):
         # Start tasks
         self.malicious_update.start()
         self.phishing_update.start()
+        self.nsfw_update.start()
 
     def cog_unload(self) -> None:
         # Stop tasks on unload
         self.malicious_update.cancel()
         self.phishing_update.cancel()
+        self.nsfw_update.cancel()
+
+    def _generate_list(self, data: str, host_file: bool = False) -> list[str]:
+        lines = data.splitlines()
+        result = []
+
+        for line in lines:
+            if line.startswith("#") or not line.strip():
+                continue
+
+            if host_file:
+                parts = line.split()
+                if len(parts) >= 2:
+                    domain = parts[1]
+                    result.append(domain)
+            else:
+                result.append(line.strip())
+
+        return result
 
     # Malicious update task
     @tasks.loop(hours=6)
@@ -34,9 +55,7 @@ class BadLinkFetcherCog(commands.Cog):
                 "https://raw.githubusercontent.com/romainmarcoux/malicious-domains/main/full-domains-aa.txt"
             ) as response:
                 if response.status == 200:
-                    data = (await response.text()).splitlines()
-
-                    new_malicious_links = [line for line in data if not line.startswith("#")]
+                    new_malicious_links = self._generate_list(await response.text())
                 else:
                     self.logger.error("Failed to fetch malicious links:", response.status)
                     return
@@ -45,41 +64,65 @@ class BadLinkFetcherCog(commands.Cog):
                 "https://raw.githubusercontent.com/romainmarcoux/malicious-domains/main/full-domains-ab.txt"
             ) as response:
                 if response.status == 200:
-                    data = (await response.text()).splitlines()
-
-                    new_malicious_links += [line for line in data if not line.startswith("#")]
-
+                    new_malicious_links += self._generate_list(await response.text())
                 else:
                     self.logger.error("Failed to fetch malicious links:", response.status)
                     return
 
             self.bot.malicious_links = new_malicious_links
-
             self.logger.info(f"Updated malicious links • {len(new_malicious_links)} links fetched.")
 
     # Phishing update task
     @tasks.loop(hours=6)
     async def phishing_update(self) -> None:
-        # FIXME: Disabled for now as the source is down
-        pass
+        async with aiohttp.ClientSession() as session:
+            self.logger.info("Fetching phishing links...")
 
-        # async with aiohttp.ClientSession() as session:
-        #     self.logger.info("Fetching phishing links...")
+            async with session.get(
+                "https://raw.githubusercontent.com/Phishing-Database/Phishing.Database/refs/heads/master/phishing-domains-ACTIVE.txt"
+            ) as response:
+                if response.status == 200:
+                    new_phishing_links = self._generate_list(await response.text())
+                else:
+                    self.logger.error("Failed to fetch phishing links:", response.status)
+                    return
 
-        #     async with session.get(
-        #         "https://phish.co.za/latest/phishing-domains-ACTIVE.txt"
-        #     ) as response:
-        #         if response.status == 200:
-        #             new_phishing_links = (await response.text()).splitlines()
+            self.bot.phishing_links = new_phishing_links
+            self.logger.info(f"Updated phishing links • {len(new_phishing_links)} links fetched.")
 
-        #             self.bot.phishing_links = new_phishing_links
+    # NSFW update task
+    @tasks.loop(hours=6)
+    async def nsfw_update(self) -> None:
+        async with aiohttp.ClientSession() as session:
+            self.logger.info("Fetching NSFW links...")
 
-        #             self.logger.info(
-        #                 f"Updated phishing links • {len(new_phishing_links)} links fetched."
-        #             )
-        #         else:
-        #             self.logger.error("Failed to fetch phishing links:", response.status)
-        #             return
+            # Get meta
+            async with session.get(
+                "https://raw.githubusercontent.com/Bon-Appetit/porn-domains/refs/heads/main/meta.json"
+            ) as response:
+                if response.status == 200:
+                    meta = json.loads(await response.text())
+                    nsfw_name = meta.get("blocklist").get("name")
+
+                    if not nsfw_name:
+                        self.logger.error("NSFW list name not found in meta.")
+                        return
+                else:
+                    self.logger.error("Failed to fetch NSFW meta:", response.status)
+                    return
+
+            nsfw_url = f"https://raw.githubusercontent.com/Bon-Appetit/porn-domains/refs/heads/main/{nsfw_name}"
+            self.logger.info(f"Obtained NSFW list URL ({nsfw_url}), fetching links...")
+
+            async with session.get(nsfw_url) as response:
+                if response.status == 200:
+                    new_nsfw_links = (await response.text()).splitlines()
+                else:
+                    self.logger.error("Failed to fetch NSFW links:", response.status)
+                    return
+
+            self.bot.nsfw_links = new_nsfw_links
+            self.logger.info(f"Updated NSFW links • {len(new_nsfw_links)} links fetched.")
 
 
 async def setup(bot: TitaniumBot) -> None:

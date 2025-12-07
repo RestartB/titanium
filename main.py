@@ -78,6 +78,7 @@ class TitaniumBot(commands.Bot):
 
     malicious_links: list[str] = []
     phishing_links: list[str] = []
+    nsfw_links: list[str] = []
 
     async def refresh_all_caches(self) -> None:
         cache_logger.info("Refreshing guild config caches...")
