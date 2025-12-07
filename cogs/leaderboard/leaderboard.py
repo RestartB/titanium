@@ -1,4 +1,5 @@
 import logging
+import math
 import random
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -15,6 +16,8 @@ from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
+
+POSTGRES_MAX_INT = 9223372036854775807
 
 
 class LeaderboardCog(commands.Cog):
@@ -92,7 +95,7 @@ class LeaderboardCog(commands.Cog):
         elif mode == LeaderboardCalcType.RANDOM and min_xp and max_xp:
             to_assign = random.randint(min_xp, max_xp)
         elif mode == LeaderboardCalcType.LENGTH and xp and xp_mult and max_xp and min_xp:
-            to_assign = int(max(min(int((length / 100) * xp_mult), max_xp), min_xp))
+            to_assign = int(max(min(10 + (xp_mult * math.log10(max(length, 1))), max_xp), min_xp))
 
         async with get_session() as session:
             levels = guild_settings.leaderboard_settings.levels
