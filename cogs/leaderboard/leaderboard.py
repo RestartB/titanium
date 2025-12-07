@@ -230,17 +230,11 @@ class LeaderboardCog(commands.Cog):
             page_size = 20
             for i, user_stats in enumerate(top_users, start=1):
                 member = ctx.guild.get_member(user_stats.user_id)
-                if not member:
-                    continue
 
                 if embed.description:
-                    embed.description += (
-                        f"\n{i}. {member.mention} - {user_stats.xp}XP, Level {user_stats.level}"
-                    )
+                    embed.description += f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP, Level {user_stats.level}"
                 else:
-                    embed.description = (
-                        f"{i}. {member.mention} - {user_stats.xp}XP, Level {user_stats.level}"
-                    )
+                    embed.description = f"{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP, Level {user_stats.level}"
 
                 if i % page_size == 0:
                     pages.append(embed)
