@@ -173,7 +173,27 @@ class BouncerMonitorCog(commands.Cog):
             manager = GuildModCaseManager(self.bot, member.guild, session)
 
             for punishment in punishments:
-                if punishment.action_type == BouncerActionType.ADD_ROLE:
+                if punishment.action_type == BouncerActionType.RESET_NICK:
+                    if not member.nick:
+                        continue
+
+                    try:
+                        await member.edit(nick=None, reason=f"Bouncer: {punishment.reason}")
+                    except discord.Forbidden as e:
+                        await log_error(
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Titanium was not allowed to reset the nickname of {member.name} ({member.id})",
+                            details=e.text,
+                        )
+                    except discord.HTTPException as e:
+                        await log_error(
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Unknown Discord error while resetting nickname of {member.name} ({member.id})",
+                            details=e.text,
+                        )
+                elif punishment.action_type == BouncerActionType.ADD_ROLE:
                     role = member.guild.get_role(punishment.role_id)
 
                     if role and role not in member.roles:

@@ -317,11 +317,11 @@ class LeaderboardCog(commands.Cog):
             embed.add_field(name="XP", value=str(user_stats.xp), inline=True)
 
             embed.set_author(
-                name=f"@{user.display_name}",
+                name=f"@{user.name}",
                 icon_url=user.display_avatar.url,
             )
             embed.set_footer(
-                text=f"@{ctx.author.display_name}",
+                text=f"@{ctx.author.name}",
                 icon_url=ctx.author.display_avatar.url,
             )
             embed.set_thumbnail(
