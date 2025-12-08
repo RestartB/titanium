@@ -66,6 +66,7 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.guild_afk_channel_update(before, after)
         await guild_logger.guild_afk_timeout_update(before, after)
         await guild_logger.guild_icon_update(before, after)
+        await guild_logger.guild_features_update(before, after)
 
     @commands.Cog.listener()
     async def on_guild_emojis_update(

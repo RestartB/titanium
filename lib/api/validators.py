@@ -240,6 +240,7 @@ class LoggingConfigModel(BaseModel):
     guild_afk_channel_update_id: Optional[str]
     guild_afk_timeout_update_id: Optional[str]
     guild_icon_update_id: Optional[str]
+    guild_features_update_id: Optional[str]
     guild_emoji_create_id: Optional[str]
     guild_emoji_delete_id: Optional[str]
     guild_sticker_create_id: Optional[str]

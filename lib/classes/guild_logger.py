@@ -442,6 +442,35 @@ class GuildLogger:
             await self._find_webhook(self.config.logging_settings.guild_icon_update_id), embed
         )
 
+    async def guild_features_update(self, before: discord.Guild, after: discord.Guild) -> None:
+        if not self._exists_and_enabled("guild_features_update_id"):
+            return
+
+        if before.features == after.features:
+            return
+
+        removed_features = set(before.features) - set(after.features)
+        added_features = set(after.features) - set(before.features)
+
+        changes = []
+        if added_features:
+            changes.append(f"**Added Features:** {', '.join(f'`{f}`' for f in added_features)}")
+        if removed_features:
+            changes.append(f"**Removed Features:** {', '.join(f'`{f}`' for f in removed_features)}")
+
+        embed = discord.Embed(
+            title="Guild Features Updated",
+            description="\n".join(changes),
+            color=discord.Color.yellow(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(self.config.logging_settings.guild_features_update_id),
+            embed,
+        )
+
     async def guild_emoji_create(
         self,
         before: Sequence[discord.Emoji],
@@ -1550,9 +1579,12 @@ class GuildLogger:
             title="Thread Updated",
             description=(
                 f"**Thread ID:** `{after.id}`\n"
-                + f"**Channel:** {after.parent.mention} (`#{after.parent.name}`)\n"
-                if after.parent
-                else "**Channel:** `Unknown`" + "\n".join(changes)
+                + (
+                    f"**Channel:** {after.parent.mention} (`#{after.parent.name}`)\n"
+                    if after.parent
+                    else "**Channel:** `Unknown`\n"
+                )
+                + "\n".join(changes)
             ),
             color=discord.Color.yellow(),
             timestamp=discord.utils.utcnow(),
@@ -1739,7 +1771,7 @@ class GuildLogger:
                 if after.channel
                 else "**Channel:** `Unknown`"
             ),
-            color=discord.Color.yellow(),
+            color=discord.Color.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)

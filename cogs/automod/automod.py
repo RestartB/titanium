@@ -74,6 +74,7 @@ class AutomodMonitorCog(commands.Cog):
             malicious_link_count = 0
             phishing_link_count = 0
 
+            self.logger.debug(f"Starting badword detection check for message {message.id}")
             for rule in config.badword_detection_rules:
                 triggered_word_rule_amount[rule.id] = 0
                 content_to_check = (
@@ -92,15 +93,28 @@ class AutomodMonitorCog(commands.Cog):
 
                     triggered_word_rule_amount[rule.id] += len(matches)
 
+            self.logger.debug(
+                f"Badword detection complete. Triggered counts: {triggered_word_rule_amount}"
+            )
+
+            self.logger.debug(f"Starting malicious link check for message {message.id}")
             for link in self.bot.malicious_links:
                 if link in message.content:
                     malicious_link_count += 1
 
+            self.logger.debug(f"Malicious link check complete. Count: {malicious_link_count}")
+
+            self.logger.debug(f"Starting phishing link check for message {message.id}")
             for link in self.bot.phishing_links:
                 if link in message.content:
                     phishing_link_count += 1
 
+            self.logger.debug(f"Phishing link check complete. Count: {phishing_link_count}")
+
             if event_type == "new":
+                self.logger.debug(
+                    f"Adding new message {message.id} to automod queue for user {message.author.id}"
+                )
                 self.bot.automod_messages.setdefault(message.guild.id, {}).setdefault(
                     message.author.id, []
                 ).append(
@@ -138,7 +152,13 @@ class AutomodMonitorCog(commands.Cog):
                     message.author.id
                 ].copy()
                 current_state.reverse()
+                self.logger.debug(
+                    f"Checking spam rules against {len(current_state)} messages from user {message.author.id}"
+                )
             else:
+                self.logger.debug(
+                    f"Processing edited message {message.id}, creating temporary state"
+                )
                 current_state = [
                     AutomodMessage(
                         user_id=message.author.id,
@@ -161,12 +181,15 @@ class AutomodMonitorCog(commands.Cog):
                         attachment_count=len(message.attachments),
                         emoji_count=len(emoji.emoji_list(message.content))
                         + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", message.content)),
-                        timestamp=message.created_at,
+                        timestamp=message.edited_at if message.edited_at else message.created_at,
                     )
                 ]
 
             # Check for any spam detection
             if len(config.spam_detection_rules) > 0:
+                self.logger.debug(
+                    f"Checking {len(config.spam_detection_rules)} spam detection rules"
+                )
                 for rule in config.spam_detection_rules:
                     latest_timestamp = current_state[0].timestamp
                     filtered_messages = [
@@ -193,11 +216,19 @@ class AutomodMonitorCog(commands.Cog):
                         continue
 
                     if count >= rule.threshold:
+                        self.logger.debug(
+                            f"Spam rule {rule.id} triggered: {count} >= {rule.threshold} (type: {rule.antispam_type})"
+                        )
                         triggers.append(rule)
                         for action in rule.actions:
                             punishments.append(action)
+                    else:
+                        self.logger.debug(
+                            f"Spam rule {rule.id} not triggered: {count} < {rule.threshold} (type: {rule.antispam_type})"
+                        )
 
             # Malicious link check
+            self.logger.debug(f"Checking {len(config.malicious_link_rules)} malicious link rules")
             for rule in config.malicious_link_rules:
                 latest_timestamp = current_state[0].timestamp
                 filtered_messages = [
@@ -206,12 +237,21 @@ class AutomodMonitorCog(commands.Cog):
                     if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
                 ]
 
-                if sum(msg.malicious_link_count for msg in filtered_messages) >= rule.threshold:
+                malicious_count = sum(msg.malicious_link_count for msg in filtered_messages)
+                if malicious_count >= rule.threshold:
+                    self.logger.debug(
+                        f"Malicious link rule {rule.id} triggered: {malicious_count} >= {rule.threshold}"
+                    )
                     triggers.append(rule)
                     for action in rule.actions:
                         punishments.append(action)
+                else:
+                    self.logger.debug(
+                        f"Malicious link rule {rule.id} not triggered: {malicious_count} < {rule.threshold}"
+                    )
 
             # Phishing link check
+            self.logger.debug(f"Checking {len(config.phishing_link_rules)} phishing link rules")
             for rule in config.phishing_link_rules:
                 latest_timestamp = current_state[0].timestamp
                 filtered_messages = [
@@ -220,12 +260,23 @@ class AutomodMonitorCog(commands.Cog):
                     if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
                 ]
 
-                if sum(msg.phishing_link_count for msg in filtered_messages) >= rule.threshold:
+                phishing_count = sum(msg.phishing_link_count for msg in filtered_messages)
+                if phishing_count >= rule.threshold:
+                    self.logger.debug(
+                        f"Phishing link rule {rule.id} triggered: {phishing_count} >= {rule.threshold}"
+                    )
                     triggers.append(rule)
                     for action in rule.actions:
                         punishments.append(action)
+                else:
+                    self.logger.debug(
+                        f"Phishing link rule {rule.id} not triggered: {phishing_count} < {rule.threshold}"
+                    )
 
             # Bad word detection
+            self.logger.debug(
+                f"Checking {len(config.badword_detection_rules)} badword detection rules"
+            )
             for rule in config.badword_detection_rules:
                 if not rule.words:
                     continue
@@ -237,25 +288,38 @@ class AutomodMonitorCog(commands.Cog):
                     if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
                 ]
 
-                if (
-                    sum(msg.triggered_word_rule_amount.get(rule.id, 0) for msg in filtered_messages)
-                    >= rule.threshold
-                ):
+                word_count = sum(
+                    msg.triggered_word_rule_amount.get(rule.id, 0) for msg in filtered_messages
+                )
+                if word_count >= rule.threshold:
+                    self.logger.debug(
+                        f"Badword rule {rule.id} triggered: {word_count} >= {rule.threshold}"
+                    )
                     triggers.append(rule)
                     for action in rule.actions:
                         punishments.append(action)
+                else:
+                    self.logger.debug(
+                        f"Badword rule {rule.id} not triggered: {word_count} < {rule.threshold}"
+                    )
 
             # Get list of punishment types
             punishment_types = list(set(action.action_type for action in punishments))
+            self.logger.debug(
+                f"Total triggers: {len(triggers)}, Total punishments: {len(punishments)}, Punishment types: {punishment_types}"
+            )
             embeds: list[discord.Embed] = []
 
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, message.guild, session)
 
+                self.logger.debug(f"Processing {len(punishments)} punishments")
                 for punishment in punishments:
                     if punishment.action_type == AutomodActionType.DELETE:
+                        self.logger.debug(f"Deleting message {message.id}")
                         await message.delete()
                     elif punishment.action_type == AutomodActionType.WARN:
+                        self.logger.debug(f"Creating warn case for user {message.author.id}")
                         case = await manager.create_case(
                             action="warn",
                             user_id=message.author.id,
@@ -282,12 +346,19 @@ class AutomodMonitorCog(commands.Cog):
                             )
                         )
                     elif punishment.action_type == AutomodActionType.MUTE:
+                        self.logger.debug(f"Processing mute action for user {message.author.id}")
                         # Check if user is already timed out
                         if message.author.is_timed_out():
+                            self.logger.debug(
+                                f"User {message.author.id} is already timed out, skipping mute"
+                            )
                             continue
 
                         # Time out user
                         try:
+                            self.logger.debug(
+                                f"Timing out user {message.author.id} for {punishment.duration} seconds"
+                            )
                             await message.author.timeout(
                                 (
                                     timedelta(seconds=punishment.duration)
@@ -350,8 +421,10 @@ class AutomodMonitorCog(commands.Cog):
                         punishment.action_type == AutomodActionType.KICK
                         and AutomodActionType.BAN not in punishment_types
                     ):
+                        self.logger.debug(f"Processing kick action for user {message.author.id}")
                         # Kick user
                         try:
+                            self.logger.debug(f"Kicking user {message.author.id}")
                             await message.author.kick(
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                             )
@@ -398,8 +471,10 @@ class AutomodMonitorCog(commands.Cog):
                             )
                             embeds.append(http_exception(self.bot, message.author))
                     elif punishment.action_type == AutomodActionType.BAN:
+                        self.logger.debug(f"Processing ban action for user {message.author.id}")
                         # Ban user
                         try:
+                            self.logger.debug(f"Banning user {message.author.id}")
                             await message.author.ban(
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                             )
@@ -452,9 +527,13 @@ class AutomodMonitorCog(commands.Cog):
                             embeds.append(http_exception(self.bot, message.author))
 
                     if embeds:
+                        self.logger.debug(
+                            f"Sending {len(embeds)} embeds to channel {message.channel.id}"
+                        )
                         await message.channel.send(embeds=embeds)
 
             if triggers:
+                self.logger.debug(f"Logging {len(triggers)} automod triggers to guild logger")
                 guild_logger = GuildLogger(self.bot, message.guild)
                 await guild_logger.titanium_automod_trigger(
                     rules=triggers,
@@ -474,15 +553,20 @@ class AutomodMonitorCog(commands.Cog):
     # Listen for messages
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        self.logger.debug(f"Received new message event: {message.id}")
         await self.handle_message(message)
 
     # Listen for message edits
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+        self.logger.debug(f"Received raw message edit event: {payload.message_id}")
+
         if not payload.data.get("guild_id"):
+            self.logger.debug(f"Message edit event {payload.message_id} has no guild_id, skipping")
             return
 
         if not payload.data.get("content"):
+            self.logger.debug(f"Message edit event {payload.message_id} has no content, skipping")
             return
 
         channel = self.bot.get_channel(payload.channel_id)
@@ -501,6 +585,7 @@ class AutomodMonitorCog(commands.Cog):
             except discord.HTTPException:
                 return
 
+        self.logger.debug(f"Processing edited message {payload.message_id}")
         await self.handle_message(message)
 
 

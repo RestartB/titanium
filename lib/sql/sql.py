@@ -360,6 +360,7 @@ class GuildLoggingSettings(Base):
     guild_afk_channel_update_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     guild_afk_timeout_update_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     guild_icon_update_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    guild_features_update_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     guild_emoji_create_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     guild_emoji_delete_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     guild_sticker_create_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
