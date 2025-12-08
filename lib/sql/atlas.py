@@ -33,5 +33,6 @@ print_ddl(
         sql.GameStat,
         sql.ScheduledTask,
         sql.ErrorLog,
+        sql.OptOutIDs,
     ],
 )

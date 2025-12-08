@@ -33,6 +33,7 @@ from lib.sql.sql import (  # noqa: E402
     GuildModerationSettings,
     GuildPrefixes,
     GuildSettings,
+    OptOutIDs,
     get_session,
     init_db,
 )
@@ -79,6 +80,22 @@ class TitaniumBot(commands.Bot):
     malicious_links: list[str] = []
     phishing_links: list[str] = []
     nsfw_links: list[str] = []
+
+    opt_out: list[int] = []
+
+    async def refresh_opt_out(self) -> None:
+        cache_logger.info("Refreshing opt-out IDs...")
+
+        async with get_session() as session:
+            stmt = select(OptOutIDs)
+            result = await session.execute(stmt)
+            opt_out_ids = result.scalars().all()
+            self.opt_out.clear()
+
+            for opt_out in opt_out_ids:
+                self.opt_out.append(opt_out.id)
+
+        cache_logger.info("Opt-out IDs refreshed.")
 
     async def refresh_all_caches(self) -> None:
         cache_logger.info("Refreshing guild config caches...")

@@ -18,12 +18,15 @@ from discord.ui import (
     TextDisplay,
     Thumbnail,
 )
+from sqlalchemy import select
 from sqlalchemy.orm.attributes import flag_modified
 
 from lib.helpers.hybrid_adapters import SlashCommandOnly
 from lib.sql.sql import (
     GuildPrefixes,
     GuildSettings,
+    LeaderboardUserStats,
+    OptOutIDs,
     get_session,
 )
 
@@ -179,6 +182,43 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
         view = SettingsView(interaction, self.bot, guild_settings)
 
         await interaction.followup.send(view=view, ephemeral=True)
+
+    @app_commands.command(
+        name="remove-data", description="Remove data about your user from Titanium's servers."
+    )
+    @app_commands.guild_only()
+    async def remove_data(self, interaction: Interaction) -> None:
+        if not interaction.guild or not interaction.guild_id or not self.bot.user:
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        if interaction.user.id not in self.bot.opt_out:
+            async with get_session() as session:
+                opt_out_entry = OptOutIDs(id=interaction.user.id)
+                session.add(opt_out_entry)
+
+                await session.commit()
+                await self.bot.refresh_opt_out()
+
+                leaderboard_entries = await session.execute(
+                    select(LeaderboardUserStats).where(
+                        LeaderboardUserStats.user_id == interaction.user.id
+                    )
+                )
+                entries = leaderboard_entries.scalars().all()
+
+                for entry in entries:
+                    await session.delete(entry)
+
+        await interaction.followup.send(
+            embed=Embed(
+                title=f"{self.bot.success_emoji} Data Removed",
+                description="User data has been removed.",
+                colour=Colour.green(),
+            ),
+            ephemeral=True,
+        )
 
     @prefix_group.command(name="add", description="Add a command prefix.")
     @app_commands.guild_only()

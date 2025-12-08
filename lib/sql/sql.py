@@ -642,6 +642,11 @@ class ErrorLog(Base):
     time_occurred: Mapped[datetime] = MappedColumn(DateTime, server_default=text("NOW()"))
 
 
+class OptOutIDs(Base):
+    __tablename__ = "opt_out_ids"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+
+
 load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = URL.create(
