@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import timedelta
 from textwrap import shorten
@@ -29,8 +30,13 @@ class GuildLogger:
     def __init__(self, bot: TitaniumBot, guild: discord.Guild | discord.PartialInviteGuild):
         self.bot = bot
         self.guild = guild
-        self.config = bot.guild_configs.get(guild.id)
+        self.config = None
         self.logger: logging.Logger = logging.getLogger("guild_logger")
+
+    async def _ensure_config(self) -> None:
+        """Fetch and cache the guild config if not already loaded"""
+        if self.config is None:
+            self.config = await self.bot.fetch_guild_config(self.guild.id)
 
     def _exists_and_enabled(self, entry: str) -> bool:
         if not self.config or not self.config.logging_enabled or not self.config.logging_settings:
@@ -201,6 +207,7 @@ class GuildLogger:
         pass
 
     async def automod_rule_create(self, rule: discord.AutoModRule) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("dc_automod_rule_create_id"):
             return
 
@@ -221,6 +228,7 @@ class GuildLogger:
         )
 
     async def automod_rule_delete(self, rule: discord.AutoModRule) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("dc_automod_rule_delete_id"):
             return
 
@@ -241,6 +249,7 @@ class GuildLogger:
         )
 
     async def automod_rule_update(self, rule: discord.AutoModRule) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("dc_automod_rule_update_id"):
             return
 
@@ -261,6 +270,7 @@ class GuildLogger:
         )
 
     async def channel_create(self, channel: discord.abc.GuildChannel) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("channel_create_id"):
             return
 
@@ -281,6 +291,7 @@ class GuildLogger:
         )
 
     async def channel_delete(self, channel: discord.abc.GuildChannel) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("channel_delete_id"):
             return
 
@@ -305,6 +316,7 @@ class GuildLogger:
         before: discord.abc.GuildChannel,
         after: discord.abc.GuildChannel,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("channel_update_id"):
             return
 
@@ -312,8 +324,6 @@ class GuildLogger:
 
         if before.name != after.name:
             changes.append(f"**Name:** `#{before.name}` ➔ `#{after.name}`")
-        if before.position != after.position:
-            changes.append(f"**Position:** `{before.position}` ➔ `{after.position}`")
         if len(before.overwrites) != len(after.overwrites):
             changes.append(
                 f"**Permission Overwrites:** `{len(before.overwrites)} overwrites` ➔ `{len(after.overwrites)} overwrites`"
@@ -340,6 +350,7 @@ class GuildLogger:
         )
 
     async def guild_name_update(self, before: discord.Guild, after: discord.Guild) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_name_update_id"):
             return
 
@@ -364,6 +375,7 @@ class GuildLogger:
         )
 
     async def guild_afk_channel_update(self, before: discord.Guild, after: discord.Guild) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_afk_channel_update_id"):
             return
 
@@ -388,6 +400,7 @@ class GuildLogger:
         )
 
     async def guild_afk_timeout_update(self, before: discord.Guild, after: discord.Guild) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_afk_timeout_update_id"):
             return
 
@@ -412,6 +425,7 @@ class GuildLogger:
         )
 
     async def guild_icon_update(self, before: discord.Guild, after: discord.Guild) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_icon_update_id"):
             return
 
@@ -443,6 +457,7 @@ class GuildLogger:
         )
 
     async def guild_features_update(self, before: discord.Guild, after: discord.Guild) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_features_update_id"):
             return
 
@@ -476,6 +491,7 @@ class GuildLogger:
         before: Sequence[discord.Emoji],
         after: Sequence[discord.Emoji],
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_emoji_create_id"):
             return
 
@@ -508,6 +524,7 @@ class GuildLogger:
         before: Sequence[discord.Emoji],
         after: Sequence[discord.Emoji],
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_emoji_delete_id"):
             return
 
@@ -540,6 +557,7 @@ class GuildLogger:
         before: Sequence[discord.GuildSticker],
         after: Sequence[discord.GuildSticker],
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_sticker_create_id"):
             return
 
@@ -584,6 +602,7 @@ class GuildLogger:
         before: Sequence[discord.GuildSticker],
         after: Sequence[discord.GuildSticker],
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_sticker_delete_id"):
             return
 
@@ -624,6 +643,7 @@ class GuildLogger:
             )
 
     async def guild_invite_create(self, invite: discord.Invite) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_invite_create_id"):
             return
 
@@ -668,6 +688,7 @@ class GuildLogger:
         )
 
     async def guild_invite_delete(self, invite: discord.Invite) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("guild_invite_delete_id"):
             return
 
@@ -687,6 +708,7 @@ class GuildLogger:
         )
 
     async def member_join(self, member: discord.Member) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("member_join_id"):
             return
 
@@ -707,6 +729,7 @@ class GuildLogger:
         )
 
     async def member_leave(self, member: discord.Member) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("member_leave_id"):
             return
 
@@ -727,6 +750,7 @@ class GuildLogger:
         )
 
     async def member_nickname_update(self, before: discord.Member, after: discord.Member) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("member_nickname_update_id"):
             return
 
@@ -754,6 +778,7 @@ class GuildLogger:
         )
 
     async def member_roles_update(self, before: discord.Member, after: discord.Member) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("member_roles_update_id"):
             return
 
@@ -799,6 +824,7 @@ class GuildLogger:
         )
 
     async def member_ban(self, member: discord.User | discord.Member) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("member_ban_id"):
             return
 
@@ -822,6 +848,7 @@ class GuildLogger:
         )
 
     async def member_unban(self, member: discord.User | discord.Member) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("member_unban_id"):
             return
 
@@ -846,6 +873,7 @@ class GuildLogger:
 
     # We only get an audit log record for this
     async def member_kick(self, entry: discord.AuditLogEntry) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("member_kick_id"):
             return
 
@@ -878,6 +906,7 @@ class GuildLogger:
         )
 
     async def member_timeout(self, before: discord.Member, after: discord.Member) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("member_timeout_id"):
             return
 
@@ -908,6 +937,7 @@ class GuildLogger:
         )
 
     async def member_untimeout(self, before: discord.Member, after: discord.Member) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("member_untimeout_id"):
             return
 
@@ -935,6 +965,7 @@ class GuildLogger:
         )
 
     async def message_edit(self, event: discord.RawMessageUpdateEvent) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("message_edit_id"):
             return
 
@@ -973,6 +1004,7 @@ class GuildLogger:
         )
 
     async def message_delete(self, event: discord.RawMessageDeleteEvent) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("message_delete_id"):
             return
 
@@ -1013,6 +1045,7 @@ class GuildLogger:
         )
 
     async def message_bulk_delete(self, event: discord.RawBulkMessageDeleteEvent) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("message_bulk_delete_id"):
             return
 
@@ -1035,6 +1068,7 @@ class GuildLogger:
         )
 
     async def poll_create(self, message: discord.Message) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("poll_create_id"):
             return
 
@@ -1062,6 +1096,7 @@ class GuildLogger:
         )
 
     async def poll_delete(self, event: discord.RawMessageDeleteEvent) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("poll_delete_id"):
             return
 
@@ -1094,6 +1129,7 @@ class GuildLogger:
     async def reaction_clear(
         self, message: discord.Message, reactions: list[discord.Reaction]
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("reaction_clear_id"):
             return
 
@@ -1130,6 +1166,7 @@ class GuildLogger:
         )
 
     async def reaction_clear_emoji(self, reaction: discord.Reaction) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("reaction_clear_emoji_id"):
             return
 
@@ -1168,6 +1205,7 @@ class GuildLogger:
         )
 
     async def role_create(self, role: discord.Role) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("role_create_id"):
             return
 
@@ -1193,6 +1231,7 @@ class GuildLogger:
         )
 
     async def role_delete(self, role: discord.Role) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("role_delete_id"):
             return
 
@@ -1218,6 +1257,7 @@ class GuildLogger:
         )
 
     async def role_update(self, before: discord.Role, after: discord.Role) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("role_update_id"):
             return
 
@@ -1257,6 +1297,7 @@ class GuildLogger:
         )
 
     async def scheduled_event_create(self, event: discord.ScheduledEvent):
+        await self._ensure_config()
         if not self._exists_and_enabled("scheduled_event_create_id"):
             return
 
@@ -1287,6 +1328,7 @@ class GuildLogger:
         )
 
     async def scheduled_event_delete(self, event: discord.ScheduledEvent):
+        await self._ensure_config()
         if not self._exists_and_enabled("scheduled_event_delete_id"):
             return
 
@@ -1319,6 +1361,7 @@ class GuildLogger:
     async def scheduled_event_update(
         self, before: discord.ScheduledEvent, after: discord.ScheduledEvent
     ):
+        await self._ensure_config()
         if not self._exists_and_enabled("scheduled_event_update_id"):
             return
 
@@ -1361,6 +1404,7 @@ class GuildLogger:
         )
 
     async def soundboard_sound_create(self, sound: discord.SoundboardSound) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("soundboard_sound_create_id"):
             return
 
@@ -1386,6 +1430,7 @@ class GuildLogger:
         )
 
     async def soundboard_sound_delete(self, sound: discord.SoundboardSound) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("soundboard_sound_delete_id"):
             return
 
@@ -1413,6 +1458,7 @@ class GuildLogger:
     async def soundboard_sound_update(
         self, before: discord.SoundboardSound, after: discord.SoundboardSound
     ):
+        await self._ensure_config()
         if not self._exists_and_enabled("soundboard_sound_update_id"):
             return
 
@@ -1445,6 +1491,7 @@ class GuildLogger:
         )
 
     async def stage_instance_create(self, instance: discord.StageInstance) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("stage_instance_create_id"):
             return
 
@@ -1471,6 +1518,7 @@ class GuildLogger:
         )
 
     async def stage_instance_delete(self, instance: discord.StageInstance) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("stage_instance_delete_id"):
             return
 
@@ -1499,6 +1547,7 @@ class GuildLogger:
     async def stage_instance_update(
         self, before: discord.StageInstance, after: discord.StageInstance
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("stage_instance_update_id"):
             return
 
@@ -1527,6 +1576,7 @@ class GuildLogger:
         )
 
     async def thread_create(self, thread: discord.Thread) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("thread_create_id"):
             return
 
@@ -1553,6 +1603,7 @@ class GuildLogger:
         )
 
     async def thread_update(self, before: discord.Thread, after: discord.Thread) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("thread_update_id"):
             return
 
@@ -1597,6 +1648,7 @@ class GuildLogger:
         )
 
     async def thread_remove(self, thread: discord.Thread) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("thread_remove_id"):
             return
 
@@ -1620,6 +1672,7 @@ class GuildLogger:
         )
 
     async def thread_delete(self, payload: discord.RawThreadDeleteEvent) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("thread_delete_id"):
             return
 
@@ -1659,6 +1712,7 @@ class GuildLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("voice_join_id"):
             return
 
@@ -1689,6 +1743,7 @@ class GuildLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("voice_leave_id"):
             return
 
@@ -1719,6 +1774,7 @@ class GuildLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("voice_move_id"):
             return
 
@@ -1753,6 +1809,7 @@ class GuildLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("voice_mute_id"):
             return
 
@@ -1791,6 +1848,7 @@ class GuildLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("voice_unmute_id"):
             return
 
@@ -1829,6 +1887,7 @@ class GuildLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("voice_deafen_id"):
             return
 
@@ -1867,6 +1926,7 @@ class GuildLogger:
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("voice_undeafen_id"):
             return
 
@@ -1907,6 +1967,7 @@ class GuildLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("titanium_warn_id"):
             return
 
@@ -1924,6 +1985,7 @@ class GuildLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("titanium_mute_id"):
             return
 
@@ -1941,6 +2003,7 @@ class GuildLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("titanium_unmute_id"):
             return
 
@@ -1958,6 +2021,7 @@ class GuildLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("titanium_kick_id"):
             return
 
@@ -1975,6 +2039,7 @@ class GuildLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("titanium_ban_id"):
             return
 
@@ -1992,6 +2057,7 @@ class GuildLogger:
         dm_success: bool,
         dm_error: str,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("titanium_unban_id"):
             return
 
@@ -2004,6 +2070,7 @@ class GuildLogger:
     async def titanium_case_comment(
         self, case: ModCase, creator: discord.Member, comment: str
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("titanium_case_comment_id"):
             return
 
@@ -2033,6 +2100,7 @@ class GuildLogger:
         actions: list[AutomodAction],
         message: discord.Message,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("titanium_automod_trigger_id"):
             return
 
@@ -2088,6 +2156,7 @@ class GuildLogger:
         actions: list[BouncerAction],
         member: discord.Member,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("titanium_bouncer_trigger_id"):
             return
 
@@ -2140,6 +2209,7 @@ class GuildLogger:
         confession_channel: discord.abc.GuildChannel,
         message: str,
     ) -> None:
+        await self._ensure_config()
         if not self._exists_and_enabled("titanium_confession_id"):
             return
 
