@@ -1370,7 +1370,7 @@ class GuildLogger:
                 f"**Sound Name:** `{sound.name}`\n"
                 f"**Sound ID:** `{sound.id}`\n"
                 f"**Emoji:** {sound.emoji}\n"
-                f"**Volume:** `{int(sound.volume)}%`\n"
+                f"**Volume:** `{int(sound.volume * 100)}%`\n"
             ),
             color=discord.Color.green(),
             timestamp=discord.utils.utcnow(),
@@ -1395,7 +1395,7 @@ class GuildLogger:
                 f"**Sound Name:** `{sound.name}`\n"
                 f"**Sound ID:** `{sound.id}`\n"
                 f"**Emoji:** {sound.emoji}\n"
-                f"**Volume:** `{int(sound.volume)}%`\n"
+                f"**Volume:** `{int(sound.volume * 100)}%`\n"
             ),
             color=discord.Color.red(),
             timestamp=discord.utils.utcnow(),
