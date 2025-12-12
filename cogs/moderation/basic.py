@@ -187,6 +187,10 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             if not self._hierarchy_check(member, ctx.author, ctx):
                 return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
 
+            # Check if user is already timed out
+            if member.is_timed_out():
+                return await ctx.reply(ephemeral=True, embed=already_muted(self.bot, member))
+
             # Check if member is already being punished
             if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
                 return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
@@ -210,10 +214,6 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         processed_duration = await DurationConverter().convert(ctx, duration)
                     except commands.BadArgument:
                         processed_reason = duration + " " + reason if reason else duration
-
-            # Check if user is already timed out
-            if member.is_timed_out():
-                return await ctx.reply(ephemeral=True, embed=already_muted(self.bot, member))
 
             # Time out user
             try:
@@ -312,16 +312,16 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             if not self._hierarchy_check(member, ctx.author, ctx):
                 return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
 
+            # Check if user is not muted
+            if not member.is_timed_out():
+                return await ctx.reply(ephemeral=True, embed=already_unmuted(self.bot, member))
+
             # Check if member is already being punished
             if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
                 return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
 
             # Add member to punishing list
             self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
-
-            # Check if user is not muted
-            if not member.is_timed_out():
-                return await ctx.reply(ephemeral=True, embed=already_unmuted(self.bot, member))
 
             # Unmute user
             try:
@@ -526,6 +526,13 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             # Add member to punishing list
             self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
 
+            # Check if user is already banned
+            try:
+                await ctx.guild.fetch_ban(user)
+                return await ctx.reply(ephemeral=True, embed=already_banned(self.bot, user))
+            except discord.NotFound:
+                pass
+
             processed_reason = reason
             processed_duration = None
 
@@ -542,13 +549,6 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         processed_duration = await DurationConverter().convert(ctx, duration)
                     except commands.BadArgument:
                         processed_reason = duration + " " + reason if reason else duration
-
-            # Check if user is already banned
-            try:
-                await ctx.guild.fetch_ban(user)
-                return await ctx.reply(ephemeral=True, embed=already_banned(self.bot, user))
-            except discord.NotFound:
-                pass
 
             # Ban user
             try:
