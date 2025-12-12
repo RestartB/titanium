@@ -41,6 +41,5 @@ async def log_error(
                 details=details,
             )
             session.add(error_log)
-            await session.commit()
 
     return uuid_id

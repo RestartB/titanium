@@ -45,8 +45,8 @@ class ModMonitorCog(commands.Cog):
                     # Create a case
                     await case_manager.create_case(
                         action=CaseType.MUTE,
-                        user_id=after.id,
-                        creator_user_id=entry.user_id,
+                        user=after,
+                        creator_user=entry.user,
                         reason=entry.reason,
                         duration=(
                             after.timed_out_until - before.timed_out_until
@@ -83,8 +83,8 @@ class ModMonitorCog(commands.Cog):
                 # Create a case
                 await case_manager.create_case(
                     action=CaseType.KICK,
-                    user_id=member.id,
-                    creator_user_id=entry.user_id,
+                    user=member,
+                    creator_user=entry.user,
                     reason=entry.reason,
                     external=True,
                 )
@@ -116,8 +116,8 @@ class ModMonitorCog(commands.Cog):
                 # Create a case
                 await case_manager.create_case(
                     action=CaseType.BAN,
-                    user_id=user.id,
-                    creator_user_id=entry.user_id,
+                    user=user,
+                    creator_user=entry.user,
                     reason=entry.reason,
                     external=True,
                 )

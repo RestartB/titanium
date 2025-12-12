@@ -2,15 +2,17 @@ import logging
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Annotated, Optional, Sequence
 
+import discord
 from discord import Guild
-from discord.ui import View
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from lib.embeds.dm_notifs import banned_dm, jump_button, kicked_dm, muted_dm
-from lib.enums.moderation import CaseType
+from lib.classes.guild_logger import GuildLogger
+from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, unbanned_dm, unmuted_dm, warned_dm
+from lib.enums.moderation import CaseSource, CaseType
 from lib.enums.scheduled_events import EventType
+from lib.helpers.send_dm import send_dm
 
 from ..duration import DurationConverter
 from ..sql.sql import ModCase, ScheduledTask
@@ -21,6 +23,10 @@ if TYPE_CHECKING:
 
 class CaseNotFoundException(Exception):
     """Exception raised when a case is not found."""
+
+
+class ExternalCasesDisabledException(Exception):
+    """Exception raised when external cases are disabled."""
 
 
 class GuildModCaseManager:
@@ -73,30 +79,29 @@ class GuildModCaseManager:
     async def create_case(
         self,
         action: CaseType,
-        user_id: int,
-        creator_user_id: int,
+        user: discord.User | discord.Member,
+        creator_user: discord.User | discord.Member | discord.ClientUser,
         reason: Optional[str],
         duration: Annotated[timedelta, DurationConverter] | None = None,
+        source: CaseSource = CaseSource.MODERATION,
         external: bool = False,
-    ) -> ModCase | None:
+    ) -> tuple[ModCase, bool, str]:
         if external:
             guild_settings = await self.bot.fetch_guild_config(self.guild.id)
 
             # Check if external cases are enabled
             if guild_settings and not guild_settings.moderation_settings.external_cases:
-                self.logger.debug(
-                    f"External cases are disabled in {self.guild.id}, skipping this event"
-                )
-                return
+                raise ExternalCasesDisabledException
 
         case = ModCase(
             guild_id=self.guild.id,
             type=action,
-            user_id=user_id,
-            creator_user_id=creator_user_id,
+            user_id=user.id,
+            creator_user_id=creator_user.id,
             time_created=datetime.now(),
             description=reason,
             external=external,
+            resolved=True if action == CaseType.KICK else False,
         )
 
         if duration:
@@ -108,7 +113,7 @@ class GuildModCaseManager:
         if not external:
             if action == CaseType.MUTE:
                 # Delete old scheduled mute refresh tasks
-                await self.delete_scheduled_tasks_for_user(user_id, EventType.PERMA_MUTE_REFRESH)
+                await self.delete_scheduled_tasks_for_user(user.id, EventType.PERMA_MUTE_REFRESH)
 
             if duration and action == CaseType.MUTE:
                 # Schedule mute refreshes
@@ -118,7 +123,7 @@ class GuildModCaseManager:
                 self.session.add(
                     ScheduledTask(
                         guild_id=self.guild.id,
-                        user_id=user_id,
+                        user_id=user.id,
                         case_id=case.id,
                         type=EventType.PERMA_MUTE_REFRESH,
                         time_scheduled=datetime.now() + timedelta(days=27),
@@ -127,13 +132,13 @@ class GuildModCaseManager:
                 await self.session.commit()
             elif duration and action == CaseType.BAN:
                 # Delete old scheduled unban tasks
-                await self.delete_scheduled_tasks_for_user(user_id, EventType.UNBAN)
+                await self.delete_scheduled_tasks_for_user(user.id, EventType.UNBAN)
 
                 # Schedule unban
                 self.session.add(
                     ScheduledTask(
                         guild_id=self.guild.id,
-                        user_id=user_id,
+                        user_id=user.id,
                         case_id=case.id,
                         type=EventType.UNBAN,
                         time_scheduled=datetime.now() + duration,
@@ -141,36 +146,83 @@ class GuildModCaseManager:
                 )
                 await self.session.commit()
 
-        if external and guild_settings and guild_settings.moderation_settings.external_case_dms:
-            member = self.guild.get_member(user_id)
-            if not member:
+        dm_success = True
+        dm_error = ""
+
+        if not external or (
+            external and guild_settings and guild_settings.moderation_settings.external_case_dms
+        ):
+            if not isinstance(user, discord.Member):
                 try:
-                    member = await self.guild.fetch_member(user_id)
+                    member = await self.guild.fetch_member(user.id)
                 except Exception as e:
                     self.logger.error(
-                        f"Failed to fetch user {user_id} for DM notification", exc_info=e
+                        f"Failed to fetch user {user.id} for DM notification", exc_info=e
                     )
-                    return case
+                    return case, False, "Failed to fetch member for DM notification"
 
-            try:
-                if action == CaseType.BAN:
-                    embed = banned_dm(self.bot, member, case)
-                elif action == CaseType.KICK:
-                    embed = kicked_dm(self.bot, member, case)
-                elif action == CaseType.MUTE:
-                    embed = muted_dm(self.bot, member, case)
-                else:
-                    embed = None
+            if action == CaseType.BAN:
+                embed = banned_dm(self.bot, member, case)
+            elif action == CaseType.KICK:
+                embed = kicked_dm(self.bot, member, case)
+            elif action == CaseType.MUTE:
+                embed = muted_dm(self.bot, member, case)
+            elif action == CaseType.WARN:
+                embed = warned_dm(self.bot, member, case)
+            else:
+                embed = None
 
-                if embed:
-                    await member.send(
-                        embed=embed,
-                        view=View().add_item(jump_button(self.guild)),
-                    )
-            except Exception as e:
-                self.logger.error(f"Failed to send DM to user {user_id}: {e}")
+            if embed:
+                dm_success, dm_error = await send_dm(
+                    embed=embed,
+                    user=member,
+                    source_guild=self.guild,
+                    module="Moderation"
+                    if source == CaseSource.MODERATION
+                    else "Automod"
+                    if source == CaseSource.AUTOMOD
+                    else "Bouncer"
+                    if source == CaseSource.BOUNCER
+                    else "External Action"
+                    if external
+                    else "Unknown",
+                )
 
-        return case
+        guild_logger = GuildLogger(self.bot, self.guild)
+        if action == CaseType.WARN:
+            await guild_logger.titanium_warn(
+                target=user,
+                creator=creator_user,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+        elif action == CaseType.MUTE:
+            await guild_logger.titanium_mute(
+                target=user,
+                creator=creator_user,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+        elif action == CaseType.KICK:
+            await guild_logger.titanium_kick(
+                target=user,
+                creator=creator_user,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+        elif action == CaseType.BAN:
+            await guild_logger.titanium_ban(
+                target=user,
+                creator=creator_user,
+                case=case,
+                dm_success=dm_success,
+                dm_error=dm_error,
+            )
+
+        return case, dm_success, dm_error
 
     async def update_case(
         self,
@@ -198,7 +250,7 @@ class GuildModCaseManager:
         await self.session.commit()
         return case
 
-    async def close_case(self, case_id: str) -> ModCase:
+    async def close_case(self, case_id: str) -> tuple[ModCase, bool, str]:
         case = await self.get_case_by_id(case_id)
 
         if not case:
@@ -214,7 +266,53 @@ class GuildModCaseManager:
             await self.delete_scheduled_tasks_for_user(case.user_id, EventType.UNBAN)
 
         await self.session.commit()
-        return case
+
+        if case.external:
+            guild_settings = await self.bot.fetch_guild_config(self.guild.id)
+
+            # Check if external cases are enabled
+            if guild_settings and (
+                not guild_settings.moderation_settings.external_cases
+                or not guild_settings.moderation_settings.external_case_dms
+            ):
+                return case, True, ""
+
+        if case.type == CaseType.MUTE:
+            try:
+                member = await self.guild.fetch_member(case.user_id)
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to fetch user {case.user_id} for DM notification", exc_info=e
+                )
+                return case, False, "Failed to fetch member for DM notification"
+
+            embed = unmuted_dm(self.bot, member, case)
+
+            dm_success, dm_error = await send_dm(
+                embed=embed,
+                user=member,
+                source_guild=self.guild,
+                module="External Action" if case.external else "Moderation",
+            )
+        elif case.type == CaseType.BAN:
+            try:
+                member = await self.guild.fetch_member(case.user_id)
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to fetch user {case.user_id} for DM notification", exc_info=e
+                )
+                return case, False, "Failed to fetch member for DM notification"
+
+            embed = unbanned_dm(self.bot, member, case)
+
+            dm_success, dm_error = await send_dm(
+                embed=embed,
+                user=member,
+                source_guild=self.guild,
+                module="External Action" if case.external else "Moderation",
+            )
+
+        return case, dm_success, dm_error
 
     async def delete_case(self, case_id: str) -> None:
         case = await self.get_case_by_id(case_id)

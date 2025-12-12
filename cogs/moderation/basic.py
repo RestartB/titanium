@@ -6,16 +6,7 @@ from discord import Message, app_commands
 from discord.ext import commands
 
 from lib.classes.case_manager import GuildModCaseManager
-from lib.classes.guild_logger import GuildLogger
 from lib.duration import DurationConverter
-from lib.embeds.dm_notifs import (
-    banned_dm,
-    kicked_dm,
-    muted_dm,
-    unbanned_dm,
-    unmuted_dm,
-    warned_dm,
-)
 from lib.embeds.general import not_in_guild
 from lib.embeds.mod_actions import (
     already_banned,
@@ -37,10 +28,8 @@ from lib.embeds.mod_actions import (
     warned,
 )
 from lib.enums.moderation import CaseType
-from lib.enums.scheduled_events import EventType
 from lib.helpers.hybrid_adapters import defer, stop_loading
 from lib.helpers.log_error import log_error
-from lib.helpers.send_dm import send_dm
 from lib.sql.sql import get_session
 
 if TYPE_CHECKING:
@@ -128,29 +117,12 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
-                case = await manager.create_case(
+                case, dm_success, dm_error = await manager.create_case(
                     action=CaseType.WARN,
-                    user_id=member.id,
-                    creator_user_id=ctx.author.id,
+                    user=member,
+                    creator_user=ctx.author,
                     reason=reason,
                 )
-
-            dm_success, dm_error = await send_dm(
-                embed=warned_dm(self.bot, ctx, case),
-                user=member,
-                source_guild=ctx.guild,
-                module="Moderation",
-                action="warning",
-            )
-
-            guild_logger = GuildLogger(self.bot, ctx.guild)
-            await guild_logger.titanium_warn(
-                target=member,
-                creator=ctx.author,
-                case=case,
-                dm_success=dm_success,
-                dm_error=dm_error,
-            )
 
             # Send confirmation message
             await ctx.reply(
@@ -276,30 +248,13 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
-                case = await manager.create_case(
+                case, dm_success, dm_error = await manager.create_case(
                     action=CaseType.MUTE,
-                    user_id=member.id,
-                    creator_user_id=ctx.author.id,
+                    user=member,
+                    creator_user=ctx.author,
                     reason=processed_reason,
                     duration=processed_duration,
                 )
-
-            dm_success, dm_error = await send_dm(
-                embed=muted_dm(self.bot, ctx, case),
-                user=member,
-                source_guild=ctx.guild,
-                module="Moderation",
-                action="muting",
-            )
-
-            guild_logger = GuildLogger(self.bot, ctx.guild)
-            await guild_logger.titanium_mute(
-                target=member,
-                creator=ctx.author,
-                case=case,
-                dm_success=dm_success,
-                dm_error=dm_error,
-            )
 
             # Send confirmation message
             await ctx.reply(
@@ -401,28 +356,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     return  # FIXME: what???
 
                 # Close case
-                case = await manager.close_case(case.id)
-
-                await manager.delete_scheduled_tasks_for_user(
-                    member.id, EventType.PERMA_MUTE_REFRESH
-                )
-
-            dm_success, dm_error = await send_dm(
-                embed=unmuted_dm(self.bot, ctx, case),
-                user=member,
-                source_guild=ctx.guild,
-                module="Moderation",
-                action="unmuting",
-            )
-
-            guild_logger = GuildLogger(self.bot, ctx.guild)
-            await guild_logger.titanium_unmute(
-                target=member,
-                creator=ctx.author,
-                case=case,
-                dm_success=dm_success,
-                dm_error=dm_error,
-            )
+                case, dm_success, dm_error = await manager.close_case(case.id)
 
             # Send confirmation message
             await ctx.reply(
@@ -513,29 +447,12 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
-                case = await manager.create_case(
+                case, dm_success, dm_error = await manager.create_case(
                     action=CaseType.KICK,
-                    user_id=member.id,
-                    creator_user_id=ctx.author.id,
+                    user=member,
+                    creator_user=ctx.author,
                     reason=reason,
                 )
-
-            dm_success, dm_error = await send_dm(
-                embed=kicked_dm(self.bot, ctx, case),
-                user=member,
-                source_guild=ctx.guild,
-                module="Moderation",
-                action="kicking",
-            )
-
-            guild_logger = GuildLogger(self.bot, ctx.guild)
-            await guild_logger.titanium_kick(
-                target=member,
-                creator=ctx.author,
-                case=case,
-                dm_success=dm_success,
-                dm_error=dm_error,
-            )
 
             # Send confirmation message
             await ctx.reply(
@@ -662,30 +579,13 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
-                case = await manager.create_case(
+                case, dm_success, dm_error = await manager.create_case(
                     action=CaseType.BAN,
-                    user_id=user.id,
-                    creator_user_id=ctx.author.id,
+                    user=user,
+                    creator_user=ctx.author,
                     reason=processed_reason,
                     duration=processed_duration,
                 )
-
-            dm_success, dm_error = await send_dm(
-                embed=banned_dm(self.bot, ctx, case),
-                user=user,
-                source_guild=ctx.guild,
-                module="Moderation",
-                action="banning",
-            )
-
-            guild_logger = GuildLogger(self.bot, ctx.guild)
-            await guild_logger.titanium_ban(
-                target=user,
-                creator=ctx.author,
-                case=case,
-                dm_success=dm_success,
-                dm_error=dm_error,
-            )
 
             # Send confirmation message
             await ctx.reply(
@@ -775,26 +675,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 if case:
                     # Close case
-                    case = await manager.close_case(case.id)
-
-                await manager.delete_scheduled_tasks_for_user(user.id, EventType.UNBAN)
-
-            dm_success, dm_error = await send_dm(
-                embed=unbanned_dm(self.bot, ctx, case),
-                user=user,
-                source_guild=ctx.guild,
-                module="Moderation",
-                action="unbanning",
-            )
-
-            guild_logger = GuildLogger(self.bot, ctx.guild)
-            await guild_logger.titanium_unban(
-                target=user,
-                creator=ctx.author,
-                case=case,
-                dm_success=dm_success,
-                dm_error=dm_error,
-            )
+                    case, dm_success, dm_error = await manager.close_case(case.id)
 
             # Send confirmation message
             await ctx.reply(

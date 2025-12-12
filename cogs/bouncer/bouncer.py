@@ -10,11 +10,9 @@ from discord.ext import commands
 
 from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
-from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, warned_dm
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
-from lib.enums.moderation import CaseType
+from lib.enums.moderation import CaseSource, CaseType
 from lib.helpers.log_error import log_error
-from lib.helpers.send_dm import send_dm
 from lib.sql.sql import BouncerAction, BouncerRule, get_session
 
 if TYPE_CHECKING:
@@ -260,19 +258,12 @@ class BouncerMonitorCog(commands.Cog):
                                 details=e.text,
                             )
                 elif punishment.action_type == BouncerActionType.WARN:
-                    case = await manager.create_case(
+                    await manager.create_case(
                         action=CaseType.WARN,
-                        user_id=member.id,
-                        creator_user_id=self.bot.user.id,
-                        reason=f"Bouncer: {punishment.reason}",
-                    )
-
-                    await send_dm(
-                        embed=warned_dm(self.bot, member, case),
                         user=member,
-                        source_guild=member.guild,
-                        module="Bouncer",
-                        action="warning",
+                        creator_user=self.bot.user,
+                        reason=f"Bouncer: {punishment.reason}",
+                        source=CaseSource.BOUNCER,
                     )
                 elif punishment.action_type == BouncerActionType.MUTE:
                     # Check if user is already timed out
@@ -292,24 +283,17 @@ class BouncerMonitorCog(commands.Cog):
                             reason=f"Bouncer: {punishment.reason}",
                         )
 
-                        case = await manager.create_case(
+                        await manager.create_case(
                             action=CaseType.MUTE,
-                            user_id=member.id,
-                            creator_user_id=self.bot.user.id,
+                            user=member,
+                            creator_user=self.bot.user,
                             reason=f"Bouncer: {punishment.reason}",
                             duration=(
                                 timedelta(seconds=punishment.duration)
                                 if punishment.duration > 0
                                 else None
                             ),
-                        )
-
-                        await send_dm(
-                            embed=muted_dm(self.bot, member, case),
-                            user=member,
-                            source_guild=member.guild,
-                            module="Bouncer",
-                            action="muting",
+                            source=CaseSource.BOUNCER,
                         )
                     except discord.Forbidden as e:
                         await log_error(
@@ -336,19 +320,12 @@ class BouncerMonitorCog(commands.Cog):
                             reason=f"Bouncer: {punishment.reason}",
                         )
 
-                        case = await manager.create_case(
+                        await manager.create_case(
                             action=CaseType.KICK,
-                            user_id=member.id,
-                            creator_user_id=self.bot.user.id,
-                            reason=f"Bouncer: {punishment.reason}",
-                        )
-
-                        await send_dm(
-                            embed=kicked_dm(self.bot, member, case),
                             user=member,
-                            source_guild=member.guild,
-                            module="Bouncer",
-                            action="kicking",
+                            creator_user=self.bot.user,
+                            reason=f"Bouncer: {punishment.reason}",
+                            source=CaseSource.BOUNCER,
                         )
                     except discord.Forbidden as e:
                         await log_error(
@@ -372,24 +349,17 @@ class BouncerMonitorCog(commands.Cog):
                             reason=f"Bouncer: {punishment.reason}",
                         )
 
-                        case = await manager.create_case(
+                        await manager.create_case(
                             action=CaseType.BAN,
-                            user_id=member.id,
-                            creator_user_id=self.bot.user.id,
+                            user=member,
+                            creator_user=self.bot.user,
                             reason=f"Bouncer: {punishment.reason}",
                             duration=(
                                 timedelta(seconds=punishment.duration)
                                 if punishment.duration > 0
                                 else None
                             ),
-                        )
-
-                        await send_dm(
-                            embed=banned_dm(self.bot, member, case),
-                            user=member,
-                            source_guild=member.guild,
-                            module="Bouncer",
-                            action="banning",
+                            source=CaseSource.BOUNCER,
                         )
                     except discord.Forbidden as e:
                         await log_error(

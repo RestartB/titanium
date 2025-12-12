@@ -10,7 +10,6 @@ from discord.ext import commands
 from lib.classes.automod_message import AutomodMessage
 from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
-from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, warned_dm
 from lib.embeds.mod_actions import (
     banned,
     forbidden,
@@ -20,9 +19,8 @@ from lib.embeds.mod_actions import (
     warned,
 )
 from lib.enums.automod import AutomodActionType, AutomodAntispamType
-from lib.enums.moderation import CaseType
+from lib.enums.moderation import CaseSource, CaseType
 from lib.helpers.log_error import log_error
-from lib.helpers.send_dm import send_dm
 from lib.sql.sql import AutomodAction, AutomodRule, get_session
 
 if TYPE_CHECKING:
@@ -321,19 +319,12 @@ class AutomodMonitorCog(commands.Cog):
                         await message.delete()
                     elif punishment.action_type == AutomodActionType.WARN:
                         self.logger.debug(f"Creating warn case for user {message.author.id}")
-                        case = await manager.create_case(
+                        case, dm_success, dm_error = await manager.create_case(
                             action=CaseType.WARN,
-                            user_id=message.author.id,
-                            creator_user_id=self.bot.user.id,
-                            reason=f"Automod: {punishment.reason if punishment.reason else 'No reason provided'}",
-                        )
-
-                        dm_success, dm_error = await send_dm(
-                            embed=warned_dm(self.bot, message, case),
                             user=message.author,
-                            source_guild=message.guild,
-                            module="Automod",
-                            action="warning",
+                            creator_user=self.bot.user,
+                            reason=f"Automod: {punishment.reason if punishment.reason else 'No reason provided'}",
+                            source=CaseSource.AUTOMOD,
                         )
 
                         embeds.append(
@@ -371,24 +362,17 @@ class AutomodMonitorCog(commands.Cog):
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                             )
 
-                            case = await manager.create_case(
+                            case, dm_success, dm_error = await manager.create_case(
                                 action=CaseType.MUTE,
-                                user_id=message.author.id,
-                                creator_user_id=self.bot.user.id,
+                                user=message.author,
+                                creator_user=self.bot.user,
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                                 duration=(
                                     timedelta(seconds=punishment.duration)
                                     if punishment.duration > 0
                                     else None
                                 ),
-                            )
-
-                            dm_success, dm_error = await send_dm(
-                                embed=muted_dm(self.bot, message, case),
-                                user=message.author,
-                                source_guild=message.guild,
-                                module="Automod",
-                                action="muting",
+                                source=CaseSource.AUTOMOD,
                             )
 
                             embeds.append(
@@ -430,19 +414,12 @@ class AutomodMonitorCog(commands.Cog):
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                             )
 
-                            case = await manager.create_case(
+                            case, dm_success, dm_error = await manager.create_case(
                                 action=CaseType.KICK,
-                                user_id=message.author.id,
-                                creator_user_id=self.bot.user.id,
-                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
-                            )
-
-                            dm_success, dm_error = await send_dm(
-                                embed=kicked_dm(self.bot, message, case),
                                 user=message.author,
-                                source_guild=message.guild,
-                                module="Automod",
-                                action="kicking",
+                                creator_user=self.bot.user,
+                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
+                                source=CaseSource.AUTOMOD,
                             )
 
                             embeds.append(
@@ -480,24 +457,17 @@ class AutomodMonitorCog(commands.Cog):
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                             )
 
-                            case = await manager.create_case(
+                            case, dm_success, dm_error = await manager.create_case(
                                 action=CaseType.BAN,
-                                user_id=message.author.id,
-                                creator_user_id=self.bot.user.id,
+                                user=message.author,
+                                creator_user=self.bot.user,
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                                 duration=(
                                     timedelta(seconds=punishment.duration)
                                     if punishment.duration > 0
                                     else None
                                 ),
-                            )
-
-                            dm_success, dm_error = await send_dm(
-                                embed=banned_dm(self.bot, message, case),
-                                user=message.author,
-                                source_guild=message.guild,
-                                module="Automod",
-                                action="banning",
+                                source=CaseSource.AUTOMOD,
                             )
 
                             embeds.append(

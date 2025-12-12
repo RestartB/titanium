@@ -6,3 +6,9 @@ class CaseType(Enum):
     MUTE = "mute"
     KICK = "kick"
     BAN = "ban"
+
+
+class CaseSource(Enum):
+    MODERATION = "moderation"
+    AUTOMOD = "automod"
+    BOUNCER = "bouncer"

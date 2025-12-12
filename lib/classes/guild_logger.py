@@ -1963,7 +1963,7 @@ class GuildLogger:
     async def titanium_warn(
         self,
         case: ModCase,
-        creator: discord.User | discord.Member,
+        creator: discord.User | discord.Member | discord.ClientUser,
         target: discord.User | discord.Member,
         dm_success: bool,
         dm_error: str,
@@ -1981,7 +1981,7 @@ class GuildLogger:
     async def titanium_mute(
         self,
         case: ModCase,
-        creator: discord.User | discord.Member,
+        creator: discord.User | discord.Member | discord.ClientUser,
         target: discord.User | discord.Member,
         dm_success: bool,
         dm_error: str,
@@ -2017,7 +2017,7 @@ class GuildLogger:
     async def titanium_kick(
         self,
         case: ModCase,
-        creator: discord.User | discord.Member,
+        creator: discord.User | discord.Member | discord.ClientUser,
         target: discord.User | discord.Member,
         dm_success: bool,
         dm_error: str,
@@ -2035,7 +2035,7 @@ class GuildLogger:
     async def titanium_ban(
         self,
         case: ModCase,
-        creator: discord.User | discord.Member,
+        creator: discord.User | discord.Member | discord.ClientUser,
         target: discord.User | discord.Member,
         dm_success: bool,
         dm_error: str,
