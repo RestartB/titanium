@@ -353,7 +353,7 @@ class APICog(commands.Cog):
             cases_output.append(
                 {
                     "id": case.id,
-                    "type": case.type,
+                    "type": case.type.value,
                     "user_id": str(case.user_id),
                     "user_name": user.name if user else None,
                     "user_display": user.display_name if user else None,
