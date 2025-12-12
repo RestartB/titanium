@@ -1999,7 +1999,7 @@ class GuildLogger:
     async def titanium_unmute(
         self,
         case: ModCase,
-        creator: discord.User | discord.Member,
+        creator: discord.User | discord.Member | discord.ClientUser,
         target: discord.User | discord.Member,
         dm_success: bool,
         dm_error: str,
@@ -2052,7 +2052,7 @@ class GuildLogger:
 
     async def titanium_unban(
         self,
-        creator: discord.User | discord.Member,
+        creator: discord.User | discord.Member | discord.ClientUser,
         target: discord.User | discord.Member,
         case: ModCase,
         dm_success: bool,

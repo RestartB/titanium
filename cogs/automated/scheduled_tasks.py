@@ -127,6 +127,30 @@ class ScheduledTasksCog(commands.Cog):
                     error=f"Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})",
                     exc=e,
                 )
+        elif task.type == EventType.CLOSE_MUTE:
+            # Close mute cases task
+            guild = self.bot.get_guild(task.guild_id)
+
+            if not guild:
+                return
+
+            member = guild.get_member(task.user_id)
+            if not member:
+                return
+
+            try:
+                async with get_session() as session:
+                    case_manager = GuildModCaseManager(bot=self.bot, guild=guild, session=session)
+                    await case_manager.close_case(
+                        case_id=task.case_id,
+                    )
+            except Exception as e:
+                await log_error(
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"Failed to send unmute info for {task.user_id} in guild {guild.name} ({guild.id})",
+                    exc=e,
+                )
         elif task.type == EventType.UNBAN:
             # Auto unban task
             guild = self.bot.get_guild(task.guild_id)

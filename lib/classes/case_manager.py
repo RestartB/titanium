@@ -108,6 +108,23 @@ class GuildModCaseManager:
             case.time_expires = datetime.now() + duration
 
         self.session.add(case)
+
+        # close old cases, this is mainly for external events
+        if action == CaseType.MUTE:
+            # set all previous mutes to resolved
+            cases = await self.get_cases_by_user(user.id)
+            mute_cases = [c for c in cases if c.type == CaseType.MUTE and not c.resolved]
+
+            for mute_case in mute_cases:
+                mute_case.resolved = True
+        elif action == CaseType.BAN:
+            # set all previous bans to resolved
+            cases = await self.get_cases_by_user(user.id)
+            ban_cases = [c for c in cases if c.type == CaseType.BAN and not c.resolved]
+
+            for ban_case in ban_cases:
+                ban_case.resolved = True
+
         await self.session.commit()
 
         if not external:
@@ -258,14 +275,13 @@ class GuildModCaseManager:
 
         case.resolved = True
         case.time_updated = datetime.now()
+        await self.session.commit()
 
         if case.type == CaseType.MUTE:
             await self.delete_scheduled_tasks_for_user(case.user_id, EventType.PERMA_MUTE_REFRESH)
             await self.delete_scheduled_tasks_for_user(case.user_id, EventType.MUTE_REFRESH)
         elif case.type == CaseType.BAN:
             await self.delete_scheduled_tasks_for_user(case.user_id, EventType.UNBAN)
-
-        await self.session.commit()
 
         if case.external:
             guild_settings = await self.bot.fetch_guild_config(self.guild.id)
@@ -287,13 +303,22 @@ class GuildModCaseManager:
                 return case, False, "Failed to fetch member for DM notification"
 
             embed = unmuted_dm(self.bot, member, case)
-
             dm_success, dm_error = await send_dm(
                 embed=embed,
                 user=member,
                 source_guild=self.guild,
                 module="External Action" if case.external else "Moderation",
             )
+
+            if self.bot.user:
+                guild_logger = GuildLogger(self.bot, self.guild)
+                await guild_logger.titanium_unmute(
+                    creator=self.bot.user,
+                    target=member,
+                    case=case,
+                    dm_success=dm_success,
+                    dm_error=dm_error,
+                )
         elif case.type == CaseType.BAN:
             try:
                 member = await self.guild.fetch_member(case.user_id)
@@ -304,13 +329,22 @@ class GuildModCaseManager:
                 return case, False, "Failed to fetch member for DM notification"
 
             embed = unbanned_dm(self.bot, member, case)
-
             dm_success, dm_error = await send_dm(
                 embed=embed,
                 user=member,
                 source_guild=self.guild,
                 module="External Action" if case.external else "Moderation",
             )
+
+            if self.bot.user:
+                guild_logger = GuildLogger(self.bot, self.guild)
+                await guild_logger.titanium_unban(
+                    creator=self.bot.user,
+                    target=member,
+                    case=case,
+                    dm_success=dm_success,
+                    dm_error=dm_error,
+                )
 
         return case, dm_success, dm_error
 
@@ -320,7 +354,8 @@ class GuildModCaseManager:
         if not case:
             raise CaseNotFoundException("Case not found")
 
-        await self.close_case(case_id)
+        if not case.resolved:
+            await self.close_case(case_id)
 
         await self.session.delete(case)
         await self.session.commit()
