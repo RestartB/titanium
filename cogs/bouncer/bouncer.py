@@ -12,6 +12,7 @@ from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
 from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, warned_dm
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
+from lib.enums.moderation import CaseType
 from lib.helpers.log_error import log_error
 from lib.helpers.send_dm import send_dm
 from lib.sql.sql import BouncerAction, BouncerRule, get_session
@@ -260,7 +261,7 @@ class BouncerMonitorCog(commands.Cog):
                             )
                 elif punishment.action_type == BouncerActionType.WARN:
                     case = await manager.create_case(
-                        action="warn",
+                        action=CaseType.WARN,
                         user_id=member.id,
                         creator_user_id=self.bot.user.id,
                         reason=f"Bouncer: {punishment.reason}",
@@ -292,7 +293,7 @@ class BouncerMonitorCog(commands.Cog):
                         )
 
                         case = await manager.create_case(
-                            action="mute",
+                            action=CaseType.MUTE,
                             user_id=member.id,
                             creator_user_id=self.bot.user.id,
                             reason=f"Bouncer: {punishment.reason}",
@@ -336,7 +337,7 @@ class BouncerMonitorCog(commands.Cog):
                         )
 
                         case = await manager.create_case(
-                            action="kick",
+                            action=CaseType.KICK,
                             user_id=member.id,
                             creator_user_id=self.bot.user.id,
                             reason=f"Bouncer: {punishment.reason}",
@@ -372,7 +373,7 @@ class BouncerMonitorCog(commands.Cog):
                         )
 
                         case = await manager.create_case(
-                            action="ban",
+                            action=CaseType.BAN,
                             user_id=member.id,
                             creator_user_id=self.bot.user.id,
                             reason=f"Bouncer: {punishment.reason}",

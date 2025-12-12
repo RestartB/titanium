@@ -36,6 +36,8 @@ from lib.embeds.mod_actions import (
     unmuted,
     warned,
 )
+from lib.enums.moderation import CaseType
+from lib.enums.scheduled_events import EventType
 from lib.helpers.hybrid_adapters import defer, stop_loading
 from lib.helpers.log_error import log_error
 from lib.helpers.send_dm import send_dm
@@ -59,6 +61,26 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
         if target:
             return message.author.id == target.id
+
+        return True
+
+    def _hierarchy_check(
+        self,
+        target: discord.Member,
+        moderator: discord.Member,
+        ctx: commands.Context["TitaniumBot"],
+    ) -> bool:
+        if not ctx.guild:
+            return False
+
+        if self.bot.user and target.id == self.bot.user.id:
+            return False
+
+        if target.id == ctx.guild.owner_id:
+            return False
+
+        if target.top_role.position >= moderator.top_role.position:
+            return False
 
         return True
 
@@ -92,11 +114,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
 
             # Check if target doesn't have higher role
-            if (
-                member.top_role.position >= ctx.author.top_role.position
-                or member.guild_permissions.administrator
-                and ctx.author != ctx.guild.owner
-            ):
+            if not self._hierarchy_check(member, ctx.author, ctx):
                 return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
 
             # Check if member is already being punished
@@ -111,7 +129,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                 case = await manager.create_case(
-                    action="warn",
+                    action=CaseType.WARN,
                     user_id=member.id,
                     creator_user_id=ctx.author.id,
                     reason=reason,
@@ -194,11 +212,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
 
             # Check if target doesn't have higher role
-            if (
-                member.top_role.position >= ctx.author.top_role.position
-                or member.guild_permissions.administrator
-                and ctx.author != ctx.guild.owner
-            ):
+            if not self._hierarchy_check(member, ctx.author, ctx):
                 return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
 
             # Check if member is already being punished
@@ -263,7 +277,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                 case = await manager.create_case(
-                    action="mute",
+                    action=CaseType.MUTE,
                     user_id=member.id,
                     creator_user_id=ctx.author.id,
                     reason=processed_reason,
@@ -340,11 +354,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
 
             # Check if target doesn't have higher role
-            if (
-                member.top_role.position >= ctx.author.top_role.position
-                or member.guild_permissions.administrator
-                and ctx.author != ctx.guild.owner
-            ):
+            if not self._hierarchy_check(member, ctx.author, ctx):
                 return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
 
             # Check if member is already being punished
@@ -393,7 +403,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 # Close case
                 case = await manager.close_case(case.id)
 
-                await manager.delete_scheduled_tasks_for_user(member.id, "perma_mute_refresh")
+                await manager.delete_scheduled_tasks_for_user(
+                    member.id, EventType.PERMA_MUTE_REFRESH
+                )
 
             dm_success, dm_error = await send_dm(
                 embed=unmuted_dm(self.bot, ctx, case),
@@ -465,11 +477,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
 
             # Check if target doesn't have higher role
-            if (
-                member.top_role.position >= ctx.author.top_role.position
-                or member.guild_permissions.administrator
-                and ctx.author != ctx.guild.owner
-            ):
+            if not self._hierarchy_check(member, ctx.author, ctx):
                 return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
 
             # Check if member is already being punished
@@ -506,7 +514,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                 case = await manager.create_case(
-                    action="kick",
+                    action=CaseType.KICK,
                     user_id=member.id,
                     creator_user_id=ctx.author.id,
                     reason=reason,
@@ -589,13 +597,8 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     member = None
 
             # Check if target doesn't have higher role
-            if (
-                isinstance(member, discord.Member)
-                and (
-                    member.top_role.position >= ctx.author.top_role.position
-                    or member.guild_permissions.administrator
-                )
-                and ctx.author != ctx.guild.owner
+            if isinstance(member, discord.Member) and not self._hierarchy_check(
+                member, ctx.author, ctx
             ):
                 return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, user))
 
@@ -660,7 +663,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                 case = await manager.create_case(
-                    action="ban",
+                    action=CaseType.BAN,
                     user_id=user.id,
                     creator_user_id=ctx.author.id,
                     reason=processed_reason,
@@ -774,7 +777,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     # Close case
                     case = await manager.close_case(case.id)
 
-                await manager.delete_scheduled_tasks_for_user(user.id, "unban")
+                await manager.delete_scheduled_tasks_for_user(user.id, EventType.UNBAN)
 
             dm_success, dm_error = await send_dm(
                 embed=unbanned_dm(self.bot, ctx, case),

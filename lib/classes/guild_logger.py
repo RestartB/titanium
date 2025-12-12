@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from datetime import timedelta
 from textwrap import shorten
@@ -472,6 +471,9 @@ class GuildLogger:
             changes.append(f"**Added Features:** {', '.join(f'`{f}`' for f in added_features)}")
         if removed_features:
             changes.append(f"**Removed Features:** {', '.join(f'`{f}`' for f in removed_features)}")
+
+        if not changes:
+            return
 
         embed = discord.Embed(
             title="Guild Features Updated",
@@ -1608,8 +1610,6 @@ class GuildLogger:
             return
 
         changes = []
-        if before.name != after.name:
-            changes.append(f"**Name:** `{before.name}` ➔ `{after.name}`")
         if before.archived != after.archived:
             changes.append(
                 f"**Archived:** `{'Yes' if before.archived else 'No'}` ➔ `{'Yes' if after.archived else 'No'}`"
@@ -1635,6 +1635,7 @@ class GuildLogger:
                     if after.parent
                     else "**Channel:** `Unknown`\n"
                 )
+                + f"{before.name}{f' ➔ {after.name}' if before.name != after.name else ''}\n"
                 + "\n".join(changes)
             ),
             color=discord.Color.yellow(),
@@ -1974,7 +1975,7 @@ class GuildLogger:
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.titanium_warn_id),
-            warned(self.bot, target, creator, case, dm_success, dm_error),
+            warned(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
     async def titanium_mute(
@@ -1992,7 +1993,7 @@ class GuildLogger:
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.titanium_mute_id),
-            muted(self.bot, target, creator, case, dm_success, dm_error),
+            muted(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
     async def titanium_unmute(
@@ -2010,7 +2011,7 @@ class GuildLogger:
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.titanium_unmute_id),
-            unmuted(self.bot, target, creator, case, dm_success, dm_error),
+            unmuted(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
     async def titanium_kick(
@@ -2028,7 +2029,7 @@ class GuildLogger:
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.titanium_kick_id),
-            kicked(self.bot, target, creator, case, dm_success, dm_error),
+            kicked(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
     async def titanium_ban(
@@ -2046,7 +2047,7 @@ class GuildLogger:
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.titanium_ban_id),
-            banned(self.bot, target, creator, case, dm_success, dm_error),
+            banned(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
     async def titanium_unban(
@@ -2064,7 +2065,7 @@ class GuildLogger:
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.titanium_unban_id),
-            unbanned(self.bot, target, creator, case, dm_success, dm_error),
+            unbanned(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
     async def titanium_case_comment(

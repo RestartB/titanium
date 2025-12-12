@@ -69,6 +69,15 @@ class BadLinkFetcherCog(commands.Cog):
                     self.logger.error("Failed to fetch malicious links:", response.status)
                     return
 
+            # legit links that are marked as malicious
+            whitelisted_links = {
+                "https://kkinstagram.com",
+                "kkinstagram.com",
+            }
+            new_malicious_links = [
+                link for link in new_malicious_links if link not in whitelisted_links
+            ]
+
             self.bot.malicious_links = new_malicious_links
             self.logger.info(f"Updated malicious links • {len(new_malicious_links)} links fetched.")
 
@@ -86,6 +95,14 @@ class BadLinkFetcherCog(commands.Cog):
                 else:
                     self.logger.error("Failed to fetch phishing links:", response.status)
                     return
+
+            # legit links that are marked as phishing
+            whitelisted_links = {
+                "kkinstagram.com",
+            }
+            new_phishing_links = [
+                link for link in new_phishing_links if link not in whitelisted_links
+            ]
 
             self.bot.phishing_links = new_phishing_links
             self.logger.info(f"Updated phishing links • {len(new_phishing_links)} links fetched.")

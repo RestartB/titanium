@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 
 from lib.classes.case_manager import GuildModCaseManager
+from lib.enums.moderation import CaseType
 from lib.sql.sql import get_session
 
 if TYPE_CHECKING:
@@ -43,7 +44,7 @@ class ModMonitorCog(commands.Cog):
 
                     # Create a case
                     await case_manager.create_case(
-                        action="mute",
+                        action=CaseType.MUTE,
                         user_id=after.id,
                         creator_user_id=entry.user_id,
                         reason=entry.reason,
@@ -81,7 +82,7 @@ class ModMonitorCog(commands.Cog):
 
                 # Create a case
                 await case_manager.create_case(
-                    action="kick",
+                    action=CaseType.KICK,
                     user_id=member.id,
                     creator_user_id=entry.user_id,
                     reason=entry.reason,
@@ -114,7 +115,7 @@ class ModMonitorCog(commands.Cog):
 
                 # Create a case
                 await case_manager.create_case(
-                    action="ban",
+                    action=CaseType.BAN,
                     user_id=user.id,
                     creator_user_id=entry.user_id,
                     reason=entry.reason,
@@ -155,6 +156,39 @@ class ModMonitorCog(commands.Cog):
                 # Close cases
                 for ban_case in ban_cases:
                     await case_manager.close_case(ban_case.id)
+
+    # Listen for unmutes
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
+        if not self.bot.user or before.id == self.bot.user.id:
+            return
+
+        if before.is_timed_out() and not after.is_timed_out():
+            # did we do this?
+            logs = after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update)
+            async for entry in logs:
+                if not entry.target or not self.bot.user or not entry.user_id or not entry.user:
+                    return
+
+                if entry.target.id != after.id:
+                    return
+
+                if entry.user_id == self.bot.user.id:
+                    return
+
+            # close all mute cases for the user
+            async with get_session() as session:
+                case_manager = GuildModCaseManager(self.bot, after.guild, session)
+
+                cases = await case_manager.get_cases_by_user(after.id)
+                mute_cases = [c for c in cases if c.type == CaseType.MUTE and not c.resolved]
+
+                if not mute_cases:
+                    return
+
+                # close cases
+                for mute_case in mute_cases:
+                    await case_manager.close_case(mute_case.id)
 
 
 async def setup(bot: TitaniumBot) -> None:

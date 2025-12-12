@@ -20,6 +20,7 @@ from lib.embeds.mod_actions import (
     warned,
 )
 from lib.enums.automod import AutomodActionType, AutomodAntispamType
+from lib.enums.moderation import CaseType
 from lib.helpers.log_error import log_error
 from lib.helpers.send_dm import send_dm
 from lib.sql.sql import AutomodAction, AutomodRule, get_session
@@ -321,7 +322,7 @@ class AutomodMonitorCog(commands.Cog):
                     elif punishment.action_type == AutomodActionType.WARN:
                         self.logger.debug(f"Creating warn case for user {message.author.id}")
                         case = await manager.create_case(
-                            action="warn",
+                            action=CaseType.WARN,
                             user_id=message.author.id,
                             creator_user_id=self.bot.user.id,
                             reason=f"Automod: {punishment.reason if punishment.reason else 'No reason provided'}",
@@ -371,7 +372,7 @@ class AutomodMonitorCog(commands.Cog):
                             )
 
                             case = await manager.create_case(
-                                action="mute",
+                                action=CaseType.MUTE,
                                 user_id=message.author.id,
                                 creator_user_id=self.bot.user.id,
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
@@ -430,7 +431,7 @@ class AutomodMonitorCog(commands.Cog):
                             )
 
                             case = await manager.create_case(
-                                action="kick",
+                                action=CaseType.KICK,
                                 user_id=message.author.id,
                                 creator_user_id=self.bot.user.id,
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
@@ -480,7 +481,7 @@ class AutomodMonitorCog(commands.Cog):
                             )
 
                             case = await manager.create_case(
-                                action="ban",
+                                action=CaseType.BAN,
                                 user_id=message.author.id,
                                 creator_user_id=self.bot.user.id,
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",

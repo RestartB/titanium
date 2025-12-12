@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, Sequence
+from typing import TYPE_CHECKING, Annotated, Optional, Sequence
 
 from discord import Guild
 from discord.ui import View
@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from lib.embeds.dm_notifs import banned_dm, jump_button, kicked_dm, muted_dm
+from lib.enums.moderation import CaseType
+from lib.enums.scheduled_events import EventType
 
 from ..duration import DurationConverter
 from ..sql.sql import ModCase, ScheduledTask
@@ -70,7 +72,7 @@ class GuildModCaseManager:
 
     async def create_case(
         self,
-        action: Literal["ban", "kick", "mute", "warn"],
+        action: CaseType,
         user_id: int,
         creator_user_id: int,
         reason: Optional[str],
@@ -104,28 +106,28 @@ class GuildModCaseManager:
         await self.session.commit()
 
         if not external:
-            if action == "mute":
+            if action == CaseType.MUTE:
                 # Delete old scheduled mute refresh tasks
-                await self.delete_scheduled_tasks_for_user(user_id, "perma_mute_refresh")
+                await self.delete_scheduled_tasks_for_user(user_id, EventType.PERMA_MUTE_REFRESH)
 
-            if duration and action == "mute":
+            if duration and action == CaseType.MUTE:
                 # Schedule mute refreshes
                 await self._schedule_mute_refreshes(case, duration)
-            elif duration is None and action == "mute":
+            elif duration is None and action == CaseType.MUTE:
                 # Permanent mute, schedule refresh every 27 days
                 self.session.add(
                     ScheduledTask(
                         guild_id=self.guild.id,
                         user_id=user_id,
                         case_id=case.id,
-                        type="perma_mute_refresh",
+                        type=EventType.PERMA_MUTE_REFRESH,
                         time_scheduled=datetime.now() + timedelta(days=27),
                     )
                 )
                 await self.session.commit()
-            elif duration and action == "ban":
+            elif duration and action == CaseType.BAN:
                 # Delete old scheduled unban tasks
-                await self.delete_scheduled_tasks_for_user(user_id, "unban")
+                await self.delete_scheduled_tasks_for_user(user_id, EventType.UNBAN)
 
                 # Schedule unban
                 self.session.add(
@@ -133,7 +135,7 @@ class GuildModCaseManager:
                         guild_id=self.guild.id,
                         user_id=user_id,
                         case_id=case.id,
-                        type="unban",
+                        type=EventType.UNBAN,
                         time_scheduled=datetime.now() + duration,
                     )
                 )
@@ -151,11 +153,11 @@ class GuildModCaseManager:
                     return case
 
             try:
-                if action == "ban":
+                if action == CaseType.BAN:
                     embed = banned_dm(self.bot, member, case)
-                elif action == "kick":
+                elif action == CaseType.KICK:
                     embed = kicked_dm(self.bot, member, case)
-                elif action == "mute":
+                elif action == CaseType.MUTE:
                     embed = muted_dm(self.bot, member, case)
                 else:
                     embed = None
@@ -205,16 +207,27 @@ class GuildModCaseManager:
         case.resolved = True
         case.time_updated = datetime.now()
 
+        if case.type == CaseType.MUTE:
+            await self.delete_scheduled_tasks_for_user(case.user_id, EventType.PERMA_MUTE_REFRESH)
+            await self.delete_scheduled_tasks_for_user(case.user_id, EventType.MUTE_REFRESH)
+        elif case.type == CaseType.BAN:
+            await self.delete_scheduled_tasks_for_user(case.user_id, EventType.UNBAN)
+
         await self.session.commit()
         return case
 
     async def delete_case(self, case_id: str) -> None:
         case = await self.get_case_by_id(case_id)
 
+        if not case:
+            raise CaseNotFoundException("Case not found")
+
+        await self.close_case(case_id)
+
         await self.session.delete(case)
         await self.session.commit()
 
-    async def delete_scheduled_tasks_for_user(self, user_id: int, type: str) -> None:
+    async def delete_scheduled_tasks_for_user(self, user_id: int, type: EventType) -> None:
         """Delete scheduled tasks for a user of a specific type"""
         await self.session.execute(
             delete(ScheduledTask).where(
@@ -253,7 +266,7 @@ class GuildModCaseManager:
                     guild_id=self.guild.id,
                     user_id=case.user_id,
                     case_id=case.id,
-                    type="refresh_mute",
+                    type=EventType.MUTE_REFRESH,
                     time_scheduled=refresh_time,
                     duration=int(refresh_duration),
                 )

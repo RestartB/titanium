@@ -28,6 +28,8 @@ from sqlalchemy.orm import Mapped, MappedColumn, declarative_base, relationship
 from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
 from lib.enums.leaderboard import LeaderboardCalcType
+from lib.enums.moderation import CaseType
+from lib.enums.scheduled_events import EventType
 from lib.enums.server_counters import ServerCounterType
 
 Base = declarative_base()
@@ -45,6 +47,7 @@ class GuildSettings(Base):
     __tablename__ = "guild_settings"
     guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     loading_reaction: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    delete_after_3_days: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     dashboard_managers: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
@@ -562,7 +565,7 @@ class LeaderboardUserStats(Base):
 class ModCase(Base):
     __tablename__ = "mod_cases"
     id: Mapped[str] = MappedColumn(String(length=8), primary_key=True, default=generate_short_uuid)
-    type: Mapped[str] = MappedColumn(String(length=32))
+    type: Mapped[CaseType] = MappedColumn(Enum(CaseType), nullable=False)
     guild_id: Mapped[int] = MappedColumn(BigInteger)
     user_id: Mapped[int] = MappedColumn(BigInteger)
     creator_user_id: Mapped[int] = MappedColumn(BigInteger)
@@ -617,7 +620,7 @@ class GameStat(Base):
 class ScheduledTask(Base):
     __tablename__ = "scheduled_tasks"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    type: Mapped[str] = MappedColumn(String)
+    type: Mapped[EventType] = MappedColumn(Enum(EventType), nullable=False)
     guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)

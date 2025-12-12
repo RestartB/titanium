@@ -8,6 +8,7 @@ from discord.ext import commands, tasks
 from sqlalchemy import func, select
 
 from lib.classes.case_manager import GuildModCaseManager
+from lib.enums.scheduled_events import EventType
 from lib.helpers.log_error import log_error
 from lib.sql.sql import ScheduledTask, get_session
 
@@ -21,7 +22,10 @@ class ScheduledTasksCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("tasks")
-        self.queued_tasks: list[int] = []
+
+        self.waiting_tasks: list[int] = []
+        self.waiting_tasks_lock = asyncio.Lock()
+
         self.task_queue: asyncio.Queue[ScheduledTask] = asyncio.Queue()
 
         # Start workers
@@ -39,7 +43,9 @@ class ScheduledTasksCog(commands.Cog):
             try:
                 await self.bot.wait_until_ready()
                 task = await self.task_queue.get()
-                self.queued_tasks.append(task.id)
+
+                async with self.waiting_tasks_lock:
+                    self.waiting_tasks.append(task.id)
             except asyncio.QueueShutDown:
                 return
 
@@ -50,7 +56,7 @@ class ScheduledTasksCog(commands.Cog):
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
                     error="An unexpected internal error occurred while processing a scheduled task",
-                    details=f"Task ID: {task.id}\nType: {task.type}\nUser ID: {task.user_id}\nChannel ID: {task.channel_id}\nRole ID: {task.role_id}\nMessage ID: {task.message_id}\nCase ID: {task.case_id}",
+                    details=f"Task ID: {task.id}\nType: {task.type.value}\nUser ID: {task.user_id}\nChannel ID: {task.channel_id}\nRole ID: {task.role_id}\nMessage ID: {task.message_id}\nCase ID: {task.case_id}",
                     exc=e,
                 )
             finally:
@@ -61,7 +67,8 @@ class ScheduledTasksCog(commands.Cog):
                         if stmt:
                             await session.delete(stmt)
 
-                    self.queued_tasks.remove(task.id)
+                    async with self.waiting_tasks_lock:
+                        self.waiting_tasks.remove(task.id)
                 except ValueError:
                     pass
 
@@ -70,7 +77,7 @@ class ScheduledTasksCog(commands.Cog):
     async def task_handler(self, task: ScheduledTask) -> None:
         """Handles a task from the queue worker"""
 
-        if task.type == "refresh_mute":
+        if task.type == EventType.MUTE_REFRESH:
             # Mute refresh task
             guild = self.bot.get_guild(task.guild_id)
             if not guild:
@@ -78,6 +85,9 @@ class ScheduledTasksCog(commands.Cog):
 
             member = guild.get_member(task.user_id)
             if not member:
+                return
+
+            if not member.is_timed_out():
                 return
 
             try:
@@ -92,7 +102,7 @@ class ScheduledTasksCog(commands.Cog):
                     error=f"Failed to refresh mute for {member.id} in guild {guild.name} ({guild.id})",
                     exc=e,
                 )
-        elif task.type == "perma_mute_refresh":
+        elif task.type == EventType.PERMA_MUTE_REFRESH:
             # Perma mute refresh task
             guild = self.bot.get_guild(task.guild_id)
             if not guild:
@@ -100,6 +110,9 @@ class ScheduledTasksCog(commands.Cog):
 
             member = guild.get_member(task.user_id)
             if not member:
+                return
+
+            if not member.is_timed_out():
                 return
 
             try:
@@ -114,7 +127,7 @@ class ScheduledTasksCog(commands.Cog):
                     error=f"Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})",
                     exc=e,
                 )
-        elif task.type == "unban":
+        elif task.type == EventType.UNBAN:
             # Auto unban task
             guild = self.bot.get_guild(task.guild_id)
             if not guild:
@@ -153,10 +166,11 @@ class ScheduledTasksCog(commands.Cog):
             results = result.scalars().all()
 
             for task in results:
-                if task.id in self.queued_tasks:
-                    continue
+                async with self.waiting_tasks_lock:
+                    if task.id in self.waiting_tasks:
+                        continue
 
-                self.queued_tasks.append(task.id)
+                self.waiting_tasks.append(task.id)
                 await self.task_queue.put(task)
 
 

@@ -16,11 +16,12 @@ def warned(
     case: ModCase,
     dm_success: bool,
     dm_error: str,
+    log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{bot.success_emoji} Warned • `{case.id}`",
+        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Warned • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
-        colour=Colour.green(),
+        colour=Colour.orange() if log else Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -42,11 +43,12 @@ def muted(
     case: ModCase,
     dm_success: bool = True,
     dm_error: str = "",
+    log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{bot.success_emoji} Muted • `{case.id}`",
+        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Muted • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
-        colour=Colour.green(),
+        colour=Colour.red() if log else Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -80,9 +82,10 @@ def unmuted(
     case: ModCase,
     dm_success: bool,
     dm_error: str,
+    log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{bot.success_emoji} Unmuted • `{case.id}`",
+        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Unmuted • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Original Reason:** {case.description or 'No reason provided.'}",
         colour=Colour.green(),
     )
@@ -118,11 +121,12 @@ def kicked(
     case: ModCase,
     dm_success: bool,
     dm_error: str,
+    log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{bot.success_emoji} Kicked • `{case.id}`",
+        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Kicked • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Reason:** {case.description or 'No reason provided.'}",
-        colour=Colour.green(),
+        colour=Colour.red() if log else Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -144,11 +148,12 @@ def banned(
     case: ModCase,
     dm_success: bool,
     dm_error: str,
+    log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{bot.success_emoji} Banned • `{case.id}`",
+        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Banned • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
-        colour=Colour.green(),
+        colour=Colour.red() if log else Colour.green(),
     )
 
     embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
@@ -170,9 +175,10 @@ def unbanned(
     case: ModCase,
     dm_success: bool,
     dm_error: str,
+    log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{bot.success_emoji} Unbanned • `{case.id}`",
+        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Unbanned • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Original Reason:** {case.description or 'No reason provided.'}",
         colour=Colour.green(),
     )
