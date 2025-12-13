@@ -1,7 +1,7 @@
 import logging
 import os
 import traceback
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord.ext import commands
@@ -66,13 +66,16 @@ class AdminCog(commands.Cog):
     async def warn(
         self,
         ctx: commands.Context["TitaniumBot"],
+        server_id: Optional[int] = None,
     ) -> None:
         await defer(ctx, ephemeral=True)
 
         # Sync commands
         self.logger.info("Syncing commands...")
         try:
-            tree = await self.bot.tree.sync()
+            tree = await self.bot.tree.sync(
+                guild=(discord.Object(id=server_id) if server_id else None)
+            )
             self.logger.info(f"Synced {len(tree)} commands.")
 
             await ctx.reply(

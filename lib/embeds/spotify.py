@@ -246,7 +246,7 @@ async def album(
     color_thief = ColorThief(image_data)
     colours = color_thief.get_color()
 
-    page_embeds = []
+    page_embeds: list[discord.Embed] = []
     for page in pages:
         embed = discord.Embed(
             title=item["name"],
@@ -261,6 +261,11 @@ async def album(
         embed.set_thumbnail(url=item["images"][0]["url"])
 
         page_embeds.append(embed)
+
+    page_embeds[0].set_footer(
+        text=f"Controlling: @{ctx.author.name}" if len(page_embeds) > 1 else f"@{ctx.author.name}",
+        icon_url=ctx.author.display_avatar.url,
+    )
 
     if len(page_embeds) > 1:
         view = PaginationView(

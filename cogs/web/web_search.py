@@ -1,3 +1,4 @@
+# TODO: convert to hybrid commands
 import os
 import urllib.parse
 from typing import TYPE_CHECKING
@@ -17,17 +18,6 @@ if TYPE_CHECKING:
 class WebSearchCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-
-    context = discord.app_commands.AppCommandContext(
-        guild=True, dm_channel=True, private_channel=True
-    )
-    installs = discord.app_commands.AppInstallationType(guild=True, user=True)
-    searchGroup = app_commands.Group(
-        name="search",
-        description="Search the web using various services.",
-        allowed_contexts=context,
-        allowed_installs=installs,
-    )
 
     def _create_urban_embed(self, data: dict) -> list[discord.Embed]:
         embed = discord.Embed(
@@ -50,13 +40,17 @@ class WebSearchCommandsCog(commands.Cog):
             embed,
         ]
 
+    @commands.hybrid_group(name="search", description="Search the web using various services.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def search_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
+        raise commands.CommandNotFound
+
     # Urban Dictionary command
-    @searchGroup.command(
+    @search_group.command(
         name="urban-dictionary",
         description="Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!",
     )
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(page="Optional: page to jump to. Defaults to first page.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
@@ -64,13 +58,13 @@ class WebSearchCommandsCog(commands.Cog):
     @commands.cooldown(1, 10)
     async def urban_dict(
         self,
-        interaction: discord.Interaction,
+        ctx: commands.Context["TitaniumBot"],
         *,
         query: str,
         page: app_commands.Range[int, 1, 10] = 1,
         ephemeral: bool = False,
     ):
-        await interaction.response.defer(ephemeral=ephemeral)
+        await ctx.defer(ephemeral=ephemeral)
 
         item_list: list[dict] = []
         embeds_list: list[list[discord.Embed]] = []
@@ -95,17 +89,24 @@ class WebSearchCommandsCog(commands.Cog):
                     color=Color.red(),
                 )
                 embed.set_footer(
-                    text=f"@{interaction.user.name} • Page 1/{len(item_list)}",
-                    icon_url=interaction.user.display_avatar.url,
+                    text=f"@{ctx.author.name} • Page 1/{len(item_list)}",
+                    icon_url=ctx.author.display_avatar.url,
                 )
 
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
+            embeds_list[0][1].set_footer(
+                text=f"Controlling: @{ctx.author.name}"
+                if len(item_list) > 1
+                else f"@{ctx.author.name}",
+                icon_url=ctx.author.display_avatar.url,
+            )
+
             if len(item_list) == 1:
-                await interaction.followup.send(embeds=embeds_list[0], ephemeral=ephemeral)
+                await ctx.reply(embeds=embeds_list[0], ephemeral=ephemeral)
             else:
-                await interaction.followup.send(
+                await ctx.reply(
                     embeds=embeds_list[0],
                     view=PaginationView(embeds=embeds_list, timeout=900, page_offset=page),
                     ephemeral=ephemeral,
@@ -117,22 +118,22 @@ class WebSearchCommandsCog(commands.Cog):
                 color=Color.red(),
             )
             embed.set_footer(
-                text=f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
+                text=f"@{ctx.author.name}",
+                icon_url=ctx.author.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Wikipedia command
-    @searchGroup.command(name="wikipedia", description="Search Wikipedia for information.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @search_group.command(name="wikipedia", description="Search Wikipedia for information.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
     @commands.cooldown(1, 5)
-    async def wiki(self, interaction: discord.Interaction, *, search: str, ephemeral: bool = False):
-        await interaction.response.defer(ephemeral=ephemeral)
+    async def wiki(
+        self, ctx: commands.Context["TitaniumBot"], *, search: str, ephemeral: bool = False
+    ):
+        await ctx.defer(ephemeral=ephemeral)
 
         headers = {"User-Agent": os.getenv("WIKIPEDIA_API_USER_AGENT", "")}
 
@@ -152,11 +153,11 @@ class WebSearchCommandsCog(commands.Cog):
                         icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
                     )
                     embed.set_footer(
-                        text=f"@{interaction.user.name}",
-                        icon_url=interaction.user.display_avatar.url,
+                        text=f"@{ctx.author.name}",
+                        icon_url=ctx.author.display_avatar.url,
                     )
 
-                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                    await ctx.reply(embed=embed, ephemeral=ephemeral)
                     return
 
                 page_data = await request.json()
@@ -172,11 +173,11 @@ class WebSearchCommandsCog(commands.Cog):
                 icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
             )
             embed.set_footer(
-                text=f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
+                text=f"@{ctx.author.name}",
+                icon_url=ctx.author.display_avatar.url,
             )
 
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         target_page = page_data["pages"][0]
@@ -197,11 +198,11 @@ class WebSearchCommandsCog(commands.Cog):
                         icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
                     )
                     embed.set_footer(
-                        text=f"@{interaction.user.name}",
-                        icon_url=interaction.user.display_avatar.url,
+                        text=f"@{ctx.author.name}",
+                        icon_url=ctx.author.display_avatar.url,
                     )
 
-                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+                    await ctx.reply(embed=embed, ephemeral=ephemeral)
                     return
 
                 page = await request.json()
@@ -212,8 +213,8 @@ class WebSearchCommandsCog(commands.Cog):
             color=Color.from_rgb(r=255, g=255, b=255),
         )
         embed.set_footer(
-            text=f"@{interaction.user.name}",
-            icon_url=interaction.user.display_avatar.url,
+            text=f"@{ctx.author.name}",
+            icon_url=ctx.author.display_avatar.url,
         )
         embed.set_author(
             name="Wikipedia",
@@ -229,7 +230,7 @@ class WebSearchCommandsCog(commands.Cog):
             )
         )
 
-        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

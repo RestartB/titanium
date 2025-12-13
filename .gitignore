@@ -20,3 +20,7 @@ logs/
 
 # .env
 .env
+
+# Other
+cogs/private
+cogs/ignore

@@ -34,8 +34,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 self.bot,
                 cases_list[(page - 1) * 5 : page * 5],
                 len(cases_list),
-                page,
-                total_pages,
                 target,
                 user,
             )
@@ -76,6 +74,13 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                                 )
                             )
 
+                        embeds[0].set_footer(
+                            text=f"Controlling: @{ctx.author.name}"
+                            if len(embeds) > 1
+                            else f"@{ctx.author.name}",
+                            icon_url=ctx.author.display_avatar.url,
+                        )
+
                         if len(embeds) > 1:
                             view = PaginationView(embeds, 120)
                             await ctx.reply(embed=embeds[0], view=view)
@@ -101,6 +106,13 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                                 colour=Colour.red(),
                             )
                         )
+
+                    embeds[0].set_footer(
+                        text=f"Controlling: @{ctx.author.name}"
+                        if len(embeds) > 1
+                        else f"@{ctx.author.name}",
+                        icon_url=ctx.author.display_avatar.url,
+                    )
 
                     if len(embeds) > 1:
                         view = PaginationView(embeds, 120)

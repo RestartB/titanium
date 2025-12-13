@@ -239,7 +239,7 @@ class LeaderboardCog(commands.Cog):
                 color=discord.Color.random(),
             )
 
-            pages = []
+            pages: list[discord.Embed] = []
             page_size = 20
             for i, user_stats in enumerate(top_users, start=1):
                 member = ctx.guild.get_member(user_stats.user_id)
@@ -258,6 +258,13 @@ class LeaderboardCog(commands.Cog):
 
             if embed.description:
                 pages.append(embed)
+
+            pages[0].set_footer(
+                text=f"Controlling: @{ctx.author.name}"
+                if len(pages) > 1
+                else f"@{ctx.author.name}",
+                icon_url=ctx.author.display_avatar.url,
+            )
 
             view = PaginationView(embeds=pages, timeout=240)
 

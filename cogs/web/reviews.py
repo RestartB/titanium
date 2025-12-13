@@ -67,7 +67,7 @@ class ReviewsCommandsCog(commands.Cog):
         review_amount = len(review_list)
         count_per_page = 4
 
-        pages = []
+        pages: list[discord.Embed] = []
         page = discord.Embed(
             title="ReviewDB User Reviews",
             description=f"There {'are' if review_amount > 1 else 'is'} **{review_amount} review{'s' if review_amount > 1 else ''}** for this user.",
@@ -96,6 +96,11 @@ class ReviewsCommandsCog(commands.Cog):
                     name=f"@{user.name}",
                     icon_url=user.display_avatar.url,
                 )
+
+        pages[0].set_footer(
+            text=f"Controlling: @{ctx.author.name}" if len(pages) > 1 else f"@{ctx.author.name}",
+            icon_url=ctx.author.display_avatar.url,
+        )
 
         if len(pages) > 1:
             view = PaginationView(embeds=pages, timeout=180)
@@ -152,7 +157,7 @@ class ReviewsCommandsCog(commands.Cog):
         review_amount = len(review_list)
         count_per_page = 4
 
-        pages = []
+        pages: list[discord.Embed] = []
         page = discord.Embed(
             title="ReviewDB Server Reviews",
             description=f"There {'are' if review_amount > 1 else 'is'} **{review_amount} review{'s' if review_amount > 1 else ''}** for this server.",
@@ -181,6 +186,11 @@ class ReviewsCommandsCog(commands.Cog):
                     name=ctx.guild.name,
                     icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
                 )
+
+        pages[0].set_footer(
+            text=f"Controlling: @{ctx.author.name}" if len(pages) > 1 else f"@{ctx.author.name}",
+            icon_url=ctx.author.display_avatar.url,
+        )
 
         if len(pages) > 1:
             view = PaginationView(embeds=pages, timeout=180)

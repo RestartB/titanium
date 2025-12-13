@@ -14,8 +14,6 @@ def cases(
     bot: TitaniumBot,
     cases: list[ModCase] | Sequence[ModCase],
     total: int,
-    current_page: int,
-    total_pages: int,
     target: User | Member,
     user: User | Member,
 ) -> Embed:
@@ -38,11 +36,6 @@ def cases(
             value=f"-# Created <t:{int(case.time_created.timestamp())}:f>\n{case.description}",
             inline=False,
         )
-
-    embed.set_footer(
-        text=f"@{user.name}{f' • Page {current_page}/{total_pages}' if total_pages > 1 else ''}",
-        icon_url=user.display_avatar.url,
-    )
 
     return embed
 

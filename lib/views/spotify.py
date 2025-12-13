@@ -239,7 +239,7 @@ class SongLyricSelection(Select):
         if current_page:
             lyrics.append(current_page.strip())
 
-            embed_pages = []
+            embed_pages: list[discord.Embed] = []
             for page in lyrics:
                 embed = discord.Embed(
                     title=f"{selected_song_data['name']}",
@@ -251,6 +251,13 @@ class SongLyricSelection(Select):
                 )
 
                 embed_pages.append(embed)
+
+        embed_pages[0].set_footer(
+            text=f"Controlling: @{interaction.user.name}"
+            if len(embed_pages) > 1
+            else f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
+        )
 
         if len(embed_pages) > 1:
             view = PaginationView(
