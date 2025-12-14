@@ -317,7 +317,7 @@ class AdminCog(commands.Cog):
         finally:
             await stop_loading(ctx)
 
-    @admin_group.command(name="info_logs", aliases=["info-logs", "infolog"], hidden=True)
+    @admin_group.command(name="infologs", aliases=["info-logs", "infolog"], hidden=True)
     @commands.is_owner()
     async def info_logs(self, ctx: commands.Context["TitaniumBot"], logger: str) -> None:
         await defer(ctx, ephemeral=True)
