@@ -171,7 +171,7 @@ class GuildModCaseManager:
         ):
             if not isinstance(user, discord.Member):
                 try:
-                    member = await self.guild.fetch_member(user.id)
+                    user = await self.guild.fetch_member(user.id)
                 except Exception as e:
                     self.logger.error(
                         f"Failed to fetch user {user.id} for DM notification", exc_info=e
@@ -179,20 +179,20 @@ class GuildModCaseManager:
                     return case, False, "Failed to fetch member for DM notification"
 
             if action == CaseType.BAN:
-                embed = banned_dm(self.bot, member, case)
+                embed = banned_dm(self.bot, user, case)
             elif action == CaseType.KICK:
-                embed = kicked_dm(self.bot, member, case)
+                embed = kicked_dm(self.bot, user, case)
             elif action == CaseType.MUTE:
-                embed = muted_dm(self.bot, member, case)
+                embed = muted_dm(self.bot, user, case)
             elif action == CaseType.WARN:
-                embed = warned_dm(self.bot, member, case)
+                embed = warned_dm(self.bot, user, case)
             else:
                 embed = None
 
             if embed:
                 dm_success, dm_error = await send_dm(
                     embed=embed,
-                    user=member,
+                    user=user,
                     source_guild=self.guild,
                     module="Moderation"
                     if source == CaseSource.MODERATION

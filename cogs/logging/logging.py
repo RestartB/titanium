@@ -146,6 +146,8 @@ class EventLoggingCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
+        self.logger.debug(payload.data)
+
         if not payload.guild_id:
             return
 
@@ -156,6 +158,9 @@ class EventLoggingCog(commands.Cog):
         if payload.cached_message and payload.cached_message.content == payload.data["content"]:
             self.logger.debug("Message content is the same as cached message")
             return
+
+        # if self.bot.user and payload.message.author.id == self.bot.user.id:
+        #     return
 
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
@@ -168,6 +173,13 @@ class EventLoggingCog(commands.Cog):
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent) -> None:
         if not payload.guild_id:
             return
+
+        # if (
+        #     self.bot.user
+        #     and payload.cached_message
+        #     and payload.cached_message.author.id == self.bot.user.id
+        # ):
+        #     return
 
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
