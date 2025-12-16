@@ -556,11 +556,16 @@ class LeaderboardUserStats(Base):
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
+
     xp: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
     level: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
     daily_snapshots: Mapped[list[int]] = MappedColumn(
         ARRAY(Integer), server_default=text("ARRAY[]::integer[]")
     )
+
+    message_count: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
+    word_count: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
+    attachment_count: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
 
 
 class ModCase(Base):

@@ -108,11 +108,20 @@ class LeaderboardCog(commands.Cog):
                 guild_id=message.guild.id,
                 user_id=message.author.id,
                 xp=to_assign,
+                message_count=1,
+                word_count=len(message.content.split()),
+                attachment_count=len(message.attachments),
                 level=0,
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["guild_id", "user_id"],
-                set_={"xp": LeaderboardUserStats.xp + to_assign},
+                set_={
+                    "xp": LeaderboardUserStats.xp + to_assign,
+                    "message_count": LeaderboardUserStats.message_count + 1,
+                    "word_count": LeaderboardUserStats.word_count + len(message.content.split()),
+                    "attachment_count": LeaderboardUserStats.attachment_count
+                    + len(message.attachments),
+                },
             ).returning(LeaderboardUserStats)
 
             result = await session.execute(stmt)
