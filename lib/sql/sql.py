@@ -470,7 +470,6 @@ class FireboardMessage(Base):
     __tablename__ = "fireboard_messages"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     fireboard_message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     fireboard_id: Mapped[uuid.UUID] = MappedColumn(
@@ -496,7 +495,7 @@ class GuildServerCounterSettings(Base):
 
 class ServerCounterChannel(Base):
     __tablename__ = "server_counter_channels"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(
         BigInteger,
         ForeignKey("guild_server_counter_settings.guild_id"),
@@ -517,7 +516,9 @@ class GuildLeaderboardSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="leaderboard_settings", uselist=False
     )
-    mode: Mapped[LeaderboardCalcType] = MappedColumn(Enum(LeaderboardCalcType), nullable=False)
+    mode: Mapped[LeaderboardCalcType] = MappedColumn(
+        Enum(LeaderboardCalcType), nullable=False, server_default=text("'FIXED'")
+    )
     cooldown: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
     base_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("10"))
     min_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("15"))

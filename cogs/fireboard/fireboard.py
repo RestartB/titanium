@@ -124,21 +124,21 @@ class FireboardCog(commands.Cog):
     async def _reaction_add_remove(
         self, reaction: discord.Reaction, user: discord.User | discord.Member
     ):
+        if not reaction.message.guild:
+            self.logger.debug("Ignoring reaction in DM/Group channel")
+            return
+
         self.logger.debug(
             f"Handling reaction add/remove. Reaction: {reaction.emoji}, User: {user.id}, Message id: {reaction.message.id}"
         )
 
+        config = await self.bot.fetch_guild_config(reaction.message.guild.id)
+
         if (
             self.bot.user is None
-            or reaction.message.guild is None
-            or reaction.message.guild.id not in self.bot.guild_configs
-            or not self.bot.guild_configs[reaction.message.guild.id].fireboard_enabled
-            or len(
-                self.bot.guild_configs[
-                    reaction.message.guild.id
-                ].fireboard_settings.fireboard_boards
-            )
-            == 0
+            or not config
+            or not config.fireboard_enabled
+            or len(config.fireboard_settings.fireboard_boards) == 0
             or user.id == self.bot.user.id
             or isinstance(reaction.message.channel, (discord.DMChannel, discord.GroupChannel))
             or isinstance(reaction.message.author, discord.User)
@@ -208,11 +208,9 @@ class FireboardCog(commands.Cog):
                     continue
 
         self.logger.debug(
-            f"Checking {len(self.bot.guild_configs[reaction.message.guild.id].fireboard_settings.fireboard_boards)} boards for new entries"
+            f"Checking {len(config.fireboard_settings.fireboard_boards)} boards for new entries"
         )
-        for board in self.bot.guild_configs[
-            reaction.message.guild.id
-        ].fireboard_settings.fireboard_boards:
+        for board in config.fireboard_settings.fireboard_boards:
             normalized_board_reaction = self._normalize_emoji(board.reaction)
             normalized_reaction_emoji = self._normalize_emoji(str(reaction.emoji))
 
@@ -267,7 +265,6 @@ class FireboardCog(commands.Cog):
                 async with get_session() as session:
                     fireboard_message = FireboardMessage(
                         guild_id=reaction.message.guild.id,
-                        channel_id=reaction.message.channel.id,
                         message_id=reaction.message.id,
                         fireboard_id=board.id,
                         fireboard_message_id=new_message.id,
@@ -301,16 +298,20 @@ class FireboardCog(commands.Cog):
                 )
 
     async def message_edit_handler(self, payload: discord.RawMessageUpdateEvent):
+        if not payload.guild_id:
+            self.logger.debug("Ignoring edit in DM/Group channel")
+            return
+
         self.logger.debug(
             f"Handling message edit. Message id: {payload.message_id}, channel id: {payload.channel_id}, guild id: {payload.guild_id}"
         )
 
+        config = await self.bot.fetch_guild_config(payload.guild_id) if payload.guild_id else None
+
         if (
-            payload.guild_id is None
-            or payload.guild_id not in self.bot.guild_configs
-            or not self.bot.guild_configs[payload.guild_id].fireboard_enabled
-            or len(self.bot.guild_configs[payload.guild_id].fireboard_settings.fireboard_boards)
-            == 0
+            not config
+            or not config.fireboard_enabled
+            or len(config.fireboard_settings.fireboard_boards) == 0
         ):
             self.logger.debug("No fireboard boards found")
             return
@@ -372,16 +373,20 @@ class FireboardCog(commands.Cog):
         self.logger.debug("Done")
 
     async def message_delete_handler(self, payload: discord.RawMessageDeleteEvent):
+        if not payload.guild_id:
+            self.logger.debug("Ignoring delete in DM/Group channel")
+            return
+
         self.logger.debug(
             f"Handling message delete. Message id: {payload.message_id}, channel id: {payload.channel_id}, guild id: {payload.guild_id}"
         )
 
+        config = await self.bot.fetch_guild_config(payload.guild_id)
+
         if (
-            payload.guild_id is None
-            or payload.guild_id not in self.bot.guild_configs
-            or not self.bot.guild_configs[payload.guild_id].fireboard_enabled
-            or len(self.bot.guild_configs[payload.guild_id].fireboard_settings.fireboard_boards)
-            == 0
+            not config
+            or not config.fireboard_enabled
+            or len(config.fireboard_settings.fireboard_boards) == 0 == 0
         ):
             self.logger.debug("No fireboard boards found")
             return
@@ -438,16 +443,20 @@ class FireboardCog(commands.Cog):
                     continue
 
     async def reaction_clear_handler(self, message: discord.Message):
+        if not message.guild:
+            self.logger.debug("Ignoring reaction clear in DM/Group channel")
+            return
+
         self.logger.debug(
             f"Handling reaction clear. Message id: {message.id}, channel id: {message.channel.id}, guild id: {message.guild.id if message.guild else 'DM'}"
         )
 
+        config = await self.bot.fetch_guild_config(message.guild.id)
+
         if (
-            message.guild is None
-            or message.guild.id not in self.bot.guild_configs
-            or not self.bot.guild_configs[message.guild.id].fireboard_enabled
-            or len(self.bot.guild_configs[message.guild.id].fireboard_settings.fireboard_boards)
-            == 0
+            not config
+            or not config.fireboard_enabled
+            or len(config.fireboard_settings.fireboard_boards) == 0
         ):
             self.logger.debug("No fireboard boards found")
             return
@@ -502,20 +511,20 @@ class FireboardCog(commands.Cog):
                     continue
 
     async def reaction_emoji_clear_handler(self, reaction: discord.Reaction):
+        if not reaction.message.guild:
+            self.logger.debug("Ignoring reaction emoji clear in DM/Group channel")
+            return
+
         self.logger.debug(
             f"Handling reaction emoji clear. Message id: {reaction.message.id}, channel id: {reaction.message.channel.id}, guild id: {reaction.message.guild.id if reaction.message.guild else 'DM'}"
         )
 
+        config = await self.bot.fetch_guild_config(reaction.message.guild.id)
+
         if (
-            reaction.message.guild is None
-            or reaction.message.guild.id not in self.bot.guild_configs
-            or not self.bot.guild_configs[reaction.message.guild.id].fireboard_enabled
-            or len(
-                self.bot.guild_configs[
-                    reaction.message.guild.id
-                ].fireboard_settings.fireboard_boards
-            )
-            == 0
+            not config
+            or not config.fireboard_enabled
+            or len(config.fireboard_settings.fireboard_boards) == 0
         ):
             self.logger.debug("No fireboard boards found")
             return

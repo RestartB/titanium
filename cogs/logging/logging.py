@@ -155,12 +155,18 @@ class EventLoggingCog(commands.Cog):
             self.logger.debug("No content in payload data")
             return
 
+        if not payload.message.content or any(
+            [payload.message.webhook_id, payload.message.embeds, payload.message.poll]
+        ):
+            self.logger.debug("No content to compare or message is webhook/embed/poll")
+            return
+
         if payload.cached_message and payload.cached_message.content == payload.data["content"]:
             self.logger.debug("Message content is the same as cached message")
             return
 
-        # if self.bot.user and payload.message.author.id == self.bot.user.id:
-        #     return
+        if self.bot.user and payload.message.author.id == self.bot.user.id:
+            return
 
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:

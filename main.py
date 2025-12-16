@@ -2,9 +2,11 @@
 # Made by Restart, 2025
 
 # Imports
+import asyncio
 import datetime
 import logging
 import os
+import sys
 from glob import glob
 from typing import Optional
 
@@ -19,6 +21,7 @@ from lib.classes.automod_message import AutomodMessage
 from lib.helpers.hybrid_adapters import SlashCommandOnly
 from lib.helpers.log_error import log_error
 from lib.setup_logger import setup_logging
+from v1_to_v2.migrate import migrate_v1_to_v2
 
 # load the env variables
 load_dotenv()
@@ -27,11 +30,15 @@ from lib.sql.sql import (  # noqa: E402
     AvailableWebhook,
     FireboardMessage,
     GuildAutomodSettings,
+    GuildBouncerSettings,
+    GuildConfessionsSettings,
     GuildFireboardSettings,
+    GuildLeaderboardSettings,
     GuildLimits,
     GuildLoggingSettings,
     GuildModerationSettings,
     GuildPrefixes,
+    GuildServerCounterSettings,
     GuildSettings,
     OptOutIDs,
     get_session,
@@ -225,11 +232,27 @@ class TitaniumBot(commands.Bot):
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 
+            stmt = insert(GuildBouncerSettings).values(guild_id=guild_id)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
             stmt = insert(GuildLoggingSettings).values(guild_id=guild_id)
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 
             stmt = insert(GuildFireboardSettings).values(guild_id=guild_id)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
+            stmt = insert(GuildServerCounterSettings).values(guild_id=guild_id)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
+            stmt = insert(GuildLeaderboardSettings).values(guild_id=guild_id)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
+            stmt = insert(GuildConfessionsSettings).values(guild_id=guild_id)
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 
@@ -256,11 +279,7 @@ class TitaniumBot(commands.Bot):
         return guild_settings
 
     async def setup_hook(self):
-        try:
-            await init_db()
-        except Exception:
-            raise
-
+        await init_db()
         await self.refresh_all_caches()
 
         init_logger.info("Getting custom emojis...")
@@ -496,6 +515,14 @@ async def on_app_command_error(
 
 
 if __name__ == "__main__":
+    if "--migrate" in sys.argv:
+        asyncio.run(init_db())
+        sys.exit(0)
+
+    if "--v1tov2" in sys.argv:
+        asyncio.run(migrate_v1_to_v2(bot, init_db))
+        sys.exit(0)
+
     logging.info("Starting Titanium bot...")
     try:
         token = os.getenv("BOT_TOKEN")
