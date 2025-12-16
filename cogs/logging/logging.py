@@ -149,6 +149,7 @@ class EventLoggingCog(commands.Cog):
         self.logger.debug(payload.data)
 
         if not payload.guild_id:
+            self.logger.debug("No guild ID in payload")
             return
 
         if "content" not in payload.data:
@@ -166,10 +167,12 @@ class EventLoggingCog(commands.Cog):
             return
 
         if self.bot.user and payload.message.author.id == self.bot.user.id:
+            self.logger.debug("Message author is Titanium")
             return
 
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
+            self.logger.debug("Guild not found")
             return
 
         guild_logger = GuildLogger(self.bot, guild)
