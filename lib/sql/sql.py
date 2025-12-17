@@ -68,28 +68,28 @@ class GuildSettings(Base):
         back_populates="guild_settings",
         uselist=False,
     )
-    bouncer_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    bouncer_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     bouncer_settings: Mapped["GuildBouncerSettings"] = relationship(
         "GuildBouncerSettings",
         cascade="all, delete-orphan",
         back_populates="guild_settings",
         uselist=False,
     )
-    logging_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    logging_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     logging_settings: Mapped["GuildLoggingSettings"] = relationship(
         "GuildLoggingSettings",
         cascade="all, delete-orphan",
         back_populates="guild_settings",
         uselist=False,
     )
-    fireboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    fireboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     fireboard_settings: Mapped["GuildFireboardSettings"] = relationship(
         "GuildFireboardSettings",
         cascade="all, delete-orphan",
         back_populates="guild_settings",
         uselist=False,
     )
-    server_counters_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    server_counters_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     server_counters_settings: Mapped["GuildServerCounterSettings"] = relationship(
         "GuildServerCounterSettings",
         back_populates="guild",
