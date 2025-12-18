@@ -114,7 +114,6 @@ def read_config_file(path) -> tuple[dict, dict]:
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-intents.presences = True
 
 
 class TitaniumBot(commands.Bot):
