@@ -216,8 +216,8 @@ class TitaniumBot(commands.Bot):
 
         cache_logger.info(f"Guild config cache for guild {guild_id} refreshed.")
 
-    async def init_guild(self, guild_id: int) -> GuildSettings | None:
-        db_logger.info(f"[INIT] Initializing guild {guild_id}...")
+    async def init_guild(self, guild_id: int, refresh: bool = True) -> GuildSettings | None:
+        db_logger.info(f"Initializing guild {guild_id}...")
 
         async with get_session() as session:
             stmt = insert(GuildSettings).values(guild_id=guild_id)
@@ -264,9 +264,10 @@ class TitaniumBot(commands.Bot):
             stmt = stmt.on_conflict_do_nothing(index_elements=["id"])
             await session.execute(stmt)
 
-        await self.refresh_guild_config_cache(guild_id)
+        if refresh:
+            await self.refresh_guild_config_cache(guild_id)
 
-        db_logger.info(f"[INIT] Guild {guild_id} initialized.")
+        db_logger.info(f"Guild {guild_id} initialized.")
         return self.guild_configs.get(guild_id)
 
     async def fetch_guild_config(self, guild_id: int) -> GuildSettings | None:

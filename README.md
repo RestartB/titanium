@@ -49,7 +49,7 @@ If you are moving from Titanium v1 to v2, you should migrate user data so users 
 
 ### Supported data
 
-Currently, the migration script can migrate fireboard and server counter settings / data. Leaderboard support is coming soon, and tag support will be implemented when tags are added to the bot.
+Currently, the migration script can migrate fireboard, leaderboard and server counter settings / data. Tag support will be implemented when tags are added to the bot.
 
 ### Migrating data
 
