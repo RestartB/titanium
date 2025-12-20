@@ -389,7 +389,7 @@ async def on_ready():
 
 
 @bot.event
-async def on_command_error(ctx: commands.Context, error: commands.CommandError):
+async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands.CommandError):
     if isinstance(error, commands.CommandNotFound) or isinstance(error, commands.NotOwner):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Not Found",
@@ -398,7 +398,9 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         )
         await ctx.reply(embed=embed)
 
-        if not ctx.interaction:
+        if not ctx.interaction and ctx.bot.loading_emoji in [
+            r.emoji for r in ctx.message.reactions
+        ]:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.MissingPermissions):
         embed = discord.Embed(
@@ -408,7 +410,9 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         )
         await ctx.reply(embed=embed)
 
-        if not ctx.interaction:
+        if not ctx.interaction and ctx.bot.loading_emoji in [
+            r.emoji for r in ctx.message.reactions
+        ]:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.NoPrivateMessage):
         embed = discord.Embed(
@@ -418,7 +422,9 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         )
         await ctx.reply(embed=embed)
 
-        if not ctx.interaction:
+        if not ctx.interaction and ctx.bot.loading_emoji in [
+            r.emoji for r in ctx.message.reactions
+        ]:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.BadArgument):
         embed = discord.Embed(
@@ -428,7 +434,9 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         )
         await ctx.reply(embed=embed)
 
-        if not ctx.interaction:
+        if not ctx.interaction and ctx.bot.loading_emoji in [
+            r.emoji for r in ctx.message.reactions
+        ]:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.MissingRequiredArgument):
         embed = discord.Embed(
@@ -438,7 +446,9 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         )
         await ctx.reply(embed=embed)
 
-        if not ctx.interaction:
+        if not ctx.interaction and ctx.bot.loading_emoji in [
+            r.emoji for r in ctx.message.reactions
+        ]:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.MissingRequiredAttachment):
         embed = discord.Embed(
@@ -448,7 +458,9 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         )
         await ctx.reply(embed=embed)
 
-        if not ctx.interaction:
+        if not ctx.interaction and ctx.bot.loading_emoji in [
+            r.emoji for r in ctx.message.reactions
+        ]:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, SlashCommandOnly):
         embed = discord.Embed(
@@ -458,12 +470,17 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         )
         await ctx.reply(embed=embed)
     else:
-        error_id = await log_error(
-            module="Commands",
-            guild_id=ctx.guild.id if ctx.guild else None,
-            error=f"Unexpected error in prefix command /{ctx.command.qualified_name if ctx.command else 'unknown'}.",
-            exc=error,
-        )
+        try:
+            error_id = await log_error(
+                module="Commands",
+                guild_id=ctx.guild.id if ctx.guild else None,
+                error=f"Unexpected error in prefix command /{ctx.command.qualified_name if ctx.command else 'unknown'}.",
+                exc=error,
+            )
+        except Exception as log_exc:
+            error_id = "Unknown"
+            logging.error("Failed to log error to database", exc_info=log_exc)
+            logging.exception(error)
 
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Error",
@@ -479,7 +496,9 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
 
         await ctx.reply(embed=embed)
 
-        if not ctx.interaction:
+        if not ctx.interaction and ctx.bot.loading_emoji in [
+            r.emoji for r in ctx.message.reactions
+        ]:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
 
 
