@@ -127,15 +127,8 @@ class GuildConfessionsSettings(Base):
 class GuildLimits(Base):
     __tablename__ = "guild_limits"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    bad_word_rules: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
+    automod_rules: Mapped[int] = MappedColumn(Integer, server_default=text("50"))
     bad_word_list_size: Mapped[int] = MappedColumn(Integer, server_default=text("1500"))
-    message_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
-    mention_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
-    word_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
-    new_line_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
-    link_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
-    attachment_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
-    emoji_spam_rules: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
     bouncer_rules: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
     fireboards: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
     server_counters: Mapped[int] = MappedColumn(Integer, server_default=text("20"))
