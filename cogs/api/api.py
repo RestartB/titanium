@@ -249,15 +249,9 @@ class APICog(commands.Cog):
                     for emoji in guild.emojis
                 ],
                 "limits": {
-                    "bad_word_rules": guild_limits.bad_word_rules,
+                    "enforcing": True,
+                    "automod_rules": guild_limits.automod_rules,
                     "bad_word_list_size": guild_limits.bad_word_list_size,
-                    "message_spam_rules": guild_limits.message_spam_rules,
-                    "mention_spam_rules": guild_limits.mention_spam_rules,
-                    "word_spam_rules": guild_limits.word_spam_rules,
-                    "new_line_spam_rules": guild_limits.new_line_spam_rules,
-                    "link_spam_rules": guild_limits.link_spam_rules,
-                    "attachment_spam_rules": guild_limits.attachment_spam_rules,
-                    "emoji_spam_rules": guild_limits.emoji_spam_rules,
                     "bouncer_rules": guild_limits.bouncer_rules,
                     "fireboards": guild_limits.fireboards,
                     "server_counters": guild_limits.server_counters,
