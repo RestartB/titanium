@@ -75,14 +75,40 @@ class ModerationConfigModel(BaseModel):
 
 class AutomodActionModel(BaseModel):
     type: AutomodActionType
+
     duration: Optional[int] = None
     reason: Optional[str] = None
+
     role_id: Optional[str] = None
+
+    message_content: Optional[str] = None
+    message_reply: Optional[bool] = None
+    message_mention: Optional[bool] = None
+    message_embed: Optional[bool] = None
+    embed_colour: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_mute_duration(self):
         if self.type == "mute" and (self.duration is None or self.duration <= 0):
             raise ValueError("Mute actions must have a positive duration")
+        return self
+
+    @model_validator(mode="after")
+    def validate_role_id(self):
+        if self.type in {
+            AutomodActionType.ADD_ROLE,
+            AutomodActionType.REMOVE_ROLE,
+            AutomodActionType.TOGGLE_ROLE,
+        }:
+            if not self.role_id:
+                raise ValueError("Role ID must be provided for role action")
+        return self
+
+    @model_validator(mode="after")
+    def validate_message_content(self):
+        if self.type == AutomodActionType.SEND_MESSAGE:
+            if not self.message_content or self.message_content.strip() == "":
+                raise ValueError("Message content must be provided for send message action")
         return self
 
     def to_sqlalchemy(self, rule_type: AutomodRuleType, guild_id: int) -> AutomodAction:
@@ -92,20 +118,29 @@ class AutomodActionModel(BaseModel):
             action_type=self.type,
             duration=self.duration,
             reason=self.reason,
+            message_content=self.message_content,
+            message_reply=self.message_reply,
+            message_mention=self.message_mention,
+            message_embed=self.message_embed,
+            embed_colour=self.embed_colour,
             role_id=int(self.role_id) if self.role_id else None,
         )
 
 
 class AutomodRuleModel(BaseModel):
     id: Optional[str] = None
+
     rule_type: AutomodRuleType
     rule_name: str = ""
+
     words: Optional[list[str]] = Field(default_factory=list)
     match_whole_word: bool = False
     case_sensitive: bool = False
+
     antispam_type: Optional[AutomodAntispamType] = None
     threshold: int
     duration: int
+
     actions: list[AutomodActionModel]
 
     @field_validator("id")
@@ -153,19 +188,51 @@ class AutomodConfigModel(BaseModel):
 
 class BouncerCriterionModel(BaseModel):
     type: BouncerCriteriaType
+
     account_age: Optional[int] = None
+
     words: Optional[list[str]] = None
     match_whole_word: bool = False
     case_sensitive: bool = False
 
+    def to_sqlalchemy(self, rule_id: uuid.UUID) -> BouncerCriteria:
+        return BouncerCriteria(
+            rule_id=rule_id,
+            criteria_type=self.type,
+            account_age=self.account_age,
+            words=self.words or [],
+            match_whole_word=self.match_whole_word,
+            case_sensitive=self.case_sensitive,
+        )
+
 
 class BouncerActionModel(BaseModel):
     type: BouncerActionType
+
     duration: Optional[int] = None
-    role_id: Optional[str] = None
     reason: Optional[str] = None
-    message_content: Optional[str] = None
-    dm_user: Optional[bool] = None
+
+    role_id: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_role_id(self):
+        if self.type in {
+            BouncerActionType.ADD_ROLE,
+            BouncerActionType.REMOVE_ROLE,
+            BouncerActionType.TOGGLE_ROLE,
+        }:
+            if not self.role_id:
+                raise ValueError("Role ID must be provided for role action")
+        return self
+
+    def to_sqlalchemy(self, rule_id: uuid.UUID) -> BouncerAction:
+        return BouncerAction(
+            rule_id=rule_id,
+            action_type=self.type,
+            duration=self.duration,
+            role_id=int(self.role_id) if self.role_id else None,
+            reason=self.reason,
+        )
 
 
 class BouncerRuleModel(BaseModel):
@@ -199,27 +266,10 @@ class BouncerRuleModel(BaseModel):
         )
 
         for criterion_model in self.criteria:
-            criterion = BouncerCriteria(
-                rule_id=rule.id,
-                criteria_type=criterion_model.type,
-                account_age=criterion_model.account_age,
-                words=criterion_model.words or [],
-                match_whole_word=criterion_model.match_whole_word,
-                case_sensitive=criterion_model.case_sensitive,
-            )
-            rule.criteria.append(criterion)
+            rule.criteria.append(criterion_model.to_sqlalchemy(rule.id))
 
         for action_model in self.actions:
-            action = BouncerAction(
-                rule_id=rule.id,
-                action_type=action_model.type,
-                duration=action_model.duration,
-                role_id=int(action_model.role_id) if action_model.role_id else None,
-                reason=action_model.reason,
-                message_content=action_model.message_content,
-                dm_user=action_model.dm_user,
-            )
-            rule.actions.append(action)
+            rule.actions.append(action_model.to_sqlalchemy(rule.id))
 
         return rule
 

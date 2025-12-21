@@ -54,7 +54,6 @@ class AutomodMonitorCog(commands.Cog):
                 or not config.automod_settings
                 or not message.author
                 or not isinstance(message.author, discord.Member)
-                or message.author.guild_permissions.administrator
                 or not self.bot.user
             ):
                 self.logger.debug("Automod initial checks failed, skipping message")
@@ -314,7 +313,62 @@ class AutomodMonitorCog(commands.Cog):
 
                 self.logger.debug(f"Processing {len(punishments)} punishments")
                 for punishment in punishments:
-                    if punishment.action_type == AutomodActionType.DELETE:
+                    if punishment.action_type == AutomodActionType.SEND_MESSAGE and not isinstance(
+                        message.channel, (discord.DMChannel, discord.PartialMessageable)
+                    ):
+                        self.logger.debug(f"Sending automod message to user {message.author.id}")
+                        try:
+                            if punishment.message_embed:
+                                embed = discord.Embed(description=punishment.message_content)
+                                embed.set_author(
+                                    name="Titanium Automod",
+                                    icon_url=self.bot.user.display_avatar.url,
+                                )
+
+                                if punishment.embed_colour:
+                                    try:
+                                        embed.colour = discord.Colour.from_str(
+                                            punishment.embed_colour
+                                        )
+                                    except ValueError:
+                                        embed.colour = discord.Colour.random()
+                                else:
+                                    embed.colour = discord.Colour.random()
+
+                                if punishment.message_reply:
+                                    await message.reply(
+                                        embed=embed,
+                                        mention_author=punishment.message_mention,
+                                    )
+                                else:
+                                    await message.channel.send(embed=embed)
+                            else:
+                                content = f"-# Titanium Automod\n{punishment.message_content}"
+                                if punishment.message_reply:
+                                    await message.reply(
+                                        content=content,
+                                        mention_author=punishment.message_mention,
+                                    )
+                                else:
+                                    await message.channel.send(
+                                        content=content,
+                                    )
+
+                        except discord.Forbidden as e:
+                            await log_error(
+                                module="Automod",
+                                guild_id=message.guild.id,
+                                error=f"Titanium was not allowed to send a message to @{message.author.name} ({message.author.id}) in #{message.channel.name} ({message.channel.id})",
+                                details=e.text,
+                            )
+                        except discord.HTTPException as e:
+                            await log_error(
+                                module="Automod",
+                                guild_id=message.guild.id,
+                                error=f"Unknown Discord error while sending automod message to @{message.author.name} ({message.author.id})",
+                                details=e.text,
+                            )
+                    elif punishment.action_type == AutomodActionType.DELETE:
                         self.logger.debug(f"Deleting message {message.id}")
                         await message.delete()
                     elif punishment.action_type == AutomodActionType.WARN:

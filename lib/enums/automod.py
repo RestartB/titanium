@@ -27,3 +27,4 @@ class AutomodActionType(Enum):
     ADD_ROLE = "add_role"
     REMOVE_ROLE = "remove_role"
     TOGGLE_ROLE = "toggle_role"
+    SEND_MESSAGE = "send_message"

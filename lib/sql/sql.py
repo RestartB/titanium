@@ -243,10 +243,19 @@ class AutomodAction(Base):
         ForeignKey("guild_automod_settings.guild_id"),
     )
     rule_id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), ForeignKey("automod_rules.id"))
+
     rule_type: Mapped[AutomodRuleType] = MappedColumn(Enum(AutomodRuleType))
     action_type: Mapped[AutomodActionType] = MappedColumn(Enum(AutomodActionType))
+
     duration: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     reason: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+
+    message_content: Mapped[str] = MappedColumn(String(length=2000), nullable=True)
+    message_reply: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    message_mention: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    message_embed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    embed_colour: Mapped[str] = MappedColumn(String(length=7), nullable=True)
+
     role_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     rule: Mapped["AutomodRule"] = relationship(
         "AutomodRule", back_populates="actions", uselist=False
@@ -329,9 +338,6 @@ class BouncerAction(Base):
     # All actions
     reason: Mapped[str] = MappedColumn(String(length=512), nullable=True)
 
-    # Send message action
-    message_content: Mapped[str] = MappedColumn(String(length=2000), nullable=True)
-    dm_user: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     rule: Mapped["BouncerRule"] = relationship(
         "BouncerRule", back_populates="actions", uselist=False
     )
