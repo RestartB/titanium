@@ -158,7 +158,8 @@ class BotUtils(commands.Cog):
 
         embed = discord.Embed(title="Host Info")
 
-        sec = timedelta(seconds=int(time.monotonic()))
+        uptime_seconds = int(time.time() - psutil.boot_time())
+        sec = timedelta(seconds=uptime_seconds)
         d = datetime.datetime(1, 1, 1) + sec
 
         sysinfo = cpuinfo.get_cpu_info()
