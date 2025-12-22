@@ -339,19 +339,22 @@ class AutomodMonitorCog(commands.Cog):
                                     await message.reply(
                                         embed=embed,
                                         mention_author=punishment.message_mention,
+                                        allowed_mentions=discord.AllowedMentions.none(),
                                     )
                                 else:
-                                    await message.channel.send(embed=embed)
+                                    await message.channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none(),)
                             else:
                                 content = f"-# Titanium Automod\n{punishment.message_content}"
                                 if punishment.message_reply:
                                     await message.reply(
                                         content=content,
                                         mention_author=punishment.message_mention,
+                                        allowed_mentions=discord.AllowedMentions.none(),
                                     )
                                 else:
                                     await message.channel.send(
                                         content=content,
+                                        allowed_mentions=discord.AllowedMentions.none(),
                                     )
 
                         except discord.Forbidden as e:
