@@ -5,9 +5,8 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
+from lib.helpers.cache import get_or_fetch_message
 from lib.helpers.log_error import log_error
 from lib.sql.sql import FireboardMessage, get_session
 
@@ -21,10 +20,10 @@ class FireboardCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.event_queue: asyncio.Queue[
-            discord.RawMessageUpdateEvent
+            discord.RawReactionActionEvent
+            | discord.RawMessageUpdateEvent
             | discord.RawMessageDeleteEvent
             | discord.Reaction
-            | tuple[discord.Reaction, discord.User | discord.Member]
             | discord.Message
         ] = asyncio.Queue()
         self.event_queue_task = self.bot.loop.create_task(self.queue_worker())
@@ -62,14 +61,14 @@ class FireboardCog(commands.Cog):
                 return
 
             try:
-                if isinstance(event, discord.RawMessageUpdateEvent):
+                if isinstance(event, discord.RawReactionActionEvent):
+                    await self._reaction_add_remove(event)
+                elif isinstance(event, discord.RawMessageUpdateEvent):
                     await self.message_edit_handler(event)
                 elif isinstance(event, discord.RawMessageDeleteEvent):
                     await self.message_delete_handler(event)
                 elif isinstance(event, discord.Reaction):
                     await self.reaction_emoji_clear_handler(event)
-                elif isinstance(event, tuple) and len(event) == 2:
-                    await self._reaction_add_remove(event[0], event[1])
                 elif isinstance(event, discord.Message):
                     await self.reaction_clear_handler(event)
 
@@ -77,13 +76,15 @@ class FireboardCog(commands.Cog):
             except Exception as e:
                 if isinstance(
                     event,
-                    (discord.RawMessageUpdateEvent, discord.RawMessageDeleteEvent),
+                    (
+                        discord.RawReactionActionEvent,
+                        discord.RawMessageUpdateEvent,
+                        discord.RawMessageDeleteEvent,
+                    ),
                 ):
                     guild_id = event.guild_id or 0
                 elif isinstance(event, discord.Reaction):
                     guild_id = event.message.guild.id if event.message.guild else 0
-                elif isinstance(event, tuple) and len(event) == 2:
-                    guild_id = event[0].message.guild.id if event[0].message.guild else 0
                 elif isinstance(event, discord.Message):
                     guild_id = event.guild.id if event.guild else 0
 
@@ -98,15 +99,22 @@ class FireboardCog(commands.Cog):
 
     async def _calculate_reaction_count(
         self,
-        reaction: discord.Reaction,
+        message: discord.Message,
+        emoji: discord.PartialEmoji,
         author: discord.User | discord.Member,
         ignore_self: bool,
         ignore_bots: bool,
     ) -> int:
-        self.logger.debug(
-            f"Calculating reaction count for message {reaction.message.id}, emoji: {reaction.emoji}"
-        )
-        users = [user async for user in reaction.users()]
+        self.logger.debug(f"Calculating reaction count for message {message.id}, emoji: {emoji}")
+
+        for reaction in message.reactions:
+            if str(reaction.emoji) == str(emoji):
+                users = [user async for user in reaction.users()]
+                break
+        else:
+            self.logger.debug("No matching reaction found on message")
+            return 0
+
         amount = 0
 
         for user in users:
@@ -121,46 +129,52 @@ class FireboardCog(commands.Cog):
         self.logger.debug(f"Final reaction count: {amount}")
         return amount
 
-    async def _reaction_add_remove(
-        self, reaction: discord.Reaction, user: discord.User | discord.Member
-    ):
-        if not reaction.message.guild:
+    async def _reaction_add_remove(self, event: discord.RawReactionActionEvent):
+        if not event.guild_id:
             self.logger.debug("Ignoring reaction in DM/Group channel")
             return
 
         self.logger.debug(
-            f"Handling reaction add/remove. Reaction: {reaction.emoji}, User: {user.id}, Message id: {reaction.message.id}"
+            f"Handling reaction add/remove. Reaction: {event.emoji}, User: {event.user_id}, Message id: {event.message_id}"
         )
 
-        config = await self.bot.fetch_guild_config(reaction.message.guild.id)
+        config = await self.bot.fetch_guild_config(event.guild_id)
+        msg_channel = self.bot.get_channel(event.channel_id)
 
         if (
             self.bot.user is None
             or not config
             or not config.fireboard_enabled
             or len(config.fireboard_settings.fireboard_boards) == 0
-            or user.id == self.bot.user.id
-            or isinstance(reaction.message.channel, (discord.DMChannel, discord.GroupChannel))
-            or isinstance(reaction.message.author, discord.User)
+            or event.user_id == self.bot.user.id
+            or not msg_channel
+            or isinstance(
+                msg_channel,
+                (
+                    discord.ForumChannel,
+                    discord.CategoryChannel,
+                    discord.abc.PrivateChannel,
+                ),
+            )
         ):
             self.logger.debug("Ignoring reaction")
             return
 
         processed_boards: list[uuid.UUID] = []
         self.logger.debug(
-            f"Processing {len(self.bot.fireboard_messages.get(reaction.message.guild.id, []))} existing fireboard messages"
+            f"Processing {len(self.bot.fireboard_messages.get(event.guild_id, []))} existing fireboard messages"
         )
 
-        for user_message in self.bot.fireboard_messages.get(reaction.message.guild.id, []):
-            if user_message.message_id == reaction.message.id:
+        for fireboard_message in list(self.bot.fireboard_messages.get(event.guild_id, [])):
+            if fireboard_message.message_id == event.message_id:
                 self.logger.debug(
-                    f"Found existing fireboard entry for board {user_message.fireboard.id}"
+                    f"Found existing fireboard entry for board {fireboard_message.fireboard.id}"
                 )
-                processed_boards.append(user_message.fireboard.id)
-                channel = self.bot.get_channel(user_message.fireboard.channel_id)
+                processed_boards.append(fireboard_message.fireboard.id)
+                board_channel = self.bot.get_channel(fireboard_message.fireboard.channel_id)
 
-                if channel is None or isinstance(
-                    channel,
+                if board_channel is None or isinstance(
+                    board_channel,
                     (
                         discord.ForumChannel,
                         discord.CategoryChannel,
@@ -168,39 +182,59 @@ class FireboardCog(commands.Cog):
                     ),
                 ):
                     self.logger.debug(
-                        f"Channel {user_message.fireboard.channel_id} not found or invalid type"
+                        f"Channel {fireboard_message.fireboard.channel_id} not found or invalid type"
                     )
                     continue
 
                 try:
-                    board_msg = await channel.fetch_message(user_message.fireboard_message_id)
+                    board_msg = await board_channel.fetch_message(
+                        fireboard_message.fireboard_message_id
+                    )
+                    source_msg = await get_or_fetch_message(self.bot, msg_channel, event.message_id)
+
+                    if source_msg is None or isinstance(
+                        source_msg.channel, (discord.abc.PrivateChannel)
+                    ):
+                        self.logger.debug("Source message not found, deleting fireboard message")
+                        await board_msg.delete()
+
+                        async with get_session() as session:
+                            await session.delete(fireboard_message)
+
+                        self.bot.fireboard_messages[event.guild_id].remove(fireboard_message)
+                        continue
+
                     count = await self._calculate_reaction_count(
-                        reaction,
-                        reaction.message.author,
-                        user_message.fireboard.ignore_self_reactions,
-                        user_message.fireboard.ignore_bots,
+                        source_msg,
+                        event.emoji,
+                        source_msg.author,
+                        fireboard_message.fireboard.ignore_self_reactions,
+                        fireboard_message.fireboard.ignore_bots,
                     )
 
-                    content = f"{count} {reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
+                    content = f"{count} {event.emoji} | {source_msg.author.mention} | {source_msg.channel.mention}"
                     self.logger.debug(
-                        f"Count: {count}, Threshold: {user_message.fireboard.threshold}"
+                        f"Count: {count}, Threshold: {fireboard_message.fireboard.threshold}"
                     )
 
-                    if count >= user_message.fireboard.threshold and content != board_msg.content:
+                    if (
+                        count >= fireboard_message.fireboard.threshold
+                        and content != board_msg.content
+                    ):
                         self.logger.debug("Updating fireboard message")
                         await board_msg.edit(
                             content=content,
-                            embed=self._fireboard_embed(reaction.message),
+                            embed=self._fireboard_embed(source_msg),
                         )
                         continue
-                    elif count < user_message.fireboard.threshold:
+                    elif count < fireboard_message.fireboard.threshold:
                         self.logger.debug("Count below threshold, deleting fireboard message")
                         await board_msg.delete()
 
                         async with get_session() as session:
-                            await session.delete(user_message)
+                            await session.delete(fireboard_message)
 
-                        self.bot.fireboard_messages[reaction.message.guild.id].remove(user_message)
+                        self.bot.fireboard_messages[event.guild_id].remove(fireboard_message)
 
                         continue
                 except discord.NotFound, discord.Forbidden:
@@ -212,38 +246,49 @@ class FireboardCog(commands.Cog):
         )
         for board in config.fireboard_settings.fireboard_boards:
             normalized_board_reaction = self._normalize_emoji(board.reaction)
-            normalized_reaction_emoji = self._normalize_emoji(str(reaction.emoji))
+            normalized_reaction_emoji = self._normalize_emoji(str(event.emoji))
 
             if (
                 board.id in processed_boards
                 or normalized_board_reaction != normalized_reaction_emoji
             ):
                 self.logger.debug(
-                    f"Skipping board {board.id}: already processed or wrong emoji ({board.reaction} != {reaction.emoji})"
+                    f"Skipping board {board.id}: already processed or wrong emoji ({board.reaction} != {event.emoji})"
                 )
                 continue
 
             self.logger.debug(f"Evaluating board {board.id} for new fireboard entry")
+            source_msg = await get_or_fetch_message(self.bot, msg_channel, event.message_id)
+
+            if source_msg is None or isinstance(source_msg.channel, (discord.abc.PrivateChannel)):
+                self.logger.debug("Source message not found, skipping")
+                continue
+
             count = await self._calculate_reaction_count(
-                reaction,
-                reaction.message.author,
+                source_msg,
+                event.emoji,
+                source_msg.author,
                 board.ignore_self_reactions,
                 board.ignore_bots,
             )
 
             if (
                 count >= board.threshold
-                and reaction.message.channel.id not in board.ignored_channels
-                and any(
-                    role.id not in board.ignored_roles for role in reaction.message.author.roles
+                and msg_channel.id not in board.ignored_channels
+                and (
+                    any(role.id not in board.ignored_roles for role in source_msg.author.roles)
+                    if isinstance(source_msg.author, discord.Member)
+                    else True
                 )
             ):
                 self.logger.debug(f"Creating new fireboard entry on board {board.id}")
-                content = f"{count} {reaction} | {reaction.message.author.mention} | {reaction.message.channel.mention}"
-                channel = self.bot.get_channel(board.channel_id)
+                content = (
+                    f"{count} {event.emoji} | {source_msg.author.mention} | {msg_channel.mention}"
+                )
+                board_channel = self.bot.get_channel(board.channel_id)
 
-                if channel is None or isinstance(
-                    channel,
+                if board_channel is None or isinstance(
+                    board_channel,
                     (
                         discord.ForumChannel,
                         discord.CategoryChannel,
@@ -253,19 +298,19 @@ class FireboardCog(commands.Cog):
                     self.logger.debug(f"Board channel {board.channel_id} not found or invalid type")
                     return
 
-                attachments = reaction.message.attachments
+                attachments = source_msg.attachments
 
-                new_message = await channel.send(
+                new_message = await board_channel.send(
                     content=content,
-                    embed=self._fireboard_embed(reaction.message),
+                    embed=self._fireboard_embed(source_msg),
                     files=[await attachment.to_file() for attachment in attachments],
                 )
                 self.logger.debug(f"Created fireboard message {new_message.id}")
 
                 async with get_session() as session:
                     fireboard_message = FireboardMessage(
-                        guild_id=reaction.message.guild.id,
-                        message_id=reaction.message.id,
+                        guild_id=event.guild_id,
+                        message_id=event.message_id,
                         fireboard_id=board.id,
                         fireboard_message_id=new_message.id,
                     )
@@ -278,15 +323,7 @@ class FireboardCog(commands.Cog):
                         f"Saved fireboard message to database with ID {fireboard_message.id}"
                     )
 
-                    stmt = (
-                        select(FireboardMessage)
-                        .where(FireboardMessage.id == fireboard_message.id)
-                        .options(selectinload("*"))
-                    )
-                    result = await session.execute(stmt)
-                    fireboard_message = result.scalars().first()
-
-                    self.bot.fireboard_messages.setdefault(reaction.message.guild.id, []).append(
+                    self.bot.fireboard_messages.setdefault(event.guild_id, []).append(
                         fireboard_message
                     )
                     self.logger.debug("Added fireboard message to cache")
@@ -294,7 +331,7 @@ class FireboardCog(commands.Cog):
                 return
             else:
                 self.logger.debug(
-                    f"Board {board.id} criteria not met: count={count}, threshold={board.threshold}, channel_ignored={reaction.message.channel.id in board.ignored_channels}"
+                    f"Board {board.id} criteria not met: count={count}, threshold={board.threshold}, channel_ignored={source_msg.channel.id in board.ignored_channels}"
                 )
 
     async def message_edit_handler(self, payload: discord.RawMessageUpdateEvent):
@@ -323,11 +360,13 @@ class FireboardCog(commands.Cog):
         self.logger.debug(
             f"Checking {len(self.bot.fireboard_messages.get(payload.guild_id, []))} fireboard messages"
         )
-        for message in self.bot.fireboard_messages.get(payload.guild_id, []):
-            self.logger.debug(f"Checking for match: {message.message_id} == {payload.message_id}")
-            if message.message_id == payload.message_id:
+        for fireboard_message in list(self.bot.fireboard_messages.get(payload.guild_id, [])):
+            self.logger.debug(
+                f"Checking for match: {fireboard_message.message_id} == {payload.message_id}"
+            )
+            if fireboard_message.message_id == payload.message_id:
                 self.logger.debug("Found matching message")
-                channel = self.bot.get_channel(message.fireboard.channel_id)
+                channel = self.bot.get_channel(fireboard_message.fireboard.channel_id)
 
                 if channel is None or isinstance(
                     channel,
@@ -341,9 +380,9 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    msg = await channel.fetch_message(message.fireboard_message_id)
+                    msg = await channel.fetch_message(fireboard_message.fireboard_message_id)
                     self.logger.debug(
-                        f"Fetched fireboard message {message.fireboard_message_id} for editing"
+                        f"Fetched fireboard message {fireboard_message.fireboard_message_id} for editing"
                     )
                     await msg.edit(
                         embed=self._fireboard_embed(payload.message),
@@ -356,9 +395,9 @@ class FireboardCog(commands.Cog):
                     self.logger.debug("Edit message not found, deleting record")
 
                     async with get_session() as session:
-                        await session.delete(message)
+                        await session.delete(fireboard_message)
 
-                    self.bot.fireboard_messages[payload.guild_id].remove(message)
+                    self.bot.fireboard_messages[payload.guild_id].remove(fireboard_message)
                     continue
                 except Exception as e:
                     await log_error(
@@ -386,7 +425,7 @@ class FireboardCog(commands.Cog):
         if (
             not config
             or not config.fireboard_enabled
-            or len(config.fireboard_settings.fireboard_boards) == 0 == 0
+            or len(config.fireboard_settings.fireboard_boards) == 0
         ):
             self.logger.debug("No fireboard boards found")
             return
@@ -394,12 +433,12 @@ class FireboardCog(commands.Cog):
         self.logger.debug(
             f"Checking {len(self.bot.fireboard_messages.get(payload.guild_id, []))} fireboard messages"
         )
-        for message in self.bot.fireboard_messages.get(payload.guild_id, []):
-            if message.message_id == payload.message_id:
+        for fireboard_message in list(self.bot.fireboard_messages.get(payload.guild_id, [])):
+            if fireboard_message.message_id == payload.message_id:
                 self.logger.debug(
-                    f"Found matching fireboard message {message.fireboard_message_id}"
+                    f"Found matching fireboard message {fireboard_message.fireboard_message_id}"
                 )
-                channel = self.bot.get_channel(message.fireboard.channel_id)
+                channel = self.bot.get_channel(fireboard_message.fireboard.channel_id)
 
                 if channel is None or isinstance(
                     channel,
@@ -410,34 +449,36 @@ class FireboardCog(commands.Cog):
                     ),
                 ):
                     self.logger.debug(
-                        f"Channel {message.fireboard.channel_id} not found or invalid type"
+                        f"Channel {fireboard_message.fireboard.channel_id} not found or invalid type"
                     )
                     continue
 
                 try:
-                    msg = await channel.fetch_message(message.fireboard_message_id)
-                    self.logger.debug(f"Deleting fireboard message {message.fireboard_message_id}")
+                    msg = await channel.fetch_message(fireboard_message.fireboard_message_id)
+                    self.logger.debug(
+                        f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
+                    )
                     await msg.delete()
 
                     async with get_session() as session:
-                        await session.delete(message)
+                        await session.delete(fireboard_message)
 
-                    self.bot.fireboard_messages[payload.guild_id].remove(message)
+                    self.bot.fireboard_messages[payload.guild_id].remove(fireboard_message)
                     self.logger.debug("Deleted message and removed from cache")
 
                 except discord.NotFound:
                     self.logger.debug("Delete message not found, deleting record")
                     async with get_session() as session:
-                        await session.delete(message)
+                        await session.delete(fireboard_message)
 
-                    self.bot.fireboard_messages[payload.guild_id].remove(message)
+                    self.bot.fireboard_messages[payload.guild_id].remove(fireboard_message)
                     continue
                 except Exception as e:
                     await log_error(
                         module="Fireboard",
-                        guild_id=message.guild_id,
+                        guild_id=fireboard_message.guild_id,
                         error="An unknown error occurred while processing a fireboard message deletion",
-                        details=f"Message ID: {message.id}",
+                        details=f"Message ID: {fireboard_message.id}",
                         exc=e,
                     )
                     continue
@@ -464,12 +505,12 @@ class FireboardCog(commands.Cog):
         self.logger.debug(
             f"Checking {len(self.bot.fireboard_messages.get(message.guild.id, []))} fireboard messages"
         )
-        for message in self.bot.fireboard_messages.get(message.guild.id, []):
-            if message.message_id == message.id:
+        for fireboard_message in list(self.bot.fireboard_messages.get(message.guild.id, [])):
+            if fireboard_message.message_id == message.id:
                 self.logger.debug(
-                    f"Found matching fireboard message {message.fireboard_message_id}"
+                    f"Found matching fireboard message {fireboard_message.fireboard_message_id}"
                 )
-                channel = self.bot.get_channel(message.fireboard.channel_id)
+                channel = self.bot.get_channel(fireboard_message.fireboard.channel_id)
 
                 if channel is None or isinstance(
                     channel,
@@ -480,30 +521,32 @@ class FireboardCog(commands.Cog):
                     ),
                 ):
                     self.logger.debug(
-                        f"Channel {message.fireboard.channel_id} not found or invalid type"
+                        f"Channel {fireboard_message.fireboard.channel_id} not found or invalid type"
                     )
                     continue
 
                 try:
-                    msg = await channel.fetch_message(message.fireboard_message_id)
-                    self.logger.debug(f"Deleting fireboard message {message.fireboard_message_id}")
+                    msg = await channel.fetch_message(fireboard_message.fireboard_message_id)
+                    self.logger.debug(
+                        f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
+                    )
                     await msg.delete()
 
                     async with get_session() as session:
-                        await session.delete(message)
+                        await session.delete(fireboard_message)
 
-                    self.bot.fireboard_messages[message.guild_id].remove(message)
+                    self.bot.fireboard_messages[message.guild.id].remove(fireboard_message)
                     self.logger.debug("Deleted message and removed from cache")
                 except discord.NotFound:
                     self.logger.debug("Delete message not found, deleting record")
                     async with get_session() as session:
-                        await session.delete(message)
+                        await session.delete(fireboard_message)
 
-                    self.bot.fireboard_messages[message.guild_id].remove(message)
+                    self.bot.fireboard_messages[message.guild.id].remove(fireboard_message)
                 except Exception as e:
                     await log_error(
                         module="Fireboard",
-                        guild_id=message.guild_id,
+                        guild_id=message.guild.id,
                         error="An unknown error occurred while processing a fireboard message deletion",
                         details=f"Message ID: {message.id}",
                         exc=e,
@@ -532,18 +575,20 @@ class FireboardCog(commands.Cog):
         self.logger.debug(
             f"Checking {len(self.bot.fireboard_messages.get(reaction.message.guild.id, []))} fireboard messages"
         )
-        for message in self.bot.fireboard_messages.get(reaction.message.guild.id, []):
-            normalized_board_reaction = self._normalize_emoji(message.fireboard.reaction)
+        for fireboard_message in list(
+            self.bot.fireboard_messages.get(reaction.message.guild.id, [])
+        ):
+            normalized_board_reaction = self._normalize_emoji(fireboard_message.fireboard.reaction)
             normalized_reaction_emoji = self._normalize_emoji(str(reaction.emoji))
 
             if (
-                message.message_id == reaction.message.id
+                fireboard_message.message_id == reaction.message.id
                 and normalized_board_reaction == normalized_reaction_emoji
             ):
                 self.logger.debug(
-                    f"Found matching fireboard message {message.fireboard_message_id} for emoji {reaction.emoji}"
+                    f"Found matching fireboard message {fireboard_message.fireboard_message_id} for emoji {reaction.emoji}"
                 )
-                channel = self.bot.get_channel(message.fireboard.channel_id)
+                channel = self.bot.get_channel(fireboard_message.fireboard.channel_id)
 
                 if channel is None or isinstance(
                     channel,
@@ -554,26 +599,28 @@ class FireboardCog(commands.Cog):
                     ),
                 ):
                     self.logger.debug(
-                        f"Channel {message.fireboard.channel_id} not found or invalid type"
+                        f"Channel {fireboard_message.fireboard.channel_id} not found or invalid type"
                     )
                     continue
 
                 try:
-                    msg = await channel.fetch_message(message.fireboard_message_id)
-                    self.logger.debug(f"Deleting fireboard message {message.fireboard_message_id}")
+                    msg = await channel.fetch_message(fireboard_message.fireboard_message_id)
+                    self.logger.debug(
+                        f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
+                    )
                     await msg.delete()
 
                     async with get_session() as session:
-                        await session.delete(message)
+                        await session.delete(fireboard_message)
 
-                    self.bot.fireboard_messages[reaction.message.guild.id].remove(message)
+                    self.bot.fireboard_messages[reaction.message.guild.id].remove(fireboard_message)
                     self.logger.debug("Deleted message and removed from cache")
                 except discord.NotFound:
                     self.logger.debug("Delete message not found, deleting record")
                     async with get_session() as session:
-                        await session.delete(message)
+                        await session.delete(fireboard_message)
 
-                    self.bot.fireboard_messages[reaction.message.guild.id].remove(message)
+                    self.bot.fireboard_messages[reaction.message.guild.id].remove(fireboard_message)
                 except Exception as e:
                     await log_error(
                         module="Fireboard",
@@ -586,29 +633,25 @@ class FireboardCog(commands.Cog):
 
     # Listen for reactions added
     @commands.Cog.listener()
-    async def on_reaction_add(
-        self, reaction: discord.Reaction, user: discord.User | discord.Member
-    ):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.logger.debug(
-            f"Reaction added: {reaction.emoji} by {user.id} on message {reaction.message.id}"
+            f"Reaction added: {payload.emoji} by {payload.user_id} on message {payload.message_id}"
         )
 
         try:
-            await self.event_queue.put((reaction, user))
+            await self.event_queue.put(payload)
         except asyncio.QueueShutDown:
             return
 
     # Listen for reactions removed
     @commands.Cog.listener()
-    async def on_reaction_remove(
-        self, reaction: discord.Reaction, user: discord.User | discord.Member
-    ):
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
         self.logger.debug(
-            f"Reaction removed: {reaction.emoji} by {user.id} on message {reaction.message.id}"
+            f"Reaction removed: {payload.emoji} by {payload.user_id} on message {payload.message_id}"
         )
 
         try:
-            await self.event_queue.put((reaction, user))
+            await self.event_queue.put(payload)
         except asyncio.QueueShutDown:
             return
 
