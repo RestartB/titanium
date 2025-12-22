@@ -967,8 +967,6 @@ class GuildLogger:
         )
 
     async def message_edit(self, event: discord.RawMessageUpdateEvent) -> None:
-        return
-
         await self._ensure_config()
         if not self._exists_and_enabled("message_edit_id"):
             return

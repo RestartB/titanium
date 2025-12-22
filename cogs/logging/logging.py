@@ -146,8 +146,6 @@ class EventLoggingCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
-        self.logger.debug(payload.data)
-
         if not payload.guild_id:
             self.logger.debug("No guild ID in payload")
             return
@@ -156,10 +154,9 @@ class EventLoggingCog(commands.Cog):
             self.logger.debug("No content in payload data")
             return
 
-        if not payload.message.content or any(
-            [payload.message.webhook_id, payload.message.embeds, payload.message.poll]
-        ):
-            self.logger.debug("No content to compare or message is webhook/embed/poll")
+        message = payload.message
+        if not message.content or any([message.webhook_id, message.embeds, message.poll]):
+            self.logger.debug("Blacklisted content type / no content")
             return
 
         if payload.cached_message and payload.cached_message.content == payload.data["content"]:

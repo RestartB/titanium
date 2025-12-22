@@ -342,7 +342,10 @@ class AutomodMonitorCog(commands.Cog):
                                         allowed_mentions=discord.AllowedMentions.none(),
                                     )
                                 else:
-                                    await message.channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none(),)
+                                    await message.channel.send(
+                                        embed=embed,
+                                        allowed_mentions=discord.AllowedMentions.none(),
+                                    )
                             else:
                                 content = f"-# Titanium Automod\n{punishment.message_content}"
                                 if punishment.message_reply:
@@ -593,8 +596,21 @@ class AutomodMonitorCog(commands.Cog):
             self.logger.debug(f"Message edit event {payload.message_id} has no guild_id, skipping")
             return
 
-        if not payload.data.get("content"):
-            self.logger.debug(f"Message edit event {payload.message_id} has no content, skipping")
+        if "content" not in payload.data:
+            self.logger.debug(f"{payload.message_id} edit has no content in payload data")
+            return
+
+        message = payload.message
+        if not message.content or any([message.webhook_id, message.embeds, message.poll]):
+            self.logger.debug(
+                f"Ignoring {payload.message_id} edit due to content type / no content"
+            )
+            return
+
+        if payload.cached_message and payload.cached_message.content == payload.data["content"]:
+            self.logger.debug(
+                f"Message content is the same as cached message for {payload.message_id}"
+            )
             return
 
         channel = self.bot.get_channel(payload.channel_id)

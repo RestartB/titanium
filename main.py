@@ -10,9 +10,8 @@ import sys
 from glob import glob
 from typing import Optional
 
-import aiohttp
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from dotenv import load_dotenv
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert

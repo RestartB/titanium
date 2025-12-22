@@ -317,8 +317,9 @@ class FireboardCog(commands.Cog):
                     session.add(fireboard_message)
 
                     await session.commit()
-                    await session.flush()
-                    await session.refresh(fireboard_message)
+                    await session.refresh(fireboard_message, ["fireboard"])
+                    session.expunge(fireboard_message)
+
                     self.logger.debug(
                         f"Saved fireboard message to database with ID {fireboard_message.id}"
                     )
@@ -659,6 +660,19 @@ class FireboardCog(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
         self.logger.debug(f"Message edited: {payload.message_id} in channel {payload.channel_id}")
+
+        if "content" not in payload.data:
+            self.logger.debug("No content in payload data")
+            return
+
+        message = payload.message
+        if not message.content or any([message.webhook_id, message.embeds, message.poll]):
+            self.logger.debug("Ignoring message edit due to content type / no content")
+            return
+
+        if payload.cached_message and payload.cached_message.content == payload.data["content"]:
+            self.logger.debug("Message content is the same as cached message")
+            return
 
         try:
             await self.event_queue.put(payload)
