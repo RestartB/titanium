@@ -152,7 +152,7 @@ class MusicCommandsCog(
 
     # Spotify Song Search command
     @spotify_group.command(name="song", description="Search for a song on Spotify.")
-    @app_commands.checks.cooldown(1, 10)
+    @commands.cooldown(1, 10)
     @app_commands.describe(
         search="What you are searching for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -373,7 +373,7 @@ class MusicCommandsCog(
 
     # Spotify Artist Search command
     @spotify_group.command(name="artist", description="Search for an artist on Spotify.")
-    @app_commands.checks.cooldown(1, 10)
+    @commands.cooldown(1, 10)
     @app_commands.describe(
         search="What you are searching for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -595,7 +595,7 @@ class MusicCommandsCog(
 
     # Spotify Album Search command
     @spotify_group.command(name="album", description="Search for an album on Spotify.")
-    @app_commands.checks.cooldown(1, 10)
+    @commands.cooldown(1, 10)
     @app_commands.describe(
         search="What you are searching for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -731,7 +731,7 @@ class MusicCommandsCog(
         url="The target Spotify URL. Song, album, playlist and spotify.link URLs are supported.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @app_commands.checks.cooldown(1, 10)
+    @commands.cooldown(1, 10)
     async def spotify_image(
         self, ctx: commands.Context["TitaniumBot"], url: str, ephemeral: bool = False
     ) -> None:

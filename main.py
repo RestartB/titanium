@@ -10,8 +10,9 @@ import sys
 from glob import glob
 from typing import Optional
 
+import aiohttp
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -74,6 +75,7 @@ class TitaniumBot(commands.Bot):
     connect_time: datetime.datetime
     last_disconnect: Optional[datetime.datetime]
     last_resume: Optional[datetime.datetime]
+    api_latency: float = 0.0
 
     guild_configs: dict[int, GuildSettings] = {}
     guild_prefixes: dict[int, GuildPrefixes] = {}
