@@ -187,9 +187,18 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    board_msg = await board_channel.fetch_message(
-                        fireboard_message.fireboard_message_id
+                    board_msg = await get_or_fetch_message(
+                        self.bot, board_channel, fireboard_message.fireboard_message_id
                     )
+
+                    if board_msg is None:
+                        self.logger.debug("Fireboard message not found, deleting record")
+                        async with get_session() as session:
+                            await session.delete(fireboard_message)
+
+                        self.bot.fireboard_messages[event.guild_id].remove(fireboard_message)
+                        continue
+
                     source_msg = await get_or_fetch_message(self.bot, msg_channel, event.message_id)
 
                     if source_msg is None or isinstance(
@@ -381,7 +390,19 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    msg = await channel.fetch_message(fireboard_message.fireboard_message_id)
+                    msg = await get_or_fetch_message(
+                        self.bot, channel, fireboard_message.fireboard_message_id
+                    )
+
+                    if msg is None:
+                        self.logger.debug("Edit message not found, deleting record")
+
+                        async with get_session() as session:
+                            await session.delete(fireboard_message)
+
+                        self.bot.fireboard_messages[payload.guild_id].remove(fireboard_message)
+                        continue
+
                     self.logger.debug(
                         f"Fetched fireboard message {fireboard_message.fireboard_message_id} for editing"
                     )
@@ -455,7 +476,17 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    msg = await channel.fetch_message(fireboard_message.fireboard_message_id)
+                    msg = await get_or_fetch_message(
+                        self.bot, channel, fireboard_message.fireboard_message_id
+                    )
+                    if msg is None:
+                        self.logger.debug("Delete message not found, deleting record")
+                        async with get_session() as session:
+                            await session.delete(fireboard_message)
+
+                        self.bot.fireboard_messages[payload.guild_id].remove(fireboard_message)
+                        continue
+
                     self.logger.debug(
                         f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
                     )
@@ -527,7 +558,17 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    msg = await channel.fetch_message(fireboard_message.fireboard_message_id)
+                    msg = await get_or_fetch_message(
+                        self.bot, channel, fireboard_message.fireboard_message_id
+                    )
+                    if msg is None:
+                        self.logger.debug("Delete message not found, deleting record")
+                        async with get_session() as session:
+                            await session.delete(fireboard_message)
+
+                        self.bot.fireboard_messages[message.guild.id].remove(fireboard_message)
+                        continue
+
                     self.logger.debug(
                         f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
                     )
@@ -605,7 +646,19 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    msg = await channel.fetch_message(fireboard_message.fireboard_message_id)
+                    msg = await get_or_fetch_message(
+                        self.bot, channel, fireboard_message.fireboard_message_id
+                    )
+                    if msg is None:
+                        self.logger.debug("Delete message not found, deleting record")
+                        async with get_session() as session:
+                            await session.delete(fireboard_message)
+
+                        self.bot.fireboard_messages[reaction.message.guild.id].remove(
+                            fireboard_message
+                        )
+                        continue
+
                     self.logger.debug(
                         f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
                     )
