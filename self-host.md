@@ -49,6 +49,12 @@ Titanium requires a Discord Bot Token to function. Here's how to get one:
 4. Give your bot a username, and optionally, a PFP and banner.
 5. Copy the Bot Token, and paste it into the `discord-bot-token` field in the config file. Due to security reasons, you will only be able to view the bot token once from Discord Developer Portal before having to generate a new one.
 
+### Intents
+
+Discord locks some features behind privileged intents, to enhance user privacy and save on bandwidth. These intents require special approval from Discord to use if your bot is in over 100 servers. If your bot is in under 100 servers, you will be able to enable these intents without approval - though if your bot hits 100 servers, it will not be able to join any more servers until you have been approved to use the intents.
+
+Titanium requires the `Member` and `Message Content` intents, and will not start with them disabled. You can enable the intents from the Bot section of your app.
+
 ## Bot Emojis
 
 Titanium uses custom loading and explicit emojis. To upload your own, follow these steps:
