@@ -3,6 +3,8 @@ import os
 import sqlite3
 from typing import TYPE_CHECKING
 
+from sqlalchemy.dialects.postgresql import insert
+
 from lib.sql.sql import (
     FireboardBoard,
     FireboardMessage,
@@ -17,7 +19,14 @@ from lib.sql.sql import (
 if TYPE_CHECKING:
     from main import TitaniumBot
 
-"""Cog for migrating Fireboard data from v1 to v2."""
+"""Scripts for migrating Fireboard data from v1 to v2."""
+
+
+def extract_emoji_id(emoji: str) -> str:
+    """Extract emoji ID from custom emoji format or return as-is for unicode"""
+    if emoji.startswith("<") and emoji.endswith(">"):
+        return emoji.split(":")[-1].rstrip(">")
+    return emoji
 
 
 async def migrate_fireboard(bot: TitaniumBot):
@@ -56,7 +65,46 @@ async def migrate_fireboard(bot: TitaniumBot):
                     guild_id=server_id,
                     channel_id=channel_id,
                     threshold=reaction_amount,
-                    reaction=emoji,
+                    reaction=extract_emoji_id(emoji),
+                    ignore_bots=True if ignore_bots == 1 else False,
+                )
+
+                session.add(new_fireboard_board)
+                await session.flush()
+
+                # Messages
+                legacy_messages = cur.execute(
+                    "SELECT * FROM fireMessages WHERE serverID = ?", (server_id,)
+                ).fetchall()
+                for message_row in legacy_messages:
+                    (msg_server_id, msg_id, board_msg_id, _) = message_row
+
+                    new_fireboard_message = FireboardMessage(
+                        guild_id=msg_server_id,
+                        message_id=msg_id,
+                        fireboard_message_id=board_msg_id,
+                        fireboard_id=new_fireboard_board.id,
+                    )
+                    session.add(new_fireboard_message)
+
+
+async def migrate_alternate_fireboard(bot: TitaniumBot, db_filename: str):
+    with sqlite3.connect(os.path.join("v1_to_v2", "dbs", db_filename)) as con:
+        cur = con.cursor()
+
+        legacy_fireboard_settings = cur.execute("SELECT * FROM fireSettings").fetchall()
+
+        for row in legacy_fireboard_settings:
+            async with get_session() as session:
+                server_id, reaction_amount, emoji, channel_id, ignore_bots = row
+
+                await bot.init_guild(server_id, refresh=False)
+
+                new_fireboard_board = FireboardBoard(
+                    guild_id=server_id,
+                    channel_id=channel_id,
+                    threshold=reaction_amount,
+                    reaction=extract_emoji_id(emoji),
                     ignore_bots=True if ignore_bots == 1 else False,
                 )
 
@@ -144,7 +192,7 @@ async def migrate_leaderboard(bot: TitaniumBot):
                     (user_mention, message_count, word_count, attachment_count) = row
                     user_mention: str = user_mention.lstrip("<@").rstrip(">")
 
-                    new_entry = LeaderboardUserStats(
+                    stmt = insert(LeaderboardUserStats).values(
                         guild_id=int(table),
                         user_id=int(user_mention),
                         xp=0,
@@ -153,8 +201,9 @@ async def migrate_leaderboard(bot: TitaniumBot):
                         word_count=word_count,
                         attachment_count=attachment_count,
                     )
+                    stmt = stmt.on_conflict_do_nothing()
 
-                    session.add(new_entry)
+                    await session.execute(stmt)
 
 
 async def migrate_v1_to_v2(bot: TitaniumBot, init_db):
@@ -173,5 +222,11 @@ async def migrate_v1_to_v2(bot: TitaniumBot, init_db):
     if input("Migrate Leaderboard data? (y/n) [n]: ").lower() == "y":
         await migrate_leaderboard(bot)
         logging.info("Migrated Leaderboard data.")
+
+    if input("Migrate alternate fireboard data? (y/n) [n]: ").lower() == "y":
+        await migrate_alternate_fireboard(
+            bot, input("Enter alternate fireboard database filename: ")
+        )
+        logging.info("Migrated alternate fireboard data.")
 
     logging.info("Migration from v1 to v2 completed.")
