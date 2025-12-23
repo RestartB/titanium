@@ -617,20 +617,8 @@ class AutomodMonitorCog(commands.Cog):
         if not channel or not isinstance(channel, discord.abc.Messageable):
             return
 
-        if payload.cached_message:
-            message = payload.cached_message
-        else:
-            try:
-                message = await channel.fetch_message(payload.message_id)
-            except discord.NotFound:
-                return
-            except discord.Forbidden:
-                return
-            except discord.HTTPException:
-                return
-
         self.logger.debug(f"Processing edited message {payload.message_id}")
-        await self.handle_message(message)
+        await self.handle_message(message, event_type="edit")
 
 
 async def setup(bot: TitaniumBot) -> None:
