@@ -36,6 +36,14 @@ class FireboardCog(commands.Cog):
         # Remove variation selector-16 (U+FE0F) which makes emojis render as colorful
         return emoji.replace("\ufe0f", "")
 
+    def _get_emoji_identifier(self, emoji: discord.Emoji | discord.PartialEmoji | str) -> str:
+        if isinstance(emoji, discord.Emoji):
+            return str(emoji.id)
+        elif isinstance(emoji, discord.PartialEmoji) and emoji.is_custom_emoji():
+            return str(emoji.id)
+        else:
+            return self._normalize_emoji(str(emoji))
+
     def _fireboard_embed(
         self,
         message: discord.Message,
@@ -167,6 +175,17 @@ class FireboardCog(commands.Cog):
 
         for fireboard_message in list(self.bot.fireboard_messages.get(event.guild_id, [])):
             if fireboard_message.message_id == event.message_id:
+                normalized_board_reaction = self._normalize_emoji(
+                    fireboard_message.fireboard.reaction
+                )
+                reaction_identifier = self._get_emoji_identifier(event.emoji)
+
+                if normalized_board_reaction != reaction_identifier:
+                    self.logger.debug(
+                        f"Skipping board {fireboard_message.fireboard.id}: reaction mismatch ({fireboard_message.fireboard.reaction} != {event.emoji})"
+                    )
+                    continue
+
                 self.logger.debug(
                     f"Found existing fireboard entry for board {fireboard_message.fireboard.id}"
                 )
@@ -255,12 +274,9 @@ class FireboardCog(commands.Cog):
         )
         for board in config.fireboard_settings.fireboard_boards:
             normalized_board_reaction = self._normalize_emoji(board.reaction)
-            normalized_reaction_emoji = self._normalize_emoji(str(event.emoji))
+            reaction_identifier = self._get_emoji_identifier(event.emoji)
 
-            if (
-                board.id in processed_boards
-                or normalized_board_reaction != normalized_reaction_emoji
-            ):
+            if board.id in processed_boards or normalized_board_reaction != reaction_identifier:
                 self.logger.debug(
                     f"Skipping board {board.id}: already processed or wrong emoji ({board.reaction} != {event.emoji})"
                 )
@@ -621,11 +637,11 @@ class FireboardCog(commands.Cog):
             self.bot.fireboard_messages.get(reaction.message.guild.id, [])
         ):
             normalized_board_reaction = self._normalize_emoji(fireboard_message.fireboard.reaction)
-            normalized_reaction_emoji = self._normalize_emoji(str(reaction.emoji))
+            reaction_identifier = self._get_emoji_identifier(reaction.emoji)
 
             if (
                 fireboard_message.message_id == reaction.message.id
-                and normalized_board_reaction == normalized_reaction_emoji
+                and normalized_board_reaction == reaction_identifier
             ):
                 self.logger.debug(
                     f"Found matching fireboard message {fireboard_message.fireboard_message_id} for emoji {reaction.emoji}"

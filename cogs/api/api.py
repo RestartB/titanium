@@ -805,8 +805,21 @@ class APICog(commands.Cog):
             elif module_name == "leaderboard":
                 validated_config = LeaderboardConfigModel(**data)
         except ValidationError as e:
+            error_details = []
+            for error in e.errors():
+                error_dict = {
+                    "type": error["type"],
+                    "loc": error["loc"],
+                    "msg": error["msg"],
+                    "input": str(error.get("input", "")),
+                }
+                if "ctx" in error:
+                    error_dict["ctx"] = {k: str(v) for k, v in error["ctx"].items()}
+                error_details.append(error_dict)
+            
             return web.json_response(
-                {"error": "Validation failed", "details": e.errors()}, status=400
+                {"error": "Validation failed", "details": error_details}, 
+                status=400
             )
         except ValueError as e:
             return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)

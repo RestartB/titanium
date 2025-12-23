@@ -1,6 +1,7 @@
 import uuid
 from typing import Optional
 
+from emoji import is_emoji
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
@@ -358,6 +359,21 @@ class FireboardBoardModel(BaseModel):
     ignore_self_reactions: bool
     ignored_roles: list[str] = Field(default_factory=list)
     ignored_channels: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_reaction(self):
+        if self.reaction.strip() == "":
+            raise ValueError("Reaction cannot be empty")
+
+        if self.reaction.isdigit():
+            reaction_id = int(self.reaction)
+            if reaction_id <= 0:
+                raise ValueError("Emoji ID must be a positive integer")
+        else:
+            if not is_emoji(self.reaction):
+                raise ValueError("Emoji must be valid or a positive integer ID")
+
+        return self
 
 
 class FireboardConfigModel(BaseModel):
