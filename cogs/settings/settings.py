@@ -111,7 +111,7 @@ class SettingsView(LayoutView):
 
         automod_section = Section(accessory=FeatureToggleButton(bot, settings, "automod_enabled"))
         automod_section.add_item(
-            TextDisplay("### Auto Moderation\nAllow Titanium to moderate your server for you.")
+            TextDisplay("### Automod\nAllow Titanium to moderate your server for you.")
         )
         container.add_item(automod_section)
 
@@ -135,6 +135,14 @@ class SettingsView(LayoutView):
         )
         container.add_item(fireboard_section)
 
+        leaderboard_section = Section(
+            accessory=FeatureToggleButton(bot, settings, "leaderboard_enabled")
+        )
+        leaderboard_section.add_item(
+            TextDisplay("### Leaderboard\nTrack engagement and activity in your server.")
+        )
+        container.add_item(leaderboard_section)
+
         server_counters_section = Section(
             accessory=FeatureToggleButton(bot, settings, "server_counters_enabled")
         )
@@ -144,6 +152,14 @@ class SettingsView(LayoutView):
             )
         )
         container.add_item(server_counters_section)
+
+        confessions_section = Section(
+            accessory=FeatureToggleButton(bot, settings, "confessions_enabled")
+        )
+        confessions_section.add_item(
+            TextDisplay("### Confessions\nAllow server members to make anonymous confessions.")
+        )
+        container.add_item(confessions_section)
 
         self.add_item(container)
 
