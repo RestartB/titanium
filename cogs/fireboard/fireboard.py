@@ -117,6 +117,10 @@ class FireboardCog(commands.Cog):
 
         for reaction in message.reactions:
             if str(reaction.emoji) == str(emoji):
+                # if both ignore options are disabled, we don't need to get each user
+                if not ignore_self and not ignore_bots:
+                    return reaction.count
+
                 users = [user async for user in reaction.users()]
                 break
         else:
@@ -175,6 +179,13 @@ class FireboardCog(commands.Cog):
 
         source_msg = None
         source_msg_fetched = False
+
+        # board messages should be ignored
+        if event.message_id in list(
+            fireboard_message.fireboard_message_id
+            for fireboard_message in self.bot.fireboard_messages.get(event.guild_id, [])
+        ):
+            return
 
         for fireboard_message in list(self.bot.fireboard_messages.get(event.guild_id, [])):
             if fireboard_message.message_id == event.message_id:
@@ -320,9 +331,7 @@ class FireboardCog(commands.Cog):
                 )
             ):
                 self.logger.debug(f"Creating new fireboard entry on board {board.id}")
-                content = (
-                    f"**{count} {event.emoji}** • {source_msg.author.mention} • {msg_channel.mention}"
-                )
+                content = f"**{count} {event.emoji}** • {source_msg.author.mention} • {msg_channel.mention}"
                 board_channel = self.bot.get_channel(board.channel_id)
 
                 if board_channel is None or isinstance(
