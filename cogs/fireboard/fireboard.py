@@ -173,6 +173,9 @@ class FireboardCog(commands.Cog):
             f"Processing {len(self.bot.fireboard_messages.get(event.guild_id, []))} existing fireboard messages"
         )
 
+        source_msg = None
+        source_msg_fetched = False
+
         for fireboard_message in list(self.bot.fireboard_messages.get(event.guild_id, [])):
             if fireboard_message.message_id == event.message_id:
                 normalized_board_reaction = self._normalize_emoji(
@@ -218,7 +221,11 @@ class FireboardCog(commands.Cog):
                         self.bot.fireboard_messages[event.guild_id].remove(fireboard_message)
                         continue
 
-                    source_msg = await get_or_fetch_message(self.bot, msg_channel, event.message_id)
+                    if source_msg is None and not source_msg_fetched:
+                        source_msg = await get_or_fetch_message(
+                            self.bot, msg_channel, event.message_id
+                        )
+                        source_msg_fetched = True
 
                     if source_msg is None or isinstance(
                         source_msg.channel, (discord.abc.PrivateChannel)
@@ -240,7 +247,7 @@ class FireboardCog(commands.Cog):
                         fireboard_message.fireboard.ignore_bots,
                     )
 
-                    content = f"{count} {event.emoji} | {source_msg.author.mention} | {source_msg.channel.mention}"
+                    content = f"**{count} {event.emoji}** • {source_msg.author.mention} • {source_msg.channel.mention}"
                     self.logger.debug(
                         f"Count: {count}, Threshold: {fireboard_message.fireboard.threshold}"
                     )
@@ -272,6 +279,10 @@ class FireboardCog(commands.Cog):
         self.logger.debug(
             f"Checking {len(config.fireboard_settings.fireboard_boards)} boards for new entries"
         )
+
+        source_msg = None
+        source_msg_fetched = False
+
         for board in config.fireboard_settings.fireboard_boards:
             normalized_board_reaction = self._normalize_emoji(board.reaction)
             reaction_identifier = self._get_emoji_identifier(event.emoji)
@@ -283,7 +294,9 @@ class FireboardCog(commands.Cog):
                 continue
 
             self.logger.debug(f"Evaluating board {board.id} for new fireboard entry")
-            source_msg = await get_or_fetch_message(self.bot, msg_channel, event.message_id)
+            if source_msg is None and not source_msg_fetched:
+                source_msg = await get_or_fetch_message(self.bot, msg_channel, event.message_id)
+                source_msg_fetched = True
 
             if source_msg is None or isinstance(source_msg.channel, (discord.abc.PrivateChannel)):
                 self.logger.debug("Source message not found, skipping")
@@ -308,7 +321,7 @@ class FireboardCog(commands.Cog):
             ):
                 self.logger.debug(f"Creating new fireboard entry on board {board.id}")
                 content = (
-                    f"{count} {event.emoji} | {source_msg.author.mention} | {msg_channel.mention}"
+                    f"**{count} {event.emoji}** • {source_msg.author.mention} • {msg_channel.mention}"
                 )
                 board_channel = self.bot.get_channel(board.channel_id)
 
@@ -325,10 +338,20 @@ class FireboardCog(commands.Cog):
 
                 attachments = source_msg.attachments
 
+                view = discord.ui.View()
+                view.add_item(
+                    discord.ui.Button(
+                        label="Jump to Message",
+                        url=source_msg.jump_url,
+                        style=discord.ButtonStyle.url,
+                    )
+                )
+
                 new_message = await board_channel.send(
                     content=content,
                     embed=self._fireboard_embed(source_msg),
                     files=[await attachment.to_file() for attachment in attachments],
+                    view=view,
                 )
                 self.logger.debug(f"Created fireboard message {new_message.id}")
 
@@ -406,11 +429,11 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    msg = await get_or_fetch_message(
+                    board_msg = await get_or_fetch_message(
                         self.bot, channel, fireboard_message.fireboard_message_id
                     )
 
-                    if msg is None:
+                    if board_msg is None:
                         self.logger.debug("Edit message not found, deleting record")
 
                         async with get_session() as session:
@@ -422,7 +445,7 @@ class FireboardCog(commands.Cog):
                     self.logger.debug(
                         f"Fetched fireboard message {fireboard_message.fireboard_message_id} for editing"
                     )
-                    await msg.edit(
+                    await board_msg.edit(
                         embed=self._fireboard_embed(payload.message),
                         attachments=payload.message.attachments,
                     )
@@ -492,10 +515,10 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    msg = await get_or_fetch_message(
+                    board_msg = await get_or_fetch_message(
                         self.bot, channel, fireboard_message.fireboard_message_id
                     )
-                    if msg is None:
+                    if board_msg is None:
                         self.logger.debug("Delete message not found, deleting record")
                         async with get_session() as session:
                             await session.delete(fireboard_message)
@@ -506,7 +529,7 @@ class FireboardCog(commands.Cog):
                     self.logger.debug(
                         f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
                     )
-                    await msg.delete()
+                    await board_msg.delete()
 
                     async with get_session() as session:
                         await session.delete(fireboard_message)
@@ -574,10 +597,10 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    msg = await get_or_fetch_message(
+                    board_msg = await get_or_fetch_message(
                         self.bot, channel, fireboard_message.fireboard_message_id
                     )
-                    if msg is None:
+                    if board_msg is None:
                         self.logger.debug("Delete message not found, deleting record")
                         async with get_session() as session:
                             await session.delete(fireboard_message)
@@ -588,7 +611,7 @@ class FireboardCog(commands.Cog):
                     self.logger.debug(
                         f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
                     )
-                    await msg.delete()
+                    await board_msg.delete()
 
                     async with get_session() as session:
                         await session.delete(fireboard_message)
@@ -662,10 +685,10 @@ class FireboardCog(commands.Cog):
                     continue
 
                 try:
-                    msg = await get_or_fetch_message(
+                    board_msg = await get_or_fetch_message(
                         self.bot, channel, fireboard_message.fireboard_message_id
                     )
-                    if msg is None:
+                    if board_msg is None:
                         self.logger.debug("Delete message not found, deleting record")
                         async with get_session() as session:
                             await session.delete(fireboard_message)
@@ -678,7 +701,7 @@ class FireboardCog(commands.Cog):
                     self.logger.debug(
                         f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
                     )
-                    await msg.delete()
+                    await board_msg.delete()
 
                     async with get_session() as session:
                         await session.delete(fireboard_message)
