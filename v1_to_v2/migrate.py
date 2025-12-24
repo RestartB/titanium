@@ -67,6 +67,7 @@ async def migrate_fireboard(bot: TitaniumBot):
                     threshold=reaction_amount,
                     reaction=extract_emoji_id(emoji),
                     ignore_bots=True if ignore_bots == 1 else False,
+                    ignore_self_reactions=True if ignore_bots == 1 else False,
                 )
 
                 session.add(new_fireboard_board)
@@ -106,6 +107,7 @@ async def migrate_alternate_fireboard(bot: TitaniumBot, db_filename: str):
                     threshold=reaction_amount,
                     reaction=extract_emoji_id(emoji),
                     ignore_bots=True if ignore_bots == 1 else False,
+                    ignore_self_reactions=True if ignore_bots == 1 else False,
                 )
 
                 session.add(new_fireboard_board)
