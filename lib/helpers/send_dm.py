@@ -56,7 +56,7 @@ async def send_dm(
             module=module,
             guild_id=source_guild.id,
             error=f"Unexpected error while DMing @{user.name} ({user.id})",
-            details=str(e),
+            exc=e,
         )
 
     return dm_success, dm_error
