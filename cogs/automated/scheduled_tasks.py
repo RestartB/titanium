@@ -53,6 +53,7 @@ class ScheduledTasksCog(commands.Cog):
                 await self.task_handler(task)
             except Exception as e:
                 await log_error(
+                    bot=self.bot,
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
                     error="An unexpected internal error occurred while processing a scheduled task",
@@ -97,6 +98,7 @@ class ScheduledTasksCog(commands.Cog):
                 )
             except Exception as e:
                 await log_error(
+                    bot=self.bot,
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
                     error=f"Failed to refresh mute for {member.id} in guild {guild.name} ({guild.id})",
@@ -122,6 +124,7 @@ class ScheduledTasksCog(commands.Cog):
                 )
             except Exception as e:
                 await log_error(
+                    bot=self.bot,
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
                     error=f"Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})",
@@ -146,6 +149,7 @@ class ScheduledTasksCog(commands.Cog):
                     )
             except Exception as e:
                 await log_error(
+                    bot=self.bot,
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
                     error=f"Failed to send unmute info for {task.user_id} in guild {guild.name} ({guild.id})",
@@ -170,6 +174,7 @@ class ScheduledTasksCog(commands.Cog):
                     )
             except Exception as e:
                 await log_error(
+                    bot=self.bot,
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
                     error=f"Failed to auto unban {task.user_id} in guild {guild.name} ({guild.id})",

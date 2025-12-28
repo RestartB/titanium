@@ -363,6 +363,7 @@ class AutomodMonitorCog(commands.Cog):
 
                         except discord.Forbidden as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Automod",
                                 guild_id=message.guild.id,
                                 error=f"Titanium was not allowed to send a message to @{message.author.name} ({message.author.id}) in #{message.channel.name} ({message.channel.id})",
@@ -370,6 +371,7 @@ class AutomodMonitorCog(commands.Cog):
                             )
                         except discord.HTTPException as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Automod",
                                 guild_id=message.guild.id,
                                 error=f"Unknown Discord error while sending automod message to @{message.author.name} ({message.author.id})",
@@ -448,6 +450,7 @@ class AutomodMonitorCog(commands.Cog):
                             )
                         except discord.Forbidden as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Automod",
                                 guild_id=message.guild.id,
                                 error=f"Titanium was not allowed to mute @{message.author.name} ({message.author.id})",
@@ -456,6 +459,7 @@ class AutomodMonitorCog(commands.Cog):
                             embeds.append(forbidden(self.bot, message.author))
                         except discord.HTTPException as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Automod",
                                 guild_id=message.guild.id,
                                 error=f"Unknown Discord error while muting @{message.author.name} ({message.author.id})",
@@ -495,6 +499,7 @@ class AutomodMonitorCog(commands.Cog):
                             )
                         except discord.Forbidden as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Automod",
                                 guild_id=message.guild.id,
                                 error=f"Titanium was not allowed to kick @{message.author.name} ({message.author.id})",
@@ -503,6 +508,7 @@ class AutomodMonitorCog(commands.Cog):
                             embeds.append(forbidden(self.bot, message.author))
                         except discord.HTTPException as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Automod",
                                 guild_id=message.guild.id,
                                 error=f"Unknown Discord error while kicking @{message.author.name} ({message.author.id})",
@@ -543,6 +549,7 @@ class AutomodMonitorCog(commands.Cog):
                             )
                         except discord.Forbidden as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Automod",
                                 guild_id=message.guild.id,
                                 error=f"Titanium was not allowed to ban @{message.author.name} ({message.author.id})",
@@ -551,6 +558,7 @@ class AutomodMonitorCog(commands.Cog):
                             embeds.append(forbidden(self.bot, message.author))
                         except discord.HTTPException as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Automod",
                                 guild_id=message.guild.id,
                                 error=f"Unknown Discord error while banning @{message.author.name} ({message.author.id})",
@@ -576,6 +584,7 @@ class AutomodMonitorCog(commands.Cog):
             self.logger.debug(f"Processed message from {message.author}: {message.id}")
         except Exception as e:
             await log_error(
+                bot=self.bot,
                 module="Automod",
                 guild_id=message.guild.id if message.guild else None,
                 error=f"An unknown error occurred while processing automod for message {message.id} from @{message.author.name} ({message.author.id})",

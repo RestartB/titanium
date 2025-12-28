@@ -753,6 +753,7 @@ class MusicCommandsCog(
 
             except Exception as error:
                 error_id = await log_error(
+                    bot=self.bot,
                     module="Spotify",
                     guild_id=ctx.guild.id if ctx.guild else None,
                     error="Failed to expand Spotify URL",
@@ -1047,6 +1048,7 @@ class MusicCommandsCog(
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
         except spotipy.exceptions.SpotifyException as error:
             error_id = await log_error(
+                bot=self.bot,
                 module="Spotify",
                 guild_id=ctx.guild.id if ctx.guild else None,
                 error="Spotify error occurred while searching URL",

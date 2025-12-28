@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class CaseType(Enum):
-    WARN = "warning"
+    WARN = "warn"
     MUTE = "mute"
     KICK = "kick"
     BAN = "ban"

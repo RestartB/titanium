@@ -100,6 +100,7 @@ class FireboardCog(commands.Cog):
                     message_id = None
 
                 await log_error(
+                    bot=self.bot,
                     module="Fireboard",
                     guild_id=guild_id or None,
                     error=f"An unknown error occurred while processing a fireboard event - message ID: {message_id or None}",
@@ -474,6 +475,7 @@ class FireboardCog(commands.Cog):
                     continue
                 except Exception as e:
                     await log_error(
+                        bot=self.bot,
                         module="Fireboard",
                         guild_id=payload.guild_id,
                         error="An unknown error occurred while processing a fireboard message edit",
@@ -558,6 +560,7 @@ class FireboardCog(commands.Cog):
                     continue
                 except Exception as e:
                     await log_error(
+                        bot=self.bot,
                         module="Fireboard",
                         guild_id=fireboard_message.guild_id,
                         error="An unknown error occurred while processing a fireboard message deletion",
@@ -638,6 +641,7 @@ class FireboardCog(commands.Cog):
                     self.bot.fireboard_messages[message.guild.id].remove(fireboard_message)
                 except Exception as e:
                     await log_error(
+                        bot=self.bot,
                         module="Fireboard",
                         guild_id=message.guild.id,
                         error="An unknown error occurred while processing a fireboard message deletion",
@@ -728,6 +732,7 @@ class FireboardCog(commands.Cog):
                     self.bot.fireboard_messages[reaction.message.guild.id].remove(fireboard_message)
                 except Exception as e:
                     await log_error(
+                        bot=self.bot,
                         module="Fireboard",
                         guild_id=reaction.message.guild.id,
                         error="An unknown error occurred while processing a fireboard reaction emoji clear event",

@@ -191,6 +191,7 @@ class GuildModCaseManager:
 
             if embed:
                 dm_success, dm_error = await send_dm(
+                    bot=self.bot,
                     embed=embed,
                     user=user,
                     source_guild=self.guild,
@@ -304,6 +305,7 @@ class GuildModCaseManager:
 
             embed = unmuted_dm(self.bot, member, case)
             dm_success, dm_error = await send_dm(
+                bot=self.bot,
                 embed=embed,
                 user=member,
                 source_guild=self.guild,
@@ -330,6 +332,7 @@ class GuildModCaseManager:
 
             embed = unbanned_dm(self.bot, member, case)
             dm_success, dm_error = await send_dm(
+                bot=self.bot,
                 embed=embed,
                 user=member,
                 source_guild=self.guild,

@@ -1,4 +1,3 @@
-# TODO: convert to hybrid commands
 import os
 import urllib.parse
 from typing import TYPE_CHECKING
@@ -9,6 +8,7 @@ from discord import Color, app_commands
 from discord.ext import commands
 from discord.ui import View
 
+from lib.helpers.global_alias import add_global_aliases, global_alias
 from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 class WebSearchCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
+        add_global_aliases(self, bot)
 
     def _create_urban_embed(self, data: dict) -> list[discord.Embed]:
         embed = discord.Embed(
@@ -50,7 +51,11 @@ class WebSearchCommandsCog(commands.Cog):
     @search_group.command(
         name="urban-dictionary",
         description="Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!",
+        aliases=["ud", "urbandictionary"],
     )
+    @global_alias("urban-dictionary")
+    @global_alias("ud")
+    @global_alias("urbandictionary")
     @app_commands.describe(page="Optional: page to jump to. Defaults to first page.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
@@ -125,7 +130,10 @@ class WebSearchCommandsCog(commands.Cog):
             await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Wikipedia command
-    @search_group.command(name="wikipedia", description="Search Wikipedia for information.")
+    @search_group.command(
+        name="wikipedia", description="Search Wikipedia for information.", aliases=["wiki"]
+    )
+    @global_alias("wikipedia")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )

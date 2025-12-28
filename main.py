@@ -473,6 +473,7 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
     else:
         try:
             error_id = await log_error(
+                bot=ctx.bot,
                 module="Commands",
                 guild_id=ctx.guild.id if ctx.guild else None,
                 error=f"Unexpected error in prefix command /{ctx.command.qualified_name if ctx.command else 'unknown'}.",
@@ -505,11 +506,12 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
 
 @bot.tree.error
 async def on_app_command_error(
-    interaction: discord.Interaction, error: discord.app_commands.AppCommandError
+    interaction: discord.Interaction["TitaniumBot"], error: discord.app_commands.AppCommandError
 ):
     if not isinstance(error, discord.app_commands.CommandNotFound):
         try:
             error_id = await log_error(
+                bot=interaction.client,
                 module="Commands",
                 guild_id=interaction.guild.id if interaction.guild else None,
                 error=f"Unexpected error in interaction /{interaction.command.qualified_name if interaction.command else 'unknown'}.",

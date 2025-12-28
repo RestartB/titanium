@@ -1,11 +1,17 @@
+from typing import TYPE_CHECKING
+
 import discord
 from discord.ui import View
 
 from lib.embeds.dm_notifs import jump_button
 from lib.helpers.log_error import log_error
 
+if TYPE_CHECKING:
+    from main import TitaniumBot
+
 
 async def send_dm(
+    bot: TitaniumBot,
     embed: discord.Embed,
     user: discord.User | discord.Member,
     source_guild: discord.Guild,
@@ -24,15 +30,18 @@ async def send_dm(
         dm_error = "User has DMs disabled."
 
         await log_error(
+            bot=bot,
             module=module,
             guild_id=source_guild.id,
             error=f"Can't send DM to @{user.name} ({user.id}) (DMs disabled)",
+            send_webhook=False,
         )
     except discord.HTTPException as e:
         dm_success = False
         dm_error = "Failed to send DM."
 
         await log_error(
+            bot=bot,
             module=module,
             guild_id=source_guild.id,
             error=f"Unknown Discord error while DMing @{user.name} ({user.id})",
@@ -43,6 +52,7 @@ async def send_dm(
         dm_error = "An unexpected error occurred."
 
         await log_error(
+            bot=bot,
             module=module,
             guild_id=source_guild.id,
             error=f"Unexpected error while DMing @{user.name} ({user.id})",

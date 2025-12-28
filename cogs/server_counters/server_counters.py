@@ -58,6 +58,7 @@ class ServerCountersCog(commands.Cog):
                 await discord_channel.edit(name=new_name, reason="Automated server counter update")
             except discord.Forbidden as e:
                 await log_error(
+                    bot=self.bot,
                     module="Server Counters",
                     guild_id=guild.id,
                     error=f"Titanium was not allowed to update counter channel {discord_channel.name} ({discord_channel.id})",
@@ -65,6 +66,7 @@ class ServerCountersCog(commands.Cog):
                 )
             except discord.HTTPException as e:
                 await log_error(
+                    bot=self.bot,
                     module="Server Counters",
                     guild_id=guild.id,
                     error=f"Unknown Discord error while updating counter channel {discord_channel.name} ({discord_channel.id})",

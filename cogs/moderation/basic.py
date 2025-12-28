@@ -28,6 +28,7 @@ from lib.embeds.mod_actions import (
     warned,
 )
 from lib.enums.moderation import CaseType
+from lib.helpers.global_alias import add_global_aliases, global_alias
 from lib.helpers.hybrid_adapters import defer, stop_loading
 from lib.helpers.log_error import log_error
 from lib.sql.sql import get_session
@@ -41,6 +42,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
+        add_global_aliases(self, bot)
 
     def _purge_check(
         self, message: discord.Message, source: int, target: discord.User | None
@@ -73,11 +75,17 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
         return True
 
-    @commands.hybrid_command(name="warn", description="Warn a member for a specified reason.")
+    @commands.hybrid_group(name="mod", description="Moderation related commands.")
     @commands.guild_only()
     @app_commands.allowed_installs(guilds=True, users=False)
+    @app_commands.default_permissions(moderate_members=True)
+    async def mod_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
+        raise commands.CommandNotFound
+
+    @mod_group.command(name="warn", description="Warn a member for a specified reason.")
+    @global_alias("warn")
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
-    @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(
         member="The member to warn.", reason="Optional: the reason for the warning."
     )
@@ -143,15 +151,15 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
             await stop_loading(ctx)
 
-    @commands.hybrid_command(
+    @mod_group.command(
         name="mute",
         alias=["timeout"],  # pyright: ignore[reportCallIssue]
         description="Mute a member for a specified duration.",
     )
+    @global_alias("mute")
+    @global_alias("timeout")
     @commands.guild_only()
-    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(moderate_members=True)
-    @app_commands.default_permissions(moderate_members=True)
     @app_commands.describe(
         member="The member to mute.",
         duration="Optional: the duration of the mute (e.g., 10m, 1h, 2h30m).",
@@ -227,6 +235,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 )
             except discord.Forbidden as e:
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=member.guild.id,
                     error=f"Titanium was not allowed to mute @{member.name} ({member.id})",
@@ -236,6 +245,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
             except discord.HTTPException as e:
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=member.guild.id,
                     error=f"Unknown Discord error while muting @{member.name} ({member.id})",
@@ -275,15 +285,15 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
             await stop_loading(ctx)
 
-    @commands.hybrid_command(
+    @mod_group.command(
         name="unmute",
         alias=["untimeout"],  # pyright: ignore[reportCallIssue]
         description="Unmute a member.",
     )
+    @global_alias("unmute")
+    @global_alias("untimeout")
     @commands.guild_only()
-    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(moderate_members=True)
-    @app_commands.default_permissions(moderate_members=True)
     @app_commands.describe(member="The member to unmute.")
     async def unmute(
         self,
@@ -328,6 +338,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 await member.timeout(None, reason=f"Unmuted by @{ctx.author.name}")
             except discord.Forbidden as e:
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=member.guild.id,
                     error=f"Titanium was not allowed to unmute @{member.name} ({member.id})",
@@ -337,6 +348,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
             except discord.HTTPException as e:
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=member.guild.id,
                     error=f"Unknown Discord error while unmuting @{member.name} ({member.id})",
@@ -377,11 +389,10 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
             await stop_loading(ctx)
 
-    @commands.hybrid_command(name="kick", description="Kick a member from the server.")
+    @mod_group.command(name="kick", description="Kick a member from the server.")
+    @global_alias("kick")
     @commands.guild_only()
-    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(kick_members=True)
-    @app_commands.default_permissions(kick_members=True)
     @app_commands.describe(
         member="The member to kick.", reason="Optional: the reason for the kick."
     )
@@ -426,6 +437,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 await member.kick(reason=f"@{ctx.author.name}: {reason}")
             except discord.Forbidden as e:
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=member.guild.id,
                     error=f"Titanium was not allowed to kick @{member.name} ({member.id})",
@@ -435,6 +447,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
             except discord.HTTPException as e:
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=member.guild.id,
                     error=f"Unknown Discord error while kicking @{member.name} ({member.id})",
@@ -473,11 +486,10 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
             await stop_loading(ctx)
 
-    @commands.hybrid_command(name="ban", description="Ban a user from the server.")
+    @mod_group.command(name="ban", description="Ban a user from the server.")
+    @global_alias("ban")
     @commands.guild_only()
-    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(ban_members=True)
-    @app_commands.default_permissions(ban_members=True)
     @app_commands.describe(
         user="The user to ban.",
         duration="Optional: the duration of the ban (e.g., 10m, 1h, 2h30m).",
@@ -558,6 +570,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 )
             except discord.Forbidden as e:
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=ctx.guild.id,
                     error=f"Titanium was not allowed to ban @{user.name} ({user.id})",
@@ -567,6 +580,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, user))
             except discord.HTTPException as e:
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=ctx.guild.id,
                     error=f"Unknown Discord error while banning @{user.name} ({user.id})",
@@ -606,11 +620,10 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
             await stop_loading(ctx)
 
-    @commands.hybrid_command(name="unban", description="Unban a member from the server.")
+    @mod_group.command(name="unban", description="Unban a member from the server.")
+    @global_alias("unban")
     @commands.guild_only()
-    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(ban_members=True)
-    @app_commands.default_permissions(ban_members=True)
     @app_commands.describe(user="The user to unban.")
     async def unban(
         self,
@@ -649,6 +662,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 await ctx.guild.unban(user, reason=f"Unbanned by @{ctx.author.name}")
             except discord.Forbidden as e:
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=ctx.guild.id,
                     error=f"Titanium was not allowed to unban @{user.name} ({user.id})",
@@ -658,6 +672,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, user))
             except discord.HTTPException as e:
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=ctx.guild.id,
                     error=f"Unknown Discord error while unbanning @{user.name} ({user.id})",
@@ -742,6 +757,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 ctx.channel, (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel)
             ):
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=ctx.guild.id,
                     error=f"Titanium was not allowed to purge messages in #{ctx.channel.name} ({ctx.channel.id})",
@@ -754,6 +770,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 ctx.channel, (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel)
             ):
                 await log_error(
+                    bot=self.bot,
                     module="Moderation",
                     guild_id=ctx.guild.id,
                     error=f"Unknown Discord error while purging messages in #{ctx.channel.name} ({ctx.channel.id})",

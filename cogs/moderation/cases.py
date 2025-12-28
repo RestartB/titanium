@@ -6,6 +6,7 @@ from discord.ext import commands
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.embeds.cases import case_deleted, case_embed, case_not_found, cases
 from lib.embeds.general import cancelled
+from lib.helpers.global_alias import add_global_aliases, global_alias
 from lib.helpers.hybrid_adapters import defer, stop_loading
 from lib.sql.sql import ModCase, get_session
 from lib.views.confirm import ConfirmView
@@ -20,6 +21,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
+        add_global_aliases(self, bot)
 
     async def _build_embeds(
         self, cases_list: Sequence[ModCase], target: User | Member, user: User | Member
@@ -163,10 +165,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             await stop_loading(ctx)
 
     @case_group.command(name="delete", description="Delete a case by its ID.")
+    @global_alias("deletecase")
     @commands.guild_only()
-    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(manage_guild=True)
-    @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(case_id="The case ID to delete.")
     async def view_case(self, ctx: commands.Context["TitaniumBot"], case_id: str) -> None | Message:
         if not ctx.guild or not self.bot.user:

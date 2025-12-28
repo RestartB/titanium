@@ -816,10 +816,9 @@ class APICog(commands.Cog):
                 if "ctx" in error:
                     error_dict["ctx"] = {k: str(v) for k, v in error["ctx"].items()}
                 error_details.append(error_dict)
-            
+
             return web.json_response(
-                {"error": "Validation failed", "details": error_details}, 
-                status=400
+                {"error": "Validation failed", "details": error_details}, status=400
             )
         except ValueError as e:
             return web.json_response({"error": "Invalid data", "message": str(e)}, status=400)
@@ -1079,6 +1078,7 @@ class APICog(commands.Cog):
                                 channel_ids.append(discord_channel.id)
                             except discord.Forbidden:
                                 await log_error(
+                                    bot=self.bot,
                                     module="Server Counters",
                                     guild_id=guild.id,
                                     error="Missing permissions to create server counter channel",
@@ -1086,6 +1086,7 @@ class APICog(commands.Cog):
                                 continue
                             except discord.HTTPException as e:
                                 await log_error(
+                                    bot=self.bot,
                                     module="Server Counters",
                                     guild_id=guild.id,
                                     error="Unexpected Discord error when creating server counter channel",
@@ -1094,6 +1095,7 @@ class APICog(commands.Cog):
                                 continue
                             except Exception as e:
                                 await log_error(
+                                    bot=self.bot,
                                     module="Server Counters",
                                     guild_id=guild.id,
                                     error="Unexpected error when creating server counter channel",
@@ -1125,12 +1127,14 @@ class APICog(commands.Cog):
                                 )
                             except discord.Forbidden:
                                 await log_error(
+                                    bot=self.bot,
                                     module="Server Counters",
                                     guild_id=guild.id,
                                     error=f"Missing permissions to delete channel #{discord_channel.name} ({discord_channel.id})",
                                 )
                             except discord.HTTPException as e:
                                 await log_error(
+                                    bot=self.bot,
                                     module="Server Counters",
                                     guild_id=guild.id,
                                     error=f"Unexpected Discord error when deleting channel #{discord_channel.name} ({discord_channel.id})",
@@ -1138,6 +1142,7 @@ class APICog(commands.Cog):
                                 )
                             except Exception as e:
                                 await log_error(
+                                    bot=self.bot,
                                     module="Server Counters",
                                     guild_id=guild.id,
                                     error=f"Unexpected error when deleting channel #{discord_channel.name} ({discord_channel.id})",

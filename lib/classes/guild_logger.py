@@ -83,6 +83,7 @@ class GuildLogger:
             return webhook.url
         except discord.Forbidden as e:
             await log_error(
+                bot=self.bot,
                 module="Logging",
                 guild_id=self.guild.id,
                 error=f"Missing permissions to create webhook in channel #{channel.name} ({channel.id})",
@@ -92,6 +93,7 @@ class GuildLogger:
             return None
         except discord.HTTPException as e:
             await log_error(
+                bot=self.bot,
                 module="Logging",
                 guild_id=self.guild.id,
                 error=f"Unknown Discord error while creating webhook in channel #{channel.name} ({channel.id})",
@@ -159,12 +161,14 @@ class GuildLogger:
             await self.bot.refresh_guild_config_cache(self.guild.id)
 
             await log_error(
+                bot=self.bot,
                 module="Logging",
                 guild_id=self.guild.id if self.guild else None,
                 error="Failed to find logging webhook.",
             )
         except discord.HTTPException as e:
             await log_error(
+                bot=self.bot,
                 module="Logging",
                 guild_id=self.guild.id if self.guild else None,
                 error="Failed to send logging message.",
@@ -172,6 +176,7 @@ class GuildLogger:
             )
         except Exception as e:
             await log_error(
+                bot=self.bot,
                 module="Logging",
                 guild_id=self.guild.id if self.guild else None,
                 error="Internal Titanium error occurred while sending logging message.",

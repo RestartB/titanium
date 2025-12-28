@@ -5,6 +5,7 @@ import discord
 from discord import Color, app_commands
 from discord.ext import commands
 
+from lib.helpers.global_alias import add_global_aliases, global_alias
 from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 class ReviewsCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
+        add_global_aliases(self, bot)
 
     @commands.hybrid_group(name="reviews", description="Get reviews for a user.", fallback="user")
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -110,6 +112,8 @@ class ReviewsCommandsCog(commands.Cog):
 
     # Server reviews command
     @reviews_group.command(name="server", description="Get reviews for the server.")
+    @global_alias("serverreviews")
+    @global_alias("server_reviews")
     @commands.guild_only()
     @commands.cooldown(1, 5)
     async def server_reviews(self, ctx: commands.Context["TitaniumBot"]):

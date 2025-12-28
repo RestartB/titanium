@@ -13,22 +13,13 @@ if TYPE_CHECKING:
 
 
 class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
-    __slots__: tuple[str] = "interaction"
-
     feedback_type = discord.ui.Label(
         text="Feedback Type",
         description="Select feedback type.",
         component=discord.ui.Select(
             options=[
-                discord.SelectOption(emoji="🐞", label="Bug Report", value="🐞 Bug Report"),
-                discord.SelectOption(
-                    emoji="✨", label="Feature Request", value="✨ Feature Request"
-                ),
-                discord.SelectOption(
-                    emoji="💡",
-                    label="Suggested Changes",
-                    value="💡 Suggested Changes",
-                ),
+                discord.SelectOption(emoji="🐞", label="Bug Report", value="Bug Report"),
+                discord.SelectOption(emoji="✨", label="Feature Request", value="Feature Request"),
                 discord.SelectOption(emoji="📝", label="Other", value="📝 Other"),
             ],
         ),
@@ -36,10 +27,10 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
 
     feedback_content = discord.ui.Label(
         text="Feedback Content",
-        description="Please provide detailed explanation of your feedback.",
+        description="Please provide your feedback.",
         component=discord.ui.TextInput(
             style=discord.TextStyle.long,
-            min_length=50,
+            min_length=20,
             max_length=2000,
         ),
     )
@@ -56,7 +47,7 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
             e = Embed(
                 colour=Colour.red(),
                 title=f"{str(interaction.client.error_emoji)} Webhook Not Found",
-                description="The webhook to send the feedback is not configured.",
+                description="The bot host has not set up this feature, please try again later.",
             )
             logging.error("The feedback webhook url is not in the .env file")
             return await interaction.followup.send(embed=e, ephemeral=True)
@@ -72,8 +63,8 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
 
         e = Embed(
             colour=Colour.green(),
-            title=f"{str(interaction.client.success_emoji)} Success",
-            description="Thank you for your feedback, it has been shared with the bot developers.",
+            title=f"{str(interaction.client.success_emoji)} Feedback Sent",
+            description="Thank you for your feedback!",
         )
         await interaction.followup.send(embed=e, ephemeral=True)
 
@@ -101,11 +92,12 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
             )
             return True
         except Exception as e:
-            await log_error(
-                module="Feedback Modal",
-                guild_id=self.interaction.guild.id if self.interaction.guild else None,
-                error="Unknown error",
-                store_err=False,
-                exc=e,
-            )
+            # await log_error(
+            #     bot=self.bot,
+            #     module="Feedback Modal",
+            #     guild_id=self.interaction.guild.id if self.interaction.guild else None,
+            #     error="Unknown error",
+            #     store_err=False,
+            #     exc=e,
+            # )
             return False

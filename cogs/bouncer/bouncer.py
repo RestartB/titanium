@@ -49,6 +49,7 @@ class BouncerMonitorCog(commands.Cog):
                 await self.event_handler(event[0], event[1])
             except Exception as e:
                 await log_error(
+                    bot=self.bot,
                     module="Bouncer",
                     guild_id=event[0].guild.id if event[0].guild else None,
                     error=f"An unknown error occurred while processing bouncer for member @{event[0].name} ({event[0].id})",
@@ -181,6 +182,7 @@ class BouncerMonitorCog(commands.Cog):
                         await member.edit(nick=None, reason=f"Bouncer: {punishment.reason}")
                     except discord.Forbidden as e:
                         await log_error(
+                            bot=self.bot,
                             module="Bouncer",
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to reset the nickname of {member.name} ({member.id})",
@@ -188,6 +190,7 @@ class BouncerMonitorCog(commands.Cog):
                         )
                     except discord.HTTPException as e:
                         await log_error(
+                            bot=self.bot,
                             module="Bouncer",
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while resetting nickname of {member.name} ({member.id})",
@@ -201,6 +204,7 @@ class BouncerMonitorCog(commands.Cog):
                             await member.add_roles(role, reason=f"Bouncer: {punishment.reason}")
                         except discord.Forbidden as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Bouncer",
                                 guild_id=member.guild.id,
                                 error=f"Titanium was not allowed to add the {role.name} ({role.id}) role to {member.name} ({member.id})",
@@ -208,6 +212,7 @@ class BouncerMonitorCog(commands.Cog):
                             )
                         except discord.HTTPException as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Bouncer",
                                 guild_id=member.guild.id,
                                 error=f"Unknown Discord error while adding role {role.name} ({role.id}) to {member.name} ({member.id})",
@@ -221,6 +226,7 @@ class BouncerMonitorCog(commands.Cog):
                             await member.remove_roles(role, reason=f"Bouncer: {punishment.reason}")
                         except discord.Forbidden as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Bouncer",
                                 guild_id=member.guild.id,
                                 error=f"Titanium was not allowed to remove the {role.name} ({role.id}) role from {member.name} ({member.id})",
@@ -228,6 +234,7 @@ class BouncerMonitorCog(commands.Cog):
                             )
                         except discord.HTTPException as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Bouncer",
                                 guild_id=member.guild.id,
                                 error=f"Unknown Discord error while removing role {role.name} ({role.id}) from {member.name} ({member.id})",
@@ -246,6 +253,7 @@ class BouncerMonitorCog(commands.Cog):
                                 await member.add_roles(role, reason=f"Bouncer: {punishment.reason}")
                         except discord.Forbidden as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Bouncer",
                                 guild_id=member.guild.id,
                                 error=f"Titanium was not allowed to toggle the {role.name} ({role.id}) role for {member.name} ({member.id})",
@@ -253,6 +261,7 @@ class BouncerMonitorCog(commands.Cog):
                             )
                         except discord.HTTPException as e:
                             await log_error(
+                                bot=self.bot,
                                 module="Bouncer",
                                 guild_id=member.guild.id,
                                 error=f"Unknown Discord error while toggling role {role.name} ({role.id}) for {member.name} ({member.id})",
@@ -298,6 +307,7 @@ class BouncerMonitorCog(commands.Cog):
                         )
                     except discord.Forbidden as e:
                         await log_error(
+                            bot=self.bot,
                             module="Bouncer",
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to mute {member.name} ({member.id})",
@@ -305,6 +315,7 @@ class BouncerMonitorCog(commands.Cog):
                         )
                     except discord.HTTPException as e:
                         await log_error(
+                            bot=self.bot,
                             module="Bouncer",
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while muting {member.name} ({member.id})",
@@ -330,6 +341,7 @@ class BouncerMonitorCog(commands.Cog):
                         )
                     except discord.Forbidden as e:
                         await log_error(
+                            bot=self.bot,
                             module="Bouncer",
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to kick {member.name} ({member.id})",
@@ -337,6 +349,7 @@ class BouncerMonitorCog(commands.Cog):
                         )
                     except discord.HTTPException as e:
                         await log_error(
+                            bot=self.bot,
                             module="Bouncer",
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while kicking {member.name} ({member.id})",
@@ -364,6 +377,7 @@ class BouncerMonitorCog(commands.Cog):
                         )
                     except discord.Forbidden as e:
                         await log_error(
+                            bot=self.bot,
                             module="Bouncer",
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to ban {member.name} ({member.id})",
@@ -371,6 +385,7 @@ class BouncerMonitorCog(commands.Cog):
                         )
                     except discord.HTTPException as e:
                         await log_error(
+                            bot=self.bot,
                             module="Bouncer",
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while banning {member.name} ({member.id})",
