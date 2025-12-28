@@ -973,6 +973,7 @@ class APICog(commands.Cog):
                         existing_board.threshold = new_board.threshold
                         existing_board.ignore_bots = new_board.ignore_bots
                         existing_board.ignore_self_reactions = new_board.ignore_self_reactions
+                        existing_board.send_notifications = new_board.send_notifications
                         existing_board.ignored_roles = [
                             int(role_id) for role_id in new_board.ignored_roles
                         ]
@@ -1001,6 +1002,7 @@ class APICog(commands.Cog):
                         threshold=new_board.threshold,
                         ignore_bots=new_board.ignore_bots,
                         ignore_self_reactions=new_board.ignore_self_reactions,
+                        send_notifications=new_board.send_notifications,
                         ignored_roles=[int(role_id) for role_id in new_board.ignored_roles],
                         ignored_channels=[
                             int(channel_id) for channel_id in new_board.ignored_channels

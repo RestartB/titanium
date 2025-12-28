@@ -197,6 +197,7 @@ def fireboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.
                     "threshold": board.threshold,
                     "ignore_bots": board.ignore_bots,
                     "ignore_self_reactions": board.ignore_self_reactions,
+                    "send_notifications": board.send_notifications,
                     "ignored_roles": [str(role_id) for role_id in board.ignored_roles],
                     "ignored_channels": [str(channel_id) for channel_id in board.ignored_channels],
                 }

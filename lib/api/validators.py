@@ -352,11 +352,15 @@ class LoggingConfigModel(BaseModel):
 
 class FireboardBoardModel(BaseModel):
     id: Optional[uuid.UUID] = None
+
     channel_id: str
     reaction: str
     threshold: int
+
     ignore_bots: bool
     ignore_self_reactions: bool
+    send_notifications: bool
+
     ignored_roles: list[str] = Field(default_factory=list)
     ignored_channels: list[str] = Field(default_factory=list)
 

@@ -390,6 +390,50 @@ class FireboardCog(commands.Cog):
                     )
                     self.logger.debug("Added fireboard message to cache")
 
+                if not board.send_notifications:
+                    self.logger.debug("Board notifications disabled, skipping notification")
+                    return
+
+                notification_embed = discord.Embed(
+                    description=f"🎉 Your message was featured in {board_channel.mention}!",
+                    color=discord.Color.green(),
+                    timestamp=discord.utils.utcnow(),
+                )
+
+                notification_view = discord.ui.View()
+                notification_view.add_item(
+                    discord.ui.Button(
+                        label="View Board Message",
+                        url=new_message.jump_url,
+                        style=discord.ButtonStyle.url,
+                    )
+                )
+
+                try:
+                    await source_msg.reply(
+                        embed=notification_embed,
+                        view=notification_view,
+                    )
+                    self.logger.debug(f"Sent fireboard notification to user {source_msg.author.id}")
+                except discord.Forbidden as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Fireboard",
+                        guild_id=event.guild_id,
+                        error=f"Titanium was not allowed to send fireboard notification in #{source_msg.channel.name if not isinstance(source_msg.channel, discord.PartialMessageable) else 'Unknown'} ({source_msg.channel.id})",
+                        details=str(e.text),
+                        exc=e,
+                    )
+                except discord.HTTPException as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Fireboard",
+                        guild_id=event.guild_id,
+                        error=f"Unknown Discord error while sending fireboard notification in #{source_msg.channel.name if not isinstance(source_msg.channel, discord.PartialMessageable) else 'Unknown'} ({source_msg.channel.id})",
+                        details=str(e.text),
+                        exc=e,
+                    )
+
                 return
             else:
                 self.logger.debug(

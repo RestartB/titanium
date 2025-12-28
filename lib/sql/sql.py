@@ -449,17 +449,22 @@ class FireboardBoard(Base):
     guild: Mapped["GuildFireboardSettings"] = relationship(
         "GuildFireboardSettings", back_populates="fireboard_boards", uselist=False
     )
+
     channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     reaction: Mapped[str] = MappedColumn(String(), server_default=text("'🔥'"))
     threshold: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+
     ignore_bots: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     ignore_self_reactions: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    send_notifications: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+
     ignored_roles: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
     ignored_channels: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
+
     messages: Mapped[list["FireboardMessage"]] = relationship(
         "FireboardMessage", back_populates="fireboard", cascade="all, delete-orphan"
     )

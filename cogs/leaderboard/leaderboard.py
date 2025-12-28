@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
 from lib.enums.leaderboard import LeaderboardCalcType
+from lib.helpers.log_error import log_error
 from lib.sql.sql import LeaderboardUserStats, get_session
 from lib.views.pagination import PaginationView
 
@@ -154,13 +155,32 @@ class LeaderboardCog(commands.Cog):
                 )
                 return
 
-            await channel.send(
-                content=message.author.mention,
-                embed=discord.Embed(
-                    description=f"🎉 {message.author.mention} has leveled up to **level {user_stats.level}!**",
-                    color=discord.Color.green(),
-                ),
-            )
+            try:
+                await channel.send(
+                    content=message.author.mention,
+                    embed=discord.Embed(
+                        description=f"🎉 {message.author.mention} has leveled up to **level {user_stats.level}!**",
+                        color=discord.Color.green(),
+                    ),
+                )
+            except discord.Forbidden as e:
+                await log_error(
+                    bot=self.bot,
+                    module="Leaderboard",
+                    guild_id=message.guild.id,
+                    error=f"Titanium was not allowed to send leaderboard notification in #{message.channel.name if not isinstance(message.channel, (discord.PartialMessageable, discord.DMChannel)) else 'Unknown'} ({message.channel.id})",
+                    details=str(e.text),
+                    exc=e,
+                )
+            except discord.HTTPException as e:
+                await log_error(
+                    bot=self.bot,
+                    module="Leaderboard",
+                    guild_id=message.guild.id,
+                    error=f"Unknown Discord error while sending leaderboard notification in #{message.channel.name if not isinstance(message.channel, (discord.PartialMessageable, discord.DMChannel)) else 'Unknown'} ({message.channel.id})",
+                    details=str(e.text),
+                    exc=e,
+                )
 
     # Member leave event
     @commands.Cog.listener()
