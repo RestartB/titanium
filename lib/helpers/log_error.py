@@ -57,7 +57,7 @@ async def log_error(
 
     embed = discord.Embed(
         title=error,
-        description=f"{f'{details}\n\n' if details else ''}{f'```python\n{traceback.format_exception(exc) if exc else ""}```' if exc else ''}",
+        description=f"{f'{details}\n\n' if details else ''}{f'```python\n{"".join(traceback.format_exception(exc)) if exc else ""}```' if exc else ''}",
         color=discord.Colour.red(),
     )
 
