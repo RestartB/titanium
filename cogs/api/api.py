@@ -1038,9 +1038,7 @@ class APICog(commands.Cog):
                         channel_ids.append(int(new_channel.id))
 
                     if new_channel.id is None:
-                        new_name = resolve_counter(
-                            guild, new_channel.type, new_channel.name, new_channel.activity_name
-                        )
+                        new_name = await resolve_counter(guild, new_channel.type, new_channel.name)
 
                         discord_channel = await guild.create_voice_channel(
                             name=new_name,
@@ -1053,7 +1051,6 @@ class APICog(commands.Cog):
                             guild_id=guild.id,
                             name=new_channel.name,
                             count_type=new_channel.type,
-                            activity_name=new_channel.activity_name,
                         )
                         session.add(channel)
                     else:
@@ -1064,12 +1061,11 @@ class APICog(commands.Cog):
                         if existing_channel and existing_channel.guild_id == guild.id:
                             existing_channel.name = new_channel.name
                             existing_channel.count_type = new_channel.type
-                            existing_channel.activity_name = new_channel.activity_name  # pyright: ignore[reportAttributeAccessIssue]
 
                             session.add(existing_channel)
                         else:
-                            new_name = resolve_counter(
-                                guild, new_channel.type, new_channel.name, new_channel.activity_name
+                            new_name = await resolve_counter(
+                                guild, new_channel.type, new_channel.name
                             )
 
                             try:
@@ -1110,7 +1106,6 @@ class APICog(commands.Cog):
                                 guild_id=guild.id,
                                 name=new_channel.name,
                                 count_type=new_channel.type,
-                                activity_name=new_channel.activity_name,
                             )
                             session.add(channel)
 

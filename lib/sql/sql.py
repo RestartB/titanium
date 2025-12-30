@@ -508,7 +508,6 @@ class ServerCounterChannel(Base):
         "GuildServerCounterSettings", back_populates="channels", uselist=False
     )
     count_type: Mapped[ServerCounterType] = MappedColumn(Enum(ServerCounterType))
-    activity_name: Mapped[str] = MappedColumn(String(length=50), nullable=True)
     name: Mapped[str] = MappedColumn(String(length=50), server_default=text("'{value}'"))
 
 

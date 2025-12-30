@@ -47,9 +47,7 @@ class ServerCountersCog(commands.Cog):
             if not discord_channel or not isinstance(discord_channel, discord.VoiceChannel):
                 continue
 
-            new_name = resolve_counter(
-                guild, count_channel.count_type, count_channel.name, count_channel.activity_name
-            )
+            new_name = await resolve_counter(guild, count_channel.count_type, count_channel.name)
 
             if discord_channel.name == new_name:
                 continue

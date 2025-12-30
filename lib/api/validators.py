@@ -41,9 +41,6 @@ class GuildSettingsModel(BaseModel):
 
     @field_validator("prefixes")
     def validate_prefixes(cls, v):
-        if not v or len(v) == 0:
-            raise ValueError("At least one prefix is required")
-
         if len(v) > 5:
             raise ValueError("A maximum of 5 prefixes are allowed")
 
@@ -390,11 +387,10 @@ class ServerCounterChannelModel(BaseModel):
     id: Optional[str] = None
     name: str
     type: ServerCounterType
-    activity_name: Optional[str] = None
 
     @field_validator("id")
     def validate_id(cls, v: str):
-        if v.strip() == "":
+        if not v or v.strip() == "":
             return None
         return v
 
