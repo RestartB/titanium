@@ -1,3 +1,4 @@
+import os
 from typing import TYPE_CHECKING, Optional
 
 import aiohttp
@@ -13,6 +14,10 @@ if TYPE_CHECKING:
 
 
 class ReviewsCommandsCog(commands.Cog):
+    REQUEST_HEADERS = {
+        "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
+    }
+
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         add_global_aliases(self, bot)
@@ -35,7 +40,8 @@ class ReviewsCommandsCog(commands.Cog):
         # Send request to ReviewDB
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"https://manti.vendicated.dev/api/reviewdb/users/{user.id}/reviews?offset=0"
+                f"https://manti.vendicated.dev/api/reviewdb/users/{user.id}/reviews?offset=0",
+                headers=self.REQUEST_HEADERS,
             ) as request:
                 review_response = await request.json()
 
@@ -57,7 +63,8 @@ class ReviewsCommandsCog(commands.Cog):
                     # Send request to ReviewDB
                     async with aiohttp.ClientSession() as session:
                         async with session.get(
-                            f"https://manti.vendicated.dev/api/reviewdb/users/{user.id}/reviews?offset={len(review_list)}"
+                            f"https://manti.vendicated.dev/api/reviewdb/users/{user.id}/reviews?offset={len(review_list)}",
+                            headers=self.REQUEST_HEADERS,
                         ) as request:
                             review_response = await request.json()
 
@@ -127,7 +134,8 @@ class ReviewsCommandsCog(commands.Cog):
         # Send request to ReviewDB
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"https://manti.vendicated.dev/api/reviewdb/users/{ctx.guild.id}/reviews?offset=0"
+                f"https://manti.vendicated.dev/api/reviewdb/users/{ctx.guild.id}/reviews?offset=0",
+                headers=self.REQUEST_HEADERS,
             ) as request:
                 review_response = await request.json()
 
@@ -149,7 +157,8 @@ class ReviewsCommandsCog(commands.Cog):
                     # Send request to ReviewDB
                     async with aiohttp.ClientSession() as session:
                         async with session.get(
-                            f"https://manti.vendicated.dev/api/reviewdb/users/{ctx.guild.id}/reviews?offset={len(review_list)}"
+                            f"https://manti.vendicated.dev/api/reviewdb/users/{ctx.guild.id}/reviews?offset={len(review_list)}",
+                            headers=self.REQUEST_HEADERS,
                         ) as request:
                             review_response = await request.json()
 

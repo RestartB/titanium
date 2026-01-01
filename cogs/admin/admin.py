@@ -1,8 +1,10 @@
 import logging
 import os
+import textwrap
 import traceback
 from typing import TYPE_CHECKING, Optional
 
+import aiohttp
 import discord
 from discord.ext import commands
 
@@ -381,6 +383,85 @@ class AdminCog(commands.Cog):
             await ctx.reply(
                 embed=discord.Embed(
                     title=f"{self.bot.error_emoji} Error Retrieving Server Owner",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
+        finally:
+            await stop_loading(ctx)
+
+    @admin_group.command(name="get", hidden=True)
+    @commands.is_owner()
+    async def get_request(self, ctx: commands.Context["TitaniumBot"], url: str) -> None:
+        await defer(ctx, ephemeral=True)
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                headers = {
+                    "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
+                }
+                async with session.get(url, headers=headers) as response:
+                    try:
+                        response_text = await response.text()
+                    except Exception:
+                        response_text = "<No Response Body>"
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} GET Request Sent",
+                    description=f"Response Status: `{response.status}`\nResponse Body:\n```{textwrap.shorten(response_text, width=4000)}```",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error(f"Error sending GET request to {url}", exc_info=e)
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Sending GET Request",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
+        finally:
+            await stop_loading(ctx)
+
+    @admin_group.command(name="post", hidden=True)
+    @commands.is_owner()
+    async def post_request(
+        self, ctx: commands.Context["TitaniumBot"], url: str, content_type: str, *, content: str
+    ) -> None:
+        await defer(ctx, ephemeral=True)
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                headers = {
+                    "Content-Type": content_type,
+                    "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
+                }
+                async with session.post(url, data=content.encode(), headers=headers) as response:
+                    try:
+                        response_text = await response.text()
+                    except Exception:
+                        response_text = "<No Response Body>"
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} POST Request Sent",
+                    description=f"Response Status: `{response.status}`\nResponse Body:\n```{textwrap.shorten(response_text, width=4000)}```",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error(f"Error sending POST request to {url}", exc_info=e)
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Sending POST Request",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.red(),
                 ),

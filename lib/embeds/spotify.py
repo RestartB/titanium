@@ -1,3 +1,4 @@
+import os
 from io import BytesIO
 from textwrap import shorten
 from typing import TYPE_CHECKING, Any, Optional
@@ -16,6 +17,11 @@ if TYPE_CHECKING:
     import spotipy
 
     from main import TitaniumBot
+
+
+REQUEST_HEADERS = {
+    "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
+}
 
 
 # Song element function
@@ -69,7 +75,9 @@ async def song(
 
     # Get image, store in memory
     async with aiohttp.ClientSession() as session:
-        async with session.get(item["album"]["images"][0]["url"]) as request:
+        async with session.get(
+            item["album"]["images"][0]["url"], headers=REQUEST_HEADERS
+        ) as request:
             image_data = BytesIO()
 
             async for chunk in request.content.iter_chunked(10):
@@ -149,7 +157,7 @@ async def artist(
 
     # Get image, store in memory
     async with aiohttp.ClientSession() as session:
-        async with session.get(item["images"][0]["url"]) as request:
+        async with session.get(item["images"][0]["url"], headers=REQUEST_HEADERS) as request:
             image_data = BytesIO()
 
             async for chunk in request.content.iter_chunked(10):
@@ -234,7 +242,7 @@ async def album(
 
     # Get image, store in memory
     async with aiohttp.ClientSession() as session:
-        async with session.get(item["images"][0]["url"]) as request:
+        async with session.get(item["images"][0]["url"], headers=REQUEST_HEADERS) as request:
             image_data = BytesIO()
 
             async for chunk in request.content.iter_chunked(10):

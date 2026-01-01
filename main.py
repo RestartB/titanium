@@ -1,5 +1,5 @@
 # Titanium v2
-# Made by Restart, 2025
+# Made by Restart, 2025 - 2026
 
 # Imports
 import asyncio

@@ -10,6 +10,7 @@ dependencies = [
     "colorthief>=0.2.1",
     "discord-py>=2.6.4",
     "dotenv>=0.9.9",
+    "durations>=0.3.3",
     "emoji>=2.15.0",
     "humanize>=4.13.0",
     "jinja2>=3.1.6",

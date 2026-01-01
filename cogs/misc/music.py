@@ -24,6 +24,10 @@ if TYPE_CHECKING:
 class MusicCommandsCog(
     commands.Cog, name="Music", description="Search Spotify and get song lyrics."
 ):
+    REQUEST_HEADERS = {
+        "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
+    }
+
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
         self.auth_manager = SpotifyClientCredentials(
@@ -748,7 +752,7 @@ class MusicCommandsCog(
                 url = f"https://{url}"
 
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(url) as request:
+                    async with session.get(url, headers=self.REQUEST_HEADERS) as request:
                         url = str(request.url)
 
             except Exception as error:
@@ -803,7 +807,7 @@ class MusicCommandsCog(
 
                     # Get image, store in memory
                     async with aiohttp.ClientSession() as session:
-                        async with session.get(image_url) as request:
+                        async with session.get(image_url, headers=self.REQUEST_HEADERS) as request:
                             image_data = BytesIO()
 
                             async for chunk in request.content.iter_chunked(10):
@@ -884,7 +888,7 @@ class MusicCommandsCog(
 
                 # Get image, store in memory
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
+                    async with session.get(image_url, headers=self.REQUEST_HEADERS) as request:
                         image_data = BytesIO()
 
                         async for chunk in request.content.iter_chunked(10):
@@ -973,7 +977,7 @@ class MusicCommandsCog(
 
                 # Get image, store in memory
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
+                    async with session.get(image_url, headers=self.REQUEST_HEADERS) as request:
                         image_data = BytesIO()
 
                         async for chunk in request.content.iter_chunked(10):

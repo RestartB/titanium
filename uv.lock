@@ -191,6 +191,12 @@ wheels = [
 ]
 
 [[package]]
+name = "durations"
+version = "0.3.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bd/18/d2cfee21f8cfa271efd498bbf1a2e49c26221ae15301855835d00a570fbc/durations-0.3.3.tar.gz", hash = "sha256:820ffe09c390469dc621b6a0aa46d3a624b6dadf09b439e175696b6f6b77ef2f", size = 3679, upload-time = "2014-01-10T09:40:18.041Z" }
+
+[[package]]
 name = "emoji"
 version = "2.15.0"
 source = { registry = "https://pypi.org/simple" }
@@ -714,6 +720,7 @@ dependencies = [
     { name = "colorthief" },
     { name = "discord-py" },
     { name = "dotenv" },
+    { name = "durations" },
     { name = "emoji" },
     { name = "humanize" },
     { name = "jinja2" },
@@ -741,6 +748,7 @@ requires-dist = [
     { name = "colorthief", specifier = ">=0.2.1" },
     { name = "discord-py", specifier = ">=2.6.4" },
     { name = "dotenv", specifier = ">=0.9.9" },
+    { name = "durations", specifier = ">=0.3.3" },
     { name = "emoji", specifier = ">=2.15.0" },
     { name = "humanize", specifier = ">=4.13.0" },
     { name = "jinja2", specifier = ">=3.1.6" },

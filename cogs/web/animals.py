@@ -1,3 +1,4 @@
+import os
 import random
 from typing import TYPE_CHECKING
 
@@ -13,6 +14,10 @@ if TYPE_CHECKING:
 
 
 class AnimalCommandsCog(commands.Cog):
+    REQUEST_HEADERS = {
+        "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
+    }
+
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         add_global_aliases(self, bot)
@@ -53,7 +58,9 @@ class AnimalCommandsCog(commands.Cog):
 
         # Fetch image
         async with aiohttp.ClientSession() as session:
-            async with session.get("https://api.thecatapi.com/v1/images/search") as request:
+            async with session.get(
+                "https://api.thecatapi.com/v1/images/search", headers=self.REQUEST_HEADERS
+            ) as request:
                 if request.status == 429:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} Error",
@@ -86,7 +93,9 @@ class AnimalCommandsCog(commands.Cog):
 
         # Fetch image
         async with aiohttp.ClientSession() as session:
-            async with session.get("https://dog.ceo/api/breeds/image/random") as request:
+            async with session.get(
+                "https://dog.ceo/api/breeds/image/random", headers=self.REQUEST_HEADERS
+            ) as request:
                 if request.status == 429:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} Error",
@@ -126,7 +135,9 @@ class AnimalCommandsCog(commands.Cog):
         ):
             # Fetch image
             async with aiohttp.ClientSession() as session:
-                async with session.get("https://sandcat.link/api/json/") as request:
+                async with session.get(
+                    "https://sandcat.link/api/json/", headers=self.REQUEST_HEADERS
+                ) as request:
                     if request.status == 429:
                         embed = discord.Embed(
                             title=f"{self.bot.error_emoji} Error",

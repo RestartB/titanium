@@ -143,7 +143,7 @@ class WebSearchCommandsCog(commands.Cog):
     ):
         await ctx.defer(ephemeral=ephemeral)
 
-        headers = {"User-Agent": os.getenv("WIKIPEDIA_API_USER_AGENT", "")}
+        headers = {"User-Agent": os.getenv("REQUEST_USER_AGENT", "")}
 
         async with aiohttp.ClientSession() as session:
             async with session.get(

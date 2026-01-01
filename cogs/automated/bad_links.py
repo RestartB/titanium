@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from typing import TYPE_CHECKING
 
 import aiohttp
@@ -12,6 +13,10 @@ if TYPE_CHECKING:
 class BadLinkFetcherCog(commands.Cog):
     """Automatic tasks to fetch and update bad links"""
 
+    REQUEST_HEADERS = {
+        "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
+    }
+
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("links")
@@ -20,6 +25,8 @@ class BadLinkFetcherCog(commands.Cog):
         self.malicious_update.start()
         self.phishing_update.start()
         self.nsfw_update.start()
+
+        print(self.REQUEST_HEADERS)
 
     def cog_unload(self) -> None:
         # Stop tasks on unload
@@ -52,7 +59,8 @@ class BadLinkFetcherCog(commands.Cog):
             self.logger.info("Fetching malicious links...")
 
             async with session.get(
-                "https://raw.githubusercontent.com/romainmarcoux/malicious-domains/main/full-domains-aa.txt"
+                "https://raw.githubusercontent.com/romainmarcoux/malicious-domains/main/full-domains-aa.txt",
+                headers=self.REQUEST_HEADERS,
             ) as response:
                 if response.status == 200:
                     new_malicious_links = self._generate_list(await response.text())
@@ -61,7 +69,8 @@ class BadLinkFetcherCog(commands.Cog):
                     return
 
             async with session.get(
-                "https://raw.githubusercontent.com/romainmarcoux/malicious-domains/main/full-domains-ab.txt"
+                "https://raw.githubusercontent.com/romainmarcoux/malicious-domains/main/full-domains-ab.txt",
+                headers=self.REQUEST_HEADERS,
             ) as response:
                 if response.status == 200:
                     new_malicious_links += self._generate_list(await response.text())
@@ -88,7 +97,8 @@ class BadLinkFetcherCog(commands.Cog):
             self.logger.info("Fetching phishing links...")
 
             async with session.get(
-                "https://raw.githubusercontent.com/Phishing-Database/Phishing.Database/refs/heads/master/phishing-domains-ACTIVE.txt"
+                "https://raw.githubusercontent.com/Phishing-Database/Phishing.Database/refs/heads/master/phishing-domains-ACTIVE.txt",
+                headers=self.REQUEST_HEADERS,
             ) as response:
                 if response.status == 200:
                     new_phishing_links = self._generate_list(await response.text())
@@ -115,7 +125,8 @@ class BadLinkFetcherCog(commands.Cog):
 
             # Get meta
             async with session.get(
-                "https://raw.githubusercontent.com/Bon-Appetit/porn-domains/refs/heads/main/meta.json"
+                "https://raw.githubusercontent.com/Bon-Appetit/porn-domains/refs/heads/main/meta.json",
+                headers=self.REQUEST_HEADERS,
             ) as response:
                 if response.status == 200:
                     meta = json.loads(await response.text())
@@ -131,7 +142,7 @@ class BadLinkFetcherCog(commands.Cog):
             nsfw_url = f"https://raw.githubusercontent.com/Bon-Appetit/porn-domains/refs/heads/main/{nsfw_name}"
             self.logger.info(f"Obtained NSFW list URL ({nsfw_url}), fetching links...")
 
-            async with session.get(nsfw_url) as response:
+            async with session.get(nsfw_url, headers=self.REQUEST_HEADERS) as response:
                 if response.status == 200:
                     new_nsfw_links = (await response.text()).splitlines()
                 else:
