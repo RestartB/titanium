@@ -1,5 +1,8 @@
 name: Ruff
 
+permissions:
+  contents: write
+
 on:
   push:
     paths:
