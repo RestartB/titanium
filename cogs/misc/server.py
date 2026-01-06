@@ -192,7 +192,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
         return pages
 
     # Message leaderboard command
-    @commands.hybrid_command(
+    @server_group.command(
         name="messages", description="Get the amount of messages members have sent in the server."
     )
     @commands.guild_only()
@@ -257,7 +257,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 await ctx.send(embed=pages[0])
 
     # Word leaderboard command
-    @commands.hybrid_command(
+    @server_group.command(
         name="words", description="Get the amount of words members have sent in the server."
     )
     @commands.guild_only()
@@ -322,7 +322,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 await ctx.send(embed=pages[0])
 
     # Attachment leaderboard command
-    @commands.hybrid_command(
+    @server_group.command(
         name="attachments",
         description="Get the amount of attachments members have sent in the server.",
     )
