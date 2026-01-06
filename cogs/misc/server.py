@@ -1,9 +1,13 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import discord
 from discord import ButtonStyle, Colour, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
+from sqlalchemy import select
+
+from lib.sql.sql import LeaderboardUserStats, get_session
+from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -15,13 +19,11 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
-    @commands.hybrid_command(
-        name="server", aliases=["serverinfo"], description="Get information about the server."
-    )
+    @commands.hybrid_group(name="server", description="Get information about the server.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @commands.guild_only()
-    async def server(self, ctx: commands.Context["TitaniumBot"]) -> None:
+    async def server_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
         await ctx.defer()
 
         if not ctx.guild:
@@ -77,13 +79,9 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
 
         await ctx.reply(embed=embed, view=view)
 
-    @commands.hybrid_command(
-        name="servericon", aliases=["icon"], description="Get the server's icon."
-    )
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    @server_group.command(name="icon", description="Get the server's icon.")
     @commands.guild_only()
-    async def servericon(self, ctx: commands.Context["TitaniumBot"]) -> None:
+    async def server_icon(self, ctx: commands.Context["TitaniumBot"]) -> None:
         await ctx.defer()
 
         if not ctx.guild:
@@ -117,11 +115,9 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
 
         await ctx.reply(embed=embed, view=view)
 
-    @commands.hybrid_command(
+    @server_group.command(
         name="boosts", aliases=["boostinfo"], description="Get the server's boost information."
     )
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @commands.guild_only()
     async def server_boosts(self, ctx: commands.Context["TitaniumBot"]) -> None:
         await ctx.defer()
@@ -144,6 +140,252 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
         embed.add_field(name="Boost Level", value=f"`Level {ctx.guild.premium_tier}`", inline=True)
 
         await ctx.reply(embed=embed)
+
+    def _generate_lb_embeds(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        top_users: Sequence[LeaderboardUserStats],
+        title,
+    ) -> list[discord.Embed]:
+        if not ctx.guild:
+            return []
+
+        pages: list[discord.Embed] = []
+        page_size = 20
+
+        embed = discord.Embed(
+            title=title,
+            color=discord.Color.random(),
+        )
+        embed.set_author(
+            name=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None
+        )
+
+        for i, user_stats in enumerate(top_users, start=1):
+            member = ctx.guild.get_member(user_stats.user_id)
+
+            if embed.description:
+                embed.description += f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP, Level {user_stats.level}"
+            else:
+                embed.description = f"{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP, Level {user_stats.level}"
+
+            if i % page_size == 0:
+                pages.append(embed)
+
+                embed = discord.Embed(
+                    title=title,
+                    color=discord.Color.random(),
+                )
+                embed.set_author(
+                    name=ctx.guild.name,
+                    icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+                )
+
+        if embed.description:
+            pages.append(embed)
+
+        pages[0].set_footer(
+            text=f"Controlling: @{ctx.author.name}" if len(pages) > 1 else f"@{ctx.author.name}",
+            icon_url=ctx.author.display_avatar.url,
+        )
+
+        return pages
+
+    # Message leaderboard command
+    @commands.hybrid_command(
+        name="messages", description="Get the amount of messages members have sent in the server."
+    )
+    @commands.guild_only()
+    async def message_lb_command(self, ctx: commands.Context["TitaniumBot"]):
+        if not ctx.guild:
+            return
+
+        await ctx.defer()
+
+        if ctx.author.id in self.bot.opt_out:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Opted Out",
+                description="You have opted out of data collection and cannot use leaderboard features.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+            return
+
+        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+        if (
+            not guild_settings
+            or not guild_settings.leaderboard_settings
+            or not guild_settings.leaderboard_enabled
+        ):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Leaderboard Disabled",
+                description="The leaderboard system is not enabled in this server.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+            return
+
+        async with get_session() as session:
+            stmt = (
+                select(LeaderboardUserStats)
+                .where(LeaderboardUserStats.guild_id == ctx.guild.id)
+                .order_by(LeaderboardUserStats.message_count.desc())
+                .limit(1000)
+            )
+            result = await session.execute(stmt)
+            top_users = result.scalars().all()
+
+            if not top_users:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} No Data",
+                    description="No users have any recorded messages yet.",
+                    color=discord.Color.red(),
+                )
+                await ctx.send(embed=embed)
+                return
+
+            pages = self._generate_lb_embeds(
+                ctx,
+                top_users,
+                title="Messages Sent",
+            )
+            view = PaginationView(embeds=pages, timeout=240)
+
+            if len(pages) > 1:
+                await ctx.send(embed=pages[0], view=view)
+            else:
+                await ctx.send(embed=pages[0])
+
+    # Word leaderboard command
+    @commands.hybrid_command(
+        name="words", description="Get the amount of words members have sent in the server."
+    )
+    @commands.guild_only()
+    async def word_lb_command(self, ctx: commands.Context["TitaniumBot"]):
+        if not ctx.guild:
+            return
+
+        await ctx.defer()
+
+        if ctx.author.id in self.bot.opt_out:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Opted Out",
+                description="You have opted out of data collection and cannot use leaderboard features.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+            return
+
+        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+        if (
+            not guild_settings
+            or not guild_settings.leaderboard_settings
+            or not guild_settings.leaderboard_enabled
+        ):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Leaderboard Disabled",
+                description="The leaderboard system is not enabled in this server.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+            return
+
+        async with get_session() as session:
+            stmt = (
+                select(LeaderboardUserStats)
+                .where(LeaderboardUserStats.guild_id == ctx.guild.id)
+                .order_by(LeaderboardUserStats.word_count.desc())
+                .limit(1000)
+            )
+            result = await session.execute(stmt)
+            top_users = result.scalars().all()
+
+            if not top_users:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} No Data",
+                    description="No users have any recorded words yet yet.",
+                    color=discord.Color.red(),
+                )
+                await ctx.send(embed=embed)
+                return
+
+            pages = self._generate_lb_embeds(
+                ctx,
+                top_users,
+                title="Words Sent",
+            )
+            view = PaginationView(embeds=pages, timeout=240)
+
+            if len(pages) > 1:
+                await ctx.send(embed=pages[0], view=view)
+            else:
+                await ctx.send(embed=pages[0])
+
+    # Attachment leaderboard command
+    @commands.hybrid_command(
+        name="attachments",
+        description="Get the amount of attachments members have sent in the server.",
+    )
+    @commands.guild_only()
+    async def attachment_lb_command(self, ctx: commands.Context["TitaniumBot"]):
+        if not ctx.guild:
+            return
+
+        await ctx.defer()
+
+        if ctx.author.id in self.bot.opt_out:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Opted Out",
+                description="You have opted out of data collection and cannot use leaderboard features.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+            return
+
+        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+        if (
+            not guild_settings
+            or not guild_settings.leaderboard_settings
+            or not guild_settings.leaderboard_enabled
+        ):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Leaderboard Disabled",
+                description="The leaderboard system is not enabled in this server.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+            return
+
+        async with get_session() as session:
+            stmt = (
+                select(LeaderboardUserStats)
+                .where(LeaderboardUserStats.guild_id == ctx.guild.id)
+                .order_by(LeaderboardUserStats.attachment_count.desc())
+                .limit(1000)
+            )
+            result = await session.execute(stmt)
+            top_users = result.scalars().all()
+
+            if not top_users:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} No Data",
+                    description="No users have any recorded attachments yet.",
+                    color=discord.Color.red(),
+                )
+                await ctx.send(embed=embed)
+                return
+
+            pages = self._generate_lb_embeds(
+                ctx,
+                top_users,
+                title="Attachments Sent",
+            )
+            view = PaginationView(embeds=pages, timeout=240)
+
+            if len(pages) > 1:
+                await ctx.send(embed=pages[0], view=view)
+            else:
+                await ctx.send(embed=pages[0])
 
 
 async def setup(bot: TitaniumBot) -> None:

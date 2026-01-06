@@ -77,47 +77,24 @@ class LeaderboardCog(commands.Cog):
         max_xp = lb_settings.max_xp
         xp_mult = lb_settings.xp_mult
         cooldown = lb_settings.cooldown
+
         length = len(message.content)
-
-        if cooldown > 0:
-            created_at = message.created_at
-            user_cooldowns = self.member_last_trigger.setdefault(message.guild.id, {})
-            last_trigger = user_cooldowns.get(message.author.id)
-
-            if last_trigger and (created_at - last_trigger).total_seconds() < cooldown:
-                self.logger.debug(
-                    f"User {message.author.id} in guild {message.guild.id} is on cooldown"
-                )
-                return
-
-            user_cooldowns[message.author.id] = created_at
-
-        to_assign = 0
-
-        if mode == LeaderboardCalcType.FIXED and xp:
-            to_assign = xp
-        elif mode == LeaderboardCalcType.RANDOM and min_xp and max_xp:
-            to_assign = random.randint(min_xp, max_xp)
-        elif mode == LeaderboardCalcType.LENGTH and xp and xp_mult and max_xp and min_xp:
-            to_assign = int(max(min(10 + (xp_mult * math.sqrt(length)), max_xp), min_xp))
+        word_count = len(message.content.split())
+        attachment_count = len(message.attachments)
 
         async with get_session() as session:
-            levels = guild_settings.leaderboard_settings.levels
-            levels.sort(key=lambda level: level.xp)
-
             stmt = insert(LeaderboardUserStats).values(
                 guild_id=message.guild.id,
                 user_id=message.author.id,
-                xp=to_assign,
+                xp=0,
                 message_count=1,
-                word_count=len(message.content.split()),
-                attachment_count=len(message.attachments),
+                word_count=word_count,
+                attachment_count=attachment_count,
                 level=0,
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["guild_id", "user_id"],
                 set_={
-                    "xp": LeaderboardUserStats.xp + to_assign,
                     "message_count": LeaderboardUserStats.message_count + 1,
                     "word_count": LeaderboardUserStats.word_count + len(message.content.split()),
                     "attachment_count": LeaderboardUserStats.attachment_count
@@ -127,6 +104,33 @@ class LeaderboardCog(commands.Cog):
 
             result = await session.execute(stmt)
             user_stats = result.scalar_one()
+
+            if cooldown > 0:
+                created_at = message.created_at
+                user_cooldowns = self.member_last_trigger.setdefault(message.guild.id, {})
+                last_trigger = user_cooldowns.get(message.author.id)
+
+                if last_trigger and (created_at - last_trigger).total_seconds() < cooldown:
+                    self.logger.debug(
+                        f"User {message.author.id} in guild {message.guild.id} is on cooldown"
+                    )
+                    return
+
+                user_cooldowns[message.author.id] = created_at
+
+            to_assign = 0
+
+            if mode == LeaderboardCalcType.FIXED and xp:
+                to_assign = xp
+            elif mode == LeaderboardCalcType.RANDOM and min_xp and max_xp:
+                to_assign = random.randint(min_xp, max_xp)
+            elif mode == LeaderboardCalcType.LENGTH and xp and xp_mult and max_xp and min_xp:
+                to_assign = int(max(min(10 + (xp_mult * math.sqrt(length)), max_xp), min_xp))
+
+            levels = guild_settings.leaderboard_settings.levels
+            levels.sort(key=lambda level: level.xp)
+
+            user_stats.xp = min(user_stats.xp + to_assign, POSTGRES_MAX_INT)
 
             old_level = user_stats.level
             new_level = 0
