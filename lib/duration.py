@@ -1,46 +1,43 @@
-import re
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 from discord.ext import commands
+from durations import Duration
 from sqlalchemy import Column
+
+if TYPE_CHECKING:
+    from main import TitaniumBot
 
 
 class DurationConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument: str) -> timedelta:
-        multipliers = {
-            "s": 1,  # seconds
-            "m": 60,  # minutes
-            "h": 3600,  # hours
-            "d": 86400,  # days
-            "w": 604800,  # weeks
-            "mon": 2592000,  # months
-            "y": 31536000,  # years
-        }
+    MAX_YEARS = 60
+    MAX_SECONDS = MAX_YEARS * 31536000
 
-        # Match units
-        pattern = r"(\d+)(s|m|h|d|w|mon|y)"
-        matches = re.findall(pattern, argument.lower())
+    async def convert(
+        self, ctx: commands.Context["TitaniumBot"], argument: str
+    ) -> timedelta | None:
+        # Check for permanent keywords
+        if argument.lower().strip() in ("permanent", "perma", "0"):
+            return None
 
-        if not matches:
-            raise commands.BadArgument("Invalid time format. Use format like '1h30m' or '5d'.")
+        try:
+            seconds = Duration(argument).to_seconds()
 
-        total_seconds = 0
-        used_units = set()
+            if seconds == 0:
+                return None
 
-        for amount_str, unit in matches:
-            if unit in used_units:
-                raise commands.BadArgument(f"Duplicate time unit '{unit}' found.")
+            if seconds > self.MAX_SECONDS:
+                raise commands.BadArgument(
+                    f"Duration cannot exceed {self.MAX_YEARS} years. "
+                    f"For permanent actions, use 'permanent', 'perma', '0', or don't provide a duration."
+                )
 
-            used_units.add(unit)
-            amount = int(amount_str)
-            total_seconds += amount * multipliers[unit]
-
-        # Check entire string was matched
-        reconstructed = "".join(f"{amount}{unit}" for amount, unit in matches)
-        if reconstructed != argument.lower():
-            raise commands.BadArgument("Invalid characters in time string.")
-
-        return timedelta(seconds=total_seconds)
+            return timedelta(seconds=seconds)
+        except OverflowError:
+            raise commands.BadArgument(
+                f"Duration cannot exceed {self.MAX_YEARS} years. "
+                f"For permanent actions, use 'permanent', 'perma', '0', or don't provide a duration."
+            )
 
 
 def duration_to_timestring(
@@ -53,27 +50,27 @@ def duration_to_timestring(
 
     if seconds >= 31536000:  # Year
         string += f"{int(seconds // 31536000)}y "
-        seconds //= 31536000
+        seconds %= 31536000
 
     if seconds >= 2592000:  # Month
         string += f"{int(seconds // 2592000)}mon "
-        seconds //= 2592000
+        seconds %= 2592000
 
     if seconds >= 604800:  # Week
         string += f"{int(seconds // 604800)}w "
-        seconds //= 604800
+        seconds %= 604800
 
     if seconds >= 86400:  # Day
         string += f"{int(seconds // 86400)}d "
-        seconds //= 86400
+        seconds %= 86400
 
     if seconds >= 3600:  # Hour
         string += f"{int(seconds // 3600)}h "
-        seconds //= 3600
+        seconds %= 3600
 
     if seconds >= 60:  # Minute
         string += f"{int(seconds // 60)}m "
-        seconds //= 60
+        seconds %= 60
 
     if seconds > 0:  # Second
         string += f"{int(seconds)}s"

@@ -606,7 +606,7 @@ class AutomodMonitorCog(commands.Cog):
             self.logger.debug(f"Message edit event {payload.message_id} has no guild_id, skipping")
             return
 
-        if "content" not in payload.data:
+        if not hasattr(payload.data, "content") or payload.data.get("content") is None:
             self.logger.debug(f"{payload.message_id} edit has no content in payload data")
             return
 

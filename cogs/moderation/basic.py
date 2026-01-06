@@ -206,22 +206,12 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             # Add member to punishing list
             self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
 
+            # Process duration
+            processed_duration = await DurationConverter().convert(ctx, duration)
             processed_reason = reason
-            processed_duration = None
 
-            if ctx.interaction:
-                if duration:
-                    try:
-                        processed_duration = await DurationConverter().convert(ctx, duration)
-                    except commands.BadArgument:
-                        raise commands.BadArgument("Invalid duration format.")
-            else:
-                if duration:
-                    # Process duration
-                    try:
-                        processed_duration = await DurationConverter().convert(ctx, duration)
-                    except commands.BadArgument:
-                        processed_reason = duration + " " + reason if reason else duration
+            if not ctx.interaction and processed_duration is None:
+                processed_reason = duration + " " + reason if reason else duration
 
             # Time out user
             try:
@@ -231,7 +221,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         if processed_duration and processed_duration.total_seconds() <= 2419200
                         else timedelta(seconds=2419200)
                     ),
-                    reason=f"@{ctx.author.name}: {processed_reason}",
+                    reason=f"@{ctx.author.name}: {reason}",
                 )
             except discord.Forbidden as e:
                 await log_error(
@@ -545,22 +535,12 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             except discord.NotFound:
                 pass
 
+            # Process duration
+            processed_duration = await DurationConverter().convert(ctx, duration)
             processed_reason = reason
-            processed_duration = None
 
-            if ctx.interaction:
-                if duration:
-                    try:
-                        processed_duration = await DurationConverter().convert(ctx, duration)
-                    except commands.BadArgument:
-                        raise commands.BadArgument("Invalid duration format.")
-            else:
-                if duration:
-                    # Process duration
-                    try:
-                        processed_duration = await DurationConverter().convert(ctx, duration)
-                    except commands.BadArgument:
-                        processed_reason = duration + " " + reason if reason else duration
+            if not ctx.interaction and processed_duration is None:
+                processed_reason = duration + " " + reason if reason else duration
 
             # Ban user
             try:
