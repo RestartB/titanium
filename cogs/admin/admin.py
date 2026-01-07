@@ -391,6 +391,46 @@ class AdminCog(commands.Cog):
         finally:
             await stop_loading(ctx)
 
+    @admin_group.command(name="msgchannel", aliases=["msg-channel"], hidden=True)
+    @commands.is_owner()
+    async def msg_channel(self, ctx: commands.Context["TitaniumBot"], msg_id: int) -> None:
+        await defer(ctx, ephemeral=True)
+
+        message = discord.utils.get(ctx.bot.cached_messages, id=msg_id)
+        if message is None:
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Message Not Found",
+                    description=f"Message with ID `{msg_id}` not found in cache.",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
+
+            await stop_loading(ctx)
+            return
+
+        embed = discord.Embed(
+            title=f"{self.bot.success_emoji} Message Channel",
+            description=f"Channel for message ID `{msg_id}` is `#{message.channel}` (`{message.channel.id}`).",
+            colour=discord.Colour.green(),
+        )
+
+        view = discord.ui.View()
+        view.add_item(
+            discord.ui.Button(
+                label="Jump to Message",
+                url=message.jump_url,
+                style=discord.ButtonStyle.link,
+            )
+        )
+
+        await ctx.reply(
+            embed=embed,
+            view=view,
+            ephemeral=True,
+        )
+
     @admin_group.command(name="get", hidden=True)
     @commands.is_owner()
     async def get_request(self, ctx: commands.Context["TitaniumBot"], url: str) -> None:
