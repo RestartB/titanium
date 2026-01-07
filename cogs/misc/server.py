@@ -146,6 +146,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
         ctx: commands.Context["TitaniumBot"],
         top_users: Sequence[LeaderboardUserStats],
         title,
+        attr: str,
     ) -> list[discord.Embed]:
         if not ctx.guild:
             return []
@@ -165,9 +166,9 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             member = ctx.guild.get_member(user_stats.user_id)
 
             if embed.description:
-                embed.description += f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP, Level {user_stats.level}"
+                embed.description += f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {getattr(user_stats, attr)}"
             else:
-                embed.description = f"{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP, Level {user_stats.level}"
+                embed.description = f"{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {getattr(user_stats, attr)}"
 
             if i % page_size == 0:
                 pages.append(embed)
@@ -248,6 +249,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 ctx,
                 top_users,
                 title="Messages Sent",
+                attr="message_count",
             )
             view = PaginationView(embeds=pages, timeout=240)
 
@@ -313,6 +315,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 ctx,
                 top_users,
                 title="Words Sent",
+                attr="word_count",
             )
             view = PaginationView(embeds=pages, timeout=240)
 
@@ -379,6 +382,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 ctx,
                 top_users,
                 title="Attachments Sent",
+                attr="attachment_count",
             )
             view = PaginationView(embeds=pages, timeout=240)
 
