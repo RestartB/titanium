@@ -92,18 +92,22 @@ class FireboardCog(commands.Cog):
                 ):
                     guild_id = event.guild_id or 0
                     message_id = event.message_id
+                    channel_id = event.channel_id
                 elif isinstance(event, discord.Reaction):
                     guild_id = event.message.guild.id if event.message.guild else 0
                     message_id = event.message.id
+                    channel_id = event.message.channel.id
                 elif isinstance(event, discord.Message):
                     guild_id = event.guild.id if event.guild else 0
-                    message_id = None
+                    message_id = event.id
+                    channel_id = event.channel.id
 
                 await log_error(
                     bot=self.bot,
                     module="Fireboard",
                     guild_id=guild_id or None,
-                    error=f"An unknown error occurred while processing a fireboard event - message ID: {message_id or None}",
+                    error="An unknown error occurred while processing a fireboard event",
+                    details=f"Message ID: {message_id or None}\nChannel ID: {channel_id or None}",
                     exc=e,
                 )
             finally:
