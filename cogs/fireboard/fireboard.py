@@ -47,6 +47,8 @@ class FireboardCog(commands.Cog):
     def _fireboard_embed(
         self,
         message: discord.Message,
+        failed_attachments: int = 0,
+        footer: str | None = None,
     ) -> discord.Embed:
         """Creates a fireboard embed message"""
         embed = discord.Embed(
@@ -55,6 +57,15 @@ class FireboardCog(commands.Cog):
             timestamp=message.created_at,
         )
         embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
+
+        if footer:
+            embed.set_footer(text=footer)
+        elif failed_attachments > 0:
+            embed.set_footer(
+                text=f"{self.bot.warn_emoji} Failed to download {failed_attachments} attachment"
+                + ("s" if failed_attachments != 1 else "")
+            )
+
         return embed
 
     async def queue_worker(self):
@@ -278,7 +289,12 @@ class FireboardCog(commands.Cog):
                         self.logger.debug("Updating fireboard message")
                         await board_msg.edit(
                             content=content,
-                            embed=self._fireboard_embed(source_msg),
+                            embed=self._fireboard_embed(
+                                source_msg,
+                                footer=board_msg.embeds[0].footer.text
+                                if board_msg.embeds
+                                else None,
+                            ),
                         )
                         continue
                     elif count < fireboard_message.fireboard.threshold:
@@ -364,10 +380,27 @@ class FireboardCog(commands.Cog):
                     )
                 )
 
+                files = []
+                failed = 0
+                for attachment in attachments:
+                    try:
+                        files.append(await attachment.to_file())
+                    except Exception as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Fireboard",
+                            guild_id=event.guild_id,
+                            error="Failed to download fireboard attachment",
+                            details=f"Attachment name: {attachment.filename}\nMessage ID: {source_msg.id}\nChannel ID: {source_msg.channel.id}",
+                            exc=e,
+                        )
+
+                        failed += 1
+
                 new_message = await board_channel.send(
                     content=content,
-                    embed=self._fireboard_embed(source_msg),
-                    files=[await attachment.to_file() for attachment in attachments],
+                    embed=self._fireboard_embed(source_msg, failed),
+                    files=files,
                     view=view,
                 )
                 self.logger.debug(f"Created fireboard message {new_message.id}")
@@ -507,7 +540,10 @@ class FireboardCog(commands.Cog):
                         f"Fetched fireboard message {fireboard_message.fireboard_message_id} for editing"
                     )
                     await board_msg.edit(
-                        embed=self._fireboard_embed(payload.message),
+                        embed=self._fireboard_embed(
+                            payload.message,
+                            footer=board_msg.embeds[0].footer.text if board_msg.embeds else None,
+                        ),
                         attachments=payload.message.attachments,
                     )
 
