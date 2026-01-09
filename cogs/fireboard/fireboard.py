@@ -369,8 +369,6 @@ class FireboardCog(commands.Cog):
                     self.logger.debug(f"Board channel {board.channel_id} not found or invalid type")
                     return
 
-                attachments = source_msg.attachments
-
                 view = discord.ui.View()
                 view.add_item(
                     discord.ui.Button(
@@ -381,25 +379,42 @@ class FireboardCog(commands.Cog):
                 )
 
                 files = []
-                failed = 0
-                for attachment in attachments:
-                    try:
-                        files.append(await attachment.to_file())
-                    except Exception as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Fireboard",
-                            guild_id=event.guild_id,
-                            error="Failed to download fireboard attachment",
-                            details=f"Attachment name: {attachment.filename}\nMessage ID: {source_msg.id}\nChannel ID: {source_msg.channel.id}",
-                            exc=e,
+                failed = False
+
+                for attempt in range(2):
+                    for attachment in source_msg.attachments:
+                        try:
+                            files.append(await attachment.to_file())
+                        except Exception as e:
+                            if not failed:
+                                failed = True
+                                break
+
+                            await log_error(
+                                bot=self.bot,
+                                module="Fireboard",
+                                guild_id=event.guild_id,
+                                error="Failed to download fireboard attachment",
+                                details=f"Attachment name: {attachment.filename}\nMessage ID: {source_msg.id}\nChannel ID: {source_msg.channel.id}",
+                                exc=e,
+                            )
+
+                    if not failed:
+                        break
+
+                    if attempt == 0:
+                        self.logger.debug(
+                            "Failed to download one or more attachments, retrying fetch of source message"
                         )
 
-                        failed += 1
+                        source_msg = await source_msg.channel.fetch_message(source_msg.id)
+                        files = []
 
                 new_message = await board_channel.send(
                     content=content,
-                    embed=self._fireboard_embed(source_msg, failed),
+                    embed=self._fireboard_embed(
+                        source_msg, len(source_msg.attachments) - len(files)
+                    ),
                     files=files,
                     view=view,
                 )
@@ -457,7 +472,7 @@ class FireboardCog(commands.Cog):
                         bot=self.bot,
                         module="Fireboard",
                         guild_id=event.guild_id,
-                        error=f"Titanium was not allowed to send fireboard notification in #{source_msg.channel.name if not isinstance(source_msg.channel, discord.PartialMessageable) else 'Unknown'} ({source_msg.channel.id})",
+                        error=f"Titanium was not allowed to send fireboard notification in #{source_msg.channel.name if not isinstance(source_msg.channel, (discord.PartialMessageable, discord.abc.PrivateChannel)) else 'Unknown'} ({source_msg.channel.id})",
                         details=str(e.text),
                         exc=e,
                     )
@@ -466,7 +481,7 @@ class FireboardCog(commands.Cog):
                         bot=self.bot,
                         module="Fireboard",
                         guild_id=event.guild_id,
-                        error=f"Unknown Discord error while sending fireboard notification in #{source_msg.channel.name if not isinstance(source_msg.channel, discord.PartialMessageable) else 'Unknown'} ({source_msg.channel.id})",
+                        error=f"Unknown Discord error while sending fireboard notification in #{source_msg.channel.name if not isinstance(source_msg.channel, (discord.PartialMessageable, discord.abc.PrivateChannel)) else 'Unknown'} ({source_msg.channel.id})",
                         details=str(e.text),
                         exc=e,
                     )
