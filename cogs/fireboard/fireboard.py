@@ -62,7 +62,7 @@ class FireboardCog(commands.Cog):
             embed.set_footer(text=footer)
         elif failed_attachments > 0:
             embed.set_footer(
-                text=f"{self.bot.warn_emoji} Failed to download {failed_attachments} attachment"
+                text=f"⚠️ Failed to download {failed_attachments} attachment"
                 + ("s" if failed_attachments != 1 else "")
             )
 
