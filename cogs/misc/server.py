@@ -152,7 +152,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             return []
 
         pages: list[discord.Embed] = []
-        page_size = 20
+        page_size = 15
 
         embed = discord.Embed(
             title=title,

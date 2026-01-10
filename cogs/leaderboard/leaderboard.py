@@ -273,7 +273,8 @@ class LeaderboardCog(commands.Cog):
             )
 
             pages: list[discord.Embed] = []
-            page_size = 20
+            page_size = 15
+
             for i, user_stats in enumerate(top_users, start=1):
                 member = ctx.guild.get_member(user_stats.user_id)
 
