@@ -271,6 +271,10 @@ class LeaderboardCog(commands.Cog):
                 title="Leaderboard",
                 color=discord.Color.random(),
             )
+            embed.set_author(
+                name=ctx.guild.name,
+                icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+            )
 
             pages: list[discord.Embed] = []
             page_size = 15
@@ -286,9 +290,14 @@ class LeaderboardCog(commands.Cog):
 
                 if i % page_size == 0:
                     pages.append(embed)
+
                     embed = discord.Embed(
                         title="Leaderboard",
                         color=discord.Color.random(),
+                    )
+                    embed.set_author(
+                        name=ctx.guild.name,
+                        icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
                     )
 
             if embed.description:

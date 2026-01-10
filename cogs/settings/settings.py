@@ -88,16 +88,20 @@ class SettingsView(LayoutView):
 
         container = Container()
 
+        dashboard_text = (
+            f"[Titanium Dashboard.](https://dash.titaniumbot.me/guild/{interaction.guild.id})"
+        )
+
         if interaction.guild.icon:
             top_section = Section(accessory=Thumbnail(media=interaction.guild.icon.url))
             top_section.add_item(
                 TextDisplay(
-                    f"## Server Settings\nFor the **{interaction.guild.name}** server. To manage more settings, please go to the Titanium Dashboard."
+                    f"## Server Settings\nFor the **{interaction.guild.name}** server. To manage more settings, please go to the {dashboard_text}"
                 )
             )
         else:
             top_section = TextDisplay(
-                f"## Server Settings\nFor the **{interaction.guild.name}** server. To manage more settings, please go to the Titanium Dashboard."
+                f"## Server Settings\nFor the **{interaction.guild.name}** server. To manage more settings, please go to the {dashboard_text}"
             )
 
         container.add_item(top_section)
@@ -200,7 +204,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
         await interaction.followup.send(view=view, ephemeral=True)
 
     @app_commands.command(
-        name="remove-data", description="Remove data about your user from Titanium's servers."
+        name="remove-data", description="Remove data about your account from Titanium's servers."
     )
     @app_commands.guild_only()
     async def remove_data(self, interaction: Interaction) -> None:

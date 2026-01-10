@@ -18,13 +18,13 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
 
-    @app_commands.command(name="feedback", description="Share any suggestions or feedback.")
+    @app_commands.command(
+        name="feedback",
+        description="Provide feedback, share suggestions, or report issues to the bot developers.",
+    )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def feedback(self, interaction: Interaction["TitaniumBot"]) -> None:
-        """
-        This command allows you to provide feedback or share your suggestions or maybe any bug/issue with the bot's developers.
-        """
         modal = FeedbackModal()
         await interaction.response.send_modal(modal)
 
