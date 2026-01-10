@@ -13,6 +13,8 @@ from lib.sql.sql import FireboardMessage, get_session
 if TYPE_CHECKING:
     from main import TitaniumBot
 
+# TODO: handle deleting board messages
+
 
 class FireboardCog(commands.Cog):
     """Server fireboard system"""

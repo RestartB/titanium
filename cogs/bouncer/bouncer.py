@@ -19,6 +19,9 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+# TODO: fully test
+
+
 class BouncerEventType(Enum):
     JOIN = 0
     UPDATE = 1

@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger("games")
 
 
+# TODO: review code in this cog, switch dedicated games table to enum possibly
+
+
 class GameCog(commands.Cog, name="Games", description="Play various simple games."):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot

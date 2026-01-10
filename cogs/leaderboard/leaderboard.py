@@ -278,6 +278,7 @@ class LeaderboardCog(commands.Cog):
             for i, user_stats in enumerate(top_users, start=1):
                 member = ctx.guild.get_member(user_stats.user_id)
 
+                # TODO: hide level if there are no levels configured
                 if embed.description:
                     embed.description += f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP, Level {user_stats.level}"
                 else:

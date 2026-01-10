@@ -8,9 +8,6 @@ if TYPE_CHECKING:
 
 
 async def defer(ctx: commands.Context["TitaniumBot"], ephemeral: bool = False) -> None:
-    """
-    Defer the response to a command context. If an interaction, the interaction is deferred. If a message context, a reaction is added to indicate loading.
-    """
     if ctx.interaction is not None:
         await ctx.defer(ephemeral=ephemeral)
     else:
