@@ -36,6 +36,8 @@ from lib.sql.sql import get_session
 if TYPE_CHECKING:
     from main import TitaniumBot
 
+# TODO: handle no case in unmute/unban
+
 
 class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate server members."):
     """Basic moderation commands"""
@@ -352,13 +354,11 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
                 cases = await manager.get_cases_by_user(member.id)
 
-                case = next((c for c in cases if str(c.type) == "mute"), None)
+                case = next((c for c in cases if c.type == CaseType.MUTE), None)
 
-                if not case:
-                    return  # FIXME: what???
-
-                # Close case
-                case, dm_success, dm_error = await manager.close_case(case.id)
+                if case:
+                    # Close case
+                    case, dm_success, dm_error = await manager.close_case(case.id)
 
             # Send confirmation message
             await ctx.reply(
@@ -666,7 +666,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 manager = GuildModCaseManager(self.bot, ctx.guild, session)
                 cases = await manager.get_cases_by_user(user.id)
 
-                case = next((c for c in cases if str(c.type) == "ban"), None)
+                case = next((c for c in cases if c.type == CaseType.BAN), None)
 
                 if case:
                     # Close case
