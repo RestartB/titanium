@@ -6,48 +6,44 @@ from lib.enums.server_counters import ServerCounterType
 from lib.sql.sql import LeaderboardUserStats, get_session
 
 
-async def resolve_counter(guild: discord.Guild, type: ServerCounterType, name: str) -> str:
+async def resolve_counter(
+    guild: discord.Guild | discord.GuildPreview, type: ServerCounterType, name: str
+) -> str:
     """Resolve the server counter name for a channel."""
 
-    if type == ServerCounterType.TOTAL_MEMBERS:
+    if type == ServerCounterType.TOTAL_MEMBERS and isinstance(guild, discord.Guild):
         updated_value = 0
 
         if guild.member_count:
             updated_value = guild.member_count
-    elif type == ServerCounterType.USERS:
+    elif type == ServerCounterType.USERS and isinstance(guild, discord.Guild):
         updated_value = 0
 
         for member in guild.members:
             if not member.bot:
                 updated_value += 1
-    elif type == ServerCounterType.BOTS:
+    elif type == ServerCounterType.BOTS and isinstance(guild, discord.Guild):
         updated_value = 0
 
         for member in guild.members:
             if member.bot:
                 updated_value += 1
-    elif type == ServerCounterType.ONLINE_MEMBERS:
-        updated_value = 0
-
-        for member in guild.members:
-            if member.status != discord.Status.offline:
-                updated_value += 1
-    elif type == ServerCounterType.OFFLINE_MEMBERS:
-        updated_value = 0
-
-        for member in guild.members:
-            if member.status == discord.Status.offline:
-                updated_value += 1
-    elif type == ServerCounterType.CHANNELS:
+    elif type == ServerCounterType.ONLINE_MEMBERS and isinstance(guild, discord.GuildPreview):
+        updated_value = guild.approximate_presence_count or 0
+    elif type == ServerCounterType.OFFLINE_MEMBERS and isinstance(guild, discord.GuildPreview):
+        updated_value = (guild.approximate_member_count or 0) - (
+            guild.approximate_presence_count or 0
+        )
+    elif type == ServerCounterType.CHANNELS and isinstance(guild, discord.Guild):
         updated_value = (
             len(guild.text_channels)
             + len(guild.voice_channels)
             + len(guild.stage_channels)
             + len(guild.forums)
         )
-    elif type == ServerCounterType.CATEGORIES:
+    elif type == ServerCounterType.CATEGORIES and isinstance(guild, discord.Guild):
         updated_value = len(guild.categories)
-    elif type == ServerCounterType.ROLES:
+    elif type == ServerCounterType.ROLES and isinstance(guild, discord.Guild):
         updated_value = len(guild.roles) - 1
     elif type == ServerCounterType.TOTAL_XP:
         updated_value = 0

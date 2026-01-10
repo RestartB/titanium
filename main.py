@@ -59,11 +59,11 @@ logging.info("Welcome to Titanium - v2 Development Version")
 logging.info("https://github.com/restartb/titanium")
 
 
-# Bot Setup
+# Intents
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-intents.presences = True
+intents.presences = False
 
 
 class TitaniumBot(commands.Bot):
