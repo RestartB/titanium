@@ -108,7 +108,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/stats", self.stats)
 
         self.app.router.add_get("/user/{user_id}/guilds", self.mutual_guilds)
-        self.app.router.add_get("/user/{user_id}/inguild/{user_id}", self.in_guild)
+        self.app.router.add_get("/user/{user_id}/inguild/{guild_id}", self.in_guild)
 
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
         self.app.router.add_get("/guild/{guild_id}/cases", self.guild_cases)
