@@ -108,6 +108,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/stats", self.stats)
 
         self.app.router.add_get("/user/{user_id}/guilds", self.mutual_guilds)
+        self.app.router.add_get("/user/{user_id}/inguild/{user_id}", self.in_guild)
 
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
         self.app.router.add_get("/guild/{guild_id}/cases", self.guild_cases)
@@ -177,6 +178,27 @@ class APICog(commands.Cog):
 
         mutual_guilds = [str(guild.id) for guild in user.mutual_guilds]
         return web.json_response(mutual_guilds)
+
+    async def in_guild(self, request: web.Request) -> web.Response:
+        user_id = request.match_info.get("user_id")
+        guild_id = request.match_info.get("guild_id")
+
+        if not user_id or not user_id.isdigit():
+            return web.json_response({"error": "user_id required"}, status=400)
+
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        user = guild.get_member(int(user_id))
+        if user:
+            return web.json_response({"in_guild": True}, status=200)
+        else:
+            return web.json_response({"in_guild": False}, status=200)
 
     async def guild_info(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
