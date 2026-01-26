@@ -63,7 +63,7 @@ class Analytics(commands.Cog):
     # Analytics for prefix commands
     @commands.Cog.listener()
     async def on_command(self, ctx: commands.Context["TitaniumBot"]):
-        if ctx.command is None:
+        if ctx.command is None or ctx.interaction:
             return
 
         embed = discord.Embed(
