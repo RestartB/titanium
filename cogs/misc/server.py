@@ -156,7 +156,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
 
         embed = discord.Embed(
             title=title,
-            color=discord.Color.random(),
+            colour=discord.Colour.random(),
         )
         embed.set_author(
             name=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None
@@ -175,7 +175,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
 
                 embed = discord.Embed(
                     title=title,
-                    color=discord.Color.random(),
+                    colour=discord.Colour.random(),
                 )
                 embed.set_author(
                     name=ctx.guild.name,
@@ -207,7 +207,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="You have opted out of data collection and cannot use leaderboard features.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
             await ctx.send(embed=embed)
             return
@@ -221,7 +221,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
                 description="The leaderboard system is not enabled in this server.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
             await ctx.send(embed=embed)
             return
@@ -240,7 +240,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No Data",
                     description="No users have any recorded messages yet.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
                 await ctx.send(embed=embed)
                 return
@@ -273,7 +273,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="You have opted out of data collection and cannot use leaderboard features.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
             await ctx.send(embed=embed)
             return
@@ -287,7 +287,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
                 description="The leaderboard system is not enabled in this server.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
             await ctx.send(embed=embed)
             return
@@ -306,7 +306,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No Data",
                     description="No users have any recorded words yet yet.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
                 await ctx.send(embed=embed)
                 return
@@ -340,7 +340,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="You have opted out of data collection and cannot use leaderboard features.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
             await ctx.send(embed=embed)
             return
@@ -354,7 +354,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
                 description="The leaderboard system is not enabled in this server.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
             await ctx.send(embed=embed)
             return
@@ -373,7 +373,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No Data",
                     description="No users have any recorded attachments yet.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
                 await ctx.send(embed=embed)
                 return

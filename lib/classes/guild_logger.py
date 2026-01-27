@@ -218,7 +218,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="AutoMod Rule Created",
             description=f"**Name:** `{rule.name}`\n**ID:** `{rule.id}`",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -239,7 +239,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="AutoMod Rule Deleted",
             description=f"**Name:** `{rule.name}`\n**ID:** `{rule.id}`",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -260,7 +260,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="AutoMod Rule Edited",
             description=f"**Name:** `{rule.name}`\n**ID:** `{rule.id}`",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -281,7 +281,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Channel Created",
             description=f"**Name:** `#{channel.name}` ({channel.mention})\n**ID:** `{channel.id}`\n**Type:** `{str(channel.type).split('.')[-1].title()}`\nPosition: `{channel.position}`",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -302,7 +302,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Channel Deleted",
             description=f"**Name:** `#{channel.name}`\n**ID:** `{channel.id}`\n**Type:** `{str(channel.type).split('.')[-1].title()}`",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -340,7 +340,7 @@ class GuildLogger:
             title="Channel Updated",
             description=f"**Name:** `#{after.name}` ({after.mention})\n**ID:** `{after.id}`\n\n"
             + "\n".join(changes),
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -364,7 +364,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Guild Name Updated",
             description=f"**Old Name:** `{before.name}`\n**New Name:** `{after.name}`",
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.icon.url if after.icon else None)
@@ -389,7 +389,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Guild AFK Channel Updated",
             description=f"**Old AFK Channel:** `{before.afk_channel.mention if before.afk_channel else 'None'}`\n**New AFK Channel:** `{after.afk_channel.mention if after.afk_channel else 'None'}`",
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.icon.url if after.icon else None)
@@ -414,7 +414,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Guild AFK Timeout Updated",
             description=f"**Old AFK Timeout:** `{before.afk_timeout} seconds`\n**New AFK Timeout:** `{after.afk_timeout} seconds`",
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.icon.url if after.icon else None)
@@ -438,7 +438,7 @@ class GuildLogger:
 
         embed = discord.Embed(
             title="Guild Icon Updated",
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_image(url=after.icon.url if after.icon else None)
@@ -483,7 +483,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Guild Features Updated",
             description="\n".join(changes),
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -511,7 +511,7 @@ class GuildLogger:
             embed = discord.Embed(
                 title="Emoji Added",
                 description=f"**Name:** `{emoji.name}` ({emoji})\n**ID:** `{emoji.id}`",
-                color=discord.Color.green(),
+                colour=discord.Colour.green(),
                 timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=emoji.url if emoji.url else None)
@@ -544,7 +544,7 @@ class GuildLogger:
             embed = discord.Embed(
                 title="Emoji Removed",
                 description=f"**Name:** `{emoji.name}`\n**ID:** `{emoji.id}`",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
                 timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=emoji.url if emoji.url else None)
@@ -577,7 +577,7 @@ class GuildLogger:
             embed = discord.Embed(
                 title="Sticker Added",
                 description=f"**Name:** `{sticker.name}`\n**ID:** `{sticker.id}`\n**Related Emoji:** {sticker.emoji}",
-                color=discord.Color.green(),
+                colour=discord.Colour.green(),
                 timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=sticker.url if sticker.url else None)
@@ -622,7 +622,7 @@ class GuildLogger:
             embed = discord.Embed(
                 title="Sticker Removed",
                 description=f"**Name:** `{sticker.name}`\n**ID:** `{sticker.id}`\n**Related Emoji:** {sticker.emoji}",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
                 timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=sticker.url if sticker.url else None)
@@ -676,7 +676,7 @@ class GuildLogger:
             f"**Channel:** {channel_display}\n"
             f"**Max Uses:** `{invite.max_uses if invite.max_uses and invite.max_uses > 0 else 'Unlimited'}`\n"
             f"**Temporary:** `{invite.temporary}`",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -702,7 +702,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Invite Deleted",
             description=f"**Code:** `{invite.code}`",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.invite_delete)
@@ -724,7 +724,7 @@ class GuildLogger:
             description=f"**Name:** {member.mention} (`@{member.name}`)"
             f"\n**ID:** `{member.id}`"
             f"\n**Account Created:** <t:{int(member.created_at.timestamp())}:R>",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -745,7 +745,7 @@ class GuildLogger:
             description=f"**Name:** {member.mention} (`@{member.name}`)"
             f"\n**ID:** `{member.id}`"
             f"\n**Account Created:** <t:{int(member.created_at.timestamp())}:R>",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -770,7 +770,7 @@ class GuildLogger:
             f"**ID:** `{after.id}`\n\n"
             f"**Old Nickname:** `{before.nick}`\n"
             f"**New Nickname:** `{after.nick}`",
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.display_avatar.url)
@@ -802,7 +802,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Member Roles Updated",
             description=f"**User:** {after.mention} (`@{after.name}`)\n**ID:** `{after.id}`",
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.display_avatar.url)
@@ -840,7 +840,7 @@ class GuildLogger:
             description=f"**User:** {member.mention} (`@{member.name}`)\n"
             f"**ID:** `{member.id}`\n"
             f"**Account Created:** <t:{int(member.created_at.timestamp())}:R>",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -864,7 +864,7 @@ class GuildLogger:
             description=f"**User:** {member.mention} (`@{member.name}`)\n"
             f"**ID:** `{member.id}`\n"
             f"**Account Created:** <t:{int(member.created_at.timestamp())}:R>",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -900,7 +900,7 @@ class GuildLogger:
             description=f"**User:** {entry.target.mention} (`@{entry.target.name}`)\n"
             f"**ID:** `{entry.target.id}`\n"
             f"**Reason:** {entry.reason}",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=entry.target.display_avatar.url)
@@ -929,7 +929,7 @@ class GuildLogger:
             description=f"**User:** {after.mention} (`@{after.name}`)\n"
             f"**ID:** `{after.id}`\n"
             f"**Timeout Until:** <t:{int(after.timed_out_until.timestamp())}:R>",
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.display_avatar.url)
@@ -957,7 +957,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Member Timeout Removed",
             description=f"**User:** {after.mention} (`@{after.name}`)\n**ID:** `{after.id}`",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.display_avatar.url)
@@ -981,7 +981,7 @@ class GuildLogger:
             description=f"**ID:** `{event.message_id}`\n"
             f"**Channel:** <#{event.channel_id}> (`{event.channel_id}`)\n"
             f"**Author:** {event.message.author.mention} (`{event.message.author.id}`)\n",
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1018,7 +1018,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Message Deleted",
             description=f"**ID:** `{event.message_id}`\n**Channel:** <#{event.channel_id}> (`{event.channel_id}`)",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1059,7 +1059,7 @@ class GuildLogger:
         embed = discord.Embed(
             title=f"{len(event.message_ids)} Messages Bulk Deleted",
             description=f"**Channel:** <#{event.channel_id}>\n",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1091,7 +1091,7 @@ class GuildLogger:
             f"**Channel:** {message.channel.mention} (`{message.channel.id}`)\n"
             f"**Author:** {message.author.mention} (`{message.author.id}`)\n"
             f"**Question:** `{message.poll.question}`",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=message.author.display_avatar.url)
@@ -1126,7 +1126,7 @@ class GuildLogger:
             f"**Author:** {event.cached_message.author.mention} (`{event.cached_message.author.id}`)\n"
             f"**Question:** `{event.cached_message.poll.question}`\n"
             f"**Total Votes:** `{event.cached_message.poll.total_votes}`",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=event.cached_message.author.display_avatar.url)
@@ -1159,7 +1159,7 @@ class GuildLogger:
             f"**Channel:** {message.channel.mention} (`{message.channel.id}`)\n"
             f"**Author:** {message.author.mention} (`{message.author.id}`)\n"
             f"**Total Unique Reactions:** `{len(reactions)}`",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=message.author.display_avatar.url)
@@ -1198,7 +1198,7 @@ class GuildLogger:
             f"**Channel:** {message.channel.mention}\n"
             f"**Author:** {message.author.mention}\n"
             f"**Reaction:** {reaction.emoji} ({reaction.normal_count + reaction.burst_count} total)",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=message.author.display_avatar.url)
@@ -1228,11 +1228,11 @@ class GuildLogger:
             title="Role Created",
             description=f"**Name:** `{role.name}`\n"
             f"**ID:** `{role.id}`\n"
-            f"**Color:** `#{role.color.value:06x}`\n"
+            f"**Colour:** `#{role.colour.value:06x}`\n"
             f"**Display Separately:** `{'Yes' if role.hoist else 'No'}`\n"
             f"**Mentionable:** `{'Yes' if role.mentionable else 'No'}`\n"
             f"**Position:** `{role.position}`",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1254,11 +1254,11 @@ class GuildLogger:
             title="Role Deleted",
             description=f"**Name:** `{role.name}`\n"
             f"**ID:** `{role.id}`\n"
-            f"**Color:** `#{role.color.value:06x}`\n"
+            f"**Colour:** `#{role.colour.value:06x}`\n"
             f"**Display Separately:** `{'Yes' if role.hoist else 'No'}`\n"
             f"**Mentionable:** `{'Yes' if role.mentionable else 'No'}`\n"
             f"**Position:** `{role.position}`",
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1279,8 +1279,10 @@ class GuildLogger:
         changes = []
         if before.name != after.name:
             changes.append(f"**Name:** `{before.name}` ➔ `{after.name}`")
-        if before.color != after.color:
-            changes.append(f"**Color:** `#{before.color.value:06x}` ➔ `#{after.color.value:06x}`")
+        if before.colour != after.colour:
+            changes.append(
+                f"**Colour:** `#{before.colour.value:06x}` ➔ `#{after.colour.value:06x}`"
+            )
         if before.hoist != after.hoist:
             changes.append(
                 f"**Display Separately:** `{'Yes' if before.hoist else 'No'}` ➔ `{'Yes' if after.hoist else 'No'}`"
@@ -1296,7 +1298,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Role Updated",
             description=f"Name: `{after.name}`\nID: `{after.id}`\n\n" + "\n".join(changes),
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1327,7 +1329,7 @@ class GuildLogger:
                 )
                 + f"**Location:** `{event.location}`\n",
             ),
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1358,7 +1360,7 @@ class GuildLogger:
                 )
                 + f"**Location:** `{event.location}`\n"
             ),
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1403,7 +1405,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Scheduled Event Updated",
             description=f"Name: `{after.name}`\nID: `{after.id}`\n\n" + "\n".join(changes),
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1429,7 +1431,7 @@ class GuildLogger:
                 f"**Emoji:** {sound.emoji}\n"
                 f"**Volume:** `{int(sound.volume * 100)}%`\n"
             ),
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1455,7 +1457,7 @@ class GuildLogger:
                 f"**Emoji:** {sound.emoji}\n"
                 f"**Volume:** `{int(sound.volume * 100)}%`\n"
             ),
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1490,7 +1492,7 @@ class GuildLogger:
             description=(
                 f"**Name:** `{after.name}`\n**ID:** `{after.id}`\n\n" + "\n".join(changes)
             ),
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1517,7 +1519,7 @@ class GuildLogger:
                 else "**Channel:** Unknown\n"
                 + f"**Scheduled:** {'Yes' if instance.scheduled_event_id else 'No'}"
             ),
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1544,7 +1546,7 @@ class GuildLogger:
                 else "**Channel:** Unknown\n"
                 + f"**Scheduled:** {'Yes' if instance.scheduled_event_id else 'No'}"
             ),
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1575,7 +1577,7 @@ class GuildLogger:
                 if after.channel
                 else "**Channel:** Unknown"
             ),
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1605,7 +1607,7 @@ class GuildLogger:
                 f"**Type:** `{str(thread.type).split('.')[-1].replace('_', ' ').title()}`\n"
                 f"**Created By:** {thread.owner.mention if thread.owner else 'Unknown'}\n"
             ),
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1657,7 +1659,7 @@ class GuildLogger:
                 )
                 + "\n".join(changes)
             ),
-            color=discord.Color.yellow(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1687,7 +1689,7 @@ class GuildLogger:
                 if thread.parent
                 else "**Channel:** `Unknown`"
             ),
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -1718,7 +1720,7 @@ class GuildLogger:
                     if payload.thread.parent
                     else "**Channel:** `Unknown`"
                 ),
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
                 timestamp=discord.utils.utcnow(),
             )
 
@@ -1734,7 +1736,7 @@ class GuildLogger:
                     f"**ID:** `{payload.thread_id}`\n"
                     + f"**Channel:** <#{payload.parent_id}> (`#{payload.parent_id}`)\n"
                 ),
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
                 timestamp=discord.utils.utcnow(),
             )
 
@@ -1764,7 +1766,7 @@ class GuildLogger:
                 f"**ID:** `{member.id}`\n"
                 f"**Channel:** {after.channel.mention} (`#{after.channel.name}`, `{after.channel.id}`)\n"
             ),
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -1795,7 +1797,7 @@ class GuildLogger:
                 f"**ID:** `{member.id}`\n"
                 f"**Channel:** {before.channel.mention} (`#{before.channel.name}`, `{before.channel.id}`)\n"
             ),
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -1827,7 +1829,7 @@ class GuildLogger:
                 f"**From:** {before.channel.mention} (`#{before.channel.name}`, `{before.channel.id}`)\n"
                 f"**To:** {after.channel.mention} (`#{after.channel.name}`, `{after.channel.id}`)\n"
             ),
-            color=discord.Color.blue(),
+            colour=discord.Colour.blue(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -1866,7 +1868,7 @@ class GuildLogger:
                 if after.channel
                 else "**In Channel:** `Unknown`"
             ),
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -1905,7 +1907,7 @@ class GuildLogger:
                 if after.channel
                 else "**In Channel:** `Unknown`"
             ),
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -1944,7 +1946,7 @@ class GuildLogger:
                 if after.channel
                 else "**In Channel:** `Unknown`"
             ),
-            color=discord.Color.red(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -1983,7 +1985,7 @@ class GuildLogger:
                 if after.channel
                 else "**In Channel:** `Unknown`"
             ),
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -2120,7 +2122,7 @@ class GuildLogger:
         embed = discord.Embed(
             title=f"Comment added to `{case.id}`{f' (@{user.name})' if user else ''}",
             description=comment,
-            color=discord.Color.blue(),
+            colour=discord.Colour.blue(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -2149,7 +2151,7 @@ class GuildLogger:
             title="Titanium Automod",
             description=f"{message.author.mention} (`@{message.author.name}`, `{message.author.id}`) triggered automod in {message.channel.mention}"
             f"({f'`#{message.channel.name}`, ' if not isinstance(message.channel, discord.PartialMessageable) else ''}`{message.channel.id}`).",
-            color=discord.Color.blue(),
+            colour=discord.Colour.blue(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -2201,7 +2203,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Titanium Bouncer",
             description=f"{member.mention} (`@{member.name}`, `{member.id}`) triggered bouncer.",
-            color=discord.Color.blue(),
+            colour=discord.Colour.blue(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -2265,7 +2267,7 @@ class GuildLogger:
                 )
                 + f"**Message ID:** `{interaction.id}`"
             ),
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 

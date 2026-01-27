@@ -41,7 +41,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         if not isinstance(interaction.channel, discord.abc.Messageable):
             await interaction.followup.send(
                 embed=Embed(
-                    color=Colour.red(),
+                    colour=Colour.red(),
                     title=f"{self.bot.error_emoji} Invalid Channel",
                     description="Confessions cannot be sent from this channel type. Please use a different channel.",
                 ),
@@ -54,7 +54,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         if not guild_settings or not guild_settings.confessions_enabled:
             await interaction.followup.send(
                 embed=Embed(
-                    color=Colour.red(),
+                    colour=Colour.red(),
                     title=f"{self.bot.error_emoji} Confessions Disabled",
                     description="The confession module is disabled. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 ),
@@ -74,7 +74,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         if not channel:
             await interaction.followup.send(
                 embed=Embed(
-                    color=Colour.red(),
+                    colour=Colour.red(),
                     title=f"{self.bot.error_emoji} Channel Not Found",
                     description=(
                         "The confession channel is not set or could not be found. Ask a server admin to configure it using the Titanium Dashboard."
@@ -87,7 +87,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         if not isinstance(channel, discord.abc.Messageable):
             await interaction.followup.send(
                 embed=Embed(
-                    color=Colour.red(),
+                    colour=Colour.red(),
                     title=f"{self.bot.error_emoji} Invalid Channel",
                     description="Titanium can't send to the configured confession channel. Please ask a server admin to set a valid channel using the Titanium Dashboard.",
                 ),
@@ -99,7 +99,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             embed=Embed(
                 title="Anonymous Confession",
                 description=message,
-                color=Colour.random(),
+                colour=Colour.random(),
                 timestamp=interaction.created_at,
             )
         )
@@ -112,7 +112,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             embed=Embed(
                 title=f"{self.bot.success_emoji} Sent",
                 description="Your confession has been sent.",
-                color=Colour.green(),
+                colour=Colour.green(),
             ),
             view=View().add_item(
                 Button(

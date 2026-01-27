@@ -7,7 +7,7 @@ import aiohttp
 import discord
 import spotipy
 from colorthief import ColorThief
-from discord import Color, app_commands
+from discord import Colour, app_commands
 from discord.ext import commands
 from discord.ui import Select, View
 from discord.utils import escape_markdown
@@ -178,7 +178,7 @@ class MusicCommandsCog(
             if not search or search == "":
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No search term provided.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
 
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
@@ -207,7 +207,7 @@ class MusicCommandsCog(
             if result is None:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No results found.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
@@ -216,7 +216,7 @@ class MusicCommandsCog(
             if len(result["tracks"]["items"]) == 0:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No results found.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
             else:
@@ -258,7 +258,7 @@ class MusicCommandsCog(
                 embed = discord.Embed(
                     title="Select Song",
                     description=f'Showing {len(result["tracks"]["items"])} results for "{search}"',
-                    color=Color.random(),
+                    colour=Colour.random(),
                 )
                 embed.set_footer(
                     text=f"@{ctx.author.name}",
@@ -399,7 +399,7 @@ class MusicCommandsCog(
             if not search or search == "":
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No search term provided.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
 
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
@@ -433,7 +433,7 @@ class MusicCommandsCog(
             if result is None:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No results found.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
@@ -442,7 +442,7 @@ class MusicCommandsCog(
             if len(result["artists"]["items"]) == 0:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No results found.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
             else:
@@ -463,7 +463,7 @@ class MusicCommandsCog(
                 embed = discord.Embed(
                     title="Select Artist",
                     description=f'Showing {len(result["artists"]["items"])} results for "{search}"',
-                    color=Color.random(),
+                    colour=Colour.random(),
                 )
                 embed.set_footer(
                     text=f"@{ctx.author.name}",
@@ -621,7 +621,7 @@ class MusicCommandsCog(
             if not search or search == "":
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No search term provided.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
 
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
@@ -649,7 +649,7 @@ class MusicCommandsCog(
             if result is None:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No results found.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
@@ -658,7 +658,7 @@ class MusicCommandsCog(
             if len(result["albums"]["items"]) == 0:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No results found.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
                 await ctx.reply(embed=embed)
             else:
@@ -693,7 +693,7 @@ class MusicCommandsCog(
                 embed = discord.Embed(
                     title="Select Album",
                     description=f'Showing {len(result["albums"]["items"])} results for "{search}"',
-                    color=Color.random(),
+                    colour=Colour.random(),
                 )
                 embed.set_footer(
                     text=f"@{ctx.author.name}",
@@ -767,7 +767,7 @@ class MusicCommandsCog(
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Couldn't expand URL",
                     description="A **spotify.link** URL was detected, but we could not expand it. Is it valid?\n\nIf you are sure the URL is valid and supported, please try again later.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
                 embed.set_footer(
                     text=f"@{ctx.author.name} - {error_id}",
@@ -787,7 +787,7 @@ class MusicCommandsCog(
                 if result is None:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No results found.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     embed.set_footer(
                         text=f"@{ctx.author.name}",
@@ -826,7 +826,7 @@ class MusicCommandsCog(
                         embed = discord.Embed(
                             title=f"{result['name']} ({artist_string})",
                             description="Viewing highest quality (Resolution unknown)",
-                            color=Color.from_rgb(
+                            colour=Colour.from_rgb(
                                 r=dominant_color[0],
                                 g=dominant_color[1],
                                 b=dominant_color[2],
@@ -836,7 +836,7 @@ class MusicCommandsCog(
                         embed = discord.Embed(
                             title=f"{result['name']} ({artist_string})",
                             description=f"Viewing highest quality ({result['album']['images'][0]['width']}x{result['album']['images'][0]['height']})",
-                            color=Color.from_rgb(
+                            colour=Colour.from_rgb(
                                 r=dominant_color[0],
                                 g=dominant_color[1],
                                 b=dominant_color[2],
@@ -862,7 +862,7 @@ class MusicCommandsCog(
                 else:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No album art available.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     embed.set_footer(
                         text=f"@{ctx.author.name}",
@@ -875,7 +875,7 @@ class MusicCommandsCog(
                 if result is None:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No results found.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     embed.set_footer(
                         text=f"@{ctx.author.name}",
@@ -914,7 +914,7 @@ class MusicCommandsCog(
                         embed = discord.Embed(
                             title=f"{result['name']} ({artist_string})",
                             description="Viewing highest quality (Resolution unknown)",
-                            color=Color.from_rgb(
+                            colour=Colour.from_rgb(
                                 r=dominant_color[0],
                                 g=dominant_color[1],
                                 b=dominant_color[2],
@@ -924,7 +924,7 @@ class MusicCommandsCog(
                         embed = discord.Embed(
                             title=f"{result['name']} ({artist_string})",
                             description=f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})",
-                            color=Color.from_rgb(
+                            colour=Colour.from_rgb(
                                 r=dominant_color[0],
                                 g=dominant_color[1],
                                 b=dominant_color[2],
@@ -949,7 +949,7 @@ class MusicCommandsCog(
                 else:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No album art available.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     embed.set_footer(
                         text=f"@{ctx.author.name}",
@@ -964,7 +964,7 @@ class MusicCommandsCog(
                 if result is None:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No results found.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     embed.set_footer(
                         text=f"@{ctx.author.name}",
@@ -997,7 +997,7 @@ class MusicCommandsCog(
                         embed = discord.Embed(
                             title=f"{result['name']} - {result['owner']['display_name']} (Playlist)",
                             description="Viewing highest quality (Resolution unknown)",
-                            color=Color.from_rgb(
+                            colour=Colour.from_rgb(
                                 r=dominant_color[0],
                                 g=dominant_color[1],
                                 b=dominant_color[2],
@@ -1007,7 +1007,7 @@ class MusicCommandsCog(
                         embed = discord.Embed(
                             title=f"{result['name']} - {result['owner']['display_name']} (Playlist)",
                             description=f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})",
-                            color=Color.from_rgb(
+                            colour=Colour.from_rgb(
                                 r=dominant_color[0],
                                 g=dominant_color[1],
                                 b=dominant_color[2],
@@ -1032,7 +1032,7 @@ class MusicCommandsCog(
                 else:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No cover art available.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     embed.set_footer(
                         text=f"@{ctx.author.name}",
@@ -1043,7 +1043,7 @@ class MusicCommandsCog(
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Invalid URL",
                     description="Only `track`, `album` and `playlist` URLs are supported by this command.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
                 embed.set_footer(
                     text=f"@{ctx.author.name}",
@@ -1062,7 +1062,7 @@ class MusicCommandsCog(
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Spotify Error",
                 description="An unknown Spotify error occurred while processing the URL. Please try again later.",
-                color=Color.red(),
+                colour=Colour.red(),
             )
             embed.set_footer(
                 text=f"@{ctx.author.name} - {error_id}",

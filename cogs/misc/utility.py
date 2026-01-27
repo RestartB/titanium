@@ -115,7 +115,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         embed = Embed(
             title=f"{self.bot.success_emoji} QR Code Generated",
             description=f"QR code generated for:\n```{data}```",
-            color=Colour.green(),
+            colour=Colour.green(),
         )
         embed.set_image(url="attachment://titanium_qrcode.png")
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
@@ -133,7 +133,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         size_hr = humanize.naturalsize(file.size)
 
         embed = Embed(
-            color=Colour.blue(),
+            colour=Colour.blue(),
             title="File Information",
         )
         embed.set_thumbnail(url=file.url)

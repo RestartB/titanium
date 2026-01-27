@@ -20,7 +20,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         self.bot: TitaniumBot = bot
 
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        embed = discord.Embed(title=f"{self.bot.error_emoji} Error", color=discord.Color.red())
+        embed = discord.Embed(title=f"{self.bot.error_emoji} Error", colour=discord.Colour.red())
 
         if isinstance(error, ImageTooSmallError):
             embed.description = "The provided image is too small for this operation."
@@ -34,7 +34,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     async def cog_app_command_error(
         self, interaction: discord.Interaction[discord.Client], error: app_commands.AppCommandError
     ) -> None:
-        embed = discord.Embed(title=f"{self.bot.error_emoji} Error", color=discord.Color.red())
+        embed = discord.Embed(title=f"{self.bot.error_emoji} Error", colour=discord.Colour.red())
 
         if isinstance(error, ImageTooSmallError):
             embed.description = "The provided image is too small for this operation."

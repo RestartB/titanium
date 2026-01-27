@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
-from discord import Color, app_commands
+from discord import Colour, app_commands
 from discord.ext import commands
 
 from lib.helpers.global_alias import add_global_aliases, global_alias
@@ -65,7 +65,7 @@ class AnimalCommandsCog(commands.Cog):
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} Error",
                         description="The service has been rate limited. Try again later.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     await ctx.reply(embed=embed)
                     return
@@ -75,7 +75,7 @@ class AnimalCommandsCog(commands.Cog):
         # Create and send embed
         embed_title = random.choice(self.cat_titles)
 
-        embed = discord.Embed(title=embed_title, color=Color.random())
+        embed = discord.Embed(title=embed_title, colour=Colour.random())
         embed.set_image(url=request_data[0]["url"])
         embed.set_footer(
             text=f"@{ctx.author.name}",
@@ -100,7 +100,7 @@ class AnimalCommandsCog(commands.Cog):
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} Error",
                         description="The service has been rate limited. Try again later.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     await ctx.reply(embed=embed)
                     return
@@ -110,7 +110,7 @@ class AnimalCommandsCog(commands.Cog):
         # Create and send embed
         embed_title = random.choice(self.dog_titles)
 
-        embed = discord.Embed(title=embed_title, color=Color.random())
+        embed = discord.Embed(title=embed_title, colour=Colour.random())
         embed.set_image(url=request_data["message"])
         embed.set_footer(
             text=f"@{ctx.author.name}",
@@ -142,7 +142,7 @@ class AnimalCommandsCog(commands.Cog):
                         embed = discord.Embed(
                             title=f"{self.bot.error_emoji} Error",
                             description="The service has been rate limited. Try again later.",
-                            color=Color.red(),
+                            colour=Colour.red(),
                         )
                         await ctx.reply(embed=embed)
                         return
@@ -150,7 +150,7 @@ class AnimalCommandsCog(commands.Cog):
                         embed = discord.Embed(
                             title=f"{self.bot.error_emoji} Error",
                             description="The service timed out. Try again later.",
-                            color=Color.red(),
+                            colour=Colour.red(),
                         )
                         await ctx.reply(embed=embed)
                         return
@@ -163,7 +163,7 @@ class AnimalCommandsCog(commands.Cog):
         embed = discord.Embed(
             title=embed_title,
             description=f"Source: [sandcat.link]({request_data['url']})",
-            color=Color.random(),
+            colour=Colour.random(),
         )
         embed.set_image(url=request_data["url"])
         embed.set_footer(

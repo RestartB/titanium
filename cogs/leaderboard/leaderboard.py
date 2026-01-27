@@ -164,7 +164,7 @@ class LeaderboardCog(commands.Cog):
                     content=message.author.mention,
                     embed=discord.Embed(
                         description=f"🎉 {message.author.mention} has leveled up to **level {user_stats.level}!**",
-                        color=discord.Color.green(),
+                        colour=discord.Colour.green(),
                     ),
                 )
             except discord.Forbidden as e:
@@ -229,7 +229,7 @@ class LeaderboardCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="You have opted out of data collection and cannot use leaderboard features.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
             await ctx.send(embed=embed)
             return
@@ -243,7 +243,7 @@ class LeaderboardCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
                 description="The leaderboard system is not enabled in this server.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
             await ctx.send(embed=embed)
             return
@@ -262,14 +262,14 @@ class LeaderboardCog(commands.Cog):
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No Data",
                     description="No users have recorded XP or levels yet.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
                 await ctx.send(embed=embed)
                 return
 
             embed = discord.Embed(
                 title="Leaderboard",
-                color=discord.Color.random(),
+                colour=discord.Colour.random(),
             )
             embed.set_author(
                 name=ctx.guild.name,
@@ -293,7 +293,7 @@ class LeaderboardCog(commands.Cog):
 
                     embed = discord.Embed(
                         title="Leaderboard",
-                        color=discord.Color.random(),
+                        colour=discord.Colour.random(),
                     )
                     embed.set_author(
                         name=ctx.guild.name,
@@ -336,7 +336,7 @@ class LeaderboardCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="This user has opted out of data collection and cannot use leaderboard features.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
             await ctx.send(embed=embed)
             return
@@ -350,7 +350,7 @@ class LeaderboardCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
                 description="The leaderboard system is not enabled in this server.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
             await ctx.send(embed=embed)
             return
@@ -371,14 +371,14 @@ class LeaderboardCog(commands.Cog):
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No Data",
                     description=f"**{user.display_name}** has no recorded XP or level.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
                 await ctx.send(embed=embed)
                 return
 
             embed = discord.Embed(
                 title="Level Info",
-                color=discord.Color.blue(),
+                colour=discord.Colour.blue(),
             )
             embed.add_field(name="Level", value=str(user_stats.level), inline=True)
             embed.add_field(name="XP", value=str(user_stats.xp), inline=True)

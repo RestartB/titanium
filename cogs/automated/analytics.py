@@ -2,7 +2,7 @@ import os
 from typing import TYPE_CHECKING, Union
 
 import discord
-from discord import Color, app_commands
+from discord import Colour, app_commands
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -82,7 +82,7 @@ class Analytics(commands.Cog):
             title="Joined Guild",
             description=f"Titanium has joined the `{guild.name}` guild.",
             timestamp=discord.utils.utcnow(),
-            colour=Color.green(),
+            colour=Colour.green(),
         )
         embed.set_thumbnail(url=guild.icon)
         embed.set_image(url=guild.banner)
@@ -96,7 +96,7 @@ class Analytics(commands.Cog):
             title="Left Guild",
             description=f"Titanium has left the `{guild.name}` guild.",
             timestamp=discord.utils.utcnow(),
-            colour=Color.red(),
+            colour=Colour.red(),
         )
         embed.set_thumbnail(url=guild.icon)
         embed.set_image(url=guild.banner)

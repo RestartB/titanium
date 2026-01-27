@@ -265,7 +265,7 @@ class QuoteView(View):
             embed = discord.Embed(
                 title="Error",
                 description="You can't modify this quote, as you did not run the command or get quoted.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
 
             await interaction.followup.send(
@@ -292,7 +292,7 @@ class QuoteView(View):
                 embed = discord.Embed(
                     title="Error",
                     description="Couldn't find the user. Please try again later.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
 
                 await interaction.followup.send(
@@ -308,7 +308,7 @@ class QuoteView(View):
                 embed = discord.Embed(
                     title="Error",
                     description="Couldn't find the custom quote creator. Please try again later.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
 
                 await interaction.followup.send(
@@ -373,7 +373,7 @@ class QuoteView(View):
             embed = discord.Embed(
                 title="Notice",
                 description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
-                color=discord.Color.orange(),
+                colour=discord.Colour.orange(),
             )
         else:
             embed = None
@@ -386,7 +386,7 @@ class QuoteView(View):
 
         embed = discord.Embed(
             title=f"{self.titanium.success_emoji} Done!",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
         )
 
         await interaction.followup.send(
@@ -412,7 +412,7 @@ class QuoteView(View):
                 embed = discord.Embed(
                     title="Error",
                     description="Couldn't find the user. Please try again later.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
 
                 await interaction.followup.send(
@@ -428,7 +428,7 @@ class QuoteView(View):
                 embed = discord.Embed(
                     title="Error",
                     description="Couldn't find the custom quote creator. Please try again later.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
 
                 await interaction.followup.send(
@@ -493,7 +493,7 @@ class QuoteView(View):
             embed = discord.Embed(
                 title="Notice",
                 description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
-                color=discord.Color.orange(),
+                colour=discord.Colour.orange(),
             )
         else:
             embed = None
@@ -506,7 +506,7 @@ class QuoteView(View):
 
         embed = discord.Embed(
             title=f"{self.titanium.success_emoji} Done!",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
         )
 
         await interaction.followup.send(
@@ -532,7 +532,7 @@ class QuoteView(View):
                 embed = discord.Embed(
                     title="Error",
                     description="Couldn't find the user. Please try again later.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
 
                 await interaction.followup.send(
@@ -548,7 +548,7 @@ class QuoteView(View):
                 embed = discord.Embed(
                     title="Error",
                     description="Couldn't find the custom quote creator. Please try again later.",
-                    color=discord.Color.red(),
+                    colour=discord.Colour.red(),
                 )
 
                 await interaction.followup.send(
@@ -613,7 +613,7 @@ class QuoteView(View):
             embed = discord.Embed(
                 title="Notice",
                 description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
-                color=discord.Color.orange(),
+                colour=discord.Colour.orange(),
             )
         else:
             embed = None
@@ -626,7 +626,7 @@ class QuoteView(View):
 
         embed = discord.Embed(
             title=f"{self.titanium.success_emoji} Done!",
-            color=discord.Color.green(),
+            colour=discord.Colour.green(),
         )
 
         await interaction.followup.send(
@@ -641,7 +641,7 @@ class QuoteView(View):
 
             embed = discord.Embed(
                 title=f"{self.titanium.success_emoji} Done!",
-                color=discord.Color.green(),
+                colour=discord.Colour.green(),
             )
 
             await interaction.followup.send(
@@ -652,7 +652,7 @@ class QuoteView(View):
             embed = discord.Embed(
                 title="Error",
                 description="You cannot delete this quote, as you are not the original author.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
 
             await interaction.followup.send(
@@ -686,7 +686,7 @@ class QuoteCommandsCog(
             embed = discord.Embed(
                 title="Error",
                 description="Nothing to quote, this message is empty.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
 
             await interaction.followup.send(
@@ -698,7 +698,7 @@ class QuoteCommandsCog(
             embed = discord.Embed(
                 title="Error",
                 description="You cannot quote this message, as it is a system message.",
-                color=discord.Color.red(),
+                colour=discord.Colour.red(),
             )
 
             await interaction.followup.send(
@@ -752,7 +752,7 @@ class QuoteCommandsCog(
             embed = discord.Embed(
                 title="Notice",
                 description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
-                color=discord.Color.orange(),
+                colour=discord.Colour.orange(),
             )
         else:
             embed = None
@@ -859,7 +859,7 @@ class QuoteCommandsCog(
             embed = discord.Embed(
                 title="Notice",
                 description="As Titanium is not in the server, I can only see the user's global nickname. To show the user's server nickname, please invite me to the server.",
-                color=discord.Color.orange(),
+                colour=discord.Colour.orange(),
             )
         else:
             embed = None

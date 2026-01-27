@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 import aiohttp
 import discord
-from discord import Color, app_commands
+from discord import Colour, app_commands
 from discord.ext import commands
 
 from lib.helpers.global_alias import add_global_aliases, global_alias
@@ -53,7 +53,7 @@ class ReviewsCommandsCog(commands.Cog):
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Error",
                     description="ReviewDB has encountered an error. Titanium will not continue. Please try again later.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
                 await ctx.reply(embed=embed)
 
@@ -80,7 +80,7 @@ class ReviewsCommandsCog(commands.Cog):
         page = discord.Embed(
             title="ReviewDB User Reviews",
             description=f"There {'are' if review_amount > 1 else 'is'} **{review_amount} review{'s' if review_amount > 1 else ''}** for this user.",
-            color=Color.random(),
+            colour=Colour.random(),
         )
         page.set_author(
             name=f"@{user.name}",
@@ -99,7 +99,7 @@ class ReviewsCommandsCog(commands.Cog):
                 page = discord.Embed(
                     title="ReviewDB User Reviews",
                     description=f"There {'are' if review_amount > 1 else 'is'} **{review_amount} review{'s' if review_amount > 1 else ''}** for this user.",
-                    color=Color.random(),
+                    colour=Colour.random(),
                 )
                 page.set_author(
                     name=f"@{user.name}",
@@ -147,7 +147,7 @@ class ReviewsCommandsCog(commands.Cog):
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Error",
                     description="ReviewDB has encountered an error. Titanium will not continue. Please try again later.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
 
                 await ctx.reply(embed=embed)
@@ -174,7 +174,7 @@ class ReviewsCommandsCog(commands.Cog):
         page = discord.Embed(
             title="ReviewDB Server Reviews",
             description=f"There {'are' if review_amount > 1 else 'is'} **{review_amount} review{'s' if review_amount > 1 else ''}** for this server.",
-            color=Color.random(),
+            colour=Colour.random(),
         )
         page.set_author(
             name=ctx.guild.name,
@@ -193,7 +193,7 @@ class ReviewsCommandsCog(commands.Cog):
                 page = discord.Embed(
                     title="ReviewDB Server Reviews",
                     description=f"There {'are' if review_amount > 1 else 'is'} **{review_amount} review{'s' if review_amount > 1 else ''}** for this server.",
-                    color=Color.random(),
+                    colour=Colour.random(),
                 )
                 page.set_author(
                     name=ctx.guild.name,

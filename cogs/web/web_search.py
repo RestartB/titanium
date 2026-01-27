@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
-from discord import Color, app_commands
+from discord import Colour, app_commands
 from discord.ext import commands
 from discord.ui import View
 
@@ -25,7 +25,7 @@ class WebSearchCommandsCog(commands.Cog):
             title=f"{data['word']}",
             description=f"**Author: {data['author']}**\n\n||{(data['definition'].replace('[', '')).replace(']', '')}||",
             url=data["permalink"],
-            color=Color.random(),
+            colour=Colour.random(),
         )
         embed.set_author(
             name="Urban Dictionary",
@@ -36,7 +36,7 @@ class WebSearchCommandsCog(commands.Cog):
             discord.Embed(
                 title=f"{self.bot.warn_emoji} Content Warning",
                 description="Urban Dictionary has very little moderation and content may be inappropriate! View at your own risk.",
-                color=Color.orange(),
+                colour=Colour.orange(),
             ),
             embed,
         ]
@@ -91,7 +91,7 @@ class WebSearchCommandsCog(commands.Cog):
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Error",
                     description=f"**Page {page}** does not exist. Try another search query.",
-                    color=Color.red(),
+                    colour=Colour.red(),
                 )
                 embed.set_footer(
                     text=f"@{ctx.author.name} • Page 1/{len(item_list)}",
@@ -120,7 +120,7 @@ class WebSearchCommandsCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} No Results Found",
                 description=f"Couldn't find any results for `{query}`. Please try a different search term.",
-                color=Color.red(),
+                colour=Colour.red(),
             )
             embed.set_footer(
                 text=f"@{ctx.author.name}",
@@ -154,7 +154,7 @@ class WebSearchCommandsCog(commands.Cog):
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No Results Found",
                         description=f"Couldn't find any results for `{search}`. Please try a different search term.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     embed.set_author(
                         name="Wikipedia",
@@ -174,7 +174,7 @@ class WebSearchCommandsCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} No Results Found",
                 description=f"Couldn't find any results for `{search}`. Please try a different search term.",
-                color=Color.red(),
+                colour=Colour.red(),
             )
             embed.set_author(
                 name="Wikipedia",
@@ -199,7 +199,7 @@ class WebSearchCommandsCog(commands.Cog):
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No Results Found",
                         description=f"Couldn't find any results for `{search}`. Please try a different search term.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     embed.set_author(
                         name="Wikipedia",
@@ -218,7 +218,7 @@ class WebSearchCommandsCog(commands.Cog):
         embed = discord.Embed(
             title=page["title"],
             description=page["extract"],
-            color=Color.from_rgb(r=255, g=255, b=255),
+            colour=Colour.from_rgb(r=255, g=255, b=255),
         )
         embed.set_footer(
             text=f"@{ctx.author.name}",

@@ -4,7 +4,7 @@ from urllib.parse import quote, quote_plus
 
 import aiohttp
 import discord
-from discord import ButtonStyle, Color, Embed, Interaction, InteractionMessage, WebhookMessage
+from discord import ButtonStyle, Colour, Embed, Interaction, InteractionMessage, WebhookMessage
 from discord.ui import Button, Select, View, button
 
 from lib.views.pagination import PaginationView
@@ -115,7 +115,7 @@ class SongMenuView(View):
             embed = Embed(
                 title=f"{self.item['name']} - Album Art",
                 description=description,
-                color=Color.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
+                colour=Colour.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
             )
 
             embed.set_image(url=self.item["album"]["images"][0]["url"])
@@ -131,7 +131,7 @@ class SongMenuView(View):
 
             await interaction.edit_original_response(embed=embed, view=view)
         else:
-            embed = Embed(title="No album art available.", color=Color.red())
+            embed = Embed(title="No album art available.", colour=Colour.red())
             embed.set_footer(
                 text=f"@{interaction.user.name}",
                 icon_url=interaction.user.display_avatar.url,
@@ -173,14 +173,14 @@ class SongMenuView(View):
                         embed = Embed(
                             title="No Lyrics Found",
                             description="No lyrics were found for this song.",
-                            color=Color.red(),
+                            colour=Colour.red(),
                         )
                         await interaction.edit_original_response(embed=embed)
                 else:
                     embed = Embed(
                         title="Error",
                         description="Failed to fetch lyrics. Please try again later.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     await interaction.edit_original_response(embed=embed)
 
@@ -213,7 +213,7 @@ class SongLyricSelection(Select):
                     embed = Embed(
                         title="Error",
                         description="Failed to fetch lyrics. Please try again later.",
-                        color=Color.red(),
+                        colour=Colour.red(),
                     )
                     await interaction.edit_original_response(embed=embed)
                     return
@@ -244,7 +244,7 @@ class SongLyricSelection(Select):
                 embed = discord.Embed(
                     title=f"{selected_song_data['name']}",
                     description=page,
-                    color=Color.random(),
+                    colour=Colour.random(),
                 )
                 embed.set_author(
                     name=f"{selected_song_data['artistName']} - lrclib.net",
@@ -347,7 +347,7 @@ class ArtistMenuView(View):
             embed = Embed(
                 title=f"{self.item['name']} - Icon",
                 description=description,
-                color=Color.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
+                colour=Colour.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
             )
 
             embed.set_image(url=self.item["images"][0]["url"])
@@ -363,7 +363,7 @@ class ArtistMenuView(View):
 
             await interaction.edit_original_response(embed=embed, view=view)
         else:
-            embed = Embed(title="No icon available.", color=Color.red())
+            embed = Embed(title="No icon available.", colour=Colour.red())
             embed.set_footer(
                 text=f"@{interaction.user.name}",
                 icon_url=interaction.user.display_avatar.url,
@@ -470,7 +470,7 @@ class AlbumMenuView(View):
             embed = discord.Embed(
                 title=f"{self.item['name']} - Album Art",
                 description=description,
-                color=Color.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
+                colour=Colour.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
             )
 
             embed.set_author(
@@ -492,7 +492,7 @@ class AlbumMenuView(View):
 
             await interaction.edit_original_response(embed=embed, view=view)
         else:
-            embed = discord.Embed(title="No album art available.", color=Color.red())
+            embed = discord.Embed(title="No album art available.", colour=Colour.red())
             embed.set_footer(
                 text=f"@{interaction.user.name}",
                 icon_url=interaction.user.display_avatar.url,

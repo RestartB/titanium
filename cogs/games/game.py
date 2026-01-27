@@ -81,7 +81,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
         embed = Embed(
             title="Game Stats",
             description="\n".join(lines),
-            color=Colour.blue(),
+            colour=Colour.blue(),
         )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
         await ctx.reply(embed=embed)
@@ -101,13 +101,13 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
         setattr(ctx, "win", win)
         if win:
             embed = Embed(
-                color=Colour.green(),
+                colour=Colour.green(),
                 title=f"{self.bot.success_emoji} You Win",
                 description=f"🎲 You guessed `{guess}` and rolled `{roll}`!",
             )
         else:
             embed = Embed(
-                color=Colour.red(),
+                colour=Colour.red(),
                 title=f"{self.bot.error_emoji} You Lost",
                 description=f"🎲 You guessed `{guess}`, but rolled `{roll}`!",
             )
@@ -128,7 +128,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
         user_choice = choice.lower()
         if user_choice not in ["head", "tails"]:
             embed = Embed(
-                color=Colour.red(),
+                colour=Colour.red(),
                 title="Invalid Choice",
                 description="Please pick **Head** or **Tails**.",
             )
@@ -145,13 +145,13 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
 
         if win:
             embed = Embed(
-                color=Colour.green(),
+                colour=Colour.green(),
                 title=f"{self.bot.success_emoji} You Won",
                 description=f"🪙 You chose **{choice}** and the coin landed on **{flip_result.title()}**!",
             )
         else:
             embed = Embed(
-                color=Colour.red(),
+                colour=Colour.red(),
                 title=f"{self.bot.error_emoji} You Lost",
                 description=f"🪙 You chose **{choice}**, but the coin landed on **{flip_result.title()}**!",
             )

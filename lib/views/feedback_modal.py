@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING
 import discord
 from discord import Colour, Embed, Webhook
 
-from lib.helpers.log_error import log_error
-
 if TYPE_CHECKING:
     from main import TitaniumBot
 

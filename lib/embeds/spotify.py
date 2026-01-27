@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import aiohttp
 import discord
 from colorthief import ColorThief
-from discord import Color
+from discord import Colour
 from discord.ext import commands
 from discord.utils import escape_markdown
 
@@ -89,7 +89,7 @@ async def song(
     color_thief = ColorThief(image_data)
     colours = color_thief.get_color()
 
-    embed.color = Color.from_rgb(r=colours[0], g=colours[1], b=colours[2])
+    embed.colour = Colour.from_rgb(r=colours[0], g=colours[1], b=colours[2])
 
     view = SongView(
         item=item,
@@ -169,7 +169,7 @@ async def artist(
     color_thief = ColorThief(image_data)
     colours = color_thief.get_color()
 
-    embed.color = Color.from_rgb(r=colours[0], g=colours[1], b=colours[2])
+    embed.colour = Colour.from_rgb(r=colours[0], g=colours[1], b=colours[2])
 
     view = ArtistView(
         item=item,
@@ -259,7 +259,7 @@ async def album(
         embed = discord.Embed(
             title=item["name"],
             description=page,
-            color=Color.from_rgb(r=colours[0], g=colours[1], b=colours[2]),
+            colour=Colour.from_rgb(r=colours[0], g=colours[1], b=colours[2]),
         )
         embed.set_author(
             name=artists,

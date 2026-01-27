@@ -26,7 +26,7 @@ class HelpCommandCog(commands.Cog):
             f"`{ctx.clean_prefix}help <command>` - get detailed help for a specific command\n"
             f"`{ctx.clean_prefix}help <category>` - get a list of commands in a specific category\n"
             "\n**Need more help? Join our [Support Server](https://titaniumbot.me/server)**",
-            color=discord.Color.blue(),
+            colour=discord.Colour.blue(),
         )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
