@@ -235,7 +235,7 @@ class APICog(commands.Cog):
                     {
                         "id": str(role.id),
                         "name": role.name,
-                        "color": "#%02x%02x%02x" % role.colour.to_rgb(),
+                        "colour": "#%02x%02x%02x" % role.colour.to_rgb(),
                         "hoist": role.hoist,
                         "position": role.position,
                     }
