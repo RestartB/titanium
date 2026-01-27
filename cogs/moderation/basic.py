@@ -36,8 +36,6 @@ from lib.sql.sql import get_session
 if TYPE_CHECKING:
     from main import TitaniumBot
 
-# TODO: handle no case in unmute/unban
-
 
 class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate server members."):
     """Basic moderation commands"""

@@ -79,14 +79,14 @@ def unmuted(
     bot: TitaniumBot,
     user: Member | User,
     creator: Member | User | ClientUser,
-    case: ModCase,
+    case: ModCase | None,
     dm_success: bool,
     dm_error: str,
     log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Unmuted • `{case.id}`",
-        description=f"**Target:** {user.mention}\n**Original Reason:** {case.description or 'No reason provided.'}",
+        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Unmuted{f' • `{case.id}`' if case else ''}",
+        description=f"**Target:** {user.mention}{f'\n**Original Reason:** {case.description or "No reason provided."}' if case else ''}",
         colour=Colour.green(),
     )
 
@@ -172,14 +172,14 @@ def unbanned(
     bot: TitaniumBot,
     user: Member | User,
     creator: Member | User | ClientUser,
-    case: ModCase,
+    case: ModCase | None,
     dm_success: bool,
     dm_error: str,
     log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Unbanned • `{case.id}`",
-        description=f"**Target:** @{user.name} (`{user.id}`)\n**Original Reason:** {case.description or 'No reason provided.'}",
+        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Unbanned{f' • `{case.id}`' if case else ''}",
+        description=f"**Target:** @{user.name} (`{user.id}`){f'\n**Original Reason:** {case.description or "No reason provided."}' if case else ''}",
         colour=Colour.green(),
     )
 
