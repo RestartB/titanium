@@ -13,8 +13,6 @@ from lib.sql.sql import FireboardMessage, get_session
 if TYPE_CHECKING:
     from main import TitaniumBot
 
-# TODO: handle deleting board messages
-
 
 class FireboardCog(commands.Cog):
     """Server fireboard system"""
@@ -264,11 +262,6 @@ class FireboardCog(commands.Cog):
                     ):
                         self.logger.debug("Source message not found, deleting fireboard message")
                         await board_msg.delete()
-
-                        async with get_session() as session:
-                            await session.delete(fireboard_message)
-
-                        self.bot.fireboard_messages[event.guild_id].remove(fireboard_message)
                         continue
 
                     count = await self._calculate_reaction_count(
@@ -302,12 +295,6 @@ class FireboardCog(commands.Cog):
                     elif count < fireboard_message.fireboard.threshold:
                         self.logger.debug("Count below threshold, deleting fireboard message")
                         await board_msg.delete()
-
-                        async with get_session() as session:
-                            await session.delete(fireboard_message)
-
-                        self.bot.fireboard_messages[event.guild_id].remove(fireboard_message)
-
                         continue
                 except discord.NotFound, discord.Forbidden:
                     self.logger.debug("Fireboard message not found or forbidden")
@@ -645,13 +632,6 @@ class FireboardCog(commands.Cog):
                         f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
                     )
                     await board_msg.delete()
-
-                    async with get_session() as session:
-                        await session.delete(fireboard_message)
-
-                    self.bot.fireboard_messages[payload.guild_id].remove(fireboard_message)
-                    self.logger.debug("Deleted message and removed from cache")
-
                 except discord.NotFound:
                     self.logger.debug("Delete message not found, deleting record")
                     async with get_session() as session:
@@ -669,6 +649,16 @@ class FireboardCog(commands.Cog):
                         exc=e,
                     )
                     continue
+            elif fireboard_message.fireboard_message_id == payload.message_id:
+                self.logger.debug(
+                    f"Fireboard board message {fireboard_message.fireboard_message_id} deleted"
+                )
+
+                async with get_session() as session:
+                    await session.delete(fireboard_message)
+
+                self.bot.fireboard_messages[payload.guild_id].remove(fireboard_message)
+                self.logger.debug("Removed from cache")
 
     async def reaction_clear_handler(self, message: discord.Message):
         if not message.guild:
@@ -728,12 +718,6 @@ class FireboardCog(commands.Cog):
                         f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
                     )
                     await board_msg.delete()
-
-                    async with get_session() as session:
-                        await session.delete(fireboard_message)
-
-                    self.bot.fireboard_messages[message.guild.id].remove(fireboard_message)
-                    self.logger.debug("Deleted message and removed from cache")
                 except discord.NotFound:
                     self.logger.debug("Delete message not found, deleting record")
                     async with get_session() as session:
@@ -819,12 +803,6 @@ class FireboardCog(commands.Cog):
                         f"Deleting fireboard message {fireboard_message.fireboard_message_id}"
                     )
                     await board_msg.delete()
-
-                    async with get_session() as session:
-                        await session.delete(fireboard_message)
-
-                    self.bot.fireboard_messages[reaction.message.guild.id].remove(fireboard_message)
-                    self.logger.debug("Deleted message and removed from cache")
                 except discord.NotFound:
                     self.logger.debug("Delete message not found, deleting record")
                     async with get_session() as session:
