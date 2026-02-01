@@ -154,6 +154,10 @@ class EventLoggingCog(commands.Cog):
             self.logger.debug("No content in payload data")
             return
 
+        if not payload.message.edited_at:
+            self.logger.debug("Message not edited")
+            return
+
         message = payload.message
         if not message.content or any([message.webhook_id, message.embeds, message.poll]):
             self.logger.debug("Blacklisted content type / no content")

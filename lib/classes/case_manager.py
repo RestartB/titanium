@@ -363,6 +363,9 @@ class GuildModCaseManager:
         await self.session.delete(case)
         await self.session.commit()
 
+        guild_logger = GuildLogger(self.bot, self.guild)
+        await guild_logger.titanium_case_delete(case)
+
     async def delete_scheduled_tasks_for_user(self, user_id: int, type: EventType) -> None:
         """Delete scheduled tasks for a user of a specific type"""
         await self.session.execute(

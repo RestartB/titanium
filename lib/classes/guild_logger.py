@@ -2114,19 +2114,37 @@ class GuildLogger:
         if not self._exists_and_enabled("titanium_case_comment_id"):
             return
 
-        try:
-            user = await self.bot.fetch_user(case.creator_user_id)
-        except Exception:
-            user = None
-
         embed = discord.Embed(
-            title=f"Comment added to `{case.id}`{f' (@{user.name})' if user else ''}",
+            title=f"Comment added to `{case.id}`",
             description=comment,
             colour=discord.Colour.blue(),
             timestamp=discord.utils.utcnow(),
         )
 
         embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(self.config.logging_settings.titanium_case_comment_id),
+            embed=embed,
+        )
+
+    async def titanium_case_delete(
+        self, case: ModCase, deleted_by: Optional[discord.Member] = None
+    ) -> None:
+        await self._ensure_config()
+        if not self._exists_and_enabled("titanium_case_delete_id"):
+            return
+
+        embed = discord.Embed(
+            title=f"Case `{case.id}` Deleted",
+            description=f"Created: <t:{int(case.time_created.timestamp())}:R>\nCreator: <@{case.creator_user_id}> (`{case.creator_user_id}`)\nDescription: `{case.description}`",
+            colour=discord.Colour.red(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        if deleted_by:
+            embed.set_footer(text=f"@{deleted_by.name}", icon_url=deleted_by.display_avatar.url)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -2148,7 +2166,7 @@ class GuildLogger:
             return
 
         embed = discord.Embed(
-            title="Titanium Automod",
+            title="Titanium Automod Triggered",
             description=f"{message.author.mention} (`@{message.author.name}`, `{message.author.id}`) triggered automod in {message.channel.mention}"
             f"({f'`#{message.channel.name}`, ' if not isinstance(message.channel, discord.PartialMessageable) else ''}`{message.channel.id}`).",
             colour=discord.Colour.blue(),
@@ -2201,7 +2219,7 @@ class GuildLogger:
             return
 
         embed = discord.Embed(
-            title="Titanium Bouncer",
+            title="Titanium Bouncer Triggered",
             description=f"{member.mention} (`@{member.name}`, `{member.id}`) triggered bouncer.",
             colour=discord.Colour.blue(),
             timestamp=discord.utils.utcnow(),
