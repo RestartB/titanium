@@ -19,7 +19,7 @@ def warned(
     log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Warned • `{case.id}`",
+        title=f"{f'{bot.success_emoji} ' if not log else ''}Warned • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Reason:** {case.description or 'No reason provided.'}",
         colour=Colour.orange() if log else Colour.green(),
     )
@@ -46,7 +46,7 @@ def muted(
     log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Muted • `{case.id}`",
+        title=f"{f'{bot.success_emoji} ' if not log else ''}Muted • `{case.id}`",
         description=f"**Target:** {user.mention}\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
         colour=Colour.red() if log else Colour.green(),
     )
@@ -85,7 +85,7 @@ def unmuted(
     log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Unmuted{f' • `{case.id}`' if case else ''}",
+        title=f"{f'{bot.success_emoji} ' if not log else ''}Unmuted{f' • `{case.id}`' if case else ''}",
         description=f"**Target:** {user.mention}{f'\n**Original Reason:** {case.description or "No reason provided."}' if case else ''}",
         colour=Colour.green(),
     )
@@ -124,7 +124,7 @@ def kicked(
     log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Kicked • `{case.id}`",
+        title=f"{f'{bot.success_emoji} ' if not log else ''}Kicked • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Reason:** {case.description or 'No reason provided.'}",
         colour=Colour.red() if log else Colour.green(),
     )
@@ -151,7 +151,7 @@ def banned(
     log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Banned • `{case.id}`",
+        title=f"{f'{bot.success_emoji} ' if not log else ''}Banned • `{case.id}`",
         description=f"**Target:** @{user.name} (`{user.id}`)\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
         colour=Colour.red() if log else Colour.green(),
     )
@@ -178,7 +178,7 @@ def unbanned(
     log: bool = False,
 ) -> Embed:
     embed = Embed(
-        title=f"{str(bot.success_emoji) + ' ' if not log else ''}Unbanned{f' • `{case.id}`' if case else ''}",
+        title=f"{f'{bot.success_emoji} ' if not log else ''}Unbanned{f' • `{case.id}`' if case else ''}",
         description=f"**Target:** @{user.name} (`{user.id}`){f'\n**Original Reason:** {case.description or "No reason provided."}' if case else ''}",
         colour=Colour.green(),
     )
@@ -215,7 +215,6 @@ def purged(
 # Fallback done
 def done(
     bot: TitaniumBot,
-    user: Member | User,
     creator: Member | User | ClientUser,
     dm_success: bool,
     dm_error: str,
