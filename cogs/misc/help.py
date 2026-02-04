@@ -28,7 +28,7 @@ class HelpCommandCog(commands.Cog):
             f"`{ctx.clean_prefix}help <command>` - coming soon\n"
             f"`{ctx.clean_prefix}help <category>` - coming soon\n"
             "\n**Need more help? Join the [Support Server](https://titaniumbot.me/server)**",
-            colour=discord.Colour.blue(),
+            colour=discord.Colour.light_gray(),
         )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
@@ -47,10 +47,29 @@ class HelpCommandCog(commands.Cog):
 
         command_list = []
         for command in ctx.bot.walk_commands():
-            if isinstance(command, (commands.Group, commands.HybridGroup)) or command.hidden:
+            # hidden command
+            if command.hidden:
                 continue
 
-            command_list.append(f"`{ctx.clean_prefix}{command.qualified_name}`")
+            # normal group
+            if isinstance(command, commands.Group) and not isinstance(
+                command, commands.HybridGroup
+            ):
+                continue
+
+            # hybrid group without a fallback (no cmd on root)
+            if isinstance(command, commands.HybridGroup) and not command.fallback:
+                continue
+
+            # add string
+            if isinstance(command, commands.HybridGroup):
+                command_list.append(
+                    f"`{ctx.clean_prefix}{command.qualified_name}` (`{command.fallback}`)"
+                )
+            else:
+                command_list.append(f"`{ctx.clean_prefix}{command.qualified_name}`")
+
+        command_list.sort()
 
         command_pages: list[discord.Embed] = []
         current_page_commands: list[str] = []
@@ -62,7 +81,8 @@ class HelpCommandCog(commands.Cog):
                 command_pages.append(
                     discord.Embed(
                         title="All Commands",
-                        description="\n".join(current_page_commands),
+                        description=f"There are `{len(command_list)}` commands. When using prefix commands, including parts of commands included in brackets is not required.\n\n"
+                        + "\n".join(current_page_commands),
                         colour=discord.Colour.light_gray(),
                     )
                 )
@@ -72,7 +92,8 @@ class HelpCommandCog(commands.Cog):
             command_pages.append(
                 discord.Embed(
                     title="All Commands",
-                    description="\n".join(current_page_commands),
+                    description=f"There are `{len(command_list)}` commands. When using prefix commands, including parts of commands included in brackets is not required.\n\n"
+                    + "\n".join(current_page_commands),
                     colour=discord.Colour.light_gray(),
                 )
             )
