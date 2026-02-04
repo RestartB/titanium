@@ -1829,7 +1829,7 @@ class GuildLogger:
                 f"**From:** {before.channel.mention} (`#{before.channel.name}`, `{before.channel.id}`)\n"
                 f"**To:** {after.channel.mention} (`#{after.channel.name}`, `{after.channel.id}`)\n"
             ),
-            colour=discord.Colour.blue(),
+            colour=discord.Colour.light_gray(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -2117,7 +2117,7 @@ class GuildLogger:
         embed = discord.Embed(
             title=f"Comment added to `{case.id}`",
             description=comment,
-            colour=discord.Colour.blue(),
+            colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -2169,7 +2169,7 @@ class GuildLogger:
             title="Titanium Automod Triggered",
             description=f"{message.author.mention} (`@{message.author.name}`, `{message.author.id}`) triggered automod in {message.channel.mention}"
             f"({f'`#{message.channel.name}`, ' if not isinstance(message.channel, discord.PartialMessageable) else ''}`{message.channel.id}`).",
-            colour=discord.Colour.blue(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -2221,7 +2221,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Titanium Bouncer Triggered",
             description=f"{member.mention} (`@{member.name}`, `{member.id}`) triggered bouncer.",
-            colour=discord.Colour.blue(),
+            colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
 

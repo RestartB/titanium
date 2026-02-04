@@ -81,7 +81,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
         embed = Embed(
             title="Game Stats",
             description="\n".join(lines),
-            colour=Colour.blue(),
+            colour=Colour.light_gray(),
         )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
         await ctx.reply(embed=embed)

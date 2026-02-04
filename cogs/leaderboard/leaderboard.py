@@ -377,7 +377,7 @@ class LeaderboardCog(commands.Cog):
 
             embed = discord.Embed(
                 title="Level Info",
-                colour=discord.Colour.blue(),
+                colour=discord.Colour.light_gray(),
             )
             embed.add_field(name="Level", value=str(user_stats.level), inline=True)
             embed.add_field(name="XP", value=str(user_stats.xp), inline=True)

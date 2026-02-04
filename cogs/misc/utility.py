@@ -133,7 +133,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         size_hr = humanize.naturalsize(file.size)
 
         embed = Embed(
-            colour=Colour.blue(),
+            colour=Colour.light_gray(),
             title="File Information",
         )
         embed.set_thumbnail(url=file.url)
