@@ -81,7 +81,7 @@ class HelpCommandCog(commands.Cog):
                 command_pages.append(
                     discord.Embed(
                         title="All Commands",
-                        description=f"There are `{len(command_list)}` commands. When using prefix commands, including parts of commands included in brackets is not required.\n\n"
+                        description=f"There are `{len(command_list)}` commands. When using prefix commands, entering parts of commands that are in brackets is optional.\n\n"
                         + "\n".join(current_page_commands),
                         colour=discord.Colour.light_gray(),
                     )
@@ -92,7 +92,7 @@ class HelpCommandCog(commands.Cog):
             command_pages.append(
                 discord.Embed(
                     title="All Commands",
-                    description=f"There are `{len(command_list)}` commands. When using prefix commands, including parts of commands included in brackets is not required.\n\n"
+                    description=f"There are `{len(command_list)}` commands. When using prefix commands, entering parts of commands that are in brackets is optional.\n\n"
                     + "\n".join(current_page_commands),
                     colour=discord.Colour.light_gray(),
                 )
