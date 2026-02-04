@@ -112,7 +112,7 @@ class ReviewsCommandsCog(commands.Cog):
         )
 
         if len(pages) > 1:
-            view = PaginationView(embeds=pages, timeout=180)
+            view = PaginationView(embeds=pages, timeout=300)
             await ctx.reply(embed=pages[0], view=view)
         else:
             await ctx.reply(embed=pages[0])
@@ -206,7 +206,7 @@ class ReviewsCommandsCog(commands.Cog):
         )
 
         if len(pages) > 1:
-            view = PaginationView(embeds=pages, timeout=180)
+            view = PaginationView(embeds=pages, timeout=300)
             await ctx.reply(embed=pages[0], view=view)
         else:
             await ctx.reply(embed=pages[0])

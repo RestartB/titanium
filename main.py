@@ -158,6 +158,7 @@ class TitaniumBot(commands.Bot):
 
     async def refresh_guild_config_cache(self, guild_id: int) -> None:
         cache_logger.info(f"Refreshing guild config cache for guild {guild_id}...")
+
         async with get_session() as session:
             # Settings
             stmt = (
@@ -277,6 +278,9 @@ class TitaniumBot(commands.Bot):
         if not guild_settings:
             await self.refresh_guild_config_cache(guild_id)
             guild_settings = self.guild_configs.get(guild_id)
+
+        if not guild_settings:
+            guild_settings = await self.init_guild(guild_id)
 
         return guild_settings
 

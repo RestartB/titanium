@@ -206,7 +206,8 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
     @app_commands.command(
         name="remove-data", description="Remove data about your account from Titanium's servers."
     )
-    @app_commands.guild_only()
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def remove_data(self, interaction: Interaction) -> None:
         if not interaction.guild or not interaction.guild_id or not self.bot.user:
             return
