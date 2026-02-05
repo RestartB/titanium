@@ -103,7 +103,7 @@ class LeaderboardCog(commands.Cog):
                     "word_count": LeaderboardUserStats.word_count + len(message.content.split()),
                     "attachment_count": LeaderboardUserStats.attachment_count
                     + len(message.attachments),
-                    "explicit_count": explicit_count,
+                    "explicit_count": LeaderboardUserStats.explicit_count + explicit_count,
                 },
             ).returning(LeaderboardUserStats)
 
