@@ -1,6 +1,7 @@
 import logging
 import math
 import random
+import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -83,7 +84,10 @@ class LeaderboardCog(commands.Cog):
         attachment_count = len(message.attachments)
 
         content_lower = message.content.lower()
-        explicit_count = sum(1 for phrase in self.bot.explicit_phrases if phrase in content_lower)
+        explicit_count = sum(
+            len(re.findall(r"\b" + re.escape(phrase) + r"\b", content_lower))
+            for phrase in self.bot.explicit_phrases
+        )
 
         async with get_session() as session:
             stmt = insert(LeaderboardUserStats).values(
