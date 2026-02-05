@@ -93,6 +93,7 @@ class LeaderboardCog(commands.Cog):
                 message_count=1,
                 word_count=word_count,
                 attachment_count=attachment_count,
+                explicit_count=explicit_count,
                 level=0,
             )
             stmt = stmt.on_conflict_do_update(
