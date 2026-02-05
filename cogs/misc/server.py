@@ -430,7 +430,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             stmt = (
                 select(LeaderboardUserStats)
                 .where(LeaderboardUserStats.guild_id == ctx.guild.id)
-                .order_by(LeaderboardUserStats.attachment_count.desc())
+                .order_by(LeaderboardUserStats.explicit_count.desc())
                 .limit(1000)
             )
             result = await session.execute(stmt)
