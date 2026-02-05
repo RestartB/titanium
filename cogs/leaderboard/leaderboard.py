@@ -13,8 +13,9 @@ from sqlalchemy.dialects.postgresql import insert
 
 from lib.enums.leaderboard import LeaderboardCalcType
 from lib.helpers.log_error import log_error
+from lib.helpers.page_generators import generate_lb_embeds
 from lib.sql.sql import LeaderboardUserStats, get_session
-from lib.views.pagination import PaginationView
+from lib.views.pagination import LeaderboardReloadPageView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -276,41 +277,13 @@ class LeaderboardCog(commands.Cog):
                 await ctx.send(embed=embed)
                 return
 
-            embed = discord.Embed(
+            pages = generate_lb_embeds(
+                guild=ctx.guild,
+                author=ctx.author,
+                top_users=top_users,
                 title="Leaderboard",
-                colour=discord.Colour.random(),
+                attr="xp",
             )
-            embed.set_author(
-                name=ctx.guild.name,
-                icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
-            )
-
-            pages: list[discord.Embed] = []
-            page_size = 15
-
-            for i, user_stats in enumerate(top_users, start=1):
-                member = ctx.guild.get_member(user_stats.user_id)
-
-                if embed.description:
-                    embed.description += f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP{f', Level {user_stats.level}' if len(guild_settings.leaderboard_settings.levels) > 1 else ''}"
-                else:
-                    embed.description = f"{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {user_stats.xp}XP{f', Level {user_stats.level}' if len(guild_settings.leaderboard_settings.levels) > 1 else ''}"
-
-                if i % page_size == 0:
-                    pages.append(embed)
-
-                    embed = discord.Embed(
-                        title="Leaderboard",
-                        colour=discord.Colour.random(),
-                    )
-                    embed.set_author(
-                        name=ctx.guild.name,
-                        icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
-                    )
-
-            if embed.description:
-                pages.append(embed)
-
             pages[0].set_footer(
                 text=f"Controlling: @{ctx.author.name}"
                 if len(pages) > 1
@@ -318,7 +291,15 @@ class LeaderboardCog(commands.Cog):
                 icon_url=ctx.author.display_avatar.url,
             )
 
-            view = PaginationView(embeds=pages, timeout=240)
+            view = LeaderboardReloadPageView(
+                embeds=pages,
+                timeout=240,
+                title="Leaderboard",
+                error_description="No users have recorded XP or levels yet.",
+                sort_type=LeaderboardUserStats.xp,
+                reload_type="xp",
+                error_emoji=str(self.bot.error_emoji),
+            )
 
             if len(pages) > 1:
                 await ctx.send(embed=pages[0], view=view)

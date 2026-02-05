@@ -1,147 +1,17 @@
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 import discord
 from discord import ButtonStyle, Colour, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
 from sqlalchemy import select
-from sqlalchemy.orm import InstrumentedAttribute
 
+from lib.helpers.page_generators import generate_lb_embeds
 from lib.sql.sql import LeaderboardUserStats, get_session
-from lib.views.pagination import PaginationView
+from lib.views.pagination import LeaderboardReloadPageView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
-
-
-def _generate_lb_embeds(
-    guild: discord.Guild | None,
-    author: discord.User | discord.Member,
-    top_users: Sequence[LeaderboardUserStats],
-    title,
-    attr: str,
-) -> list[discord.Embed]:
-    if not guild:
-        return []
-
-    pages: Sequence[discord.Embed] = []
-    page_size = 15
-
-    embed = discord.Embed(
-        title=title,
-        colour=discord.Colour.random(),
-    )
-    embed.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
-
-    for i, user_stats in enumerate(top_users, start=1):
-        member = guild.get_member(user_stats.user_id)
-
-        if embed.description:
-            embed.description += f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {getattr(user_stats, attr)}"
-        else:
-            embed.description = f"{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {getattr(user_stats, attr)}"
-
-        if i % page_size == 0:
-            pages.append(embed)
-
-            embed = discord.Embed(
-                title=title,
-                colour=discord.Colour.random(),
-            )
-            embed.set_author(
-                name=guild.name,
-                icon_url=guild.icon.url if guild.icon else None,
-            )
-
-    if embed.description:
-        pages.append(embed)
-
-    pages[0].set_footer(
-        text=f"Controlling: @{author.name}" if len(pages) > 1 else f"@{author.name}",
-        icon_url=author.display_avatar.url,
-    )
-
-    return pages
-
-
-class ReloadPageView(PaginationView):
-    def __init__(
-        self,
-        embeds: list[discord.Embed] | list[list[discord.Embed]],
-        timeout: float,
-        title: str,
-        error_description: str,
-        sort_type: InstrumentedAttribute[int],
-        reload_type: str,
-        error_emoji: str,
-        page_offset: int = 0,
-        footer_embed: int = -1,
-    ):
-        super().__init__(embeds, timeout, [], page_offset, footer_embed)
-
-        self.title = title
-        self.error_description = error_description
-        self.sort_type = sort_type
-        self.reload_type = reload_type
-        self.error_emoji = error_emoji
-
-    # Reload
-    @discord.ui.button(
-        label="Reload Data",
-        emoji="🔃",
-        style=discord.ButtonStyle.secondary,
-        custom_id="reload",
-        row=1,
-    )
-    async def reload_button(self, interaction: discord.Interaction, button: Button):
-        await interaction.response.defer()
-
-        if not interaction.guild:
-            return
-
-        async with get_session() as session:
-            stmt = (
-                select(LeaderboardUserStats)
-                .where(LeaderboardUserStats.guild_id == interaction.guild.id)
-                .order_by(self.sort_type.desc())
-                .limit(1000)
-            )
-            result = await session.execute(stmt)
-            top_users = result.scalars().all()
-
-            if not top_users:
-                embed = discord.Embed(
-                    title=f"{self.error_emoji} No Data",
-                    description=self.error_description,
-                    colour=discord.Colour.red(),
-                )
-                await interaction.followup.send(embed=embed)
-                return
-
-            self.embeds = [
-                [embed]
-                for embed in _generate_lb_embeds(
-                    guild=interaction.guild,
-                    author=interaction.user,
-                    top_users=top_users,
-                    title=self.title,
-                    attr=self.reload_type,
-                )
-            ]
-
-        self.current_page = 0
-        self.page_count.label = f"1/{len(self.embeds)}"
-
-        self.first_button.disabled = True
-        self.prev_button.disabled = True
-        self.next_button.disabled = False
-        self.last_button.disabled = False
-
-        await self._set_footer(interaction)
-        await interaction.edit_original_response(
-            embeds=self.embeds[self.current_page],
-            view=self,
-        )
 
 
 class ServerCommandsCog(commands.Cog, name="Server", description="Get user information."):
@@ -325,14 +195,22 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 await ctx.send(embed=embed)
                 return
 
-            pages = _generate_lb_embeds(
+            pages = generate_lb_embeds(
                 guild=ctx.guild,
                 author=ctx.author,
                 top_users=top_users,
                 title="Messages Sent",
                 attr="message_count",
             )
-            view = PaginationView(embeds=pages, timeout=240)
+            view = LeaderboardReloadPageView(
+                embeds=pages,
+                timeout=240,
+                title="Messages Sent",
+                error_description="No users have any recorded messages yet.",
+                sort_type=LeaderboardUserStats.message_count,
+                reload_type="message_count",
+                error_emoji=str(self.bot.error_emoji),
+            )
 
             if len(pages) > 1:
                 await ctx.send(embed=pages[0], view=view)
@@ -392,14 +270,14 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 await ctx.send(embed=embed)
                 return
 
-            pages = _generate_lb_embeds(
+            pages = generate_lb_embeds(
                 guild=ctx.guild,
                 author=ctx.author,
                 top_users=top_users,
                 title="Words Sent",
                 attr="word_count",
             )
-            view = ReloadPageView(
+            view = LeaderboardReloadPageView(
                 embeds=pages,
                 timeout=240,
                 title="Words Sent",
@@ -468,14 +346,14 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 await ctx.send(embed=embed)
                 return
 
-            pages = _generate_lb_embeds(
+            pages = generate_lb_embeds(
                 guild=ctx.guild,
                 author=ctx.author,
                 top_users=top_users,
                 title="Attachments Sent",
                 attr="attachment_count",
             )
-            view = ReloadPageView(
+            view = LeaderboardReloadPageView(
                 embeds=pages,
                 timeout=240,
                 title="Attachments Sent",
@@ -544,14 +422,14 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 await ctx.send(embed=embed)
                 return
 
-            pages = _generate_lb_embeds(
+            pages = generate_lb_embeds(
                 guild=ctx.guild,
                 author=ctx.author,
                 top_users=top_users,
                 title="Swear Jar",
                 attr="explicit_count",
             )
-            view = ReloadPageView(
+            view = LeaderboardReloadPageView(
                 embeds=pages,
                 timeout=240,
                 title="Swear Jar",
@@ -561,10 +439,10 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            # if len(pages) > 1:
-            await ctx.send(embed=pages[0], view=view)
-            # else:
-            #     await ctx.send(embed=pages[0])
+            if len(pages) > 1:
+                await ctx.send(embed=pages[0], view=view)
+            else:
+                await ctx.send(embed=pages[0])
 
 
 async def setup(bot: TitaniumBot) -> None:
