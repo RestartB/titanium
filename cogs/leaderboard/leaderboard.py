@@ -82,6 +82,9 @@ class LeaderboardCog(commands.Cog):
         word_count = len(message.content.split())
         attachment_count = len(message.attachments)
 
+        content_lower = message.content.lower()
+        explicit_count = sum(1 for phrase in self.bot.explicit_phrases if phrase in content_lower)
+
         async with get_session() as session:
             stmt = insert(LeaderboardUserStats).values(
                 guild_id=message.guild.id,
@@ -99,6 +102,7 @@ class LeaderboardCog(commands.Cog):
                     "word_count": LeaderboardUserStats.word_count + len(message.content.split()),
                     "attachment_count": LeaderboardUserStats.attachment_count
                     + len(message.attachments),
+                    "explicit_count": explicit_count,
                 },
             ).returning(LeaderboardUserStats)
 

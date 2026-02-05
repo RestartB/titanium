@@ -391,6 +391,73 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             else:
                 await ctx.send(embed=pages[0])
 
+    # Attachment leaderboard command
+    @server_group.command(
+        name="swearjar",
+        description="Get the amount of explicit words members have sent in the server.",
+    )
+    @commands.guild_only()
+    async def explicit_lb_command(self, ctx: commands.Context["TitaniumBot"]):
+        if not ctx.guild:
+            return
+
+        await ctx.defer()
+
+        if ctx.author.id in self.bot.opt_out:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Opted Out",
+                description="You have opted out of data collection and cannot use leaderboard features.",
+                colour=discord.Colour.red(),
+            )
+            await ctx.send(embed=embed)
+            return
+
+        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+        if (
+            not guild_settings
+            or not guild_settings.leaderboard_settings
+            or not guild_settings.leaderboard_enabled
+        ):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Leaderboard Disabled",
+                description="The leaderboard system is not enabled in this server.",
+                colour=discord.Colour.red(),
+            )
+            await ctx.send(embed=embed)
+            return
+
+        async with get_session() as session:
+            stmt = (
+                select(LeaderboardUserStats)
+                .where(LeaderboardUserStats.guild_id == ctx.guild.id)
+                .order_by(LeaderboardUserStats.attachment_count.desc())
+                .limit(1000)
+            )
+            result = await session.execute(stmt)
+            top_users = result.scalars().all()
+
+            if not top_users:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} No Data",
+                    description="No users have said any explicit terms yet.",
+                    colour=discord.Colour.red(),
+                )
+                await ctx.send(embed=embed)
+                return
+
+            pages = self._generate_lb_embeds(
+                ctx,
+                top_users,
+                title="Swear Jar",
+                attr="explicit_count",
+            )
+            view = PaginationView(embeds=pages, timeout=240)
+
+            if len(pages) > 1:
+                await ctx.send(embed=pages[0], view=view)
+            else:
+                await ctx.send(embed=pages[0])
+
 
 async def setup(bot: TitaniumBot) -> None:
     await bot.add_cog(ServerCommandsCog(bot))

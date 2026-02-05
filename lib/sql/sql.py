@@ -569,6 +569,7 @@ class LeaderboardUserStats(Base):
     message_count: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
     word_count: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
     attachment_count: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
+    explicit_count: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
 
 
 class ModCase(Base):

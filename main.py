@@ -88,6 +88,7 @@ class TitaniumBot(commands.Bot):
     malicious_links: list[str] = []
     phishing_links: list[str] = []
     nsfw_links: list[str] = []
+    explicit_phrases: list[str] = []
 
     opt_out: list[int] = []
 

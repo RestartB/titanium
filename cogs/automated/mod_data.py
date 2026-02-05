@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class BadLinkFetcherCog(commands.Cog):
-    """Automatic tasks to fetch and update bad links"""
+    """Automatic tasks to fetch and update bad links and explicit terms"""
 
     REQUEST_HEADERS = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
@@ -25,12 +25,14 @@ class BadLinkFetcherCog(commands.Cog):
         self.malicious_update.start()
         self.phishing_update.start()
         self.nsfw_update.start()
+        self.explicit_update.start()
 
     def cog_unload(self) -> None:
         # Stop tasks on unload
         self.malicious_update.cancel()
         self.phishing_update.cancel()
         self.nsfw_update.cancel()
+        self.explicit_update.cancel()
 
     def _generate_list(self, data: str, host_file: bool = False) -> list[str]:
         lines = data.splitlines()
@@ -149,6 +151,25 @@ class BadLinkFetcherCog(commands.Cog):
 
             self.bot.nsfw_links = new_nsfw_links
             self.logger.info(f"Updated NSFW links • {len(new_nsfw_links)} links fetched.")
+
+    # Explicit update task
+    @tasks.loop(hours=6)
+    async def explicit_update(self) -> None:
+        async with aiohttp.ClientSession() as session:
+            self.logger.info("Fetching explicit words...")
+
+            async with session.get(
+                "https://raw.githubusercontent.com/coffee-and-fun/google-profanity-words/refs/heads/main/data/en.txt",
+                headers=self.REQUEST_HEADERS,
+            ) as response:
+                if response.status == 200:
+                    explicit_phrases = self._generate_list(await response.text())
+                else:
+                    self.logger.error("Failed to fetch explicit word list:", response.status)
+                    return
+
+            self.bot.explicit_phrases = explicit_phrases
+            self.logger.info(f"Updated explicit word list • {len(explicit_phrases)} words fetched.")
 
 
 async def setup(bot: TitaniumBot) -> None:
