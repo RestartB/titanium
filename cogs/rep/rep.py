@@ -58,4 +58,5 @@ class RepTestCog(commands.Cog):
 
 
 async def setup(bot: TitaniumBot) -> None:
-    await bot.add_cog(RepTestCog(bot))
+    return
+    # await bot.add_cog(RepTestCog(bot))
