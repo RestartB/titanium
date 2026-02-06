@@ -135,7 +135,7 @@ class LeaderboardCog(commands.Cog):
             elif mode == LeaderboardCalcType.RANDOM and min_xp and max_xp:
                 to_assign = random.randint(min_xp, max_xp)
             elif mode == LeaderboardCalcType.LENGTH and xp and xp_mult and max_xp and min_xp:
-                to_assign = int(max(min(10 + (xp_mult * math.sqrt(length)), max_xp), min_xp))
+                to_assign = int(max(min(xp_mult * math.sqrt(length), max_xp), min_xp))
 
             levels = guild_settings.leaderboard_settings.levels
             levels.sort(key=lambda level: level.xp)
