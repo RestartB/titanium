@@ -207,8 +207,84 @@ class GuildLogger:
     async def app_command_perm_update(
         self, event: discord.RawAppCommandPermissionsUpdateEvent
     ) -> None:
-        # TODO - implement this log type
-        pass
+        await self._ensure_config()
+        if not self._exists_and_enabled("app_command_perm_update_id"):
+            return
+
+        if not isinstance(self.guild, discord.Guild):
+            return
+
+        app_user = self.guild.get_member(event.application_id)
+
+        embed = discord.Embed(
+            title="App Command Permission Updated",
+            description=f"**App:** {f'{app_user.mention} (`{app_user.name}#{app_user.discriminator}`)' if app_user else f'<@{event.application_id}>'}\n"
+            f"**App ID:** `{event.application_id}`\n"
+            f"**Command ID:** `{event.target_id}`",
+            colour=discord.Colour.yellow(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        if app_user:
+            embed.set_thumbnail(url=app_user.display_avatar)
+
+        channel_changes: list[discord.app_commands.AppCommandPermissions] = []
+        role_changes: list[discord.app_commands.AppCommandPermissions] = []
+        user_changes: list[discord.app_commands.AppCommandPermissions] = []
+
+        for change in event.permissions:
+            if change.type == discord.AppCommandPermissionType.channel:
+                channel_changes.append(change)
+            elif change.type == discord.AppCommandPermissionType.role:
+                role_changes.append(change)
+            else:
+                user_changes.append(change)
+
+        # server id - 1 = all channels
+        embed.add_field(
+            name="New Channel Perms",
+            value="\n".join(
+                str(self.bot.success_emoji if change.permission else self.bot.error_emoji)
+                + f" {change.target.mention if not isinstance(change.target, (discord.Object, discord.app_commands.AllChannels)) else ('All Channels' if change.id == event.guild.id - 1 else f'`{change.id}`')}"
+                for change in channel_changes
+            )
+            if channel_changes
+            else f"{self.bot.info_emoji} No channels to display",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="New Role Perms",
+            value="\n".join(
+                str(self.bot.success_emoji if change.permission else self.bot.error_emoji)
+                + f" {change.target.mention if not isinstance(change.target, (discord.Object, discord.app_commands.AllChannels)) else f'`{change.id}`'}"
+                for change in role_changes
+            )
+            if role_changes
+            else f"{self.bot.info_emoji} No roles to display",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="New User Perms",
+            value="\n".join(
+                str(self.bot.success_emoji if change.permission else self.bot.error_emoji)
+                + f" {change.target.mention if not isinstance(change.target, (discord.Object, discord.app_commands.AllChannels)) else f'`{change.id}`'}"
+                for change in user_changes
+            )
+            if user_changes
+            else f"{self.bot.info_emoji} No users to display",
+            inline=False,
+        )
+
+        log = await self._get_audit_log_entry(discord.AuditLogAction.app_command_permission_update)
+        self._add_user_footer(embed, log)
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(self.config.logging_settings.app_command_perm_update_id),
+            embed,
+        )
 
     async def automod_rule_create(self, rule: discord.AutoModRule) -> None:
         await self._ensure_config()
@@ -260,7 +336,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="AutoMod Rule Edited",
             description=f"**Name:** `{rule.name}`\n**ID:** `{rule.id}`",
-            colour=discord.Colour.green(),
+            colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
@@ -280,7 +356,7 @@ class GuildLogger:
 
         embed = discord.Embed(
             title="Channel Created",
-            description=f"**Name:** `#{channel.name}` ({channel.mention})\n**ID:** `{channel.id}`\n**Type:** `{str(channel.type).split('.')[-1].title()}`\nPosition: `{channel.position}`",
+            description=f"**Name:** `#{channel.name}` ({channel.mention})\n**ID:** `{channel.id}`\n**Type:** `{str(channel.type).split('.')[-1].title()}`\n**Position:** `{channel.position}`",
             colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
@@ -1197,7 +1273,7 @@ class GuildLogger:
             description=f"**Message ID:** `{message.id}`\n"
             f"**Channel:** {message.channel.mention}\n"
             f"**Author:** {message.author.mention}\n"
-            f"**Reaction:** {reaction.emoji} ({reaction.normal_count + reaction.burst_count} total)",
+            f"**Reaction:** {reaction.emoji}",
             colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
@@ -1226,7 +1302,7 @@ class GuildLogger:
 
         embed = discord.Embed(
             title="Role Created",
-            description=f"**Name:** `{role.name}`\n"
+            description=f"**Role:** {role.mention} (`@{role.name}`)\n"
             f"**ID:** `{role.id}`\n"
             f"**Colour:** `#{role.colour.value:06x}`\n"
             f"**Display Separately:** `{'Yes' if role.hoist else 'No'}`\n"
@@ -1252,7 +1328,7 @@ class GuildLogger:
 
         embed = discord.Embed(
             title="Role Deleted",
-            description=f"**Name:** `{role.name}`\n"
+            description=f"**Role:** `@{role.name}`\n"
             f"**ID:** `{role.id}`\n"
             f"**Colour:** `#{role.colour.value:06x}`\n"
             f"**Display Separately:** `{'Yes' if role.hoist else 'No'}`\n"
@@ -1297,7 +1373,8 @@ class GuildLogger:
 
         embed = discord.Embed(
             title="Role Updated",
-            description=f"Name: `{after.name}`\nID: `{after.id}`\n\n" + "\n".join(changes),
+            description=f"**Role:** {after.mention} (`@{after.name}`)\n**ID:** `{after.id}`\n\n"
+            + "\n".join(changes),
             colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
@@ -1436,7 +1513,7 @@ class GuildLogger:
         )
 
         if sound.user:
-            embed.set_author(name=sound.user.name, icon_url=sound.user.display_avatar.url)
+            embed.set_footer(text=sound.user.name, icon_url=sound.user.display_avatar.url)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1461,8 +1538,8 @@ class GuildLogger:
             timestamp=discord.utils.utcnow(),
         )
 
-        if sound.user:
-            embed.set_author(name=sound.user.name, icon_url=sound.user.display_avatar.url)
+        log = await self._get_audit_log_entry(discord.AuditLogAction.soundboard_sound_update)
+        self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1497,7 +1574,7 @@ class GuildLogger:
         )
 
         if after.user:
-            embed.set_author(name=after.user.name, icon_url=after.user.display_avatar.url)
+            embed.set_footer(text=after.user.name, icon_url=after.user.display_avatar.url)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1672,36 +1749,6 @@ class GuildLogger:
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.thread_update_id),
-            embed,
-        )
-
-    async def thread_remove(self, thread: discord.Thread) -> None:
-        await self._ensure_config()
-        if not self._exists_and_enabled("thread_remove_id"):
-            return
-
-        embed = discord.Embed(
-            title="Thread Removed",
-            description=(
-                f"**Name:** `{thread.name}`\n"
-                + f"**ID:** `{thread.id}`\n"
-                + f"**Channel:** {thread.parent.mention} (`#{thread.parent.name}`)\n"
-                if thread.parent
-                else "**Channel:** `Unknown`"
-            ),
-            colour=discord.Colour.red(),
-            timestamp=discord.utils.utcnow(),
-        )
-
-        if thread.owner:
-            embed.set_author(
-                name=f"@{thread.owner.name}",
-                icon_url=thread.owner.display_avatar.url,
-            )
-
-        assert self.config is not None and self.config.logging_settings is not None
-        await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.thread_remove_id),
             embed,
         )
 

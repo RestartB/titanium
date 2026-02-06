@@ -28,6 +28,13 @@ class EventLoggingCog(commands.Cog):
         pass
 
     @commands.Cog.listener()
+    async def on_raw_app_command_permissions_update(
+        self, payload: discord.RawAppCommandPermissionsUpdateEvent
+    ) -> None:
+        guild_logger = GuildLogger(self.bot, payload.guild)
+        await guild_logger.app_command_perm_update(payload)
+
+    @commands.Cog.listener()
     async def on_automod_rule_create(self, rule: discord.AutoModRule) -> None:
         guild_logger = GuildLogger(self.bot, rule.guild)
         await guild_logger.automod_rule_create(rule)
@@ -355,13 +362,13 @@ class EventLoggingCog(commands.Cog):
         guild_logger = GuildLogger(self.bot, before.guild)
         await guild_logger.thread_update(before, after)
 
-    @commands.Cog.listener()
-    async def on_thread_remove(self, thread: discord.Thread) -> None:
-        if not thread.guild:
-            return
+    # @commands.Cog.listener()
+    # async def on_thread_remove(self, thread: discord.Thread) -> None:
+    #     if not thread.guild:
+    #         return
 
-        guild_logger = GuildLogger(self.bot, thread.guild)
-        await guild_logger.thread_remove(thread)
+    #     guild_logger = GuildLogger(self.bot, thread.guild)
+    #     await guild_logger.thread_remove(thread)
 
     @commands.Cog.listener()
     async def on_raw_thread_delete(self, payload: discord.RawThreadDeleteEvent) -> None:

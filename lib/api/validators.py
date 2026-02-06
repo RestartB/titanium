@@ -325,7 +325,6 @@ class LoggingConfigModel(BaseModel):
     stage_instance_delete_id: Optional[str]
     thread_create_id: Optional[str]
     thread_update_id: Optional[str]
-    thread_remove_id: Optional[str]
     thread_delete_id: Optional[str]
     voice_join_id: Optional[str]
     voice_leave_id: Optional[str]

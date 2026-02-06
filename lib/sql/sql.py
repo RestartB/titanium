@@ -399,7 +399,6 @@ class GuildLoggingSettings(Base):
     stage_instance_delete_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     thread_create_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     thread_update_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    thread_remove_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     thread_delete_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     voice_join_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     voice_leave_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
