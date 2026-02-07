@@ -27,6 +27,7 @@ from sqlalchemy.orm import Mapped, MappedColumn, declarative_base, relationship
 
 from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
+from lib.enums.games import GameTypes
 from lib.enums.leaderboard import LeaderboardCalcType
 from lib.enums.moderation import CaseType
 from lib.enums.scheduled_events import EventType
@@ -603,27 +604,13 @@ class ModCaseComment(Base):
     case: Mapped["ModCase"] = relationship("ModCase", back_populates="comments", uselist=False)
 
 
-# Game stats
-class Game(Base):
-    __tablename__ = "games"
-
-    id: Mapped[int] = MappedColumn(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = MappedColumn(String(50), unique=True, nullable=False)
-    # games like -> dice, coin_flip, chess, rps (rock, paper, ..)
-
-
+# Game Stats
 class GameStat(Base):
     __tablename__ = "game_stats"
-
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    game_id: Mapped[int] = MappedColumn(ForeignKey("games.id"), nullable=False)
-    played: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
-    win: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
-
-    game = relationship("Game")
-
-    # __table_args__ = (UniqueConstraint("user_id", "game_id", name="uq_user_game"),)
+    game: Mapped[GameTypes] = MappedColumn(Enum(GameTypes), nullable=False)
+    won: Mapped[bool] = MappedColumn(Boolean, nullable=False)
 
 
 class ScheduledTask(Base):
