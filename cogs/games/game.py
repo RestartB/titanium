@@ -124,7 +124,6 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
     @dice_game.after_invoke
     @coin_flip_game.after_invoke
     async def game_after_execute(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        print("after invoke")
         """Update stats after the game finishes."""
         win = getattr(ctx, "win", False)
 

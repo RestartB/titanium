@@ -462,6 +462,7 @@ class ImageTools:
         )
 
     def _rotate_sync(self, img: Image.Image, angle: int) -> Image.Image:
+        img = img.convert("RGBA")
         return img.rotate(angle, expand=True)
 
     async def rotate(self, output_format: ImageFormats, angle: int) -> File:
