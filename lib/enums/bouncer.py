@@ -1,6 +1,11 @@
 from enum import Enum
 
 
+class BouncerEventType(Enum):
+    JOIN = 0
+    UPDATE = 1
+
+
 class BouncerCriteriaType(Enum):
     USERNAME = "username"
     TAG = "tag"

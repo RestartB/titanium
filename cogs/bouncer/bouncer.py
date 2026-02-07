@@ -1,8 +1,6 @@
-import asyncio
 import logging
 import re
 from datetime import timedelta
-from enum import Enum
 from typing import TYPE_CHECKING
 
 import discord
@@ -10,7 +8,7 @@ from discord.ext import commands
 
 from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
-from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
+from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType, BouncerEventType
 from lib.enums.moderation import CaseSource, CaseType
 from lib.helpers.log_error import log_error
 from lib.sql.sql import BouncerAction, BouncerRule, get_session
@@ -22,46 +20,14 @@ if TYPE_CHECKING:
 # TODO: fully test
 
 
-class BouncerEventType(Enum):
-    JOIN = 0
-    UPDATE = 1
-
-
 class BouncerMonitorCog(commands.Cog):
     """Monitors joiners and member updates for bouncer triggers and creates cases/punishments"""
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("bouncer")
-        self.event_queue: asyncio.Queue[tuple[discord.Member, BouncerEventType]] = asyncio.Queue()
-        self.event_queue_task = self.bot.loop.create_task(self.queue_worker())
 
-    def cog_unload(self) -> None:
-        self.event_queue.shutdown(immediate=True)
-
-    async def queue_worker(self):
-        self.logger.info("Bouncer handler started.")
-        while True:
-            try:
-                await self.bot.wait_until_ready()
-                event = await self.event_queue.get()
-            except asyncio.QueueShutDown:
-                return
-
-            try:
-                await self.event_handler(event[0], event[1])
-            except Exception as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Bouncer",
-                    guild_id=event[0].guild.id if event[0].guild else None,
-                    error=f"An unknown error occurred while processing bouncer for member @{event[0].name} ({event[0].id})",
-                    exc=e,
-                )
-            finally:
-                self.event_queue.task_done()
-
-    async def event_handler(self, member: discord.Member, event_type: BouncerEventType):
+    async def handle_event(self, member: discord.Member, event_type: BouncerEventType):
         self.logger.debug(f"Processing member join/update: {member.id}")
         config = await self.bot.fetch_guild_config(member.guild.id) if member.guild else None
 
@@ -409,17 +375,29 @@ class BouncerMonitorCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         try:
-            await self.event_queue.put((member, BouncerEventType.JOIN))
-        except asyncio.QueueShutDown:
-            return
+            await self.handle_event(member, BouncerEventType.JOIN)
+        except Exception as e:
+            await log_error(
+                bot=self.bot,
+                module="Bouncer",
+                guild_id=member.guild.id,
+                error=f"An unknown error occurred while processing joining member @{member.name} ({member.id})",
+                exc=e,
+            )
 
     # Listen for member updates
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         try:
-            await self.event_queue.put((after, BouncerEventType.UPDATE))
-        except asyncio.QueueShutDown:
-            return
+            await self.handle_event(after, BouncerEventType.UPDATE)
+        except Exception as e:
+            await log_error(
+                bot=self.bot,
+                module="Bouncer",
+                guild_id=after.guild.id,
+                error=f"An unknown error occurred while processing a user update for @{after.name} ({after.id})",
+                exc=e,
+            )
 
 
 async def setup(bot: TitaniumBot) -> None:
