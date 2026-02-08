@@ -1,3 +1,5 @@
+from typing import Optional
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -24,81 +26,76 @@ class UserUtils(commands.Cog):
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    async def server_info(
+    async def user_info(
         self,
         interaction: discord.Interaction,
-        user: discord.User,
+        user: Optional[discord.User | discord.Member] = None,
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        user = await interaction.client.fetch_user(user.id)
+        if not user:
+            user = interaction.user
 
-        if interaction.is_guild_integration():
-            try:
-                member = await interaction.guild.fetch_member(user.id)
-                in_guild = True
-            except (discord.errors.NotFound, AttributeError):
-                member = user
-                in_guild = False
-        else:
-            member = user
-            in_guild = False
+        in_guild = isinstance(user, discord.Member)
 
-        embed = discord.Embed(
-            title="User Info",
-            color=(user.accent_color if user.accent_color is not None else None),
+        fetched_user = await interaction.client.fetch_user(user.id)
+        banner = fetched_user.banner
+        accent_colour = fetched_user.accent_colour
+
+        creation_date = int(user.created_at.timestamp())
+        join_date = (
+            int(user.joined_at.timestamp()) if in_guild and user.joined_at else None
         )
+
+        embed = discord.Embed(title="User Info", colour=accent_colour)
         embed.set_author(
-            name=f"{member.display_name} (@{member.name})",
-            icon_url=member.avatar.url if member.avatar else member.default_avatar.url,
+            name=f"{user.display_name} (@{user.name})",
+            icon_url=user.display_avatar.url,
         )
+        embed.set_thumbnail(url=user.display_avatar.url)
 
-        if user.banner is not None:
-            embed.set_image(url=user.banner.url)
+        if banner is not None:
+            embed.set_image(url=banner.url)
 
-        creation_date = int(member.created_at.timestamp())
-        join_date = int(member.joined_at.timestamp()) if in_guild else None
-
-        embed.add_field(name="ID", value=member.id)
-
-        # Other info
+        embed.add_field(name="ID", value=f"`{user.id}`")
         embed.add_field(
             name="Joined Discord",
             value=f"<t:{creation_date}:R> (<t:{creation_date}:f>)",
         )
-        (
+
+        if join_date:
             embed.add_field(
-                name="Joined Server", value=f"<t:{join_date}:R> (<t:{join_date}:f>)"
+                name="Joined Server",
+                value=f"<t:{join_date}:R> (<t:{join_date}:f>)",
             )
-            if in_guild
-            else None
-        )
 
-        if not interaction.is_guild_integration():
-            embed.set_footer(
-                text=f"@{interaction.user.name} - add Titanium to the server for more info.",
-                icon_url=interaction.user.display_avatar.url,
+        if in_guild and interaction.guild and len(user.roles) > 0:
+            embed.add_field(
+                name="Roles",
+                value=", ".join(
+                    role.mention
+                    for role in user.roles
+                    if role.id != interaction.guild.id
+                )
+                or "No Roles",
             )
-        elif in_guild:
-            roles = []
 
-            for role in member.roles:
-                roles.append(role.mention)
-
-            embed.add_field(name="Roles", value=", ".join(roles))
-
+        if in_guild and len(user.roles) > 0:
             embed.set_footer(
                 text=f"@{interaction.user.name}",
                 icon_url=interaction.user.display_avatar.url,
             )
-        elif not in_guild:
+        elif in_guild:
             embed.set_footer(
-                text=f"@{interaction.user.name} - user is not in the server, showing limited info.",
+                text=f"@{interaction.user.name} - add Titanium to the server to get roles",
                 icon_url=interaction.user.display_avatar.url,
             )
-
-        embed.set_thumbnail(url=member.display_avatar.url)
+        else:
+            embed.set_footer(
+                text=f"@{interaction.user.name} - user isn't in the server, showing limited info",
+                icon_url=interaction.user.display_avatar.url,
+            )
 
         view = View()
         view.add_item(
@@ -119,7 +116,7 @@ class UserUtils(commands.Cog):
         )
 
         # Send Embed
-        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, view=view)
 
     # PFP command
     @userGroup.command(name="pfp", description="Show a user's PFP.")
