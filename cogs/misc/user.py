@@ -24,64 +24,64 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def user(
-        self, ctx: commands.Context["TitaniumBot"], user: Optional[User | Member]
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        user: User | Member = commands.Author,
+        ephemeral: bool = False,
     ) -> None:
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
-        user = user or ctx.author
+        in_guild = isinstance(user, Member)
 
-        in_guild = False
-        if ctx.guild:
-            in_guild = True if ctx.guild.get_member(user.id) else False
-
-        user = await ctx.bot.fetch_user(user.id)
+        fetched_user = await ctx.bot.fetch_user(user.id)
+        banner = fetched_user.banner
+        accent_colour = fetched_user.accent_colour
 
         creation_date = int(user.created_at.timestamp())
-        join_date = (
-            int(user.joined_at.timestamp()) if isinstance(user, Member) and user.joined_at else None
-        )
+        join_date = int(user.joined_at.timestamp()) if in_guild and user.joined_at else None
 
-        embed = Embed(title="User Info", colour=user.accent_colour)
+        embed = Embed(title="User Info", colour=accent_colour)
         embed.set_author(
             name=f"{user.display_name} (@{user.name})",
             icon_url=user.display_avatar.url,
         )
         embed.set_thumbnail(url=user.display_avatar.url)
 
-        if user.banner is not None:
-            embed.set_image(url=user.banner.url)
+        if banner is not None:
+            embed.set_image(url=banner.url)
 
         embed.add_field(name="ID", value=f"`{user.id}`")
         embed.add_field(
             name="Joined Discord",
             value=f"<t:{creation_date}:R> (<t:{creation_date}:f>)",
         )
+
         if join_date:
             embed.add_field(
                 name="Joined Server",
                 value=f"<t:{join_date}:R> (<t:{join_date}:f>)",
             )
 
-        if isinstance(user, Member) and ctx.guild:
+        if in_guild and ctx.guild and len(user.roles) > 0:
             embed.add_field(
                 name="Roles",
                 value=", ".join(role.mention for role in user.roles if role.id != ctx.guild.id)
                 or "No Roles",
             )
 
-        if ctx.interaction and ctx.interaction.is_user_integration():
+        if in_guild and len(user.roles) > 0:
             embed.set_footer(
-                text=f"@{ctx.author.name} - add Titanium to the server for more info",
+                text=f"@{ctx.author.name}",
                 icon_url=ctx.author.display_avatar.url,
             )
-        elif not in_guild:
+        elif in_guild:
             embed.set_footer(
-                text=f"@{ctx.author.name} - user isn't in the server, showing limited info",
+                text=f"@{ctx.author.name} - add Titanium to the server to get roles",
                 icon_url=ctx.author.display_avatar.url,
             )
         else:
             embed.set_footer(
-                text=f"@{ctx.author.name}",
+                text=f"@{ctx.author.name} - user isn't in the server, showing limited info",
                 icon_url=ctx.author.display_avatar.url,
             )
 

@@ -350,6 +350,9 @@ class TitaniumBot(commands.Bot):
                         continue
         init_logger.info("Loading cogs complete.")
 
+    async def on_ready(self):
+        init_logger.info(f"Bot is ready and connected as {bot.user}.")
+
     async def on_connect(self):
         self.connected = True
 
@@ -387,11 +390,6 @@ bot = TitaniumBot(
     max_messages=2500,
     help_command=None,
 )
-
-
-@bot.event
-async def on_ready():
-    init_logger.info(f"Bot is ready and connected as {bot.user}.")
 
 
 @bot.event
