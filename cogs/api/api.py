@@ -112,6 +112,7 @@ class APICog(commands.Cog):
 
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
         self.app.router.add_get("/guild/{guild_id}/cases", self.guild_cases)
+        self.app.router.add_get("/guild/{guild_id}/cases/{case_id}", self.guild_case)
         self.app.router.add_get("/guild/{guild_id}/errors", self.guild_errors)
         self.app.router.add_get("/guild/{guild_id}/leaderboard", self.guild_leaderboard)
 
@@ -315,7 +316,6 @@ class APICog(commands.Cog):
                 .order_by(ModCase.time_created.desc())
                 .limit(limit)
                 .offset(offset)
-                .options(selectinload(ModCase.comments))
             )
             cases = result.scalars().all()
 
@@ -323,48 +323,23 @@ class APICog(commands.Cog):
         cached_users: dict[int, discord.User | discord.Member | None] = {}
         for case in cases:
             for user_id in [case.user_id, case.creator_user_id]:
-                if user_id not in cached_users:
-                    member = guild.get_member(user_id)
-                    if member:
-                        cached_users[user_id] = member
-                    else:
-                        try:
-                            user = await self.bot.fetch_user(user_id)
-                            cached_users[user_id] = user
-                        except Exception:
-                            cached_users[user_id] = None
+                if user_id in cached_users:
+                    continue
 
-                for comment in case.comments:
-                    if comment.user_id not in cached_users:
-                        member = guild.get_member(comment.user_id)
-                        if member:
-                            cached_users[comment.user_id] = member
-                        else:
-                            try:
-                                user = await self.bot.fetch_user(comment.user_id)
-                                cached_users[comment.user_id] = user
-                            except Exception:
-                                cached_users[comment.user_id] = None
+                member = guild.get_member(user_id)
+                if member:
+                    cached_users[user_id] = member
+                else:
+                    try:
+                        user = await self.bot.fetch_user(user_id)
+                        cached_users[user_id] = user
+                    except Exception:
+                        cached_users[user_id] = None
 
         cases_output = []
         for case in cases:
             user = cached_users.get(case.user_id)
             creator = cached_users.get(case.creator_user_id)
-
-            comments_list = []
-            for comment in case.comments:
-                cuser = cached_users.get(comment.user_id)
-                comments_list.append(
-                    {
-                        "id": str(comment.id),
-                        "creator_id": str(comment.user_id),
-                        "creator_name": cuser.name if cuser else None,
-                        "creator_display": cuser.display_name if cuser else None,
-                        "creator_pfp": cuser.display_avatar.url if cuser else None,
-                        "content": comment.comment,
-                        "time_created": comment.time_created.isoformat(),
-                    }
-                )
 
             cases_output.append(
                 {
@@ -381,7 +356,6 @@ class APICog(commands.Cog):
                     "description": case.description,
                     "external": case.external,
                     "resolved": case.resolved,
-                    "comments": comments_list,
                     "time_created": case.time_created.isoformat(),
                     "time_expires": case.time_expires.isoformat() if case.time_expires else None,
                     "time_updated": case.time_updated.isoformat() if case.time_updated else None,
@@ -392,6 +366,102 @@ class APICog(commands.Cog):
             {
                 "total_count": total_count,
                 "cases": cases_output,
+            }
+        )
+
+    async def guild_case(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        case_id = request.match_info.get("case_id")
+        if not case_id:
+            return web.json_response({"error": "case_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        async with get_session() as session:
+            # Get case from db
+            result = await session.execute(
+                select(ModCase)
+                .where(ModCase.guild_id == guild.id)
+                .where(ModCase.id == case_id)
+                .options(selectinload(ModCase.comments))
+            )
+            case = result.scalar_one()
+
+        if not case:
+            return web.json_response({"error": "case not found"}, status=404)
+
+        # Get user objects to send user info
+        cached_users: dict[int, discord.User | discord.Member | None] = {}
+        for user_id in [case.user_id, case.creator_user_id]:
+            if user_id in cached_users:
+                continue
+
+            member = guild.get_member(user_id)
+            if member:
+                cached_users[user_id] = member
+            else:
+                try:
+                    user = await self.bot.fetch_user(user_id)
+                    cached_users[user_id] = user
+                except Exception:
+                    cached_users[user_id] = None
+
+            for comment in case.comments:
+                if comment.user_id in cached_users:
+                    continue
+
+                member = guild.get_member(comment.user_id)
+                if member:
+                    cached_users[comment.user_id] = member
+                else:
+                    try:
+                        user = await self.bot.fetch_user(comment.user_id)
+                        cached_users[comment.user_id] = user
+                    except Exception:
+                        cached_users[comment.user_id] = None
+
+        user = cached_users.get(case.user_id)
+        creator = cached_users.get(case.creator_user_id)
+
+        comments_list = []
+        for comment in case.comments:
+            cuser = cached_users.get(comment.user_id)
+            comments_list.append(
+                {
+                    "id": str(comment.id),
+                    "creator_id": str(comment.user_id),
+                    "creator_name": cuser.name if cuser else None,
+                    "creator_display": cuser.display_name if cuser else None,
+                    "creator_pfp": cuser.display_avatar.url if cuser else None,
+                    "content": comment.comment,
+                    "time_created": comment.time_created.isoformat(),
+                }
+            )
+
+        return web.json_response(
+            {
+                "id": case.id,
+                "type": case.type.value,
+                "user_id": str(case.user_id),
+                "user_name": user.name if user else None,
+                "user_display": user.display_name if user else None,
+                "user_pfp": user.display_avatar.url if user else None,
+                "creator_id": str(case.creator_user_id),
+                "creator_name": creator.name if creator else None,
+                "creator_display": creator.display_name if creator else None,
+                "creator_pfp": creator.display_avatar.url if creator else None,
+                "description": case.description,
+                "external": case.external,
+                "resolved": case.resolved,
+                "comments": comments_list,
+                "time_created": case.time_created.isoformat(),
+                "time_expires": case.time_expires.isoformat() if case.time_expires else None,
+                "time_updated": case.time_updated.isoformat() if case.time_updated else None,
             }
         )
 
