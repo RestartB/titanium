@@ -39,6 +39,14 @@ class Analytics(commands.Cog):
         interaction: discord.Interaction,
         command: Union[app_commands.Command, app_commands.ContextMenu],
     ) -> None:
+        if (
+            interaction.command
+            and interaction.command.name == "confession"
+            and interaction.guild
+            and interaction.guild.id in self.bot.trusted_servers
+        ):
+            return
+
         embed = discord.Embed(
             title=f"@{interaction.user.name} ran an app command",
             description=f"`/{command.qualified_name}`",
@@ -64,6 +72,13 @@ class Analytics(commands.Cog):
     @commands.Cog.listener()
     async def on_command(self, ctx: commands.Context["TitaniumBot"]):
         if ctx.command is None or ctx.interaction:
+            return
+
+        if (
+            ctx.command.name == "confession"
+            and ctx.guild
+            and ctx.guild.id in self.bot.trusted_servers
+        ):
             return
 
         embed = discord.Embed(

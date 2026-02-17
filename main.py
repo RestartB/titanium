@@ -92,6 +92,8 @@ class TitaniumBot(commands.Bot):
 
     opt_out: list[int] = []
 
+    trusted_servers: list[int] = []
+
     async def refresh_opt_out(self) -> None:
         cache_logger.info("Refreshing opt-out IDs...")
 
@@ -288,6 +290,12 @@ class TitaniumBot(commands.Bot):
     async def setup_hook(self):
         await init_db()
         await self.refresh_all_caches()
+
+        self.trusted_servers = (
+            [int(x) for x in os.getenv("TRUSTED_SERVERS", "").split(",")]
+            if os.getenv("TRUSTED_SERVERS")
+            else []
+        )
 
         init_logger.info("Getting custom emojis...")
         try:
