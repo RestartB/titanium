@@ -66,7 +66,7 @@ class WebSearchCommandsCog(commands.Cog):
         ctx: commands.Context["TitaniumBot"],
         *,
         query: str,
-        page: app_commands.Range[int, 1, 10] = 1,
+        page: commands.Range[int, 1, 10] = 1,
         ephemeral: bool = False,
     ):
         await ctx.defer(ephemeral=ephemeral)

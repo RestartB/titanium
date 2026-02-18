@@ -2,9 +2,11 @@ import asyncio
 import os
 import textwrap
 from io import BytesIO
-from typing import Literal
+from typing import Literal, Tuple
 
+import aiohttp
 from discord import Attachment, File
+from emoji import emoji_list
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFont, ImageOps
 from wand.image import Image as WandImage
 
@@ -17,6 +19,185 @@ class ImageTooSmallError(Exception):
 
 class OperationTooLargeError(Exception):
     """Raised when the operation would result in an image that is too large."""
+
+
+class EmojiRenderer:
+    """Handle rendering text with emoji support"""
+
+    # Twemoji CDN base URL
+    EMOJI_CDN = "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/{}.png"
+
+    def __init__(self):
+        self._emoji_cache: dict[str, Image.Image] = {}
+
+    def _emoji_to_codepoint(self, emoji: str) -> str:
+        return "-".join(f"{ord(c):x}" for c in emoji)
+
+    async def _download_emoji(self, emoji: str) -> Image.Image:
+        """Download emoji image from CDN"""
+        if emoji in self._emoji_cache:
+            return self._emoji_cache[emoji]
+
+        codepoint = self._emoji_to_codepoint(emoji)
+        url = self.EMOJI_CDN.format(codepoint)
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    data = await response.read()
+                    emoji_img = Image.open(BytesIO(data)).convert("RGBA")
+                    self._emoji_cache[emoji] = emoji_img
+                    return emoji_img
+                else:
+                    raise ValueError(f"Failed to download emoji: {emoji}")
+
+    def _split_text_and_emoji(self, text: str) -> list[Tuple[str, bool]]:
+        """
+        Split text into segments of regular text and emoji
+        Returns list of (segment, is_emoji) tuples
+        """
+        emojis = emoji_list(text)
+        if not emojis:
+            return [(text, False)]
+
+        segments = []
+        last_end = 0
+
+        for emoji in emojis:
+            if emoji["match_start"] > last_end:
+                # add text before emoji
+                segments.append((text[last_end : emoji["match_start"]], False))
+
+            # add emoji
+            segments.append((emoji["emoji"], True))
+            last_end = emoji["match_end"]
+
+        # add remaining text
+        if last_end < len(text):
+            segments.append((text[last_end:], False))
+
+        return segments
+
+    def get_line_size(
+        self, text: str, font: ImageFont.FreeTypeFont, align: str = "left"
+    ) -> Tuple[float, float]:
+        """
+        Calculate the size of a line of text with emojis
+        """
+        segments = self._split_text_and_emoji(text)
+
+        total_width = 0
+        max_height = 0
+
+        # temp image for calculations
+        temp_img = Image.new("RGBA", (1, 1))
+        draw = ImageDraw.Draw(temp_img)
+
+        # add width and height of each segment
+        for segment, is_emoji in segments:
+            if is_emoji:
+                emoji_size = font.size
+                total_width += emoji_size
+                max_height = max(max_height, emoji_size)
+            else:
+                bbox = draw.textbbox((0, 0), segment, font=font, align=align)
+
+                seg_width = bbox[2] - bbox[0]
+                seg_height = bbox[3] - bbox[1]
+
+                total_width += seg_width
+                max_height = max(max_height, seg_height)
+
+        return (total_width, max_height)
+
+    def get_size(self, text: str, font: ImageFont.FreeTypeFont, align: str = "left"):
+        """
+        Calculate the size of text with emojis
+        """
+        lines = text.split("\n")
+        line_widths: list[float] = []
+        line_heights: list[float] = []
+
+        # calculate for all lines
+        for line in lines:
+            line_size = self.get_line_size(line, font, align)
+            line_widths.append(line_size[0])
+            line_heights.append(line_size[1])
+
+        return (max(line_widths) if line_widths else 0, sum(line_heights))
+
+    async def render_text(
+        self,
+        img: Image.Image,
+        xy: Tuple[int, int],
+        text: str,
+        font: ImageFont.FreeTypeFont,
+        fill: Tuple[int, int, int, int] = (0, 0, 0, 255),
+        align: str = "left",
+    ) -> Image.Image:
+        """
+        Render text with emoji support onto an image
+        """
+        draw = ImageDraw.Draw(img)
+        lines = text.split("\n")
+
+        # calculate total width and height for all lines
+        line_heights = []
+        line_widths = []
+
+        for line in lines:
+            line_size = self.get_line_size(line, font, align)
+            line_widths.append(line_size[0])
+            line_heights.append(line_size[1])
+
+        total_height = sum(line_heights)
+
+        # starting position (centered)
+        x, y = xy
+        start_x = x
+        start_y = y - total_height // 2
+
+        current_y = start_y
+
+        # render each line
+        for line_idx, line in enumerate(lines):
+            segments = self._split_text_and_emoji(line)
+            line_width = line_widths[line_idx]
+            line_height = line_heights[line_idx]
+
+            # center this line horizontally
+            current_x = start_x - line_width // 2
+
+            emoji_size = font.size
+
+            for segment, is_emoji in segments:
+                if is_emoji:
+                    try:
+                        emoji_img = await self._download_emoji(segment)
+
+                        # resize emoji to match font size
+                        emoji_img = emoji_img.resize(
+                            (emoji_size, emoji_size), Image.Resampling.LANCZOS
+                        )
+
+                        # calculate vertical centering for this line
+                        emoji_y = current_y + (line_height - emoji_size) // 2
+                        img.paste(emoji_img, (int(current_x), int(emoji_y)), emoji_img)
+                        current_x += emoji_size
+                    except Exception as e:
+                        # emoji failed
+                        print(f"Failed to render emoji {segment}: {e}")
+                        current_x += emoji_size
+                else:
+                    # render regular text
+                    draw.text((current_x, current_y), segment, font=font, fill=fill, align=align)
+                    bbox = draw.textbbox((current_x, current_y), segment, font=font)
+                    current_x = bbox[2]
+
+            # move to next line
+            current_y += line_height
+
+        return img
 
 
 class ImageTools:
@@ -297,7 +478,7 @@ class ImageTools:
             filename=self._get_output_filename(output_format),
         )
 
-    def _create_caption_frame(
+    async def _create_caption_frame(
         self,
         img: Image.Image,
         font_data: ImageFont.FreeTypeFont,
@@ -316,19 +497,20 @@ class ImageTools:
         )
         frame_output.paste(img, (0, (white_height if pos == "top" else 0)), img)
 
-        # Calculate X position for text
-        x = (frame_output.width - text_width) // 2
+        # Calculate center X position for text
+        x = frame_output.width // 2
 
-        # Calculate Y position for text
+        # Calculate center Y position for text
         if pos == "top":
-            y = 10
+            y = white_height // 2
         else:
-            y = img.height + 10
+            y = img.height + (white_height // 2)
 
-        draw = ImageDraw.Draw(frame_output)
-        draw.text(
-            (x, y),
-            wrapped_text,
+        renderer = EmojiRenderer()
+        frame_output = await renderer.render_text(
+            frame_output,
+            xy=(x, y),
+            text=wrapped_text,
             font=font_data,
             fill=(0, 0, 0, 255),
             align="center",
@@ -339,8 +521,12 @@ class ImageTools:
 
         return frame_output
 
-    def _caption_sync(
-        self, img: Image.Image, caption: str, font_path: str, pos: Literal["top", "bottom"]
+    async def _caption_sync(
+        self,
+        img: Image.Image,
+        caption: str,
+        font_path: str,
+        pos: Literal["top", "bottom"],
     ) -> BytesIO:
         output_data = BytesIO()
 
@@ -351,16 +537,15 @@ class ImageTools:
 
         if not os.path.exists(font_path):
             raise FileNotFoundError(f"Font file not found: {font_path}")
-        font_data = ImageFont.truetype(font_path, img.width // 11)
+        font_data = ImageFont.truetype(font_path, max(img.width // 11, 25))
 
         # decide font size
-        draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+        renderer = EmojiRenderer()
         while True:
-            bbox = draw.textbbox((0, 0), wrapped_text, font=font_data)
-            size = (bbox[2] - bbox[0], bbox[3] - bbox[1])
+            size = renderer.get_size(text=wrapped_text, font=font_data)
             if size[0] <= img.width - 20:
                 break
-            elif font_data.size <= 6:
+            elif font_data.size <= 25:
                 break
             else:
                 font_data = ImageFont.truetype(font_path, font_data.size - 1)
@@ -388,7 +573,7 @@ class ImageTools:
                 img.seek(frame)
 
                 frames.append(
-                    self._create_caption_frame(
+                    await self._create_caption_frame(
                         img,
                         font_data,
                         int(TEXT_WIDTH),
@@ -410,7 +595,7 @@ class ImageTools:
                 loop=0,
             )
         else:
-            output_img = self._create_caption_frame(
+            output_img = await self._create_caption_frame(
                 img,
                 font_data,
                 int(TEXT_WIDTH),
@@ -435,7 +620,7 @@ class ImageTools:
         Add a caption to the image and return file.
         """
         img = await self._load_image()
-        captioned_buffer = await asyncio.to_thread(self._caption_sync, img, caption, font, pos)
+        captioned_buffer = await self._caption_sync(img, caption, font, pos)
 
         # check if image is animated
         captioned_img = await asyncio.to_thread(self._load_sync, captioned_buffer.getvalue())
@@ -445,6 +630,7 @@ class ImageTools:
             ImageFormats.GIF,
             ImageFormats.WEBP,
             ImageFormats.PNG,
+            ImageFormats.AVIF,
         ]:
             # static - get first frame
             captioned_img.seek(0)
