@@ -48,7 +48,7 @@ class Analytics(commands.Cog):
             return
 
         embed = discord.Embed(
-            title=f"@{interaction.user.name} ran an app command",
+            title=f"`@{interaction.user.name}` ran an app command",
             description=f"`/{command.qualified_name}`",
             timestamp=interaction.created_at,
         )
@@ -60,7 +60,7 @@ class Analytics(commands.Cog):
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
         embed = discord.Embed(
-            title=f"@{interaction.user.name} started an interaction",
+            title=f"`@{interaction.user.name}` started an interaction",
             description=f"`{str(interaction.type)}`",
             timestamp=interaction.created_at,
         )
@@ -82,7 +82,7 @@ class Analytics(commands.Cog):
             return
 
         embed = discord.Embed(
-            title=f"@{ctx.author.name} ran a prefix command",
+            title=f"`@{ctx.author.name}` ran a prefix command",
             description=f"`{ctx.clean_prefix}{ctx.command.qualified_name}`",
             timestamp=ctx.message.created_at,
         )
