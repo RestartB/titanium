@@ -4,9 +4,10 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import shortuuid
+from discord import Guild, Member, PartialInviteGuild
 from dotenv import load_dotenv
 from sqlalchemy import (
     URL,
@@ -19,6 +20,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    select,
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
@@ -33,14 +35,16 @@ from lib.enums.moderation import CaseType
 from lib.enums.scheduled_events import EventType
 from lib.enums.server_counters import ServerCounterType
 
+if TYPE_CHECKING:
+    from main import TitaniumBot
+
+
 Base = declarative_base()
+logger = logging.getLogger("sql")
 
 
 def generate_short_uuid() -> str:
     return shortuuid.ShortUUID().random(length=8)
-
-
-logger = logging.getLogger("sql")
 
 
 # -- Tables --
@@ -579,7 +583,7 @@ class ModCase(Base):
     guild_id: Mapped[int] = MappedColumn(BigInteger)
     user_id: Mapped[int] = MappedColumn(BigInteger)
     creator_user_id: Mapped[int] = MappedColumn(BigInteger)
-    time_created: Mapped[datetime] = MappedColumn(DateTime)
+    time_created: Mapped[datetime] = MappedColumn(DateTime, server_default=text("NOW()"))
     time_updated: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
     time_expires: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
     description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
@@ -592,6 +596,45 @@ class ModCase(Base):
         "ScheduledTask", back_populates="case", cascade="all, delete-orphan"
     )
 
+    async def add_comment(
+        self, member: Member, content: str, bot: TitaniumBot, guild: Guild | PartialInviteGuild
+    ) -> ModCaseComment:
+        from lib.classes.guild_logger import GuildLogger
+        from lib.helpers.log_error import log_error
+
+        comment = ModCaseComment(
+            guild_id=self.guild_id, case_id=self.id, user_id=member.id, comment=content
+        )
+
+        async with get_session() as session:
+            session.add(comment)
+
+        try:
+            log = GuildLogger(bot=bot, guild=guild)
+            await log.titanium_case_comment(case=self, creator=member, comment=content)
+        except Exception as e:
+            await log_error(
+                bot=bot,
+                module="Logging",
+                guild_id=guild.id,
+                error=f"Unknown error while logging new case comment - {comment.id}",
+                user=member,
+                exc=e,
+            )
+
+        return comment
+
+    async def get_user_comment(self, comment: uuid.UUID, user: int) -> ModCaseComment | None:
+        async with get_session() as session:
+            query = await session.execute(
+                select(ModCaseComment)
+                .where(ModCaseComment.id == comment)
+                .where(ModCaseComment.case_id == self.id)
+                .where(ModCaseComment.user_id == user)
+            )
+
+            return query.scalar_one_or_none()
+
 
 class ModCaseComment(Base):
     __tablename__ = "mod_case_comments"
@@ -600,7 +643,7 @@ class ModCaseComment(Base):
     case_id: Mapped[str] = MappedColumn(String(length=8), ForeignKey("mod_cases.id"))
     user_id: Mapped[int] = MappedColumn(BigInteger)
     comment: Mapped[str] = MappedColumn(String(length=512))
-    time_created: Mapped[datetime] = MappedColumn(DateTime)
+    time_created: Mapped[datetime] = MappedColumn(DateTime, server_default=text("NOW()"))
     case: Mapped["ModCase"] = relationship("ModCase", back_populates="comments", uselist=False)
 
 

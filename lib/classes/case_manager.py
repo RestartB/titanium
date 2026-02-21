@@ -98,7 +98,6 @@ class GuildModCaseManager:
             type=action,
             user_id=user.id,
             creator_user_id=creator_user.id,
-            time_created=datetime.now(),
             description=reason,
             external=external,
             resolved=True if action == CaseType.KICK else False,

@@ -164,6 +164,89 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         finally:
             await stop_loading(ctx)
 
+    @case_group.command(name="comments", description="View comments on a case.")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @app_commands.default_permissions(manage_guild=True)
+    @app_commands.describe(case_id="The case ID to search for.")
+    async def case_comments(
+        self, ctx: commands.Context["TitaniumBot"], case_id: str
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user:
+            return
+
+        await defer(ctx)
+
+        try:
+            async with get_session() as session:
+                case = await GuildModCaseManager(self.bot, ctx.guild, session).get_case_by_id(
+                    case_id
+                )
+
+            # Get creator
+            creator = self.bot.get_user(case.creator_user_id)  # pyright: ignore[reportArgumentType]
+
+            if not creator:
+                creator = case.creator_user_id
+
+            # Get target
+            target = self.bot.get_user(case.user_id)  # pyright: ignore[reportArgumentType]
+
+            if not target:
+                target = case.user_id
+
+            if len(case.comments) == 0:
+                embed = Embed(
+                    title=f"`{case.id}` - Comments",
+                    description="",
+                    colour=Colour.light_gray(),
+                )
+                embed.description = f"{ctx.bot.info_emoji} There are no comments on this case."
+
+            comment_strings: list[str] = []
+            for comment in case.comments:
+                comment_strings.append(
+                    f"<@{comment.user_id}> - <t:{int(comment.time_created.timestamp())}:d>\n{comment.comment}"
+                )
+
+            comment_pages: list[Embed] = []
+            current_page: list[str] = []
+
+            embed = Embed(
+                title=f"`{case.id}` - Comments",
+                description=f"**{self.bot.info_emoji} There are {len(case.comments)} comments on this case.**\n\n",
+                colour=Colour.light_gray(),
+            )
+
+            for comment in comment_strings:
+                current_page.append(comment)
+
+                if len(current_page) == 4 and embed.description:
+                    embed.description += "\n".join(current_page)
+                    comment_pages.append(embed)
+
+                    embed = Embed(
+                        title=f"`{case.id}` - Comments",
+                        description=f"**{self.bot.info_emoji} There are {len(case.comments)} comments on this case.**\n\n",
+                        colour=Colour.light_gray(),
+                    )
+
+                    current_page = []
+
+            if current_page and embed.description:
+                embed.description += "\n".join(current_page)
+                comment_pages.append(embed)
+
+            if len(comment_pages) > 1:
+                pagination = PaginationView(comment_pages, 360)
+                await ctx.reply(embed=comment_pages[0], view=pagination)
+            else:
+                await ctx.reply(embed=comment_pages[0])
+        except CaseNotFoundException:
+            return await ctx.reply(embed=case_not_found(self.bot, str(case_id)))
+        finally:
+            await stop_loading(ctx)
+
     @case_group.command(name="delete", description="Delete a case by its ID.")
     @global_alias("deletecase")
     @commands.guild_only()

@@ -20,3 +20,19 @@ async def get_or_fetch_message(
         return message
     except discord.NotFound:
         return None
+
+
+async def get_or_fetch_member(
+    bot: TitaniumBot, guild: discord.Guild, user_id: int
+) -> discord.Member | None:
+    # Try to get the member from cache
+    member = guild.get_member(user_id)
+    if member:
+        return member
+
+    # If not in cache, fetch from API
+    try:
+        member = await guild.fetch_member(user_id)
+        return member
+    except discord.NotFound:
+        return None

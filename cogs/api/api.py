@@ -34,6 +34,9 @@ from lib.api.validators import (
     ModerationConfigModel,
     ServerCountersConfigModel,
 )
+from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
+from lib.helpers.cache import get_or_fetch_member
+from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
 from lib.sql.sql import (
     AutomodAction,
@@ -53,14 +56,13 @@ from lib.sql.sql import (
     LeaderboardLevels,
     LeaderboardUserStats,
     ModCase,
+    ModCaseComment,
     ServerCounterChannel,
     get_session,
 )
 
 if TYPE_CHECKING:
     from main import TitaniumBot
-
-from lib.helpers.log_error import log_error
 
 
 class APICog(commands.Cog):
@@ -111,10 +113,21 @@ class APICog(commands.Cog):
         self.app.router.add_get("/user/{user_id}/inguild/{guild_id}", self.in_guild)
 
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
-        self.app.router.add_get("/guild/{guild_id}/cases", self.guild_cases)
-        self.app.router.add_get("/guild/{guild_id}/cases/{case_id}", self.guild_case)
         self.app.router.add_get("/guild/{guild_id}/errors", self.guild_errors)
         self.app.router.add_get("/guild/{guild_id}/leaderboard", self.guild_leaderboard)
+
+        self.app.router.add_get("/guild/{guild_id}/cases", self.guild_cases)
+        self.app.router.add_get("/guild/{guild_id}/cases/{case_id}", self.guild_case)
+        self.app.router.add_get(
+            "/guild/{guild_id}/cases/{case_id}/comments", self.guild_case_comments
+        )
+        self.app.router.add_put(
+            "/guild/{guild_id}/cases/{case_id}/comments", self.guild_case_add_comment
+        )
+        self.app.router.add_delete(
+            "/guild/{guild_id}/cases/{case_id}/comments/{comment_id}",
+            self.guild_case_delete_comment,
+        )
 
         self.app.router.add_get("/guild/{guild_id}/perms", self.guild_perms)
         self.app.router.add_put("/guild/{guild_id}/perms", self.set_guild_perms)
@@ -464,6 +477,134 @@ class APICog(commands.Cog):
                 "time_updated": case.time_updated.isoformat() if case.time_updated else None,
             }
         )
+
+    async def guild_case_comments(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        case_id = request.match_info.get("case_id")
+        if not case_id:
+            return web.json_response({"error": "case_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        async with get_session() as session:
+            # Get case from db
+            result = await session.execute(
+                select(ModCaseComment)
+                .where(ModCaseComment.guild_id == guild.id)
+                .where(ModCaseComment.case_id == case_id)
+            )
+            comments = result.scalars().all()
+
+        if not comments:
+            return web.json_response({"comments": []}, status=404)
+
+        # Get user objects to send user info
+        cached_users: dict[int, discord.User | discord.Member | None] = {}
+        for comment in comments:
+            if comment.user_id in cached_users:
+                continue
+
+            member = guild.get_member(comment.user_id)
+            if member:
+                cached_users[comment.user_id] = member
+            else:
+                try:
+                    user = await self.bot.fetch_user(comment.user_id)
+                    cached_users[comment.user_id] = user
+                except Exception:
+                    cached_users[comment.user_id] = None
+
+        comments_list = []
+        for comment in comments:
+            cuser = cached_users.get(comment.user_id)
+            comments_list.append(
+                {
+                    "id": str(comment.id),
+                    "creator_id": str(comment.user_id),
+                    "creator_name": cuser.name if cuser else None,
+                    "creator_display": cuser.display_name if cuser else None,
+                    "creator_pfp": cuser.display_avatar.url if cuser else None,
+                    "content": comment.comment,
+                    "time_created": comment.time_created.isoformat(),
+                }
+            )
+
+        return web.json_response({"comments": comments_list})
+
+    async def guild_case_add_comment(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        case_id = request.match_info.get("case_id")
+        if not case_id:
+            return web.json_response({"error": "case_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        body: dict = await request.json()
+        member = await get_or_fetch_member(bot=self.bot, guild=guild, user_id=int(body["user"]))
+
+        if not member:
+            return web.json_response({"error": "creator not found"}, status=404)
+
+        async with get_session() as session:
+            manager = GuildModCaseManager(self.bot, guild, session)
+
+            try:
+                case = await manager.get_case_by_id(case_id)
+            except CaseNotFoundException:
+                return web.json_response({"error": "case not found"}, status=404)
+
+            comment = await case.add_comment(
+                member=member, content=str(body["content"]), bot=self.bot, guild=guild
+            )
+
+        return web.json_response({"id": str(comment.id)})
+
+    async def guild_case_delete_comment(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        case_id = request.match_info.get("case_id")
+        if not case_id:
+            return web.json_response({"error": "case_id required"}, status=400)
+
+        comment_id = request.match_info.get("comment_id")
+        if not comment_id:
+            return web.json_response({"error": "comment_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        async with get_session() as session:
+            manager = GuildModCaseManager(self.bot, guild, session)
+
+            try:
+                case = await manager.get_case_by_id(case_id)
+            except CaseNotFoundException:
+                return web.json_response({"error": "case not found"}, status=404)
+
+            body: dict = await request.json()
+            comment = await case.get_user_comment(
+                user=int(body["user"]), comment=uuid.UUID(comment_id)
+            )
+
+            if not comment:
+                return web.json_response({"error": "comment not found"}, status=404)
+
+            await session.execute(delete(ModCaseComment).where(ModCaseComment.id == comment.id))
+
+        return web.Response(status=204)
 
     async def guild_errors(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")

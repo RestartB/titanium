@@ -269,6 +269,7 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
             "delete_leavers": lb_settings.delete_leavers,
             "levels": [
                 {
+                    "id": str(level.id),
                     "xp_required": level.xp,
                     "reward_roles": [str(role_id) for role_id in level.reward_roles],
                 }
