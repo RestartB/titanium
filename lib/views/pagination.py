@@ -1,5 +1,7 @@
+from typing import Sequence
+
 from discord import ButtonStyle, Colour, Embed, Interaction
-from discord.ui import Button, View, button
+from discord.ui import ActionRow, Button, Container, LayoutView, View, button
 from sqlalchemy import select
 from sqlalchemy.orm import InstrumentedAttribute
 
@@ -210,3 +212,78 @@ class LeaderboardReloadPageView(PaginationView):
             embeds=self.embeds[self.current_page],
             view=self,
         )
+
+
+class PageControls(ActionRow):
+    def __init__(self, layout: PaginationV2View):
+        super().__init__()
+        self.layout = layout
+
+    @button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
+    async def first_button(self, interaction: Interaction, button: Button):
+        await interaction.response.defer()
+        self.layout.current_page = 0
+        await self.layout._update_page(interaction)
+
+    @button(emoji="⏪", style=ButtonStyle.primary, custom_id="prev")
+    async def prev_button(self, interaction: Interaction, button: Button):
+        await interaction.response.defer()
+        self.layout.current_page = max(self.layout.current_page - 1, 0)
+        await self.layout._update_page(interaction)
+
+    @button(label="1/1", style=ButtonStyle.gray, custom_id="count", disabled=True)
+    async def page_count_label(self, interaction: Interaction, button: Button):
+        pass
+
+    @button(emoji="⏩", style=ButtonStyle.primary, custom_id="next")
+    async def next_button(self, interaction: Interaction, button: Button):
+        await interaction.response.defer()
+        self.layout.current_page = min(self.layout.current_page + 1, len(self.layout.pages) - 1)
+        await self.layout._update_page(interaction)
+
+    @button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
+    async def last_button(self, interaction: Interaction, button: Button):
+        await interaction.response.defer()
+        self.layout.current_page = len(self.layout.pages) - 1
+        await self.layout._update_page(interaction)
+
+
+class PaginationV2View(LayoutView):
+    def __init__(self, pages: Sequence[Container]):
+        super().__init__()
+
+        self.pages = pages
+        self.current_page = 0
+
+        if self.pages:
+            self.add_item(self.pages[0])
+
+            self.page_controls = PageControls(self)
+            self.page_count_label = self.page_controls.page_count_label
+            self.page_count_label.label = f"1/{len(self.pages)}"
+
+            self.page_controls.first_button.disabled = True
+            self.page_controls.prev_button.disabled = True
+
+            if len(self.pages) == 1:
+                self.page_controls.next_button.disabled = True
+                self.page_controls.last_button.disabled = True
+
+            self.add_item(self.page_controls)
+
+    async def _update_page(self, interaction: Interaction):
+        # Clear all items
+        self.clear_items()
+
+        # Add current page
+        self.add_item(self.pages[self.current_page])
+        self.add_item(self.page_controls)
+        self.page_count_label.label = f"{self.current_page + 1}/{len(self.pages)}"
+
+        # Update button states
+        self.page_controls.first_button.disabled = self.current_page == 0
+        self.page_controls.prev_button.disabled = self.current_page == 0
+        self.page_controls.next_button.disabled = self.current_page == len(self.pages) - 1
+        self.page_controls.last_button.disabled = self.current_page == len(self.pages) - 1
+
+        await interaction.edit_original_response(view=self)
