@@ -18,6 +18,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from lib.classes.automod_message import AutomodMessage
+from lib.embeds.general import guild_only
 from lib.helpers.hybrid_adapters import SlashCommandOnly
 from lib.helpers.log_error import log_error
 from lib.setup_logger import setup_logging
@@ -334,6 +335,12 @@ class TitaniumBot(commands.Bot):
                 self.explicit_emoji = await self.fetch_application_emoji(int(explicit_emoji))
             else:
                 self.explicit_emoji = "🇪"
+
+            menu_emoji = os.getenv("MENU_EMOJI")
+            if menu_emoji and menu_emoji.strip() != "":
+                self.menu_emoji = await self.fetch_application_emoji(int(menu_emoji))
+            else:
+                self.menu_emoji = "⚙️"
         except discord.HTTPException as e:
             init_logger.error("Failed to fetch emojis", exc_info=e)
             raise
@@ -427,12 +434,7 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         ]:
             await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.NoPrivateMessage):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Server Only Command",
-            description="This command can only be used in servers.",
-            colour=discord.Colour.red(),
-        )
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=guild_only(bot))
 
         if not ctx.interaction and ctx.bot.loading_emoji in [
             r.emoji for r in ctx.message.reactions

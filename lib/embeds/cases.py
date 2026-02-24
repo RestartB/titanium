@@ -95,3 +95,27 @@ def case_deleted(bot: TitaniumBot, case_id: str) -> Embed:
         description=f"Case `{case_id}` has been successfully deleted.",
         colour=Colour.green(),
     )
+
+
+def comment_deleted(bot: TitaniumBot) -> Embed:
+    return Embed(
+        title=f"{bot.success_emoji} Comment Deleted",
+        description="The comment has been successfully deleted.",
+        colour=Colour.green(),
+    )
+
+
+def comment_edited(bot: TitaniumBot) -> Embed:
+    return Embed(
+        title=f"{bot.success_emoji} Comment Edited",
+        description="The comment has been successfully edited.",
+        colour=Colour.green(),
+    )
+
+
+def not_your_comment(bot: TitaniumBot) -> Embed:
+    return Embed(
+        title=f"{bot.error_emoji} Not your comment",
+        description="This is not your comment. Only the comment creator can modify this comment.",
+        colour=Colour.red(),
+    )

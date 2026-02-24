@@ -646,6 +646,17 @@ class ModCaseComment(Base):
     time_created: Mapped[datetime] = MappedColumn(DateTime, server_default=text("NOW()"))
     case: Mapped["ModCase"] = relationship("ModCase", back_populates="comments", uselist=False)
 
+    async def edit_comment(self, content: str) -> ModCaseComment | None:
+        async with get_session() as session:
+            self.comment = content
+            session.add(self)
+
+        return self
+
+    async def delete_comment(self) -> None:
+        async with get_session() as session:
+            await session.delete(self)
+
 
 # Game Stats
 class GameStat(Base):

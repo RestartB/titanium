@@ -1,16 +1,18 @@
+import importlib
 from typing import TYPE_CHECKING, Sequence
 
-from discord import Colour, Embed, Member, Message, User, app_commands
+from discord import AllowedMentions, Colour, Embed, Member, Message, User, app_commands
 from discord.ext import commands
 
+import lib.views.cases
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.embeds.cases import case_deleted, case_embed, case_not_found, cases
-from lib.embeds.general import cancelled
+from lib.embeds.general import cancelled, guild_only
 from lib.helpers.global_alias import add_global_aliases, global_alias
 from lib.helpers.hybrid_adapters import defer, stop_loading
 from lib.sql.sql import ModCase, get_session
 from lib.views.confirm import ConfirmView
-from lib.views.pagination import PaginationView
+from lib.views.pagination import PaginationV2View, PaginationView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -22,6 +24,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         add_global_aliases(self, bot)
+
+    async def cog_load(self) -> None:
+        importlib.reload(lib.views.cases)
 
     async def _build_embeds(
         self, cases_list: Sequence[ModCase], target: User | Member, user: User | Member
@@ -183,65 +188,69 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                     case_id
                 )
 
-            # Get creator
-            creator = self.bot.get_user(case.creator_user_id)  # pyright: ignore[reportArgumentType]
+            pages: list[lib.views.cases.CommentPageContainer] = []
+            current_page = []
 
-            if not creator:
-                creator = case.creator_user_id
-
-            # Get target
-            target = self.bot.get_user(case.user_id)  # pyright: ignore[reportArgumentType]
-
-            if not target:
-                target = case.user_id
-
-            if len(case.comments) == 0:
-                embed = Embed(
-                    title=f"`{case.id}` - Comments",
-                    description="",
-                    colour=Colour.light_gray(),
-                )
-                embed.description = f"{ctx.bot.info_emoji} There are no comments on this case."
-
-            comment_strings: list[str] = []
             for comment in case.comments:
-                comment_strings.append(
-                    f"<@{comment.user_id}> - <t:{int(comment.time_created.timestamp())}:d>\n{comment.comment}"
-                )
-
-            comment_pages: list[Embed] = []
-            current_page: list[str] = []
-
-            embed = Embed(
-                title=f"`{case.id}` - Comments",
-                description=f"**{self.bot.info_emoji} There are {len(case.comments)} comments on this case.**\n\n",
-                colour=Colour.light_gray(),
-            )
-
-            for comment in comment_strings:
                 current_page.append(comment)
 
-                if len(current_page) == 4 and embed.description:
-                    embed.description += "\n".join(current_page)
-                    comment_pages.append(embed)
+                if len(current_page) % 5 != 0:
+                    continue
 
-                    embed = Embed(
-                        title=f"`{case.id}` - Comments",
-                        description=f"**{self.bot.info_emoji} There are {len(case.comments)} comments on this case.**\n\n",
-                        colour=Colour.light_gray(),
-                    )
+                container = lib.views.cases.CommentPageContainer(self.bot, case, current_page)
+                pages.append(container)
+                current_page = []
 
-                    current_page = []
+            if current_page:
+                container = lib.views.cases.CommentPageContainer(self.bot, case, current_page)
+                pages.append(container)
 
-            if current_page and embed.description:
-                embed.description += "\n".join(current_page)
-                comment_pages.append(embed)
+            layout = PaginationV2View(pages)
+            await ctx.reply(view=layout, allowed_mentions=AllowedMentions.none())
+        except CaseNotFoundException:
+            return await ctx.reply(embed=case_not_found(self.bot, str(case_id)))
+        finally:
+            await stop_loading(ctx)
 
-            if len(comment_pages) > 1:
-                pagination = PaginationView(comment_pages, 360)
-                await ctx.reply(embed=comment_pages[0], view=pagination)
-            else:
-                await ctx.reply(embed=comment_pages[0])
+    @case_group.command(name="addcomment", description="Add a comment to a case.")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @app_commands.default_permissions(manage_guild=True)
+    @app_commands.describe(
+        case_id="The case ID to add a comment to.", comment="The comment to add."
+    )
+    async def case_add_comment(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        case_id: str,
+        *,
+        comment: commands.Range[str, 1, 1000],
+    ) -> None | Message:
+        if not ctx.guild or not self.bot.user:
+            return
+
+        await defer(ctx)
+
+        if not isinstance(ctx.author, Member):
+            return await ctx.reply(embed=guild_only(self.bot))
+
+        try:
+            async with get_session() as session:
+                case = await GuildModCaseManager(self.bot, ctx.guild, session).get_case_by_id(
+                    case_id
+                )
+
+                await case.add_comment(
+                    member=ctx.author, content=comment, bot=self.bot, guild=ctx.guild
+                )
+
+            embed = Embed(
+                title=f"{self.bot.success_emoji} Added Comment",
+                description=f"Added your comment to `{case.id}`.",
+                colour=Colour.green(),
+            )
+
+            await ctx.reply(embed=embed)
         except CaseNotFoundException:
             return await ctx.reply(embed=case_not_found(self.bot, str(case_id)))
         finally:
