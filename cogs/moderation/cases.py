@@ -1,8 +1,9 @@
 import importlib
 from typing import TYPE_CHECKING, Sequence
 
-from discord import AllowedMentions, Colour, Embed, Member, Message, User, app_commands
+from discord import AllowedMentions, ButtonStyle, Colour, Embed, Member, Message, User, app_commands
 from discord.ext import commands
+from discord.ui import Button, View
 
 import lib.views.cases
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
@@ -11,6 +12,7 @@ from lib.embeds.general import cancelled, guild_only
 from lib.helpers.global_alias import add_global_aliases, global_alias
 from lib.helpers.hybrid_adapters import defer, stop_loading
 from lib.sql.sql import ModCase, get_session
+from lib.views.cases import ViewCommentsButton
 from lib.views.confirm import ConfirmView
 from lib.views.pagination import PaginationV2View, PaginationView
 
@@ -152,18 +154,31 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 )
 
             # Get creator
-            creator = self.bot.get_user(case.creator_user_id)  # pyright: ignore[reportArgumentType]
+            creator = self.bot.get_user(case.creator_user_id)
 
             if not creator:
                 creator = case.creator_user_id
 
             # Get target
-            target = self.bot.get_user(case.user_id)  # pyright: ignore[reportArgumentType]
+            target = self.bot.get_user(case.user_id)
 
             if not target:
                 target = case.user_id
 
-            await ctx.reply(embed=case_embed(self.bot, case, creator, target))
+            view = View()
+
+            if case.comments:
+                view.add_item(ViewCommentsButton(case=case))
+
+            view.add_item(
+                Button(
+                    label="View in browser",
+                    url=f"https://dash.titaniumbot.me/guild/{case.guild_id}/moderation/cases/{case.id}",
+                    style=ButtonStyle.link,
+                )
+            )
+
+            await ctx.reply(embed=case_embed(self.bot, case, creator, target), view=view)
         except CaseNotFoundException:
             return await ctx.reply(embed=case_not_found(self.bot, str(case_id)))
         finally:

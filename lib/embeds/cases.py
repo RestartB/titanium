@@ -48,8 +48,8 @@ def case_embed(
 ) -> Embed:
     description_lines = [
         f"**Status:** {bot.error_emoji if bool(case.resolved) else bot.success_emoji} {'Closed' if bool(case.resolved) else 'Open'}",
-        f"**Type:** {case.type}",
-        f"**Target:** {f'<@{target}> (`{target}`)' if isinstance(target, int) or isinstance(target, Column) else f'{target.mention} (`{target.id}`)'}",
+        f"**Type:** {case.type.name.capitalize()}\n",
+        f"**Target:** {f'<@{target}> (`{target}`)' if isinstance(target, int) or isinstance(target, Column) else f'{target.mention} (`{target.id}`)'}\n",
         f"**Time Created:** <t:{int(case.time_created.timestamp())}:f>",
     ]
 
@@ -58,13 +58,14 @@ def case_embed(
 
     description_lines.extend(
         [
-            f"**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}",
+            f"**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n",
             f"**Reason:** {case.description or 'No reason provided.'}",
+            f"**Comments:** {len(case.comments)} comment{'s' if len(case.comments) > 1 else ''}",
         ]
     )
 
     embed = Embed(
-        title=f"Case `{case.id}`",
+        title=f"`{case.id}` - Info",
         description="\n".join(description_lines),
         colour=Colour.light_gray(),
     )

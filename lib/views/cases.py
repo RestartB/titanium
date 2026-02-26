@@ -2,10 +2,11 @@ from typing import TYPE_CHECKING, Optional
 
 import discord
 
-from lib.embeds.cases import comment_deleted, comment_edited, not_your_comment
+from lib.embeds.cases import case_embed, comment_deleted, comment_edited, not_your_comment
 from lib.embeds.general import guild_only
 from lib.helpers.components import embed_to_v2
 from lib.sql.sql import ModCase, ModCaseComment
+from lib.views.pagination import PaginationV2View
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -146,7 +147,13 @@ class Comment(discord.ui.Section):
 
 
 class CommentPageContainer(discord.ui.Container):
-    def __init__(self, bot: TitaniumBot, case: ModCase, comments: list[ModCaseComment]):
+    def __init__(
+        self,
+        bot: TitaniumBot,
+        case: ModCase,
+        comments: list[ModCaseComment],
+        show_case_button: bool = True,
+    ):
         super().__init__(accent_colour=discord.Colour.light_grey())
 
         self.add_item(
@@ -161,12 +168,91 @@ class CommentPageContainer(discord.ui.Container):
             self.add_item(Comment(bot, comment))
 
         self.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
-        self.add_item(
-            discord.ui.ActionRow().add_item(
+
+        buttons = discord.ui.ActionRow()
+
+        if show_case_button:
+            buttons.add_item(ViewCaseButton(case=case))
+
+        buttons.add_item(
+            discord.ui.Button(
+                label="View all comments",
+                url=f"https://dash.titaniumbot.me/guild/{case.guild_id}/moderation/cases/{case.id}",
+                style=discord.ButtonStyle.link,
+            )
+        )
+
+        self.add_item(buttons)
+
+
+class ViewCaseButton(discord.ui.Button):
+    def __init__(self, case: ModCase):
+        super().__init__(label="View case", emoji="ℹ️")
+        self.case = case
+
+    async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        # Get creator
+        creator = interaction.client.get_user(self.case.creator_user_id)
+
+        if not creator:
+            creator = self.case.creator_user_id
+
+        # Get target
+        target = interaction.client.get_user(self.case.user_id)
+
+        if not target:
+            target = self.case.user_id
+
+        await interaction.followup.send(
+            embed=case_embed(
+                bot=interaction.client,
+                case=self.case,
+                creator=creator,
+                target=target,
+            ),
+            view=discord.ui.View().add_item(
                 discord.ui.Button(
-                    label="View all comments",
-                    url=f"https://dash.titaniumbot.me/guild/{case.guild_id}/moderation/cases/{case.id}",
+                    label="View in browser",
+                    url=f"https://dash.titaniumbot.me/guild/{self.case.guild_id}/moderation/cases/{self.case.id}",
                     style=discord.ButtonStyle.link,
                 )
+            ),
+            ephemeral=True,
+        )
+
+
+class ViewCommentsButton(discord.ui.Button):
+    def __init__(self, case: ModCase):
+        super().__init__(label="View comments", emoji="💬")
+        self.case = case
+
+    async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        pages: list[CommentPageContainer] = []
+        current_page = []
+
+        for comment in self.case.comments:
+            current_page.append(comment)
+
+            if len(current_page) % 5 != 0:
+                continue
+
+            container = CommentPageContainer(
+                interaction.client, self.case, current_page, show_case_button=False
             )
+            pages.append(container)
+            current_page = []
+
+        if current_page:
+            container = CommentPageContainer(
+                interaction.client, self.case, current_page, show_case_button=False
+            )
+            pages.append(container)
+
+        layout = PaginationV2View(pages)
+        await interaction.followup.send(
+            view=layout, allowed_mentions=discord.AllowedMentions.none(), ephemeral=True
         )
