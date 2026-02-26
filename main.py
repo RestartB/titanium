@@ -60,11 +60,14 @@ logging.info("Welcome to Titanium - v2 Development Version")
 logging.info("https://github.com/restartb/titanium")
 
 
-# Intents
+# Intents #
+# titanium needs the message content intent and members intent to function
+# without these the bot will not run
+# if your bot is in over 100 servers, please get these approved in the discord dev portal first
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-intents.presences = False
 
 
 class TitaniumBot(commands.Bot):
