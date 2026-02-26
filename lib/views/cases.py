@@ -158,7 +158,7 @@ class CommentPageContainer(discord.ui.Container):
 
         self.add_item(
             discord.ui.TextDisplay(
-                content=f"## `{case.id}` - Comments\n{bot.info_emoji} There are **{len(case.comments)} comments** to show."
+                content=f"## `{case.id}` - Comments\n{bot.info_emoji} There are **{len(case.comments)} comment{'s' if len(case.comments) > 1 else ''}** to show."
             )
         )
 
