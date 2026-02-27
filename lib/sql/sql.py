@@ -170,9 +170,7 @@ class GuildModerationSettings(Base):
     dm_users: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     external_cases: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     external_case_dms: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    immune_roles: Mapped[list[int]] = MappedColumn(
-        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
-    )
+    ban_days: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
 
 
 class GuildAutomodSettings(Base):

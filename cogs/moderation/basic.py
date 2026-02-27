@@ -540,11 +540,17 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             if not ctx.interaction and processed_duration is None:
                 processed_reason = duration + " " + reason if reason else duration
 
+            # Get config
+            config = await self.bot.fetch_guild_config(ctx.guild.id)
+
             # Ban user
             try:
                 await ctx.guild.ban(
                     user=user,
                     reason=f"@{ctx.author.name}: {processed_reason}",
+                    delete_message_seconds=config.moderation_settings.ban_days * 86400
+                    if config
+                    else 0,
                 )
             except discord.Forbidden as e:
                 await log_error(

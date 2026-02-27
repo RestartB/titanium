@@ -55,9 +55,9 @@ class BouncerMonitorCog(commands.Cog):
             self.logger.debug("Bouncer is not enabled, skipping member")
             return
 
-        config = config.bouncer_settings
+        bouncer_config = config.bouncer_settings
 
-        for rule in config.rules:
+        for rule in bouncer_config.rules:
             spotted = False
 
             if not rule.enabled:
@@ -330,6 +330,7 @@ class BouncerMonitorCog(commands.Cog):
                     try:
                         await member.ban(
                             reason=f"Bouncer: {punishment.reason}",
+                            delete_message_seconds=config.moderation_settings.ban_days * 86400,
                         )
 
                         await manager.create_case(

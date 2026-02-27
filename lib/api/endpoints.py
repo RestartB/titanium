@@ -39,6 +39,7 @@ def moderation_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web
                 "dm_users": True,
                 "external_cases": True,
                 "external_case_dms": False,
+                "ban_days": 0,
             }
         )
 
@@ -49,6 +50,7 @@ def moderation_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web
             "dm_users": moderation_settings.dm_users,
             "external_cases": moderation_settings.external_cases,
             "external_case_dms": moderation_settings.external_case_dms,
+            "ban_days": moderation_settings.ban_days,
         }
     )
 

@@ -1078,6 +1078,7 @@ class APICog(commands.Cog):
 
                 db_config.delete_confirmation = validated_config.delete_confirmation
                 db_config.dm_users = validated_config.dm_users
+                db_config.ban_days = validated_config.ban_days
 
                 session.add(db_config)
         elif module_name == "automod" and isinstance(validated_config, AutomodConfigModel):

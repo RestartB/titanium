@@ -67,14 +67,14 @@ class AutomodMonitorCog(commands.Cog):
                 self.logger.debug("Automod is not enabled, skipping message")
                 return
 
-            config = config.automod_settings
+            autmod_config = config.automod_settings
 
             triggered_word_rule_amount = {}
             malicious_link_count = 0
             phishing_link_count = 0
 
             self.logger.debug(f"Starting badword detection check for message {message.id}")
-            for rule in config.badword_detection_rules:
+            for rule in autmod_config.badword_detection_rules:
                 triggered_word_rule_amount[rule.id] = 0
                 content_to_check = (
                     message.content.lower() if not rule.case_sensitive else message.content
@@ -185,11 +185,11 @@ class AutomodMonitorCog(commands.Cog):
                 ]
 
             # Check for any spam detection
-            if len(config.spam_detection_rules) > 0:
+            if len(autmod_config.spam_detection_rules) > 0:
                 self.logger.debug(
-                    f"Checking {len(config.spam_detection_rules)} spam detection rules"
+                    f"Checking {len(autmod_config.spam_detection_rules)} spam detection rules"
                 )
-                for rule in config.spam_detection_rules:
+                for rule in autmod_config.spam_detection_rules:
                     latest_timestamp = current_state[0].timestamp
                     filtered_messages = [
                         m
@@ -227,8 +227,10 @@ class AutomodMonitorCog(commands.Cog):
                         )
 
             # Malicious link check
-            self.logger.debug(f"Checking {len(config.malicious_link_rules)} malicious link rules")
-            for rule in config.malicious_link_rules:
+            self.logger.debug(
+                f"Checking {len(autmod_config.malicious_link_rules)} malicious link rules"
+            )
+            for rule in autmod_config.malicious_link_rules:
                 latest_timestamp = current_state[0].timestamp
                 filtered_messages = [
                     m
@@ -250,8 +252,10 @@ class AutomodMonitorCog(commands.Cog):
                     )
 
             # Phishing link check
-            self.logger.debug(f"Checking {len(config.phishing_link_rules)} phishing link rules")
-            for rule in config.phishing_link_rules:
+            self.logger.debug(
+                f"Checking {len(autmod_config.phishing_link_rules)} phishing link rules"
+            )
+            for rule in autmod_config.phishing_link_rules:
                 latest_timestamp = current_state[0].timestamp
                 filtered_messages = [
                     m
@@ -274,9 +278,9 @@ class AutomodMonitorCog(commands.Cog):
 
             # Bad word detection
             self.logger.debug(
-                f"Checking {len(config.badword_detection_rules)} badword detection rules"
+                f"Checking {len(autmod_config.badword_detection_rules)} badword detection rules"
             )
-            for rule in config.badword_detection_rules:
+            for rule in autmod_config.badword_detection_rules:
                 if not rule.words:
                     continue
 
@@ -522,6 +526,7 @@ class AutomodMonitorCog(commands.Cog):
                             self.logger.debug(f"Banning user {message.author.id}")
                             await message.author.ban(
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
+                                delete_message_seconds=config.moderation_settings.ban_days * 86400,
                             )
 
                             case, dm_success, dm_error = await manager.create_case(
