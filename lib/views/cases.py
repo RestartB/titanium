@@ -193,6 +193,19 @@ class ViewCaseButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
         await interaction.response.defer(ephemeral=True)
 
+        if (
+            not isinstance(interaction.user, discord.Member)
+            or not interaction.user.guild_permissions.manage_guild
+        ):
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Missing Permissions",
+                description="You are missing Manage Server permissions to use this feature.",
+                colour=discord.Colour.red(),
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
         # Get creator
         creator = interaction.client.get_user(self.case.creator_user_id)
 
@@ -230,6 +243,19 @@ class ViewCommentsButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
         await interaction.response.defer(ephemeral=True)
+
+        if (
+            not isinstance(interaction.user, discord.Member)
+            or not interaction.user.guild_permissions.manage_guild
+        ):
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Missing Permissions",
+                description="You are missing Manage Server permissions to use this feature.",
+                colour=discord.Colour.red(),
+            )
+
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
 
         pages: list[CommentPageContainer] = []
         current_page = []

@@ -50,12 +50,12 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         ]
 
     @commands.hybrid_command(
-        name="cases", aliases=["warns"], description="View your moderation cases."
+        name="cases", aliases=["warns", "strikes"], description="View your moderation cases."
     )
     @commands.guild_only()
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.describe(
-        user="The user to search for, you can only provide this if you have the 'Manage Server' permission."
+        user="The user to search for. You can only search for other users if you have the 'Manage Server' permission."
     )
     async def cases(
         self, ctx: commands.Context["TitaniumBot"], user: User | None = None
@@ -167,7 +167,11 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
             view = View()
 
-            if case.comments:
+            if (
+                case.comments
+                and isinstance(ctx.author, Member)
+                and ctx.author.guild_permissions.manage_guild
+            ):
                 view.add_item(ViewCommentsButton(case=case))
 
             view.add_item(

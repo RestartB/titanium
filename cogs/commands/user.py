@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import discord
-from discord import ButtonStyle, Embed, Member, Optional, User, app_commands
+from discord import ButtonStyle, Embed, Member, User, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
 
