@@ -1,5 +1,7 @@
 import asyncio
 import base64
+import importlib
+import sys
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -7,8 +9,8 @@ import humanize
 from discord import Attachment, Colour, Embed, File, Interaction, app_commands
 from discord.ext import commands
 
+import lib.views.feedback_modal as feedback_views
 from lib.helpers.qrcode import generate_qrcode
-from lib.views.feedback_modal import FeedbackModal
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -18,6 +20,11 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
 
+    async def cog_load(self) -> None:
+        for module_name, module in list(sys.modules.items()):
+            if module_name.startswith("lib."):
+                importlib.reload(module)
+
     @app_commands.command(
         name="feedback",
         description="Provide feedback, share suggestions, or report issues to the bot developers.",
@@ -25,7 +32,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def feedback(self, interaction: Interaction["TitaniumBot"]) -> None:
-        modal = FeedbackModal()
+        modal = feedback_views.FeedbackModal()
         await interaction.response.send_modal(modal)
 
     @commands.hybrid_group(name="base64", description="Convert text to Base64.", fallback="encode")

@@ -1,4 +1,6 @@
+import importlib
 import os
+import sys
 from typing import TYPE_CHECKING, Optional
 
 import aiohttp
@@ -6,8 +8,8 @@ import discord
 from discord import Colour, app_commands
 from discord.ext import commands
 
+import lib.views.pagination as page_views
 from lib.helpers.global_alias import add_global_aliases, global_alias
-from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -21,6 +23,11 @@ class ReviewsCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         add_global_aliases(self, bot)
+
+    async def cog_load(self) -> None:
+        for module_name, module in list(sys.modules.items()):
+            if module_name.startswith("lib."):
+                importlib.reload(module)
 
     @commands.hybrid_group(name="reviews", description="Get reviews for a user.", fallback="user")
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -112,7 +119,7 @@ class ReviewsCommandsCog(commands.Cog):
         )
 
         if len(pages) > 1:
-            view = PaginationView(embeds=pages, timeout=300)
+            view = page_views.PaginationView(embeds=pages, timeout=300)
             await ctx.reply(embed=pages[0], view=view)
         else:
             await ctx.reply(embed=pages[0])
@@ -206,7 +213,7 @@ class ReviewsCommandsCog(commands.Cog):
         )
 
         if len(pages) > 1:
-            view = PaginationView(embeds=pages, timeout=300)
+            view = page_views.PaginationView(embeds=pages, timeout=300)
             await ctx.reply(embed=pages[0], view=view)
         else:
             await ctx.reply(embed=pages[0])

@@ -1,4 +1,6 @@
+import importlib
 import os
+import sys
 import urllib.parse
 from typing import TYPE_CHECKING
 
@@ -8,8 +10,8 @@ from discord import Colour, app_commands
 from discord.ext import commands
 from discord.ui import View
 
+import lib.views.pagination as page_views
 from lib.helpers.global_alias import add_global_aliases, global_alias
-from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -19,6 +21,11 @@ class WebSearchCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         add_global_aliases(self, bot)
+
+    async def cog_load(self) -> None:
+        for module_name, module in list(sys.modules.items()):
+            if module_name.startswith("lib."):
+                importlib.reload(module)
 
     def _create_urban_embed(self, data: dict) -> list[discord.Embed]:
         embed = discord.Embed(
@@ -113,7 +120,9 @@ class WebSearchCommandsCog(commands.Cog):
             else:
                 await ctx.reply(
                     embeds=embeds_list[0],
-                    view=PaginationView(embeds=embeds_list, timeout=900, page_offset=page),
+                    view=page_views.PaginationView(
+                        embeds=embeds_list, timeout=900, page_offset=page
+                    ),
                     ephemeral=ephemeral,
                 )
         else:

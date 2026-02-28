@@ -36,7 +36,7 @@ class AutomodMonitorCog(commands.Cog):
 
     async def cog_load(self) -> None:
         for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib."):
+            if module_name.startswith("lib.") and not module_name.startswith("lib.sql"):
                 importlib.reload(module)
 
     async def handle_message(

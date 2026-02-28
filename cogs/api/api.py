@@ -84,7 +84,7 @@ class APICog(commands.Cog):
 
     async def load_cog(self) -> None:
         for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib."):
+            if module_name.startswith("lib.") and not module_name.startswith("lib.sql"):
                 importlib.reload(module)
 
         self.logger.info(f"Starting API server on {self.host}:{self.port}")
