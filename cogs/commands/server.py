@@ -1,5 +1,4 @@
 import importlib
-import sys
 from typing import TYPE_CHECKING
 
 import discord
@@ -23,9 +22,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
         self.bot = bot
 
     async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib."):
-                importlib.reload(module)
+        importlib.reload(page_views)
 
     @commands.hybrid_group(name="server", description="Get information about the server.")
     @app_commands.allowed_installs(guilds=True, users=True)

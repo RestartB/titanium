@@ -1,6 +1,5 @@
 import importlib
 import os
-import sys
 import urllib.parse
 from typing import TYPE_CHECKING
 
@@ -23,9 +22,7 @@ class WebSearchCommandsCog(commands.Cog):
         add_global_aliases(self, bot)
 
     async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib."):
-                importlib.reload(module)
+        importlib.reload(page_views)
 
     def _create_urban_embed(self, data: dict) -> list[discord.Embed]:
         embed = discord.Embed(

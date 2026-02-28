@@ -1,6 +1,5 @@
 import importlib
 import os
-import sys
 from typing import TYPE_CHECKING, Optional
 
 import aiohttp
@@ -25,9 +24,7 @@ class ReviewsCommandsCog(commands.Cog):
         add_global_aliases(self, bot)
 
     async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib."):
-                importlib.reload(module)
+        importlib.reload(page_views)
 
     @commands.hybrid_group(name="reviews", description="Get reviews for a user.", fallback="user")
     @app_commands.allowed_installs(guilds=True, users=True)

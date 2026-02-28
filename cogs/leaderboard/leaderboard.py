@@ -3,7 +3,6 @@ import logging
 import math
 import random
 import re
-import sys
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -36,9 +35,7 @@ class LeaderboardCog(commands.Cog):
         self.take_daily_snapshots.start()
 
     async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib."):
-                importlib.reload(module)
+        importlib.reload(page_views)
 
     async def cog_unload(self) -> None:
         # Stop tasks on unload

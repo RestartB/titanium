@@ -21,9 +21,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         self.bot: TitaniumBot = bot
 
     async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib."):
-                importlib.reload(module)
+        importlib.reload(feedback_views)
 
     @app_commands.command(
         name="feedback",
