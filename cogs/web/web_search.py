@@ -157,9 +157,14 @@ class WebSearchCommandsCog(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 f"https://api.wikimedia.org/core/v1/wikipedia/en/search/title?q={urllib.parse.quote(search)}&limit=1",
-                headers=headers,
+                headers={
+                    "User-Agent": "TitaniumBot/1.0 (Discord Bot; https://github.com/RestartB/titanium) Python/aiohttp"
+                },
             ) as request:
+                print(request.status)
+
                 if request.status != 200:
+                    print(await request.text())
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No Results Found",
                         description=f"Couldn't find any results for `{search}`. Please try a different search term.",
