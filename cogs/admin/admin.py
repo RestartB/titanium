@@ -1,6 +1,7 @@
 import importlib
 import logging
 import os
+import sys
 import textwrap
 import traceback
 from typing import TYPE_CHECKING, Optional
@@ -23,7 +24,9 @@ class AdminCog(commands.Cog):
         self.logger: logging.Logger = logging.getLogger("admin")
 
     async def cog_load(self) -> None:
-        importlib.reload(hybrid_adapters)
+        for module_name, module in list(sys.modules.items()):
+            if module_name.startswith("lib."):
+                importlib.reload(module)
 
     @commands.group(name="admin", hidden=True, invoke_without_command=True)
     @commands.is_owner()

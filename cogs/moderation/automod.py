@@ -1,6 +1,7 @@
 import importlib
 import logging
 import re
+import sys
 from datetime import timedelta
 from typing import TYPE_CHECKING, Literal
 
@@ -9,16 +10,9 @@ import emoji
 from discord.ext import commands
 
 import lib.classes.case_manager as case_managers
+import lib.embeds.mod_actions as mod_embeds
 from lib.classes.automod_message import AutomodMessage
 from lib.classes.guild_logger import GuildLogger
-from lib.embeds.mod_actions import (
-    banned,
-    forbidden,
-    http_exception,
-    kicked,
-    muted,
-    warned,
-)
 from lib.enums.automod import AutomodActionType, AutomodAntispamType
 from lib.enums.moderation import CaseSource, CaseType
 from lib.helpers.log_error import log_error
@@ -41,7 +35,9 @@ class AutomodMonitorCog(commands.Cog):
         self.logger: logging.Logger = logging.getLogger("automod")
 
     async def cog_load(self) -> None:
-        importlib.reload(case_managers)
+        for module_name, module in list(sys.modules.items()):
+            if module_name.startswith("lib."):
+                importlib.reload(module)
 
     async def handle_message(
         self, message: discord.Message, event_type: Literal["new", "edit"] = "new"
@@ -399,7 +395,7 @@ class AutomodMonitorCog(commands.Cog):
                         )
 
                         embeds.append(
-                            warned(
+                            mod_embeds.warned(
                                 self.bot,
                                 message.author,
                                 self.bot.user,
@@ -447,7 +443,7 @@ class AutomodMonitorCog(commands.Cog):
                             )
 
                             embeds.append(
-                                muted(
+                                mod_embeds.muted(
                                     self.bot,
                                     message.author,
                                     self.bot.user,
@@ -464,7 +460,7 @@ class AutomodMonitorCog(commands.Cog):
                                 error=f"Titanium was not allowed to mute @{message.author.name} ({message.author.id})",
                                 details=e.text,
                             )
-                            embeds.append(forbidden(self.bot, message.author))
+                            embeds.append(mod_embeds.forbidden(self.bot, message.author))
                         except discord.HTTPException as e:
                             await log_error(
                                 bot=self.bot,
@@ -473,7 +469,7 @@ class AutomodMonitorCog(commands.Cog):
                                 error=f"Unknown Discord error while muting @{message.author.name} ({message.author.id})",
                                 details=e.text,
                             )
-                            embeds.append(http_exception(self.bot, message.author))
+                            embeds.append(mod_embeds.http_exception(self.bot, message.author))
 
                     elif (
                         punishment.action_type == AutomodActionType.KICK
@@ -496,7 +492,7 @@ class AutomodMonitorCog(commands.Cog):
                             )
 
                             embeds.append(
-                                kicked(
+                                mod_embeds.kicked(
                                     self.bot,
                                     message.author,
                                     self.bot.user,
@@ -513,7 +509,7 @@ class AutomodMonitorCog(commands.Cog):
                                 error=f"Titanium was not allowed to kick @{message.author.name} ({message.author.id})",
                                 details=e.text,
                             )
-                            embeds.append(forbidden(self.bot, message.author))
+                            embeds.append(mod_embeds.forbidden(self.bot, message.author))
                         except discord.HTTPException as e:
                             await log_error(
                                 bot=self.bot,
@@ -522,7 +518,7 @@ class AutomodMonitorCog(commands.Cog):
                                 error=f"Unknown Discord error while kicking @{message.author.name} ({message.author.id})",
                                 details=e.text,
                             )
-                            embeds.append(http_exception(self.bot, message.author))
+                            embeds.append(mod_embeds.http_exception(self.bot, message.author))
                     elif punishment.action_type == AutomodActionType.BAN:
                         self.logger.debug(f"Processing ban action for user {message.author.id}")
                         # Ban user
@@ -547,7 +543,7 @@ class AutomodMonitorCog(commands.Cog):
                             )
 
                             embeds.append(
-                                banned(
+                                mod_embeds.banned(
                                     self.bot,
                                     message.author,
                                     self.bot.user,
@@ -564,7 +560,7 @@ class AutomodMonitorCog(commands.Cog):
                                 error=f"Titanium was not allowed to ban @{message.author.name} ({message.author.id})",
                                 details=e.text,
                             )
-                            embeds.append(forbidden(self.bot, message.author))
+                            embeds.append(mod_embeds.forbidden(self.bot, message.author))
                         except discord.HTTPException as e:
                             await log_error(
                                 bot=self.bot,
@@ -573,7 +569,7 @@ class AutomodMonitorCog(commands.Cog):
                                 error=f"Unknown Discord error while banning @{message.author.name} ({message.author.id})",
                                 details=e.text,
                             )
-                            embeds.append(http_exception(self.bot, message.author))
+                            embeds.append(mod_embeds.http_exception(self.bot, message.author))
 
                     if embeds:
                         self.logger.debug(

@@ -2,6 +2,7 @@ import asyncio
 import importlib
 import logging
 import os
+import sys
 import uuid
 from typing import TYPE_CHECKING
 
@@ -82,7 +83,9 @@ class APICog(commands.Cog):
         self.port = int(os.getenv("BOT_API_PORT", 5000))
 
     async def load_cog(self) -> None:
-        importlib.reload(case_managers)
+        for module_name, module in list(sys.modules.items()):
+            if module_name.startswith("lib."):
+                importlib.reload(module)
 
         self.logger.info(f"Starting API server on {self.host}:{self.port}")
         self.server_task = asyncio.create_task(self.start_server())

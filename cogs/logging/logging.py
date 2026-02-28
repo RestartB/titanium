@@ -1,11 +1,11 @@
 import importlib
 import logging
+import sys
 from typing import TYPE_CHECKING, Sequence
 
 import discord
 from discord.ext import commands
 
-from lib.classes import guild_logger
 from lib.classes.guild_logger import GuildLogger
 
 if TYPE_CHECKING:
@@ -20,7 +20,9 @@ class EventLoggingCog(commands.Cog):
         self.logger: logging.Logger = logging.getLogger("guild_logger")
 
     async def cog_load(self) -> None:
-        importlib.reload(guild_logger)
+        for module_name, module in list(sys.modules.items()):
+            if module_name.startswith("lib."):
+                importlib.reload(module)
 
     async def cog_unload(self) -> None:
         pass

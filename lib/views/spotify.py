@@ -7,7 +7,7 @@ import discord
 from discord import ButtonStyle, Colour, Embed, Interaction, InteractionMessage, WebhookMessage
 from discord.ui import Button, Select, View, button
 
-from lib.views.pagination import PaginationView
+import lib.views.pagination as page_views
 
 
 class SongView(View):
@@ -265,7 +265,7 @@ class SongLyricSelection(Select):
         )
 
         if len(embed_pages) > 1:
-            view = PaginationView(
+            view = page_views.PaginationView(
                 embeds=embed_pages,
                 timeout=300,
             )

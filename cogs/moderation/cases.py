@@ -1,4 +1,5 @@
 import importlib
+import sys
 from typing import TYPE_CHECKING, Sequence
 
 from discord import AllowedMentions, ButtonStyle, Colour, Embed, Member, Message, User, app_commands
@@ -10,7 +11,7 @@ import lib.embeds.cases as case_embeds
 import lib.embeds.general as general_embeds
 import lib.views.cases as case_views
 import lib.views.confirm as confirm_views
-import lib.views.pagination as pagination_views
+import lib.views.pagination as page_views
 from lib.helpers.global_alias import add_global_aliases, global_alias
 from lib.helpers.hybrid_adapters import __stop_loading, defer
 from lib.sql.sql import ModCase, get_session
@@ -27,12 +28,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         add_global_aliases(self, bot)
 
     async def cog_load(self) -> None:
-        importlib.reload(case_managers)
-        importlib.reload(case_embeds)
-        importlib.reload(general_embeds)
-        importlib.reload(case_views)
-        importlib.reload(confirm_views)
-        importlib.reload(pagination_views)
+        for module_name, module in list(sys.modules.items()):
+            if module_name.startswith("lib."):
+                importlib.reload(module)
 
     async def _build_embeds(
         self, cases_list: Sequence[ModCase], target: User | Member, user: User | Member
@@ -93,7 +91,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                         )
 
                         if len(embeds) > 1:
-                            view = pagination_views.PaginationView(embeds, 120)
+                            view = page_views.PaginationView(embeds, 120)
                             await ctx.reply(embed=embeds[0], view=view)
                         else:
                             await ctx.reply(embed=embeds[0])
@@ -126,7 +124,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                     )
 
                     if len(embeds) > 1:
-                        view = pagination_views.PaginationView(embeds, 120)
+                        view = page_views.PaginationView(embeds, 120)
                         await ctx.reply(embed=embeds[0], view=view)
                     else:
                         await ctx.reply(embed=embeds[0])
@@ -224,7 +222,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 container = case_views.CommentPageContainer(self.bot, case, current_page)
                 pages.append(container)
 
-            layout = pagination_views.PaginationV2View(pages)
+            layout = page_views.PaginationV2View(pages)
             await ctx.reply(view=layout, allowed_mentions=AllowedMentions.none())
 
     @case_group.command(name="addcomment", description="Add a comment to a case.")

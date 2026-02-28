@@ -1,4 +1,5 @@
 import importlib
+import sys
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -7,27 +8,9 @@ from discord import Message, app_commands
 from discord.ext import commands
 
 import lib.classes.case_manager as case_managers
+import lib.embeds.general as general_embeds
+import lib.embeds.mod_actions as mod_embeds
 from lib.duration import DurationConverter
-from lib.embeds.general import not_in_guild
-from lib.embeds.mod_actions import (
-    already_banned,
-    already_muted,
-    already_punishing,
-    already_unbanned,
-    already_unmuted,
-    banned,
-    cannot_purge,
-    cant_mod_self,
-    forbidden,
-    http_exception,
-    kicked,
-    muted,
-    not_allowed,
-    purged,
-    unbanned,
-    unmuted,
-    warned,
-)
 from lib.enums.moderation import CaseType
 from lib.helpers.global_alias import add_global_aliases, global_alias
 from lib.helpers.hybrid_adapters import defer
@@ -46,7 +29,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         add_global_aliases(self, bot)
 
     async def cog_load(self) -> None:
-        importlib.reload(case_managers)
+        for module_name, module in list(sys.modules.items()):
+            if module_name.startswith("lib."):
+                importlib.reload(module)
 
     def _purge_check(
         self, message: discord.Message, source: int, target: discord.User | None
@@ -107,15 +92,19 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             try:
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=general_embeds.not_in_guild(self.bot, member)
+                    )
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
 
                 # Check if target doesn't have higher role
                 if not self._hierarchy_check(member, ctx.author, ctx):
-                    return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                    )
 
                 # Check if member is already being punished
                 if (
@@ -123,7 +112,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     and member.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=already_punishing(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, member)
                     )
 
                 # Add member to punishing list
@@ -143,7 +132,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 # Send confirmation message
                 await ctx.reply(
                     ephemeral=True,
-                    embed=warned(
+                    embed=mod_embeds.warned(
                         self.bot,
                         user=member,
                         creator=ctx.author,
@@ -193,19 +182,25 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=general_embeds.not_in_guild(self.bot, member)
+                    )
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
 
                 # Check if target doesn't have higher role
                 if not self._hierarchy_check(member, ctx.author, ctx):
-                    return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                    )
 
                 # Check if user is already timed out
                 if member.is_timed_out():
-                    return await ctx.reply(ephemeral=True, embed=already_muted(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.already_muted(self.bot, member)
+                    )
 
                 # Check if member is already being punished
                 if (
@@ -213,7 +208,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     and member.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=already_punishing(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, member)
                     )
 
                 # Add member to punishing list
@@ -245,7 +240,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                    return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, member)
+                    )
                 except discord.HTTPException as e:
                     await log_error(
                         bot=self.bot,
@@ -255,7 +252,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                    return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.http_exception(self.bot, member)
+                    )
 
                 # Create case
                 async with get_session() as session:
@@ -272,7 +271,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 # Send confirmation message
                 await ctx.reply(
                     ephemeral=True,
-                    embed=muted(
+                    embed=mod_embeds.muted(
                         self.bot,
                         user=member,
                         creator=ctx.author,
@@ -315,19 +314,25 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=general_embeds.not_in_guild(self.bot, member)
+                    )
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
 
                 # Check if target doesn't have higher role
                 if not self._hierarchy_check(member, ctx.author, ctx):
-                    return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                    )
 
                 # Check if user is not muted
                 if not member.is_timed_out():
-                    return await ctx.reply(ephemeral=True, embed=already_unmuted(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.already_unmuted(self.bot, member)
+                    )
 
                 # Check if member is already being punished
                 if (
@@ -335,7 +340,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     and member.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=already_punishing(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, member)
                     )
 
                 # Add member to punishing list
@@ -353,7 +358,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                    return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, member)
+                    )
                 except discord.HTTPException as e:
                     await log_error(
                         bot=self.bot,
@@ -363,7 +370,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                    return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.http_exception(self.bot, member)
+                    )
 
                 # Get last ummute case
                 async with get_session() as session:
@@ -379,7 +388,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 # Send confirmation message
                 await ctx.reply(
                     ephemeral=True,
-                    embed=unmuted(
+                    embed=mod_embeds.unmuted(
                         self.bot,
                         user=member,
                         creator=ctx.author,
@@ -421,15 +430,19 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=general_embeds.not_in_guild(self.bot, member)
+                    )
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
 
                 # Check if target doesn't have higher role
                 if not self._hierarchy_check(member, ctx.author, ctx):
-                    return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                    )
 
                 # Check if member is already being punished
                 if (
@@ -437,7 +450,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     and member.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=already_punishing(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, member)
                     )
 
                 # Add member to punishing list
@@ -455,7 +468,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                    return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, member)
+                    )
                 except discord.HTTPException as e:
                     await log_error(
                         bot=self.bot,
@@ -465,7 +480,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                    return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.http_exception(self.bot, member)
+                    )
 
                 # Create case
                 async with get_session() as session:
@@ -481,7 +498,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 # Send confirmation message
                 await ctx.reply(
                     ephemeral=True,
-                    embed=kicked(
+                    embed=mod_embeds.kicked(
                         self.bot,
                         user=member,
                         creator=ctx.author,
@@ -526,7 +543,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Check if moderating self
                 if user.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
 
                 # Try to get member from guild
                 member = ctx.guild.get_member(user.id)
@@ -540,14 +557,18 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 if isinstance(member, discord.Member) and not self._hierarchy_check(
                     member, ctx.author, ctx
                 ):
-                    return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, user))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, user)
+                    )
 
                 # Check if member is already being punished
                 if (
                     ctx.guild.id in self.bot.punishing
                     and user.id in self.bot.punishing[ctx.guild.id]
                 ):
-                    return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, user))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, user)
+                    )
 
                 # Add member to punishing list
                 self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
@@ -555,7 +576,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 # Check if user is already banned
                 try:
                     await ctx.guild.fetch_ban(user)
-                    return await ctx.reply(ephemeral=True, embed=already_banned(self.bot, user))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.already_banned(self.bot, user)
+                    )
                 except discord.NotFound:
                     pass
 
@@ -587,7 +610,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                    return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, user))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, user)
+                    )
                 except discord.HTTPException as e:
                     await log_error(
                         bot=self.bot,
@@ -597,7 +622,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                    return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, user))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.http_exception(self.bot, user)
+                    )
 
                 # Create case
                 async with get_session() as session:
@@ -614,7 +641,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 # Send confirmation message
                 await ctx.reply(
                     ephemeral=True,
-                    embed=banned(
+                    embed=mod_embeds.banned(
                         self.bot,
                         user=user,
                         creator=ctx.author,
@@ -652,14 +679,16 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Check if moderating self
                 if user.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
 
                 # Check if user is already being punished
                 if (
                     ctx.guild.id in self.bot.punishing
                     and user.id in self.bot.punishing[ctx.guild.id]
                 ):
-                    return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, user))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, user)
+                    )
 
                 # Add user to punishing list
                 self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
@@ -668,7 +697,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 try:
                     await ctx.guild.fetch_ban(user)
                 except discord.NotFound:
-                    return await ctx.reply(ephemeral=True, embed=already_unbanned(self.bot, user))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.already_unbanned(self.bot, user)
+                    )
 
                 # Unban user
                 try:
@@ -682,7 +713,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                    return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, user))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, user)
+                    )
                 except discord.HTTPException as e:
                     await log_error(
                         bot=self.bot,
@@ -692,7 +725,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                    return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, user))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.http_exception(self.bot, user)
+                    )
 
                 # Get last ban case
                 async with get_session() as session:
@@ -708,7 +743,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 # Send confirmation message
                 await ctx.reply(
                     ephemeral=True,
-                    embed=unbanned(
+                    embed=mod_embeds.unbanned(
                         self.bot,
                         user=user,
                         creator=ctx.author,
@@ -753,7 +788,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     ctx.channel,
                     (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel),
                 ):
-                    await ctx.reply(ephemeral=True, embed=cannot_purge(self.bot))
+                    await ctx.reply(ephemeral=True, embed=mod_embeds.cannot_purge(self.bot))
                     return
 
                 limit = amount if ctx.interaction else amount + 1
@@ -765,7 +800,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                     check=lambda m: self._purge_check(m, ctx.message.id, user),
                 )
 
-                await ctx.reply(ephemeral=True, embed=purged(self.bot, ctx.author, len(deleted)))
+                await ctx.reply(
+                    ephemeral=True, embed=mod_embeds.purged(self.bot, ctx.author, len(deleted))
+                )
             except discord.Forbidden as e:
                 if not isinstance(
                     ctx.channel,
@@ -779,7 +816,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, ctx.author))
+                return await ctx.reply(
+                    ephemeral=True, embed=mod_embeds.forbidden(self.bot, ctx.author)
+                )
             except discord.HTTPException as e:
                 if not isinstance(
                     ctx.channel,
@@ -793,7 +832,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                         details=e.text,
                     )
 
-                return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, ctx.author))
+                return await ctx.reply(
+                    ephemeral=True, embed=mod_embeds.http_exception(self.bot, ctx.author)
+                )
 
 
 async def setup(bot: TitaniumBot) -> None:
