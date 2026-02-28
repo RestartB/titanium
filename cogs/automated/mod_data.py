@@ -27,7 +27,7 @@ class BadLinkFetcherCog(commands.Cog):
         self.nsfw_update.start()
         self.explicit_update.start()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         # Stop tasks on unload
         self.malicious_update.cancel()
         self.phishing_update.cancel()

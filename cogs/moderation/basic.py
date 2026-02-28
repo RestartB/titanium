@@ -1,3 +1,4 @@
+import importlib
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -5,7 +6,7 @@ import discord
 from discord import Message, app_commands
 from discord.ext import commands
 
-from lib.classes.case_manager import GuildModCaseManager
+import lib.classes.case_manager as case_managers
 from lib.duration import DurationConverter
 from lib.embeds.general import not_in_guild
 from lib.embeds.mod_actions import (
@@ -29,7 +30,7 @@ from lib.embeds.mod_actions import (
 )
 from lib.enums.moderation import CaseType
 from lib.helpers.global_alias import add_global_aliases, global_alias
-from lib.helpers.hybrid_adapters import defer, stop_loading
+from lib.helpers.hybrid_adapters import defer
 from lib.helpers.log_error import log_error
 from lib.sql.sql import get_session
 
@@ -43,6 +44,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         add_global_aliases(self, bot)
+
+    async def cog_load(self) -> None:
+        importlib.reload(case_managers)
 
     def _purge_check(
         self, message: discord.Message, source: int, target: discord.User | None
@@ -99,57 +103,62 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
-        await defer(ctx, ephemeral=True)
+        async with defer(ctx, ephemeral=True):
+            try:
+                # Check if member is in guild
+                if member.guild.id != ctx.guild.id:
+                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
 
-        try:
-            # Check if member is in guild
-            if member.guild.id != ctx.guild.id:
-                return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+                # Check if moderating self
+                if member.id == ctx.author.id:
+                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
 
-            # Check if moderating self
-            if member.id == ctx.author.id:
-                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+                # Check if target doesn't have higher role
+                if not self._hierarchy_check(member, ctx.author, ctx):
+                    return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
 
-            # Check if target doesn't have higher role
-            if not self._hierarchy_check(member, ctx.author, ctx):
-                return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+                # Check if member is already being punished
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and member.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    return await ctx.reply(
+                        ephemeral=True, embed=already_punishing(self.bot, member)
+                    )
 
-            # Check if member is already being punished
-            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
+                # Add member to punishing list
+                self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
 
-            # Add member to punishing list
-            self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
+                # Create case
+                async with get_session() as session:
+                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
 
-            # Create case
-            async with get_session() as session:
-                manager = GuildModCaseManager(self.bot, ctx.guild, session)
+                    case, dm_success, dm_error = await manager.create_case(
+                        action=CaseType.WARN,
+                        user=member,
+                        creator_user=ctx.author,
+                        reason=reason,
+                    )
 
-                case, dm_success, dm_error = await manager.create_case(
-                    action=CaseType.WARN,
-                    user=member,
-                    creator_user=ctx.author,
-                    reason=reason,
+                # Send confirmation message
+                await ctx.reply(
+                    ephemeral=True,
+                    embed=warned(
+                        self.bot,
+                        user=member,
+                        creator=ctx.author,
+                        case=case,
+                        dm_success=dm_success,
+                        dm_error=dm_error,
+                    ),
                 )
-
-            # Send confirmation message
-            await ctx.reply(
-                ephemeral=True,
-                embed=warned(
-                    self.bot,
-                    user=member,
-                    creator=ctx.author,
-                    case=case,
-                    dm_success=dm_success,
-                    dm_error=dm_error,
-                ),
-            )
-        finally:
-            # Remove member from punishing list
-            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-                self.bot.punishing[ctx.guild.id].remove(member.id)
-
-            await stop_loading(ctx)
+            finally:
+                # Remove member from punishing list
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and member.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    self.bot.punishing[ctx.guild.id].remove(member.id)
 
     @mod_group.command(
         name="mute",
@@ -176,104 +185,109 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
-        await defer(ctx, ephemeral=True)
-
-        try:
-            # Check if guild for type checking
-            if not ctx.guild:
-                return
-
-            # Check if member is in guild
-            if member.guild.id != ctx.guild.id:
-                return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
-
-            # Check if moderating self
-            if member.id == ctx.author.id:
-                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
-
-            # Check if target doesn't have higher role
-            if not self._hierarchy_check(member, ctx.author, ctx):
-                return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
-
-            # Check if user is already timed out
-            if member.is_timed_out():
-                return await ctx.reply(ephemeral=True, embed=already_muted(self.bot, member))
-
-            # Check if member is already being punished
-            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
-
-            # Add member to punishing list
-            self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
-
-            # Process duration
-            processed_duration = await DurationConverter().convert(ctx, duration)
-            processed_reason = reason
-
-            if not ctx.interaction and processed_duration is None:
-                processed_reason = duration + " " + reason if reason else duration
-
-            # Time out user
+        async with defer(ctx, ephemeral=True):
             try:
-                await member.timeout(
-                    (
-                        processed_duration
-                        if processed_duration and processed_duration.total_seconds() <= 2419200
-                        else timedelta(seconds=2419200)
+                # Check if guild for type checking
+                if not ctx.guild:
+                    return
+
+                # Check if member is in guild
+                if member.guild.id != ctx.guild.id:
+                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+
+                # Check if moderating self
+                if member.id == ctx.author.id:
+                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+
+                # Check if target doesn't have higher role
+                if not self._hierarchy_check(member, ctx.author, ctx):
+                    return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+
+                # Check if user is already timed out
+                if member.is_timed_out():
+                    return await ctx.reply(ephemeral=True, embed=already_muted(self.bot, member))
+
+                # Check if member is already being punished
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and member.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    return await ctx.reply(
+                        ephemeral=True, embed=already_punishing(self.bot, member)
+                    )
+
+                # Add member to punishing list
+                self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
+
+                # Process duration
+                processed_duration = await DurationConverter().convert(ctx, duration)
+                processed_reason = reason
+
+                if not ctx.interaction and processed_duration is None:
+                    processed_reason = duration + " " + reason if reason else duration
+
+                # Time out user
+                try:
+                    await member.timeout(
+                        (
+                            processed_duration
+                            if processed_duration and processed_duration.total_seconds() <= 2419200
+                            else timedelta(seconds=2419200)
+                        ),
+                        reason=f"@{ctx.author.name}: {reason}",
+                    )
+                except discord.Forbidden as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=member.guild.id,
+                        error=f"Titanium was not allowed to mute @{member.name} ({member.id})",
+                        details=e.text,
+                    )
+
+                    return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
+                except discord.HTTPException as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=member.guild.id,
+                        error=f"Unknown Discord error while muting @{member.name} ({member.id})",
+                        details=e.text,
+                    )
+
+                    return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, member))
+
+                # Create case
+                async with get_session() as session:
+                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+
+                    case, dm_success, dm_error = await manager.create_case(
+                        action=CaseType.MUTE,
+                        user=member,
+                        creator_user=ctx.author,
+                        reason=processed_reason,
+                        duration=processed_duration,
+                    )
+
+                # Send confirmation message
+                await ctx.reply(
+                    ephemeral=True,
+                    embed=muted(
+                        self.bot,
+                        user=member,
+                        creator=ctx.author,
+                        case=case,
+                        dm_success=dm_success,
+                        dm_error=dm_error,
                     ),
-                    reason=f"@{ctx.author.name}: {reason}",
                 )
-            except discord.Forbidden as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=member.guild.id,
-                    error=f"Titanium was not allowed to mute @{member.name} ({member.id})",
-                    details=e.text,
-                )
-
-                return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
-            except discord.HTTPException as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=member.guild.id,
-                    error=f"Unknown Discord error while muting @{member.name} ({member.id})",
-                    details=e.text,
-                )
-
-                return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, member))
-
-            # Create case
-            async with get_session() as session:
-                manager = GuildModCaseManager(self.bot, ctx.guild, session)
-
-                case, dm_success, dm_error = await manager.create_case(
-                    action=CaseType.MUTE,
-                    user=member,
-                    creator_user=ctx.author,
-                    reason=processed_reason,
-                    duration=processed_duration,
-                )
-
-            # Send confirmation message
-            await ctx.reply(
-                ephemeral=True,
-                embed=muted(
-                    self.bot,
-                    user=member,
-                    creator=ctx.author,
-                    case=case,
-                    dm_success=dm_success,
-                    dm_error=dm_error,
-                ),
-            )
-        finally:
-            # Remove member from punishing list
-            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-                self.bot.punishing[ctx.guild.id].remove(member.id)
-
-            await stop_loading(ctx)
+            finally:
+                # Remove member from punishing list
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and member.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    self.bot.punishing[ctx.guild.id].remove(member.id)
 
     @mod_group.command(
         name="unmute",
@@ -293,89 +307,94 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
-        await defer(ctx, ephemeral=True)
-
-        try:
-            # Check if guild for type checking
-            if not ctx.guild:
-                return
-
-            # Check if member is in guild
-            if member.guild.id != ctx.guild.id:
-                return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
-
-            # Check if moderating self
-            if member.id == ctx.author.id:
-                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
-
-            # Check if target doesn't have higher role
-            if not self._hierarchy_check(member, ctx.author, ctx):
-                return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
-
-            # Check if user is not muted
-            if not member.is_timed_out():
-                return await ctx.reply(ephemeral=True, embed=already_unmuted(self.bot, member))
-
-            # Check if member is already being punished
-            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
-
-            # Add member to punishing list
-            self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
-
-            # Unmute user
+        async with defer(ctx, ephemeral=True):
             try:
-                await member.timeout(None, reason=f"Unmuted by @{ctx.author.name}")
-            except discord.Forbidden as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=member.guild.id,
-                    error=f"Titanium was not allowed to unmute @{member.name} ({member.id})",
-                    details=e.text,
+                # Check if guild for type checking
+                if not ctx.guild:
+                    return
+
+                # Check if member is in guild
+                if member.guild.id != ctx.guild.id:
+                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+
+                # Check if moderating self
+                if member.id == ctx.author.id:
+                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+
+                # Check if target doesn't have higher role
+                if not self._hierarchy_check(member, ctx.author, ctx):
+                    return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+
+                # Check if user is not muted
+                if not member.is_timed_out():
+                    return await ctx.reply(ephemeral=True, embed=already_unmuted(self.bot, member))
+
+                # Check if member is already being punished
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and member.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    return await ctx.reply(
+                        ephemeral=True, embed=already_punishing(self.bot, member)
+                    )
+
+                # Add member to punishing list
+                self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
+
+                # Unmute user
+                try:
+                    await member.timeout(None, reason=f"Unmuted by @{ctx.author.name}")
+                except discord.Forbidden as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=member.guild.id,
+                        error=f"Titanium was not allowed to unmute @{member.name} ({member.id})",
+                        details=e.text,
+                    )
+
+                    return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
+                except discord.HTTPException as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=member.guild.id,
+                        error=f"Unknown Discord error while unmuting @{member.name} ({member.id})",
+                        details=e.text,
+                    )
+
+                    return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, member))
+
+                # Get last ummute case
+                async with get_session() as session:
+                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+                    cases = await manager.get_cases_by_user(member.id)
+
+                    case = next((c for c in cases if c.type == CaseType.MUTE), None)
+
+                    if case:
+                        # Close case
+                        case, dm_success, dm_error = await manager.close_case(case.id)
+
+                # Send confirmation message
+                await ctx.reply(
+                    ephemeral=True,
+                    embed=unmuted(
+                        self.bot,
+                        user=member,
+                        creator=ctx.author,
+                        case=case,
+                        dm_success=dm_success,
+                        dm_error=dm_error,
+                    ),
                 )
-
-                return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
-            except discord.HTTPException as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=member.guild.id,
-                    error=f"Unknown Discord error while unmuting @{member.name} ({member.id})",
-                    details=e.text,
-                )
-
-                return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, member))
-
-            # Get last ummute case
-            async with get_session() as session:
-                manager = GuildModCaseManager(self.bot, ctx.guild, session)
-                cases = await manager.get_cases_by_user(member.id)
-
-                case = next((c for c in cases if c.type == CaseType.MUTE), None)
-
-                if case:
-                    # Close case
-                    case, dm_success, dm_error = await manager.close_case(case.id)
-
-            # Send confirmation message
-            await ctx.reply(
-                ephemeral=True,
-                embed=unmuted(
-                    self.bot,
-                    user=member,
-                    creator=ctx.author,
-                    case=case,
-                    dm_success=dm_success,
-                    dm_error=dm_error,
-                ),
-            )
-        finally:
-            # Remove member from punishing list
-            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-                self.bot.punishing[ctx.guild.id].remove(member.id)
-
-            await stop_loading(ctx)
+            finally:
+                # Remove member from punishing list
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and member.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    self.bot.punishing[ctx.guild.id].remove(member.id)
 
     @mod_group.command(name="kick", description="Kick a member from the server.")
     @global_alias("kick")
@@ -394,85 +413,90 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
-        await defer(ctx, ephemeral=True)
-
-        try:
-            # Check if guild for type checking
-            if not ctx.guild:
-                return
-
-            # Check if member is in guild
-            if member.guild.id != ctx.guild.id:
-                return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
-
-            # Check if moderating self
-            if member.id == ctx.author.id:
-                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
-
-            # Check if target doesn't have higher role
-            if not self._hierarchy_check(member, ctx.author, ctx):
-                return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
-
-            # Check if member is already being punished
-            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, member))
-
-            # Add member to punishing list
-            self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
-
-            # Kick user
+        async with defer(ctx, ephemeral=True):
             try:
-                await member.kick(reason=f"@{ctx.author.name}: {reason}")
-            except discord.Forbidden as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=member.guild.id,
-                    error=f"Titanium was not allowed to kick @{member.name} ({member.id})",
-                    details=e.text,
+                # Check if guild for type checking
+                if not ctx.guild:
+                    return
+
+                # Check if member is in guild
+                if member.guild.id != ctx.guild.id:
+                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+
+                # Check if moderating self
+                if member.id == ctx.author.id:
+                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+
+                # Check if target doesn't have higher role
+                if not self._hierarchy_check(member, ctx.author, ctx):
+                    return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, member))
+
+                # Check if member is already being punished
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and member.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    return await ctx.reply(
+                        ephemeral=True, embed=already_punishing(self.bot, member)
+                    )
+
+                # Add member to punishing list
+                self.bot.punishing.setdefault(ctx.guild.id, []).append(member.id)
+
+                # Kick user
+                try:
+                    await member.kick(reason=f"@{ctx.author.name}: {reason}")
+                except discord.Forbidden as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=member.guild.id,
+                        error=f"Titanium was not allowed to kick @{member.name} ({member.id})",
+                        details=e.text,
+                    )
+
+                    return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
+                except discord.HTTPException as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=member.guild.id,
+                        error=f"Unknown Discord error while kicking @{member.name} ({member.id})",
+                        details=e.text,
+                    )
+
+                    return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, member))
+
+                # Create case
+                async with get_session() as session:
+                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+
+                    case, dm_success, dm_error = await manager.create_case(
+                        action=CaseType.KICK,
+                        user=member,
+                        creator_user=ctx.author,
+                        reason=reason,
+                    )
+
+                # Send confirmation message
+                await ctx.reply(
+                    ephemeral=True,
+                    embed=kicked(
+                        self.bot,
+                        user=member,
+                        creator=ctx.author,
+                        case=case,
+                        dm_success=dm_success,
+                        dm_error=dm_error,
+                    ),
                 )
-
-                return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, member))
-            except discord.HTTPException as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=member.guild.id,
-                    error=f"Unknown Discord error while kicking @{member.name} ({member.id})",
-                    details=e.text,
-                )
-
-                return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, member))
-
-            # Create case
-            async with get_session() as session:
-                manager = GuildModCaseManager(self.bot, ctx.guild, session)
-
-                case, dm_success, dm_error = await manager.create_case(
-                    action=CaseType.KICK,
-                    user=member,
-                    creator_user=ctx.author,
-                    reason=reason,
-                )
-
-            # Send confirmation message
-            await ctx.reply(
-                ephemeral=True,
-                embed=kicked(
-                    self.bot,
-                    user=member,
-                    creator=ctx.author,
-                    case=case,
-                    dm_success=dm_success,
-                    dm_error=dm_error,
-                ),
-            )
-        finally:
-            # Remove member from punishing list
-            if ctx.guild.id in self.bot.punishing and member.id in self.bot.punishing[ctx.guild.id]:
-                self.bot.punishing[ctx.guild.id].remove(member.id)
-
-            await stop_loading(ctx)
+            finally:
+                # Remove member from punishing list
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and member.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    self.bot.punishing[ctx.guild.id].remove(member.id)
 
     @mod_group.command(name="ban", description="Ban a user from the server.")
     @global_alias("ban")
@@ -494,115 +518,118 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
-        await defer(ctx, ephemeral=True)
+        async with defer(ctx, ephemeral=True):
+            try:
+                # Check if guild for type checking
+                if not ctx.guild:
+                    return
 
-        try:
-            # Check if guild for type checking
-            if not ctx.guild:
-                return
+                # Check if moderating self
+                if user.id == ctx.author.id:
+                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
 
-            # Check if moderating self
-            if user.id == ctx.author.id:
-                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+                # Try to get member from guild
+                member = ctx.guild.get_member(user.id)
+                if not member:
+                    try:
+                        member = await ctx.guild.fetch_member(user.id)
+                    except discord.NotFound:
+                        member = None
 
-            # Try to get member from guild
-            member = ctx.guild.get_member(user.id)
-            if not member:
+                # Check if target doesn't have higher role
+                if isinstance(member, discord.Member) and not self._hierarchy_check(
+                    member, ctx.author, ctx
+                ):
+                    return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, user))
+
+                # Check if member is already being punished
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and user.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, user))
+
+                # Add member to punishing list
+                self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
+
+                # Check if user is already banned
                 try:
-                    member = await ctx.guild.fetch_member(user.id)
+                    await ctx.guild.fetch_ban(user)
+                    return await ctx.reply(ephemeral=True, embed=already_banned(self.bot, user))
                 except discord.NotFound:
-                    member = None
+                    pass
 
-            # Check if target doesn't have higher role
-            if isinstance(member, discord.Member) and not self._hierarchy_check(
-                member, ctx.author, ctx
-            ):
-                return await ctx.reply(ephemeral=True, embed=not_allowed(self.bot, user))
+                # Process duration
+                processed_duration = await DurationConverter().convert(ctx, duration)
+                processed_reason = reason
 
-            # Check if member is already being punished
-            if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
-                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, user))
+                if not ctx.interaction and processed_duration is None:
+                    processed_reason = duration + " " + reason if reason else duration
 
-            # Add member to punishing list
-            self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
+                # Get config
+                config = await self.bot.fetch_guild_config(ctx.guild.id)
 
-            # Check if user is already banned
-            try:
-                await ctx.guild.fetch_ban(user)
-                return await ctx.reply(ephemeral=True, embed=already_banned(self.bot, user))
-            except discord.NotFound:
-                pass
+                # Ban user
+                try:
+                    await ctx.guild.ban(
+                        user=user,
+                        reason=f"@{ctx.author.name}: {processed_reason}",
+                        delete_message_seconds=config.moderation_settings.ban_days * 86400
+                        if config
+                        else 0,
+                    )
+                except discord.Forbidden as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=ctx.guild.id,
+                        error=f"Titanium was not allowed to ban @{user.name} ({user.id})",
+                        details=e.text,
+                    )
 
-            # Process duration
-            processed_duration = await DurationConverter().convert(ctx, duration)
-            processed_reason = reason
+                    return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, user))
+                except discord.HTTPException as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=ctx.guild.id,
+                        error=f"Unknown Discord error while banning @{user.name} ({user.id})",
+                        details=e.text,
+                    )
 
-            if not ctx.interaction and processed_duration is None:
-                processed_reason = duration + " " + reason if reason else duration
+                    return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, user))
 
-            # Get config
-            config = await self.bot.fetch_guild_config(ctx.guild.id)
+                # Create case
+                async with get_session() as session:
+                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
 
-            # Ban user
-            try:
-                await ctx.guild.ban(
-                    user=user,
-                    reason=f"@{ctx.author.name}: {processed_reason}",
-                    delete_message_seconds=config.moderation_settings.ban_days * 86400
-                    if config
-                    else 0,
+                    case, dm_success, dm_error = await manager.create_case(
+                        action=CaseType.BAN,
+                        user=user,
+                        creator_user=ctx.author,
+                        reason=processed_reason,
+                        duration=processed_duration,
+                    )
+
+                # Send confirmation message
+                await ctx.reply(
+                    ephemeral=True,
+                    embed=banned(
+                        self.bot,
+                        user=user,
+                        creator=ctx.author,
+                        case=case,
+                        dm_success=dm_success,
+                        dm_error=dm_error,
+                    ),
                 )
-            except discord.Forbidden as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=ctx.guild.id,
-                    error=f"Titanium was not allowed to ban @{user.name} ({user.id})",
-                    details=e.text,
-                )
-
-                return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, user))
-            except discord.HTTPException as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=ctx.guild.id,
-                    error=f"Unknown Discord error while banning @{user.name} ({user.id})",
-                    details=e.text,
-                )
-
-                return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, user))
-
-            # Create case
-            async with get_session() as session:
-                manager = GuildModCaseManager(self.bot, ctx.guild, session)
-
-                case, dm_success, dm_error = await manager.create_case(
-                    action=CaseType.BAN,
-                    user=user,
-                    creator_user=ctx.author,
-                    reason=processed_reason,
-                    duration=processed_duration,
-                )
-
-            # Send confirmation message
-            await ctx.reply(
-                ephemeral=True,
-                embed=banned(
-                    self.bot,
-                    user=user,
-                    creator=ctx.author,
-                    case=case,
-                    dm_success=dm_success,
-                    dm_error=dm_error,
-                ),
-            )
-        finally:
-            # Remove member from punishing list
-            if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
-                self.bot.punishing[ctx.guild.id].remove(user.id)
-
-            await stop_loading(ctx)
+            finally:
+                # Remove member from punishing list
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and user.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    self.bot.punishing[ctx.guild.id].remove(user.id)
 
     @mod_group.command(name="unban", description="Unban a member from the server.")
     @global_alias("unban")
@@ -617,83 +644,86 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(ctx, ephemeral=True)
-
-        try:
-            # Check if guild for type checking
-            if not ctx.guild:
-                return
-
-            # Check if moderating self
-            if user.id == ctx.author.id:
-                return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
-
-            # Check if user is already being punished
-            if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
-                return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, user))
-
-            # Add user to punishing list
-            self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
-
-            # Check if user is not banned
+        async with defer(ctx, ephemeral=True):
             try:
-                await ctx.guild.fetch_ban(user)
-            except discord.NotFound:
-                return await ctx.reply(ephemeral=True, embed=already_unbanned(self.bot, user))
+                # Check if guild for type checking
+                if not ctx.guild:
+                    return
 
-            # Unban user
-            try:
-                await ctx.guild.unban(user, reason=f"Unbanned by @{ctx.author.name}")
-            except discord.Forbidden as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=ctx.guild.id,
-                    error=f"Titanium was not allowed to unban @{user.name} ({user.id})",
-                    details=e.text,
+                # Check if moderating self
+                if user.id == ctx.author.id:
+                    return await ctx.reply(ephemeral=True, embed=cant_mod_self(self.bot))
+
+                # Check if user is already being punished
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and user.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    return await ctx.reply(ephemeral=True, embed=already_punishing(self.bot, user))
+
+                # Add user to punishing list
+                self.bot.punishing.setdefault(ctx.guild.id, []).append(user.id)
+
+                # Check if user is not banned
+                try:
+                    await ctx.guild.fetch_ban(user)
+                except discord.NotFound:
+                    return await ctx.reply(ephemeral=True, embed=already_unbanned(self.bot, user))
+
+                # Unban user
+                try:
+                    await ctx.guild.unban(user, reason=f"Unbanned by @{ctx.author.name}")
+                except discord.Forbidden as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=ctx.guild.id,
+                        error=f"Titanium was not allowed to unban @{user.name} ({user.id})",
+                        details=e.text,
+                    )
+
+                    return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, user))
+                except discord.HTTPException as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=ctx.guild.id,
+                        error=f"Unknown Discord error while unbanning @{user.name} ({user.id})",
+                        details=e.text,
+                    )
+
+                    return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, user))
+
+                # Get last ban case
+                async with get_session() as session:
+                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+                    cases = await manager.get_cases_by_user(user.id)
+
+                    case = next((c for c in cases if c.type == CaseType.BAN), None)
+
+                    if case:
+                        # Close case
+                        case, dm_success, dm_error = await manager.close_case(case.id)
+
+                # Send confirmation message
+                await ctx.reply(
+                    ephemeral=True,
+                    embed=unbanned(
+                        self.bot,
+                        user=user,
+                        creator=ctx.author,
+                        case=case,
+                        dm_success=dm_success,
+                        dm_error=dm_error,
+                    ),
                 )
-
-                return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, user))
-            except discord.HTTPException as e:
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=ctx.guild.id,
-                    error=f"Unknown Discord error while unbanning @{user.name} ({user.id})",
-                    details=e.text,
-                )
-
-                return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, user))
-
-            # Get last ban case
-            async with get_session() as session:
-                manager = GuildModCaseManager(self.bot, ctx.guild, session)
-                cases = await manager.get_cases_by_user(user.id)
-
-                case = next((c for c in cases if c.type == CaseType.BAN), None)
-
-                if case:
-                    # Close case
-                    case, dm_success, dm_error = await manager.close_case(case.id)
-
-            # Send confirmation message
-            await ctx.reply(
-                ephemeral=True,
-                embed=unbanned(
-                    self.bot,
-                    user=user,
-                    creator=ctx.author,
-                    case=case,
-                    dm_success=dm_success,
-                    dm_error=dm_error,
-                ),
-            )
-        finally:
-            # Remove user from punishing list
-            if ctx.guild.id in self.bot.punishing and user.id in self.bot.punishing[ctx.guild.id]:
-                self.bot.punishing[ctx.guild.id].remove(user.id)
-
-            await stop_loading(ctx)
+            finally:
+                # Remove user from punishing list
+                if (
+                    ctx.guild.id in self.bot.punishing
+                    and user.id in self.bot.punishing[ctx.guild.id]
+                ):
+                    self.bot.punishing[ctx.guild.id].remove(user.id)
 
     @commands.hybrid_command(
         name="purge",
@@ -717,53 +747,53 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        await defer(ctx, ephemeral=True)
+        async with defer(ctx, ephemeral=True):
+            try:
+                if isinstance(
+                    ctx.channel,
+                    (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel),
+                ):
+                    await ctx.reply(ephemeral=True, embed=cannot_purge(self.bot))
+                    return
 
-        try:
-            if isinstance(
-                ctx.channel, (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel)
-            ):
-                await ctx.reply(ephemeral=True, embed=cannot_purge(self.bot))
-                return
+                limit = amount if ctx.interaction else amount + 1
 
-            limit = amount if ctx.interaction else amount + 1
-
-            deleted = await ctx.channel.purge(
-                limit=limit,
-                bulk=True,
-                reason=f"Purged by @{ctx.author.name}",
-                check=lambda m: self._purge_check(m, ctx.message.id, user),
-            )
-
-            await ctx.reply(ephemeral=True, embed=purged(self.bot, ctx.author, len(deleted)))
-        except discord.Forbidden as e:
-            if not isinstance(
-                ctx.channel, (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel)
-            ):
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=ctx.guild.id,
-                    error=f"Titanium was not allowed to purge messages in #{ctx.channel.name} ({ctx.channel.id})",
-                    details=e.text,
+                deleted = await ctx.channel.purge(
+                    limit=limit,
+                    bulk=True,
+                    reason=f"Purged by @{ctx.author.name}",
+                    check=lambda m: self._purge_check(m, ctx.message.id, user),
                 )
 
-            return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, ctx.author))
-        except discord.HTTPException as e:
-            if not isinstance(
-                ctx.channel, (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel)
-            ):
-                await log_error(
-                    bot=self.bot,
-                    module="Moderation",
-                    guild_id=ctx.guild.id,
-                    error=f"Unknown Discord error while purging messages in #{ctx.channel.name} ({ctx.channel.id})",
-                    details=e.text,
-                )
+                await ctx.reply(ephemeral=True, embed=purged(self.bot, ctx.author, len(deleted)))
+            except discord.Forbidden as e:
+                if not isinstance(
+                    ctx.channel,
+                    (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel),
+                ):
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=ctx.guild.id,
+                        error=f"Titanium was not allowed to purge messages in #{ctx.channel.name} ({ctx.channel.id})",
+                        details=e.text,
+                    )
 
-            return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, ctx.author))
-        finally:
-            await stop_loading(ctx)
+                return await ctx.reply(ephemeral=True, embed=forbidden(self.bot, ctx.author))
+            except discord.HTTPException as e:
+                if not isinstance(
+                    ctx.channel,
+                    (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel),
+                ):
+                    await log_error(
+                        bot=self.bot,
+                        module="Moderation",
+                        guild_id=ctx.guild.id,
+                        error=f"Unknown Discord error while purging messages in #{ctx.channel.name} ({ctx.channel.id})",
+                        details=e.text,
+                    )
+
+                return await ctx.reply(ephemeral=True, embed=http_exception(self.bot, ctx.author))
 
 
 async def setup(bot: TitaniumBot) -> None:

@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
 import discord
@@ -7,7 +8,18 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-async def defer(ctx: commands.Context["TitaniumBot"], ephemeral: bool = False) -> None:
+@asynccontextmanager
+async def defer(ctx: commands.Context[TitaniumBot], ephemeral: bool = False):
+    try:
+        await __defer(ctx, ephemeral)
+        yield
+    except Exception:
+        raise
+    finally:
+        await __stop_loading(ctx)
+
+
+async def __defer(ctx: commands.Context["TitaniumBot"], ephemeral: bool = False) -> None:
     if ctx.interaction is not None:
         await ctx.defer(ephemeral=ephemeral)
     else:
@@ -26,7 +38,7 @@ async def defer(ctx: commands.Context["TitaniumBot"], ephemeral: bool = False) -
         await ctx.message.add_reaction(ctx.bot.loading_emoji)
 
 
-async def stop_loading(ctx: commands.Context["TitaniumBot"]) -> None:
+async def __stop_loading(ctx: commands.Context["TitaniumBot"]) -> None:
     try:
         show_loading = True
 

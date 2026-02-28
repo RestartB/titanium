@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from lib.classes.case_manager import GuildModCaseManager
+import lib.classes.case_manager as case_managers
 from lib.enums.moderation import CaseType
 from lib.sql.sql import get_session
 
@@ -40,7 +40,7 @@ class ModMonitorCog(commands.Cog):
                     return
 
                 async with get_session() as session:
-                    case_manager = GuildModCaseManager(self.bot, after.guild, session)
+                    case_manager = case_managers.GuildModCaseManager(self.bot, after.guild, session)
 
                     # Create a case
                     await case_manager.create_case(
@@ -78,7 +78,7 @@ class ModMonitorCog(commands.Cog):
                 return
 
             async with get_session() as session:
-                case_manager = GuildModCaseManager(self.bot, member.guild, session)
+                case_manager = case_managers.GuildModCaseManager(self.bot, member.guild, session)
 
                 # Create a case
                 await case_manager.create_case(
@@ -111,7 +111,7 @@ class ModMonitorCog(commands.Cog):
                 return
 
             async with get_session() as session:
-                case_manager = GuildModCaseManager(self.bot, guild, session)
+                case_manager = case_managers.GuildModCaseManager(self.bot, guild, session)
 
                 # Create a case
                 await case_manager.create_case(
@@ -144,7 +144,7 @@ class ModMonitorCog(commands.Cog):
                 return
 
             async with get_session() as session:
-                case_manager = GuildModCaseManager(self.bot, guild, session)
+                case_manager = case_managers.GuildModCaseManager(self.bot, guild, session)
 
                 # Close all open ban cases for this user
                 cases = await case_manager.get_cases_by_user(user.id)
@@ -178,7 +178,7 @@ class ModMonitorCog(commands.Cog):
 
             # close all mute cases for the user
             async with get_session() as session:
-                case_manager = GuildModCaseManager(self.bot, after.guild, session)
+                case_manager = case_managers.GuildModCaseManager(self.bot, after.guild, session)
 
                 cases = await case_manager.get_cases_by_user(after.id)
                 mute_cases = [c for c in cases if c.type == CaseType.MUTE and not c.resolved]

@@ -86,11 +86,13 @@ class SongMenuView(View):
 
         self.add_item(songlink_button)
 
+        artist_string = " ".join([artist["name"] for artist in item["artists"]])
+
         # Add Search on Google button
         google_button = Button(
             label="Search on Google",
             style=ButtonStyle.url,
-            url=f"https://www.google.com/search?q={quote_plus(item['name'])}",
+            url=f"https://www.google.com/search?q={quote_plus(f'{item["name"]} {artist_string}')}",
             row=0,
         )
 
@@ -113,11 +115,14 @@ class SongMenuView(View):
                 description = f"Viewing highest quality ({self.item['album']['images'][0]['width']}x{self.item['album']['images'][0]['height']})"
 
             embed = Embed(
-                title=f"{self.item['name']} - Album Art",
+                title="Album Art",
                 description=description,
                 colour=Colour.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
             )
 
+            embed.set_author(
+                name=self.item["album"]["name"], url=self.item["album"]["external_urls"]["spotify"]
+            )
             embed.set_image(url=self.item["album"]["images"][0]["url"])
 
             view = View()
@@ -468,17 +473,12 @@ class AlbumMenuView(View):
                 description = f"Viewing highest quality ({self.item['images'][0]['width']}x{self.item['images'][0]['height']})"
 
             embed = discord.Embed(
-                title=f"{self.item['name']} - Album Art",
+                title="Album Art",
                 description=description,
                 colour=Colour.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
             )
 
-            embed.set_author(
-                name=self.artists,
-                url=self.item["artists"][0]["external_urls"]["spotify"],
-                icon_url=self.artist_img,
-            )
-
+            embed.set_author(name=self.item["name"], url=self.item["external_urls"]["spotify"])
             embed.set_image(url=self.item["images"][0]["url"])
 
             view = View()

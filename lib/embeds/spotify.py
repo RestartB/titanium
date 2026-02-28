@@ -290,11 +290,19 @@ async def album(
                 )
             ],
         )
+    else:
+        view = discord.ui.View(timeout=300).add_item(
+            AlbumMenuButton(
+                item=item,
+                artists=artists,
+                artist_img=artist_img,
+                colours=colours,
+                add_button_url=add_button_url,
+                add_button_text=add_button_text,
+            )
+        )
 
     if responded and respond_msg:
-        await respond_msg.edit(embed=page_embeds[0], view=view if view else None)
+        await respond_msg.edit(embed=page_embeds[0], view=view)
     else:
-        if view:
-            await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
-        else:
-            await ctx.reply(embed=page_embeds[0], ephemeral=ephemeral)
+        await ctx.reply(embed=page_embeds[0], view=view, ephemeral=ephemeral)

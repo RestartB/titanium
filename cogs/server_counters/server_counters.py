@@ -22,7 +22,7 @@ class ServerCountersCog(commands.Cog):
         # Start tasks
         self.channel_update.start()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         # Stop tasks on unload
         self.channel_update.cancel()
 

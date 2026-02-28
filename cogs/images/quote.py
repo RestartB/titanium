@@ -14,7 +14,7 @@ from PIL import Image
 from playwright.async_api import async_playwright
 from wand.image import Image as WandImage
 
-from lib.helpers.hybrid_adapters import defer, stop_loading
+from lib.helpers.hybrid_adapters import defer
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -874,9 +874,7 @@ class QuoteCommandsCog(
     async def quote_command(
         self, ctx: commands.Context["TitaniumBot"], user: discord.User, *, content: str
     ):
-        await defer(ctx)
-
-        try:
+        async with defer(ctx):
             embed, file, view = await self._quote_cmd_handler(
                 content=content,
                 user=user,
@@ -895,8 +893,6 @@ class QuoteCommandsCog(
                 await ctx.reply(embed=embed, file=file, view=view)
             else:
                 await ctx.reply(file=file, view=view)
-        finally:
-            await stop_loading(ctx)
 
     @app_commands.command(
         name="quote",

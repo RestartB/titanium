@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from lib.classes import img_tools
 from lib.enums.images import ImageFormats
-from lib.helpers.hybrid_adapters import defer, stop_loading
+from lib.helpers.hybrid_adapters import defer
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -70,15 +70,11 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format: ImageFormats,
     ) -> None:
         """Convert a image to various formats."""
-        await defer(ctx)
-
-        try:
+        async with defer(ctx):
             converter = img_tools.ImageTools(image)
             file = await converter.convert(output_format, self.STANDARD_QUALITY)
 
             await ctx.reply(file=file)
-        finally:
-            await stop_loading(ctx)
 
     @image_group.command(
         name="resize",
@@ -99,15 +95,11 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format: ImageFormats = ImageFormats.PNG,
     ) -> None:
         """Resize an image to the specified dimensions."""
-        await defer(ctx)
-
-        try:
+        async with defer(ctx):
             converter = img_tools.ImageTools(image)
             file = await converter.resize(output_format, width, height)
 
             await ctx.reply(file=file)
-        finally:
-            await stop_loading(ctx)
 
     @image_group.command(
         name="deepfry",
@@ -129,17 +121,13 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     ) -> None:
         """Deepfry an image."""
 
-        await defer(ctx)
-
-        try:
+        async with defer(ctx):
             intensity_scale /= 100.0
 
             converter = img_tools.ImageTools(image)
             file = await converter.deepfry(output_format, intensity_scale, red_filter)
 
             await ctx.reply(file=file)
-        finally:
-            await stop_loading(ctx)
 
     @image_group.command(
         name="invert",
@@ -156,15 +144,11 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format: ImageFormats = ImageFormats.PNG,
     ) -> None:
         """Invert the colors of an image."""
-        await defer(ctx)
-
-        try:
+        async with defer(ctx):
             converter = img_tools.ImageTools(image)
             file = await converter.invert(output_format)
 
             await ctx.reply(file=file)
-        finally:
-            await stop_loading(ctx)
 
     @image_group.command(
         name="grayscale",
@@ -181,15 +165,11 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format: ImageFormats = ImageFormats.PNG,
     ) -> None:
         """Convert an image to grayscale."""
-        await defer(ctx)
-
-        try:
+        async with defer(ctx):
             converter = img_tools.ImageTools(image)
             file = await converter.grayscale(output_format)
 
             await ctx.reply(file=file)
-        finally:
-            await stop_loading(ctx)
 
     @image_group.command(
         name="rotate",
@@ -208,15 +188,11 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format: ImageFormats = ImageFormats.PNG,
     ) -> None:
         """Rotate an image by the specified angle."""
-        await defer(ctx)
-
-        try:
+        async with defer(ctx):
             converter = img_tools.ImageTools(image)
             file = await converter.rotate(output_format, angle)
 
             await ctx.reply(file=file)
-        finally:
-            await stop_loading(ctx)
 
     @image_group.command(
         name="speechbubble",
@@ -248,15 +224,11 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format: ImageFormats = ImageFormats.PNG,
     ) -> None:
         """Add a speech bubble effect to an image."""
-        await defer(ctx)
-
-        try:
+        async with defer(ctx):
             converter = img_tools.ImageTools(image)
             file = await converter.speech_bubble(output_format, direction, colour)
 
             await ctx.reply(file=file)
-        finally:
-            await stop_loading(ctx)
 
     @image_group.command(
         name="caption",
@@ -290,9 +262,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format: ImageFormats = ImageFormats.GIF,
     ) -> None:
         """Add a caption to an image."""
-        await defer(ctx)
-
-        try:
+        async with defer(ctx):
             if font == "futura":
                 selected_font = os.path.join("lib", "fonts", "futura.otf")
             else:
@@ -302,8 +272,6 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
             file = await converter.caption(output_format, caption.lower(), selected_font, position)
 
             await ctx.reply(file=file)
-        finally:
-            await stop_loading(ctx)
 
 
 async def setup(bot: TitaniumBot) -> None:

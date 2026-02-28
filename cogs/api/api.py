@@ -1,4 +1,5 @@
 import asyncio
+import importlib
 import logging
 import os
 import uuid
@@ -11,6 +12,7 @@ from pydantic import ValidationError
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import selectinload
 
+import lib.classes.case_manager as case_managers
 from lib.api.endpoints import (
     automod_info,
     bouncer_info,
@@ -34,7 +36,6 @@ from lib.api.validators import (
     ModerationConfigModel,
     ServerCountersConfigModel,
 )
-from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.helpers.cache import get_or_fetch_member
 from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
@@ -79,6 +80,9 @@ class APICog(commands.Cog):
         # Get host and port from env with defaults
         self.host = os.getenv("BOT_API_HOST", "127.0.0.1")
         self.port = int(os.getenv("BOT_API_PORT", 5000))
+
+    async def load_cog(self) -> None:
+        importlib.reload(case_managers)
 
         self.logger.info(f"Starting API server on {self.host}:{self.port}")
         self.server_task = asyncio.create_task(self.start_server())
@@ -556,11 +560,11 @@ class APICog(commands.Cog):
             return web.json_response({"error": "creator not found"}, status=404)
 
         async with get_session() as session:
-            manager = GuildModCaseManager(self.bot, guild, session)
+            manager = case_managers.GuildModCaseManager(self.bot, guild, session)
 
             try:
                 case = await manager.get_case_by_id(case_id)
-            except CaseNotFoundException:
+            except case_managers.CaseNotFoundException:
                 return web.json_response({"error": "case not found"}, status=404)
 
             comment = await case.add_comment(
@@ -587,11 +591,11 @@ class APICog(commands.Cog):
             return web.json_response({"error": "guild not found"}, status=404)
 
         async with get_session() as session:
-            manager = GuildModCaseManager(self.bot, guild, session)
+            manager = case_managers.GuildModCaseManager(self.bot, guild, session)
 
             try:
                 case = await manager.get_case_by_id(case_id)
-            except CaseNotFoundException:
+            except case_managers.CaseNotFoundException:
                 return web.json_response({"error": "case not found"}, status=404)
 
             body: dict = await request.json()

@@ -33,7 +33,7 @@ class LeaderboardCog(commands.Cog):
 
         self.take_daily_snapshots.start()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         # Stop tasks on unload
         self.take_daily_snapshots.cancel()
 

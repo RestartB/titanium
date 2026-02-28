@@ -1,3 +1,4 @@
+import importlib
 import logging
 import re
 from datetime import timedelta
@@ -6,7 +7,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from lib.classes.case_manager import GuildModCaseManager
+import lib.classes.case_manager as case_managers
 from lib.classes.guild_logger import GuildLogger
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType, BouncerEventType
 from lib.enums.moderation import CaseSource, CaseType
@@ -26,6 +27,9 @@ class BouncerMonitorCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("bouncer")
+
+    async def cog_load(self) -> None:
+        importlib.reload(case_managers)
 
     async def handle_event(self, member: discord.Member, event_type: BouncerEventType):
         self.logger.debug(f"Processing member join/update: {member.id}")
@@ -140,7 +144,7 @@ class BouncerMonitorCog(commands.Cog):
         punishment_types = list(set(action.action_type for action in punishments))
 
         async with get_session() as session:
-            manager = GuildModCaseManager(self.bot, member.guild, session)
+            manager = case_managers.GuildModCaseManager(self.bot, member.guild, session)
 
             for punishment in punishments:
                 if punishment.action_type == BouncerActionType.RESET_NICK:

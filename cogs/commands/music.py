@@ -14,7 +14,7 @@ from discord.utils import escape_markdown
 from spotipy.oauth2 import SpotifyClientCredentials
 
 import lib.embeds.spotify as elements
-from lib.helpers.hybrid_adapters import defer, stop_loading
+from lib.helpers.hybrid_adapters import defer
 from lib.helpers.log_error import log_error
 
 if TYPE_CHECKING:
@@ -169,9 +169,7 @@ class MusicCommandsCog(
         search: commands.Range[str, 0, 100],
         ephemeral: bool = False,
     ) -> None:
-        await defer(ctx, ephemeral=ephemeral)
-
-        try:
+        async with defer(ctx, ephemeral=ephemeral):
             search = search.strip()
             options_list = []
 
@@ -289,8 +287,6 @@ class MusicCommandsCog(
 
             # Edit initial message to show dropdown
             msg = await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
-        finally:
-            await stop_loading(ctx)
 
     async def artist_search_autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -390,9 +386,7 @@ class MusicCommandsCog(
         search: commands.Range[str, 0, 100],
         ephemeral: bool = False,
     ) -> None:
-        await defer(ctx, ephemeral=ephemeral)
-
-        try:
+        async with defer(ctx, ephemeral=ephemeral):
             search = search.strip()
             options_list = []
 
@@ -497,8 +491,6 @@ class MusicCommandsCog(
 
                 # Edit initial message to show dropdown
                 msg = await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
-        finally:
-            await stop_loading(ctx)
 
     async def album_search_autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -612,9 +604,7 @@ class MusicCommandsCog(
         search: commands.Range[str, 0, 100],
         ephemeral: bool = False,
     ) -> None:
-        await defer(ctx, ephemeral=ephemeral)
-
-        try:
+        async with defer(ctx, ephemeral=ephemeral):
             search = search.strip()
             options_list = []
 
@@ -724,8 +714,6 @@ class MusicCommandsCog(
 
                 # Edit initial message to show dropdown
                 msg = await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
-        finally:
-            await stop_loading(ctx)
 
     # Spotify Image command
     @spotify_group.command(
@@ -739,71 +727,152 @@ class MusicCommandsCog(
     async def spotify_image(
         self, ctx: commands.Context["TitaniumBot"], url: str, ephemeral: bool = False
     ) -> None:
-        await defer(ctx, ephemeral=ephemeral)
+        async with defer(ctx, ephemeral=ephemeral):
+            if "spotify.link" in url:
+                try:
+                    url = (
+                        url.replace("www.", "")
+                        .replace("http://", "")
+                        .replace("https://", "")
+                        .rstrip("/")
+                    )
+                    url = f"https://{url}"
 
-        if "spotify.link" in url:
-            try:
-                url = (
-                    url.replace("www.", "")
-                    .replace("http://", "")
-                    .replace("https://", "")
-                    .rstrip("/")
-                )
-                url = f"https://{url}"
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(url, headers=self.REQUEST_HEADERS) as request:
+                            url = str(request.url)
 
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(url, headers=self.REQUEST_HEADERS) as request:
-                        url = str(request.url)
+                except Exception as error:
+                    error_id = await log_error(
+                        bot=self.bot,
+                        module="Spotify",
+                        guild_id=ctx.guild.id if ctx.guild else None,
+                        error="Failed to expand Spotify URL",
+                        exc=error,
+                    )
 
-            except Exception as error:
-                error_id = await log_error(
-                    bot=self.bot,
-                    module="Spotify",
-                    guild_id=ctx.guild.id if ctx.guild else None,
-                    error="Failed to expand Spotify URL",
-                    exc=error,
-                )
-
-                embed = discord.Embed(
-                    title=f"{self.bot.error_emoji} Couldn't expand URL",
-                    description="A **spotify.link** URL was detected, but we could not expand it. Is it valid?\n\nIf you are sure the URL is valid and supported, please try again later.",
-                    colour=Colour.red(),
-                )
-                embed.set_footer(
-                    text=f"@{ctx.author.name} - {error_id}",
-                    icon_url=ctx.author.display_avatar.url,
-                )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
-                await stop_loading(ctx)
-
-                return
-
-        artist_string = ""
-
-        try:
-            if "track" in url:
-                result = self.sp.track(url)
-
-                if result is None:
                     embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} No results found.",
+                        title=f"{self.bot.error_emoji} Couldn't expand URL",
+                        description="A **spotify.link** URL was detected, but we could not expand it. Is it valid?\n\nIf you are sure the URL is valid and supported, please try again later.",
                         colour=Colour.red(),
                     )
                     embed.set_footer(
-                        text=f"@{ctx.author.name}",
+                        text=f"@{ctx.author.name} - {error_id}",
                         icon_url=ctx.author.display_avatar.url,
                     )
                     await ctx.reply(embed=embed, ephemeral=ephemeral)
+
                     return
 
-                for artist in result["artists"]:
-                    if artist_string == "":
-                        artist_string = artist["name"]
-                    else:
-                        artist_string += f", {artist['name']}"
+            artist_string = ""
 
-                if result["album"]["images"] is not None:
-                    image_url = result["album"]["images"][0]["url"]
+            try:
+                if "track" in url:
+                    result = self.sp.track(url)
+
+                    if result is None:
+                        embed = discord.Embed(
+                            title=f"{self.bot.error_emoji} No results found.",
+                            colour=Colour.red(),
+                        )
+                        embed.set_footer(
+                            text=f"@{ctx.author.name}",
+                            icon_url=ctx.author.display_avatar.url,
+                        )
+                        await ctx.reply(embed=embed, ephemeral=ephemeral)
+                        return
+
+                    for artist in result["artists"]:
+                        if artist_string == "":
+                            artist_string = artist["name"]
+                        else:
+                            artist_string += f", {artist['name']}"
+
+                    if result["album"]["images"] is not None:
+                        image_url = result["album"]["images"][0]["url"]
+
+                        # Get image, store in memory
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(
+                                image_url, headers=self.REQUEST_HEADERS
+                            ) as request:
+                                image_data = BytesIO()
+
+                                async for chunk in request.content.iter_chunked(10):
+                                    image_data.write(chunk)
+
+                                image_data.seek(0)
+
+                        # Get dominant colour for embed
+                        color_thief = ColorThief(image_data)
+                        dominant_color = color_thief.get_color()
+
+                        if (
+                            result["album"]["images"][0]["height"] is None
+                            or result["album"]["images"][0]["width"] is None
+                        ):
+                            embed = discord.Embed(
+                                title=f"{result['name']} ({artist_string})",
+                                description="Viewing highest quality (Resolution unknown)",
+                                colour=Colour.from_rgb(
+                                    r=dominant_color[0],
+                                    g=dominant_color[1],
+                                    b=dominant_color[2],
+                                ),
+                            )
+                        else:
+                            embed = discord.Embed(
+                                title=f"{result['name']} ({artist_string})",
+                                description=f"Viewing highest quality ({result['album']['images'][0]['width']}x{result['album']['images'][0]['height']})",
+                                colour=Colour.from_rgb(
+                                    r=dominant_color[0],
+                                    g=dominant_color[1],
+                                    b=dominant_color[2],
+                                ),
+                            )
+
+                        embed.set_image(url=result["album"]["images"][0]["url"])
+                        embed.set_footer(
+                            text=f"@{ctx.author.name}",
+                            icon_url=ctx.author.display_avatar.url,
+                        )
+
+                        view = View()
+                        view.add_item(
+                            discord.ui.Button(
+                                label="Open in Browser",
+                                style=discord.ButtonStyle.url,
+                                url=result["album"]["images"][0]["url"],
+                            )
+                        )
+
+                        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+                    else:
+                        embed = discord.Embed(
+                            title=f"{self.bot.error_emoji} No album art available.",
+                            colour=Colour.red(),
+                        )
+                        embed.set_footer(
+                            text=f"@{ctx.author.name}",
+                            icon_url=ctx.author.display_avatar.url,
+                        )
+                        await ctx.reply(embed=embed, ephemeral=ephemeral)
+                elif "album" in url:
+                    result = self.sp.album(url)
+
+                    if result is None:
+                        embed = discord.Embed(
+                            title=f"{self.bot.error_emoji} No results found.",
+                            colour=Colour.red(),
+                        )
+                        embed.set_footer(
+                            text=f"@{ctx.author.name}",
+                            icon_url=ctx.author.display_avatar.url,
+                        )
+                        await ctx.reply(embed=embed, ephemeral=ephemeral)
+                        return
+
+                    image_url = result["images"][0]["url"]
 
                     # Get image, store in memory
                     async with aiohttp.ClientSession() as session:
@@ -819,49 +888,149 @@ class MusicCommandsCog(
                     color_thief = ColorThief(image_data)
                     dominant_color = color_thief.get_color()
 
-                    if (
-                        result["album"]["images"][0]["height"] is None
-                        or result["album"]["images"][0]["width"] is None
-                    ):
-                        embed = discord.Embed(
-                            title=f"{result['name']} ({artist_string})",
-                            description="Viewing highest quality (Resolution unknown)",
-                            colour=Colour.from_rgb(
-                                r=dominant_color[0],
-                                g=dominant_color[1],
-                                b=dominant_color[2],
-                            ),
+                    for artist in result["artists"]:
+                        if artist_string == "":
+                            artist_string = artist["name"]
+                        else:
+                            artist_string += f", {artist['name']}"
+
+                    if result["images"] is not None:
+                        if (
+                            result["images"][0]["height"] is None
+                            or result["images"][0]["width"] is None
+                        ):
+                            embed = discord.Embed(
+                                title=f"{result['name']} ({artist_string})",
+                                description="Viewing highest quality (Resolution unknown)",
+                                colour=Colour.from_rgb(
+                                    r=dominant_color[0],
+                                    g=dominant_color[1],
+                                    b=dominant_color[2],
+                                ),
+                            )
+                        else:
+                            embed = discord.Embed(
+                                title=f"{result['name']} ({artist_string})",
+                                description=f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})",
+                                colour=Colour.from_rgb(
+                                    r=dominant_color[0],
+                                    g=dominant_color[1],
+                                    b=dominant_color[2],
+                                ),
+                            )
+                        embed.set_image(url=result["images"][0]["url"])
+                        embed.set_footer(
+                            text=f"@{ctx.author.name}",
+                            icon_url=ctx.author.display_avatar.url,
                         )
+
+                        view = View()
+                        view.add_item(
+                            discord.ui.Button(
+                                label="Download",
+                                style=discord.ButtonStyle.url,
+                                url=result["images"][0]["url"],
+                            )
+                        )
+
+                        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
                     else:
                         embed = discord.Embed(
-                            title=f"{result['name']} ({artist_string})",
-                            description=f"Viewing highest quality ({result['album']['images'][0]['width']}x{result['album']['images'][0]['height']})",
-                            colour=Colour.from_rgb(
-                                r=dominant_color[0],
-                                g=dominant_color[1],
-                                b=dominant_color[2],
-                            ),
+                            title=f"{self.bot.error_emoji} No album art available.",
+                            colour=Colour.red(),
+                        )
+                        embed.set_footer(
+                            text=f"@{ctx.author.name}",
+                            icon_url=ctx.author.display_avatar.url,
+                        )
+                        await ctx.reply(embed=embed, ephemeral=ephemeral)
+                # Playlist URL
+                elif "playlist" in url:
+                    # Search playlist on Spotify
+                    result = self.sp.playlist(url, market="GB")
+
+                    if result is None:
+                        embed = discord.Embed(
+                            title=f"{self.bot.error_emoji} No results found.",
+                            colour=Colour.red(),
+                        )
+                        embed.set_footer(
+                            text=f"@{ctx.author.name}",
+                            icon_url=ctx.author.display_avatar.url,
+                        )
+                        await ctx.reply(embed=embed, ephemeral=ephemeral)
+                        return
+
+                    image_url = result["images"][0]["url"]
+
+                    # Get image, store in memory
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(image_url, headers=self.REQUEST_HEADERS) as request:
+                            image_data = BytesIO()
+
+                            async for chunk in request.content.iter_chunked(10):
+                                image_data.write(chunk)
+
+                            image_data.seek(0)
+
+                    # Get dominant colour for embed
+                    color_thief = ColorThief(image_data)
+                    dominant_color = color_thief.get_color()
+
+                    if result["images"] is not None:
+                        if (
+                            result["images"][0]["height"] is None
+                            or result["images"][0]["width"] is None
+                        ):
+                            embed = discord.Embed(
+                                title=f"{result['name']} - {result['owner']['display_name']} (Playlist)",
+                                description="Viewing highest quality (Resolution unknown)",
+                                colour=Colour.from_rgb(
+                                    r=dominant_color[0],
+                                    g=dominant_color[1],
+                                    b=dominant_color[2],
+                                ),
+                            )
+                        else:
+                            embed = discord.Embed(
+                                title=f"{result['name']} - {result['owner']['display_name']} (Playlist)",
+                                description=f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})",
+                                colour=Colour.from_rgb(
+                                    r=dominant_color[0],
+                                    g=dominant_color[1],
+                                    b=dominant_color[2],
+                                ),
+                            )
+                        embed.set_image(url=result["images"][0]["url"])
+                        embed.set_footer(
+                            text=f"@{ctx.author.name}",
+                            icon_url=ctx.author.display_avatar.url,
                         )
 
-                    embed.set_image(url=result["album"]["images"][0]["url"])
-                    embed.set_footer(
-                        text=f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
-                    )
-
-                    view = View()
-                    view.add_item(
-                        discord.ui.Button(
-                            label="Open in Browser",
-                            style=discord.ButtonStyle.url,
-                            url=result["album"]["images"][0]["url"],
+                        view = View()
+                        view.add_item(
+                            discord.ui.Button(
+                                label="Download",
+                                style=discord.ButtonStyle.url,
+                                url=result["images"][0]["url"],
+                            )
                         )
-                    )
 
-                    await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+                        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+                    else:
+                        embed = discord.Embed(
+                            title=f"{self.bot.error_emoji} No cover art available.",
+                            colour=Colour.red(),
+                        )
+                        embed.set_footer(
+                            text=f"@{ctx.author.name}",
+                            icon_url=ctx.author.display_avatar.url,
+                        )
+                        await ctx.reply(embed=embed, ephemeral=ephemeral)
                 else:
                     embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} No album art available.",
+                        title=f"{self.bot.error_emoji} Invalid URL",
+                        description="Only `track`, `album` and `playlist` URLs are supported by this command.",
                         colour=Colour.red(),
                     )
                     embed.set_footer(
@@ -869,208 +1038,25 @@ class MusicCommandsCog(
                         icon_url=ctx.author.display_avatar.url,
                     )
                     await ctx.reply(embed=embed, ephemeral=ephemeral)
-            elif "album" in url:
-                result = self.sp.album(url)
+            except spotipy.exceptions.SpotifyException as error:
+                error_id = await log_error(
+                    bot=self.bot,
+                    module="Spotify",
+                    guild_id=ctx.guild.id if ctx.guild else None,
+                    error="Spotify error occurred while searching URL",
+                    exc=error,
+                )
 
-                if result is None:
-                    embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} No results found.",
-                        colour=Colour.red(),
-                    )
-                    embed.set_footer(
-                        text=f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
-                    )
-                    await ctx.reply(embed=embed, ephemeral=ephemeral)
-                    return
-
-                image_url = result["images"][0]["url"]
-
-                # Get image, store in memory
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url, headers=self.REQUEST_HEADERS) as request:
-                        image_data = BytesIO()
-
-                        async for chunk in request.content.iter_chunked(10):
-                            image_data.write(chunk)
-
-                        image_data.seek(0)
-
-                # Get dominant colour for embed
-                color_thief = ColorThief(image_data)
-                dominant_color = color_thief.get_color()
-
-                for artist in result["artists"]:
-                    if artist_string == "":
-                        artist_string = artist["name"]
-                    else:
-                        artist_string += f", {artist['name']}"
-
-                if result["images"] is not None:
-                    if (
-                        result["images"][0]["height"] is None
-                        or result["images"][0]["width"] is None
-                    ):
-                        embed = discord.Embed(
-                            title=f"{result['name']} ({artist_string})",
-                            description="Viewing highest quality (Resolution unknown)",
-                            colour=Colour.from_rgb(
-                                r=dominant_color[0],
-                                g=dominant_color[1],
-                                b=dominant_color[2],
-                            ),
-                        )
-                    else:
-                        embed = discord.Embed(
-                            title=f"{result['name']} ({artist_string})",
-                            description=f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})",
-                            colour=Colour.from_rgb(
-                                r=dominant_color[0],
-                                g=dominant_color[1],
-                                b=dominant_color[2],
-                            ),
-                        )
-                    embed.set_image(url=result["images"][0]["url"])
-                    embed.set_footer(
-                        text=f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
-                    )
-
-                    view = View()
-                    view.add_item(
-                        discord.ui.Button(
-                            label="Download",
-                            style=discord.ButtonStyle.url,
-                            url=result["images"][0]["url"],
-                        )
-                    )
-
-                    await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
-                else:
-                    embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} No album art available.",
-                        colour=Colour.red(),
-                    )
-                    embed.set_footer(
-                        text=f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
-                    )
-                    await ctx.reply(embed=embed, ephemeral=ephemeral)
-            # Playlist URL
-            elif "playlist" in url:
-                # Search playlist on Spotify
-                result = self.sp.playlist(url, market="GB")
-
-                if result is None:
-                    embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} No results found.",
-                        colour=Colour.red(),
-                    )
-                    embed.set_footer(
-                        text=f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
-                    )
-                    await ctx.reply(embed=embed, ephemeral=ephemeral)
-                    return
-
-                image_url = result["images"][0]["url"]
-
-                # Get image, store in memory
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url, headers=self.REQUEST_HEADERS) as request:
-                        image_data = BytesIO()
-
-                        async for chunk in request.content.iter_chunked(10):
-                            image_data.write(chunk)
-
-                        image_data.seek(0)
-
-                # Get dominant colour for embed
-                color_thief = ColorThief(image_data)
-                dominant_color = color_thief.get_color()
-
-                if result["images"] is not None:
-                    if (
-                        result["images"][0]["height"] is None
-                        or result["images"][0]["width"] is None
-                    ):
-                        embed = discord.Embed(
-                            title=f"{result['name']} - {result['owner']['display_name']} (Playlist)",
-                            description="Viewing highest quality (Resolution unknown)",
-                            colour=Colour.from_rgb(
-                                r=dominant_color[0],
-                                g=dominant_color[1],
-                                b=dominant_color[2],
-                            ),
-                        )
-                    else:
-                        embed = discord.Embed(
-                            title=f"{result['name']} - {result['owner']['display_name']} (Playlist)",
-                            description=f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})",
-                            colour=Colour.from_rgb(
-                                r=dominant_color[0],
-                                g=dominant_color[1],
-                                b=dominant_color[2],
-                            ),
-                        )
-                    embed.set_image(url=result["images"][0]["url"])
-                    embed.set_footer(
-                        text=f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
-                    )
-
-                    view = View()
-                    view.add_item(
-                        discord.ui.Button(
-                            label="Download",
-                            style=discord.ButtonStyle.url,
-                            url=result["images"][0]["url"],
-                        )
-                    )
-
-                    await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
-                else:
-                    embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} No cover art available.",
-                        colour=Colour.red(),
-                    )
-                    embed.set_footer(
-                        text=f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
-                    )
-                    await ctx.reply(embed=embed, ephemeral=ephemeral)
-            else:
                 embed = discord.Embed(
-                    title=f"{self.bot.error_emoji} Invalid URL",
-                    description="Only `track`, `album` and `playlist` URLs are supported by this command.",
+                    title=f"{self.bot.error_emoji} Spotify Error",
+                    description="An unknown Spotify error occurred while processing the URL. Please try again later.",
                     colour=Colour.red(),
                 )
                 embed.set_footer(
-                    text=f"@{ctx.author.name}",
+                    text=f"@{ctx.author.name} - {error_id}",
                     icon_url=ctx.author.display_avatar.url,
                 )
                 await ctx.reply(embed=embed, ephemeral=ephemeral)
-        except spotipy.exceptions.SpotifyException as error:
-            error_id = await log_error(
-                bot=self.bot,
-                module="Spotify",
-                guild_id=ctx.guild.id if ctx.guild else None,
-                error="Spotify error occurred while searching URL",
-                exc=error,
-            )
-
-            embed = discord.Embed(
-                title=f"{self.bot.error_emoji} Spotify Error",
-                description="An unknown Spotify error occurred while processing the URL. Please try again later.",
-                colour=Colour.red(),
-            )
-            embed.set_footer(
-                text=f"@{ctx.author.name} - {error_id}",
-                icon_url=ctx.author.display_avatar.url,
-            )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
-        finally:
-            await stop_loading(ctx)
 
 
 async def setup(bot: TitaniumBot) -> None:

@@ -29,7 +29,7 @@ class FireboardCog(commands.Cog):
         self.event_queue_task = self.bot.loop.create_task(self.queue_worker())
         self.logger: logging.Logger = logging.getLogger("fireboard")
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         self.event_queue.shutdown(immediate=True)
 
     def _normalize_emoji(self, emoji: str) -> str:
