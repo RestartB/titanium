@@ -692,8 +692,6 @@ class MusicCommandsCog(
 
                     return
 
-            artist_string = ""
-
             try:
                 if "track" in url:
                     result = await self.sp.track(url)
@@ -709,8 +707,6 @@ class MusicCommandsCog(
                         )
                         await ctx.reply(embed=embed, ephemeral=ephemeral)
                         return
-
-                    artist_string = ", ".join([artist.name for artist in result.artists])
 
                     if result.album.images is not None:
                         image_url = result.album.images[0].url
@@ -736,7 +732,7 @@ class MusicCommandsCog(
                             or result.album.images[0].width is None
                         ):
                             embed = discord.Embed(
-                                title=f"{result.name} ({artist_string})",
+                                title=f"{result.name}",
                                 description="Viewing highest quality (Resolution unknown)",
                                 colour=Colour.from_rgb(
                                     r=dominant_color[0],
@@ -746,7 +742,7 @@ class MusicCommandsCog(
                             )
                         else:
                             embed = discord.Embed(
-                                title=f"{result.name} ({artist_string})",
+                                title=f"{result.name}",
                                 description=f"Viewing highest quality ({result.album.images[0].width}x{result.album.images[0].height})",
                                 colour=Colour.from_rgb(
                                     r=dominant_color[0],
@@ -755,6 +751,7 @@ class MusicCommandsCog(
                                 ),
                             )
 
+                        embed.set_author(name=", ".join([artist.name for artist in result.artists]))
                         embed.set_image(url=result.album.images[0].url)
                         embed.set_footer(
                             text=f"@{ctx.author.name}",
@@ -812,12 +809,10 @@ class MusicCommandsCog(
                     color_thief = ColorThief(image_data)
                     dominant_color = color_thief.get_color()
 
-                    artist_string = ", ".join([artist.name for artist in result.artists])
-
                     if result.images is not None:
                         if result.images[0].height is None or result.images[0].width is None:
                             embed = discord.Embed(
-                                title=f"{result.name} ({artist_string})",
+                                title=result.name,
                                 description="Viewing highest quality (Resolution unknown)",
                                 colour=Colour.from_rgb(
                                     r=dominant_color[0],
@@ -827,7 +822,7 @@ class MusicCommandsCog(
                             )
                         else:
                             embed = discord.Embed(
-                                title=f"{result.name} ({artist_string})",
+                                title=f"{result.name}",
                                 description=f"Viewing highest quality ({result.images[0].width}x{result.images[0].height})",
                                 colour=Colour.from_rgb(
                                     r=dominant_color[0],
@@ -835,6 +830,8 @@ class MusicCommandsCog(
                                     b=dominant_color[2],
                                 ),
                             )
+
+                        embed.set_author(name=", ".join([artist.name for artist in result.artists]))
                         embed.set_image(url=result.images[0].url)
                         embed.set_footer(
                             text=f"@{ctx.author.name}",
@@ -844,7 +841,7 @@ class MusicCommandsCog(
                         view = View()
                         view.add_item(
                             discord.ui.Button(
-                                label="Download",
+                                label="Open in Browser",
                                 style=discord.ButtonStyle.url,
                                 url=result.images[0].url,
                             )
@@ -949,7 +946,7 @@ class MusicCommandsCog(
                 else:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} Invalid URL",
-                        description="Only `track`, `album` and `playlist` URLs are supported by this command.",
+                        description="Only `track` and `album` URLs are supported by this command.",
                         colour=Colour.red(),
                     )
                     embed.set_footer(
