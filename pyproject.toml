@@ -8,6 +8,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "atlas-provider-sqlalchemy>=0.4.0",
     "colorthief>=0.2.1",
+    "dacite>=1.9.2",
     "discord-py>=2.7.0",
     "dotenv>=0.9.9",
     "durations>=0.3.3",

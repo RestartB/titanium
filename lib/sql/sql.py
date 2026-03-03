@@ -699,6 +699,13 @@ class OptOutIDs(Base):
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
 
 
+class SpotifyToken(Base):
+    __tablename__ = "spotify_tokens"
+    token: Mapped[str] = MappedColumn(String, primary_key=True)
+    time_added: Mapped[datetime] = MappedColumn(DateTime, server_default=text("NOW()"))
+    expires_in: Mapped[int] = MappedColumn(Integer)
+
+
 load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = URL.create(

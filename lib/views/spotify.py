@@ -1,5 +1,5 @@
 from textwrap import shorten
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import quote, quote_plus
 
 import aiohttp
@@ -8,12 +8,16 @@ from discord import ButtonStyle, Colour, Embed, Interaction, InteractionMessage,
 from discord.ui import Button, Select, View, button
 
 import lib.views.pagination as page_views
+from lib.classes.spotify import SpotifyAlbum, SpotifyArtist, SpotifyTrack
+
+if TYPE_CHECKING:
+    from main import TitaniumBot
 
 
 class SongView(View):
     def __init__(
         self,
-        item: dict,
+        item: SpotifyTrack,
         colours: list,
         add_button_url: Optional[str] = None,
         add_button_text: Optional[str] = None,
@@ -26,14 +30,14 @@ class SongView(View):
         self.add_button_text = add_button_text
 
         # Calculate duration
-        seconds, item["duration_ms"] = divmod(item["duration_ms"], 1000)
+        seconds, item.duration_ms = divmod(item.duration_ms, 1000)
         minutes, seconds = divmod(seconds, 60)
 
         # Add Open in Spotify button
         spotify_button = Button(
             label=f"Play on Spotify ({int(minutes):02d}:{int(seconds):02d})",
             style=ButtonStyle.url,
-            url=item["external_urls"]["spotify"],
+            url=item.external_urls["spotify"],
         )
         self.add_item(spotify_button)
 
@@ -54,7 +58,7 @@ class SongView(View):
 class SongMenuView(View):
     def __init__(
         self,
-        item: dict,
+        item: SpotifyTrack,
         colours: list,
         add_button_url: Optional[str] = None,
         add_button_text: Optional[str] = None,
@@ -73,29 +77,24 @@ class SongMenuView(View):
                 url=add_button_url,
                 row=0,
             )
-
             self.add_item(add_button)
 
         # Add song.link button
         songlink_button = Button(
             label="Other Streaming Services",
             style=ButtonStyle.url,
-            url=f"https://song.link/{item['external_urls']['spotify']}",
+            url=f"https://song.link/{item.external_urls['spotify']}",
             row=0,
         )
-
         self.add_item(songlink_button)
-
-        artist_string = " ".join([artist["name"] for artist in item["artists"]])
 
         # Add Search on Google button
         google_button = Button(
             label="Search on Google",
             style=ButtonStyle.url,
-            url=f"https://www.google.com/search?q={quote_plus(f'{item["name"]} {artist_string}')}",
+            url=f"https://www.google.com/search?q={quote_plus(f'{item.name} {" ".join([artist.name for artist in item.artists])}')}",
             row=0,
         )
-
         self.add_item(google_button)
 
     async def on_timeout(self):
@@ -105,32 +104,32 @@ class SongMenuView(View):
     async def art(self, interaction: Interaction, button: Button):
         await interaction.response.defer(ephemeral=True)
 
-        if self.item["album"]["images"] is not None:
-            if (
-                self.item["album"]["images"][0]["height"] is None
-                or self.item["album"]["images"][0]["width"] is None
-            ):
+        if self.item.album.images is not None:
+            if self.item.album.images[0].height is None or self.item.album.images[0].width is None:
                 description = "Viewing highest quality (Resolution unknown)"
             else:
-                description = f"Viewing highest quality ({self.item['album']['images'][0]['width']}x{self.item['album']['images'][0]['height']})"
+                description = f"Viewing highest quality ({self.item.album.images[0].width}x{self.item.album.images[0].height})"
 
             embed = Embed(
-                title="Album Art",
+                title=f"{self.item.album.name} - Album Art",
                 description=description,
                 colour=Colour.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
             )
 
             embed.set_author(
-                name=self.item["album"]["name"], url=self.item["album"]["external_urls"]["spotify"]
+                name=", ".join(
+                    [artist.name for artist in self.item.artists],
+                ),
+                url=self.item.artists[0].external_urls["spotify"],
             )
-            embed.set_image(url=self.item["album"]["images"][0]["url"])
+            embed.set_image(url=self.item.album.images[0].url)
 
             view = View()
             view.add_item(
                 Button(
                     label="Open in Browser",
                     style=ButtonStyle.url,
-                    url=self.item["album"]["images"][0]["url"],
+                    url=self.item.album.images[0].url,
                 )
             )
 
@@ -149,7 +148,7 @@ class SongMenuView(View):
     async def lyrics(self, interaction: Interaction, button: Button):
         await interaction.response.defer(ephemeral=True)
 
-        url = f"https://lrclib.net/api/search?track_name={quote(self.item['name'])}&artist_name={quote(self.item['artists'][0]['name'])}"
+        url = f"https://lrclib.net/api/search?track_name={quote(self.item.name)}&artist_name={quote(self.item.artists[0].name)}"
         headers = {"User-Agent": "Titanium Discord Bot (https://titaniumbot.me)"}
 
         async with aiohttp.ClientSession() as session:
@@ -193,7 +192,7 @@ class SongMenuView(View):
 
 
 class SongLyricSelection(Select):
-    def __init__(self, item: dict):
+    def __init__(self, item: SpotifyTrack):
         super().__init__(
             placeholder="Select a song",
             min_values=1,
@@ -286,7 +285,7 @@ class SongLyricsSelectionView(View):
 class ArtistView(View):
     def __init__(
         self,
-        item: dict,
+        item: SpotifyArtist,
         colours: list,
         op_id: int,
     ):
@@ -300,7 +299,7 @@ class ArtistView(View):
         spotify_button = Button(
             label="Play on Spotify",
             style=ButtonStyle.url,
-            url=item["external_urls"]["spotify"],
+            url=item.external_urls["spotify"],
         )
         self.add_item(spotify_button)
 
@@ -319,7 +318,7 @@ class ArtistView(View):
 class ArtistMenuView(View):
     def __init__(
         self,
-        item: dict,
+        item: SpotifyArtist,
         colours: list,
     ):
         super().__init__()
@@ -332,7 +331,7 @@ class ArtistMenuView(View):
         google_button = Button(
             label="Search on Google",
             style=ButtonStyle.url,
-            url=f"https://www.google.com/search?q={quote_plus(item['name'])}",
+            url=f"https://www.google.com/search?q={quote_plus(item.name)}",
         )
         self.add_item(google_button)
 
@@ -343,26 +342,26 @@ class ArtistMenuView(View):
     async def art(self, interaction: Interaction, button: Button):
         await interaction.response.defer(ephemeral=True)
 
-        if self.item["images"] is not None:
-            if self.item["images"][0]["height"] is None or self.item["images"][0]["width"] is None:
+        if self.item.images is not None:
+            if self.item.images[0].height is None or self.item.images[0].width is None:
                 description = "Viewing highest quality (Resolution unknown)"
             else:
-                description = f"Viewing highest quality ({self.item['images'][0]['width']}x{self.item['images'][0]['height']})"
+                description = f"Viewing highest quality ({self.item.images[0].width}x{self.item.images[0].height})"
 
             embed = Embed(
-                title=f"{self.item['name']} - Icon",
+                title=f"{self.item.name} - Icon",
                 description=description,
                 colour=Colour.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
             )
 
-            embed.set_image(url=self.item["images"][0]["url"])
+            embed.set_image(url=self.item.images[0].url)
 
             view = View()
             view.add_item(
                 Button(
                     label="Open in Browser",
                     style=ButtonStyle.url,
-                    url=self.item["images"][0]["url"],
+                    url=self.item.images[0].url,
                 )
             )
 
@@ -381,14 +380,14 @@ class ArtistMenuView(View):
 class AlbumMenuButton(discord.ui.Button):
     def __init__(
         self,
-        item: dict,
+        item: SpotifyAlbum,
         artists: str,
         artist_img: str,
         colours: list,
         add_button_url: Optional[str] = None,
         add_button_text: Optional[str] = None,
     ):
-        super().__init__(label="Menu", style=discord.ButtonStyle.gray, row=1)
+        super().__init__(label="Menu", style=discord.ButtonStyle.gray)
 
         self.item = item
         self.artists = artists
@@ -397,7 +396,9 @@ class AlbumMenuButton(discord.ui.Button):
         self.add_button_url = add_button_url
         self.add_button_text = add_button_text
 
-    async def callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        await interaction.response.defer(ephemeral=True)
+
         view = AlbumMenuView(
             item=self.item,
             artists=self.artists,
@@ -413,7 +414,7 @@ class AlbumMenuButton(discord.ui.Button):
 class AlbumMenuView(View):
     def __init__(
         self,
-        item: dict,
+        item: SpotifyAlbum,
         artists: str,
         artist_img: str,
         colours: list,
@@ -445,7 +446,7 @@ class AlbumMenuView(View):
         songlink_button = discord.ui.Button(
             label="Other Streaming Services",
             style=discord.ButtonStyle.url,
-            url=f"https://song.link/{item['external_urls']['spotify']}",
+            url=f"https://song.link/{item.external_urls['spotify']}",
             row=0,
         )
         self.add_item(songlink_button)
@@ -454,7 +455,7 @@ class AlbumMenuView(View):
         google_button = discord.ui.Button(
             label="Search on Google",
             style=discord.ButtonStyle.url,
-            url=f"https://www.google.com/search?q={quote_plus(item['name'])}+{quote_plus(artists)}",
+            url=f"https://www.google.com/search?q={quote_plus(item.name)}+{quote_plus(artists)}",
             row=0,
         )
         self.add_item(google_button)
@@ -462,31 +463,35 @@ class AlbumMenuView(View):
     async def on_timeout(self):
         await self.message.delete()
 
-    @discord.ui.button(label="Album Art", style=discord.ButtonStyle.gray, row=1)
-    async def art(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(label="Album Art", style=discord.ButtonStyle.gray, row=0)
+    async def art(self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
 
-        if self.item["images"] is not None:
-            if self.item["images"][0]["height"] is None or self.item["images"][0]["width"] is None:
+        if self.item.images is not None:
+            if self.item.images[0].height is None or self.item.images[0].width is None:
                 description = "Viewing highest quality (Resolution unknown)"
             else:
-                description = f"Viewing highest quality ({self.item['images'][0]['width']}x{self.item['images'][0]['height']})"
+                description = f"Viewing highest quality ({self.item.images[0].width}x{self.item.images[0].height})"
 
             embed = discord.Embed(
-                title="Album Art",
+                title=f"{self.item.name} - Album Art",
                 description=description,
                 colour=Colour.from_rgb(r=self.colours[0], g=self.colours[1], b=self.colours[2]),
             )
 
-            embed.set_author(name=self.item["name"], url=self.item["external_urls"]["spotify"])
-            embed.set_image(url=self.item["images"][0]["url"])
+            embed.set_author(
+                name=self.artists,
+                icon_url=self.artist_img,
+                url=self.item.artists[0].external_urls["spotify"],
+            )
+            embed.set_image(url=self.item.images[0].url)
 
             view = View()
             view.add_item(
                 discord.ui.Button(
                     label="Open in Browser",
                     style=discord.ButtonStyle.url,
-                    url=self.item["images"][0]["url"],
+                    url=self.item.images[0].url,
                 )
             )
 

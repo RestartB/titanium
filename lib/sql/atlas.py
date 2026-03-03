@@ -33,5 +33,6 @@ print_ddl(
         sql.ScheduledTask,
         sql.ErrorLog,
         sql.OptOutIDs,
+        sql.SpotifyToken,
     ],
 )

@@ -1,7 +1,7 @@
 import os
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 import aiohttp
 import discord
@@ -14,8 +14,13 @@ from lib.views.pagination import PaginationView
 from lib.views.spotify import AlbumMenuButton, ArtistView, SongView
 
 if TYPE_CHECKING:
-    import spotipy
-
+    from lib.classes.spotify import (
+        SpotifyAlbum,
+        SpotifyArtist,
+        SpotifyArtistTopTracks,
+        SpotifyTrack,
+        TitaniumSpotifyClient,
+    )
     from main import TitaniumBot
 
 
@@ -27,8 +32,8 @@ REQUEST_HEADERS = {
 # Song element function
 async def song(
     bot: TitaniumBot,
-    sp: spotipy.Spotify,
-    item: dict | Any,
+    sp: TitaniumSpotifyClient,
+    item: SpotifyTrack,
     ctx: commands.Context["TitaniumBot"],
     add_button_url: Optional[str] = None,
     add_button_text: Optional[str] = None,
@@ -41,31 +46,22 @@ async def song(
     Handle Spotify song embeds.
     """
 
-    artist_data = sp.artist(item["artists"][0]["external_urls"]["spotify"])
+    artist_data = await sp.artist(item.artists[0].external_urls["spotify"])
     artist_img = ""
 
     if artist_data is not None:
-        artist_img = artist_data["images"][0]["url"]
-
-    artist_string = ""
-    for artist in item["artists"]:
-        if artist_string == "":
-            artist_string = artist["name"]
-        else:
-            artist_string += f", {artist['name']}"
-
-    explicit = item["explicit"]
+        artist_img = artist_data.images[0].url
 
     # Set up new embed
     embed = discord.Embed(
-        title=f"{item['name']}{f' {bot.explicit_emoji}' if explicit else ''}",
-        description=f"on **[{escape_markdown(item['album']['name'])}](<{item['album']['external_urls']['spotify']}>) • {item['album']['release_date'].split('-', 1)[0]}**",
+        title=f"{item.name}{f' {bot.explicit_emoji}' if item.explicit else ''}",
+        description=f"on **[{escape_markdown(item.album.name)}](<{item.album.external_urls['spotify']}>) • {item.album.release_date.split('-', 1)[0]}**",
     )
 
-    embed.set_thumbnail(url=item["album"]["images"][0]["url"])
+    embed.set_thumbnail(url=item.album.images[0].url)
     embed.set_author(
-        name=artist_string,
-        url=item["artists"][0]["external_urls"]["spotify"],
+        name=", ".join(artist.name for artist in item.artists),
+        url=item.artists[0].external_urls["spotify"],
         icon_url=artist_img,
     )
     embed.set_footer(
@@ -75,9 +71,7 @@ async def song(
 
     # Get image, store in memory
     async with aiohttp.ClientSession() as session:
-        async with session.get(
-            item["album"]["images"][0]["url"], headers=REQUEST_HEADERS
-        ) as request:
+        async with session.get(item.album.images[0].url, headers=REQUEST_HEADERS) as request:
             image_data = BytesIO()
 
             async for chunk in request.content.iter_chunked(10):
@@ -106,9 +100,8 @@ async def song(
 
 # Artist element function
 async def artist(
-    sp: spotipy.Spotify,
-    item: dict | Any,
-    top_tracks: dict | Any,
+    item: SpotifyArtist,
+    top_tracks: SpotifyArtistTopTracks,
     ctx: commands.Context["TitaniumBot"],
     ephemeral: bool = False,
     responded: bool = False,
@@ -118,38 +111,30 @@ async def artist(
     Handle Spotify artist embeds.
     """
 
-    embed = discord.Embed(title=f"{item['name']}")
+    embed = discord.Embed(title=f"{item.name}")
 
-    embed.add_field(name="Followers", value=f"{item['followers']['total']:,}")
-    embed.set_thumbnail(url=item["images"][0]["url"])
+    if item.followers:
+        embed.add_field(name="Followers", value=f"{item.followers.total:,}")
 
+    embed.set_thumbnail(url=item.images[0].url)
     embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
     try:
         topsong_string = ""
         for i in range(0, 5):
-            artist_string = ""
-            for artist in top_tracks["tracks"][i]["artists"]:
-                if artist_string == "":
-                    artist_string = escape_markdown(artist["name"])
-                else:
-                    artist_string += f", {escape_markdown(artist['name'])}"
+            artist_string = ", ".join([artist.name for artist in top_tracks.tracks[i].artists])
 
             # Hide artist string from song listing if there is only one artist
-            if len(top_tracks["tracks"][i]["artists"]) == 1:
+            if len(top_tracks.tracks[i].artists) == 1:
                 if topsong_string == "":
-                    topsong_string = (
-                        f"{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}**"
-                    )
+                    topsong_string = f"{i + 1}. **{escape_markdown(top_tracks.tracks[i].name)}**"
                 else:
-                    topsong_string += (
-                        f"\n{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}**"
-                    )
+                    topsong_string += f"\n{i + 1}. **{escape_markdown(top_tracks.tracks[i].name)}**"
             else:
                 if topsong_string == "":
-                    topsong_string = f"{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}** - {artist_string}"
+                    topsong_string = f"{i + 1}. **{escape_markdown(top_tracks.tracks[i].name)}** - {artist_string}"
                 else:
-                    topsong_string += f"\n{i + 1}. **{escape_markdown(top_tracks['tracks'][i]['name'])}** - {artist_string}"
+                    topsong_string += f"\n{i + 1}. **{escape_markdown(top_tracks.tracks[i].name)}** - {artist_string}"
 
         embed.add_field(name="Top Songs", value=topsong_string, inline=False)
     except IndexError:
@@ -157,7 +142,7 @@ async def artist(
 
     # Get image, store in memory
     async with aiohttp.ClientSession() as session:
-        async with session.get(item["images"][0]["url"], headers=REQUEST_HEADERS) as request:
+        async with session.get(item.images[0].url, headers=REQUEST_HEADERS) as request:
             image_data = BytesIO()
 
             async for chunk in request.content.iter_chunked(10):
@@ -185,8 +170,8 @@ async def artist(
 
 # Album element function
 async def album(
-    sp: spotipy.Spotify,
-    item: dict | Any,
+    sp: TitaniumSpotifyClient,
+    item: SpotifyAlbum,
     ctx: commands.Context["TitaniumBot"],
     add_button_url: Optional[str] = None,
     add_button_text: Optional[str] = None,
@@ -198,43 +183,42 @@ async def album(
     Handle Spotify album embeds.
     """
 
-    artist_data = sp.artist(item["artists"][0]["external_urls"]["spotify"])
+    artist_data = await sp.artist(item.artists[0].external_urls["spotify"])
     artist_img = ""
 
     if artist_data is not None:
-        artist_img = artist_data["images"][0]["url"]
+        artist_img = artist_data.images[0].url
 
     pages = []
-    page = [f"*Released **{item['release_date']}***\n"]
+    page = [f"*Released **{item.release_date}***\n"]
 
     # Generate artist list
-    artists_list = []
-    for artist in item["artists"]:
-        artists_list.append(escape_markdown(artist["name"]))
-
-    artists = shorten(", ".join(artists_list), width=256, placeholder="...")
+    artists_list = [escape_markdown(artist.name) for artist in item.artists]
+    artists = shorten(
+        ", ".join(artists_list),
+        width=256,
+        placeholder="...",
+    )
 
     # Generate pages with 15 items
-    for i, track in enumerate(item["tracks"]["items"]):
+    for i, track in enumerate(item.tracks.items):
         # Generate track artist list
-        track_artists_list = []
-        for artist in track["artists"]:
-            track_artists_list.append(escape_markdown(artist["name"]))
+        track_artists_list = [escape_markdown(artist.name) for artist in track.artists]
 
         # Only show artists if they are not the same as the album artist
         if track_artists_list == artists_list:
-            page.append(f"{i + 1}. **{shorten(track['name'], width=200, placeholder='...')}**")
+            page.append(f"{i + 1}. **{shorten(track.name, width=200, placeholder='...')}**")
         else:
             track_artists = shorten(", ".join(track_artists_list), width=100, placeholder="...")
 
             page.append(
-                f"{i + 1}. **{shorten(escape_markdown(item['tracks']['items'][i]['name']), width=100, placeholder='...')}** - {track_artists}"
+                f"{i + 1}. **{shorten(escape_markdown(item.tracks.items[i].name), width=100, placeholder='...')}** - {track_artists}"
             )
 
         # Make new page if current page is full
         if len(page) == 16:
             pages.append("\n".join(page))
-            page = [f"*Released **{item['release_date']}***\n"]
+            page = [f"*Released **{item.release_date}***\n"]
 
     # Catch if page is not empty
     if page != []:
@@ -242,7 +226,7 @@ async def album(
 
     # Get image, store in memory
     async with aiohttp.ClientSession() as session:
-        async with session.get(item["images"][0]["url"], headers=REQUEST_HEADERS) as request:
+        async with session.get(item.images[0].url, headers=REQUEST_HEADERS) as request:
             image_data = BytesIO()
 
             async for chunk in request.content.iter_chunked(10):
@@ -257,16 +241,16 @@ async def album(
     page_embeds: list[discord.Embed] = []
     for page in pages:
         embed = discord.Embed(
-            title=item["name"],
+            title=item.name,
             description=page,
             colour=Colour.from_rgb(r=colours[0], g=colours[1], b=colours[2]),
         )
         embed.set_author(
             name=artists,
-            url=item["artists"][0]["external_urls"]["spotify"],
+            url=item.artists[0].external_urls["spotify"],
             icon_url=artist_img,
         )
-        embed.set_thumbnail(url=item["images"][0]["url"])
+        embed.set_thumbnail(url=item.images[0].url)
 
         page_embeds.append(embed)
 
@@ -287,11 +271,18 @@ async def album(
                     colours=colours,
                     add_button_url=add_button_url,
                     add_button_text=add_button_text,
-                )
+                ),
+                discord.ui.Button(
+                    label="Open in Spotify",
+                    style=discord.ButtonStyle.url,
+                    url=item.external_urls["spotify"],
+                ),
             ],
         )
     else:
-        view = discord.ui.View(timeout=300).add_item(
+        view = discord.ui.View(timeout=300)
+
+        view.add_item(
             AlbumMenuButton(
                 item=item,
                 artists=artists,
@@ -299,6 +290,13 @@ async def album(
                 colours=colours,
                 add_button_url=add_button_url,
                 add_button_text=add_button_text,
+            )
+        )
+        view.add_item(
+            discord.ui.Button(
+                label="Open in Spotify",
+                style=discord.ButtonStyle.url,
+                url=item.external_urls["spotify"],
             )
         )
 
