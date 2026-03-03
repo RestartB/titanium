@@ -39,7 +39,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         await ctx.reply(embed=embed)
 
     async def cog_app_command_error(
-        self, interaction: discord.Interaction[discord.Client], error: app_commands.AppCommandError
+        self, interaction: discord.Interaction["TitaniumBot"], error: app_commands.AppCommandError
     ) -> None:
         embed = discord.Embed(title=f"{self.bot.error_emoji} Error", colour=discord.Colour.red())
 

@@ -256,7 +256,7 @@ class QuoteView(View):
             self.bw.label = "Black & White"
             self.bw.emoji = "⚫"
 
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
         await interaction.response.defer(ephemeral=True)
 
         if interaction.user.id in self.allowed_ids:
@@ -275,7 +275,9 @@ class QuoteView(View):
             return False
 
     @discord.ui.button(label="", style=discord.ButtonStyle.gray, custom_id="theme")
-    async def theme(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def theme(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ):
         user = None
 
         if interaction.guild is not None:
@@ -395,7 +397,7 @@ class QuoteView(View):
         )
 
     @discord.ui.button(label="", style=discord.ButtonStyle.gray, custom_id="bw")
-    async def bw(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def bw(self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button):
         user = None
 
         if interaction.guild is not None:
@@ -515,7 +517,9 @@ class QuoteView(View):
         )
 
     @discord.ui.button(label="", emoji="🔄", style=discord.ButtonStyle.gray, custom_id="reload")
-    async def reload(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def reload(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ):
         user = None
 
         if interaction.guild is not None:
@@ -635,7 +639,9 @@ class QuoteView(View):
         )
 
     @discord.ui.button(label="", emoji="🗑️", style=discord.ButtonStyle.red, custom_id="delete")
-    async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def delete(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ):
         if interaction.user.id == self.user_id:
             await interaction.delete_original_response()
 
@@ -679,7 +685,9 @@ class QuoteCommandsCog(
 
         self.bot.tree.add_command(self.quote_ctx)
 
-    async def quote_callback(self, interaction: discord.Interaction, message: discord.Message):
+    async def quote_callback(
+        self, interaction: discord.Interaction["TitaniumBot"], message: discord.Message
+    ):
         await interaction.response.defer()
 
         if message.clean_content == "":
@@ -930,7 +938,7 @@ class QuoteCommandsCog(
     @app_commands.checks.cooldown(1, 5)
     async def custom_quote(
         self,
-        interaction: discord.Interaction,
+        interaction: discord.Interaction["TitaniumBot"],
         user: discord.User,
         content: str,
         output_format: Optional[app_commands.Choice[str]] = None,

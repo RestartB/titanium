@@ -36,7 +36,7 @@ class Analytics(commands.Cog):
     @commands.Cog.listener()
     async def on_app_command_completion(
         self,
-        interaction: discord.Interaction,
+        interaction: discord.Interaction["TitaniumBot"],
         command: Union[app_commands.Command, app_commands.ContextMenu],
     ) -> None:
         if (
@@ -58,7 +58,7 @@ class Analytics(commands.Cog):
 
     # Analytics for raw interactions
     @commands.Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction):
+    async def on_interaction(self, interaction: discord.Interaction["TitaniumBot"]):
         embed = discord.Embed(
             title=f"`@{interaction.user.name}` started an interaction",
             description=f"`{str(interaction.type)}`",

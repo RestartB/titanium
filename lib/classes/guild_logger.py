@@ -2310,7 +2310,7 @@ class GuildLogger:
 
     async def titanium_confession(
         self,
-        interaction: discord.Interaction,
+        interaction: discord.Interaction["TitaniumBot"],
         confession_channel: discord.abc.GuildChannel,
         message: str,
     ) -> None:
