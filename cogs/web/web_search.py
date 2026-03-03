@@ -154,14 +154,9 @@ class WebSearchCommandsCog(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 f"https://api.wikimedia.org/core/v1/wikipedia/en/search/title?q={urllib.parse.quote(search)}&limit=1",
-                headers={
-                    "User-Agent": "TitaniumBot/1.0 (Discord Bot; https://github.com/RestartB/titanium) Python/aiohttp"
-                },
+                headers=headers,
             ) as request:
-                print(request.status)
-
-                if request.status != 200:
-                    print(await request.text())
+                if request.status == 404:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No Results Found",
                         description=f"Couldn't find any results for `{search}`. Please try a different search term.",
@@ -178,6 +173,8 @@ class WebSearchCommandsCog(commands.Cog):
 
                     await ctx.reply(embed=embed, ephemeral=ephemeral)
                     return
+                else:
+                    request.raise_for_status()
 
                 page_data = await request.json()
 
@@ -206,7 +203,7 @@ class WebSearchCommandsCog(commands.Cog):
                 f"https://en.wikipedia.org/api/rest_v1/page/summary/{target_page['key']}",
                 headers=headers,
             ) as request:
-                if request.status != 200:
+                if request.status == 404:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} No Results Found",
                         description=f"Couldn't find any results for `{search}`. Please try a different search term.",
@@ -223,6 +220,8 @@ class WebSearchCommandsCog(commands.Cog):
 
                     await ctx.reply(embed=embed, ephemeral=ephemeral)
                     return
+                else:
+                    request.raise_for_status()
 
                 page = await request.json()
 
