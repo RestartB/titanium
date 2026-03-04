@@ -81,7 +81,7 @@ class APICog(commands.Cog):
         self.host = os.getenv("BOT_API_HOST", "127.0.0.1")
         self.port = int(os.getenv("BOT_API_PORT", 5000))
 
-    async def load_cog(self) -> None:
+    async def cog_load(self) -> None:
         importlib.reload(case_managers)
 
         self.logger.info(f"Starting API server on {self.host}:{self.port}")
