@@ -54,7 +54,7 @@ class CogUtils(commands.Cog):
     # Load cog command
     @adminGroup.command(name="load", description="Admin Only: load a cog.")
     async def load(self, interaction: discord.Interaction, cog: str):
-        cog = f"commands.{cog.replace('\\', '/').replace('/', '.')}"
+        cog = cog.replace("\\", "/").replace("/", ".")
 
         try:
             await self.bot.load_extension(cog)
@@ -72,7 +72,7 @@ class CogUtils(commands.Cog):
     # Unload cog command
     @adminGroup.command(name="unload", description="Admin Only: unload a cog.")
     async def unload(self, interaction: discord.Interaction, cog: str):
-        cog = f"commands.{cog.replace('\\', '/').replace('/', '.')}"
+        cog = cog.replace("\\", "/").replace("/", ".")
 
         try:
             await self.bot.unload_extension(cog)
@@ -90,7 +90,7 @@ class CogUtils(commands.Cog):
     # Reload cog command
     @adminGroup.command(name="reload", description="Admin Only: reload a cog.")
     async def reload(self, interaction: discord.Interaction, cog: str):
-        cog = f"commands.{cog.replace('\\', '/').replace('/', '.')}"
+        cog = cog.replace("\\", "/").replace("/", ".")
 
         try:
             await self.bot.reload_extension(cog)
