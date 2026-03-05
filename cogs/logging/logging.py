@@ -1,6 +1,4 @@
-import importlib
 import logging
-import sys
 from typing import TYPE_CHECKING, Sequence
 
 import discord
@@ -18,11 +16,6 @@ class EventLoggingCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("guild_logger")
-
-    async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib.") and not module_name.startswith("lib.sql"):
-                importlib.reload(module)
 
     async def cog_unload(self) -> None:
         pass

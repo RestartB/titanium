@@ -1,7 +1,6 @@
 import importlib
 import logging
 import re
-import sys
 from datetime import timedelta
 from typing import TYPE_CHECKING, Literal
 
@@ -35,9 +34,8 @@ class AutomodMonitorCog(commands.Cog):
         self.logger: logging.Logger = logging.getLogger("automod")
 
     async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib.") and not module_name.startswith("lib.sql"):
-                importlib.reload(module)
+        importlib.reload(case_managers)
+        importlib.reload(mod_embeds)
 
     async def handle_message(
         self, message: discord.Message, event_type: Literal["new", "edit"] = "new"

@@ -1,5 +1,4 @@
 import importlib
-import sys
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -29,9 +28,9 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         add_global_aliases(self, bot)
 
     async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib.") and not module_name.startswith("lib.sql"):
-                importlib.reload(module)
+        importlib.reload(case_managers)
+        importlib.reload(general_embeds)
+        importlib.reload(mod_embeds)
 
     def _purge_check(
         self, message: discord.Message, source: int, target: discord.User | None

@@ -1,7 +1,6 @@
 import asyncio
 import importlib
 import logging
-import sys
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -35,9 +34,7 @@ class ScheduledTasksCog(commands.Cog):
             self.bot.loop.create_task(self.queue_worker())
 
     async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib.") and not module_name.startswith("lib.sql"):
-                importlib.reload(module)
+        importlib.reload(case_managers)
 
     async def cog_unload(self) -> None:
         self.task_queue.shutdown(immediate=True)

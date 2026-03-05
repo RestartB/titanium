@@ -1,6 +1,4 @@
-import importlib
 import os
-import sys
 from typing import TYPE_CHECKING, Literal
 
 import discord
@@ -20,11 +18,6 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
-
-    async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib.") and not module_name.startswith("lib.sql"):
-                importlib.reload(module)
 
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
         embed = discord.Embed(title=f"{self.bot.error_emoji} Error", colour=discord.Colour.red())

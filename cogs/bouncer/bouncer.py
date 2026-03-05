@@ -1,7 +1,6 @@
 import importlib
 import logging
 import re
-import sys
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -30,9 +29,7 @@ class BouncerMonitorCog(commands.Cog):
         self.logger: logging.Logger = logging.getLogger("bouncer")
 
     async def cog_load(self) -> None:
-        for module_name, module in list(sys.modules.items()):
-            if module_name.startswith("lib.") and not module_name.startswith("lib.sql"):
-                importlib.reload(module)
+        importlib.reload(case_managers)
 
     async def handle_event(self, member: discord.Member, event_type: BouncerEventType):
         self.logger.debug(f"Processing member join/update: {member.id}")
