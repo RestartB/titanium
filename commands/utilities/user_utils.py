@@ -116,7 +116,7 @@ class UserUtils(commands.Cog):
         )
 
         # Send Embed
-        await interaction.followup.send(embed=embed, view=view)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
     # PFP command
     @userGroup.command(name="pfp", description="Show a user's PFP.")
