@@ -142,6 +142,11 @@ class APICog(commands.Cog):
         self.app.router.add_get("/guild/{guild_id}/module/{module_name}", self.module_get)
         self.app.router.add_put("/guild/{guild_id}/module/{module_name}", self.module_update)
 
+    async def can_see_channel(
+        self, member: discord.Member, channel: discord.abc.GuildChannel
+    ) -> bool:
+        return channel.permissions_for(member).view_channel if member else False
+
     async def index(self, request: web.Request) -> web.Response:
         return web.json_response({"version": "Titanium API v2"})
 
@@ -983,6 +988,7 @@ class APICog(commands.Cog):
 
         guild_id_str = request.match_info.get("guild_id")
         guild_id = int(guild_id_str) if guild_id_str and guild_id_str.isdigit() else None
+
         module_name = request.match_info.get("module_name")
         module_name = module_name.lower() if module_name else None
 
@@ -999,6 +1005,12 @@ class APICog(commands.Cog):
                 {"error": "Failed to retrieve server configuration"},
                 status=500,
             )
+
+        user_id = request.query.get("user", None)
+        member = None
+
+        if user_id:
+            member = await get_or_fetch_member(self.bot, guild, int(user_id))
 
         try:
             data = await request.json()
@@ -1043,6 +1055,31 @@ class APICog(commands.Cog):
                 db_config = await session.get(GuildConfessionsSettings, guild.id)
                 if not db_config:
                     db_config = GuildConfessionsSettings(guild_id=guild.id)
+
+                if (
+                    validated_config.confessions_channel_id
+                    and db_config.confessions_channel_id
+                    != int(validated_config.confessions_channel_id)
+                ):
+                    channel = guild.get_channel(int(validated_config.confessions_channel_id))
+
+                    if not channel:
+                        return web.json_response(
+                            {
+                                "error": "Channel does not exist",
+                                "message": f"The selected channel ({int(validated_config.confessions_channel_id)}) does not exist.",
+                            },
+                            status=404,
+                        )
+
+                    if member and not self.can_see_channel(member, channel):
+                        return web.json_response(
+                            {
+                                "error": "User can't see channel",
+                                "message": f"You are not allowed to see the {int(validated_config.confessions_channel_id)} channel.",
+                            },
+                            status=403,
+                        )
 
                 db_config.confessions_in_channel = validated_config.confessions_in_channel
                 db_config.confessions_channel_id = (
@@ -1228,6 +1265,15 @@ class APICog(commands.Cog):
         elif module_name == "server_counters" and isinstance(
             validated_config, ServerCountersConfigModel
         ):
+            if member and not member.guild_permissions.manage_channels:
+                return web.json_response(
+                    {
+                        "error": "User missing permissions",
+                        "message": "You are missing the Manage Channels permission.",
+                    },
+                    status=403,
+                )
+
             async with get_session() as session:
                 db_config = await session.get(GuildSettings, guild.id)
                 if not db_config:
@@ -1382,6 +1428,31 @@ class APICog(commands.Cog):
 
                 if not existing_config:
                     existing_config = GuildLeaderboardSettings(guild_id=guild.id)
+
+                if (
+                    validated_config.notification_channel
+                    and existing_config.notification_channel
+                    != int(validated_config.notification_channel)
+                ):
+                    channel = guild.get_channel(int(validated_config.notification_channel))
+
+                    if not channel:
+                        return web.json_response(
+                            {
+                                "error": "Channel does not exist",
+                                "message": f"The selected channel ({int(validated_config.notification_channel)}) does not exist.",
+                            },
+                            status=404,
+                        )
+
+                    if member and not self.can_see_channel(member, channel):
+                        return web.json_response(
+                            {
+                                "error": "User can't see channel",
+                                "message": f"You are not allowed to see the {int(validated_config.notification_channel)} channel.",
+                            },
+                            status=403,
+                        )
 
                 existing_config.mode = validated_config.mode
                 existing_config.base_xp = validated_config.base_xp
