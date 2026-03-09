@@ -227,6 +227,12 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
+        user_id = request.query.get("user", None)
+        member = None
+
+        if user_id:
+            member = await get_or_fetch_member(self.bot, guild, int(user_id))
+
         guild_limits = self.bot.guild_limits.get(guild.id)
         if not guild_limits:
             await self.bot.refresh_guild_config_cache(guild.id)
@@ -266,15 +272,19 @@ class APICog(commands.Cog):
                         "name": category.name if category else None,
                         "position": i,
                         "channels": [
-                            {
-                                "id": str(channel.id),
-                                "name": channel.name,
-                                "type": str(channel.type),
-                                "position": x,
-                                "category": (
-                                    str(channel.category_id) if channel.category_id else None
-                                ),
-                            }
+                            (
+                                {
+                                    "id": str(channel.id),
+                                    "name": channel.name,
+                                    "type": str(channel.type),
+                                    "position": x,
+                                    "category": (
+                                        str(channel.category_id) if channel.category_id else None
+                                    ),
+                                }
+                                if not member or channel.permissions_for(member).view_channel
+                                else {}
+                            )
                             for x, channel in enumerate(channels)
                         ],
                     }
@@ -674,10 +684,6 @@ class APICog(commands.Cog):
 
         # Get permissions
         config = await self.bot.fetch_guild_config(guild.id)
-
-        if not config:
-            config = await self.bot.init_guild(guild.id)
-
         if not config:
             return web.json_response(
                 {"error": "Failed to retrieve server configuration"},
@@ -726,10 +732,6 @@ class APICog(commands.Cog):
             return web.json_response({"error": "guild not found"}, status=404)
 
         config = await self.bot.fetch_guild_config(guild.id)
-
-        if not config:
-            config = await self.bot.init_guild(guild.id)
-
         if not config:
             return web.json_response(
                 {"error": "Failed to retrieve server configuration"},
@@ -755,10 +757,6 @@ class APICog(commands.Cog):
             return web.json_response({"error": "guild not found"}, status=404)
 
         config = await self.bot.fetch_guild_config(guild.id)
-
-        if not config:
-            config = await self.bot.init_guild(guild.id)
-
         if not config:
             return web.json_response(
                 {"error": "Failed to retrieve server configuration"},
@@ -816,10 +814,6 @@ class APICog(commands.Cog):
 
         # Get permissions
         config = await self.bot.fetch_guild_config(guild.id)
-
-        if not config:
-            config = await self.bot.init_guild(guild.id)
-
         if not config:
             return web.json_response(
                 {"error": "Failed to retrieve server configuration"},
@@ -858,10 +852,6 @@ class APICog(commands.Cog):
 
         config = await self.bot.fetch_guild_config(guild.id)
         prefixes = self.bot.guild_prefixes.get(guild.id)
-
-        if not config or not prefixes:
-            config = await self.bot.init_guild(guild.id)
-            prefixes = self.bot.guild_prefixes.get(guild.id)
 
         if not config or not prefixes:
             return web.json_response(
@@ -905,10 +895,6 @@ class APICog(commands.Cog):
 
         config = await self.bot.fetch_guild_config(guild.id)
         prefixes = self.bot.guild_prefixes.get(guild.id)
-
-        if not config or not prefixes:
-            config = await self.bot.init_guild(guild.id)
-            prefixes = self.bot.guild_prefixes.get(guild.id)
 
         if not config or not prefixes:
             return web.json_response(
@@ -967,10 +953,6 @@ class APICog(commands.Cog):
             return web.json_response({"error": "Guild not found"}, status=404)
 
         config = await self.bot.fetch_guild_config(guild.id)
-
-        if not config:
-            config = await self.bot.init_guild(guild.id)
-
         if not config:
             return web.json_response(
                 {"error": "Failed to retrieve server configuration"},
@@ -1012,10 +994,6 @@ class APICog(commands.Cog):
             return web.json_response({"error": "Guild not found"}, status=404)
 
         config = await self.bot.fetch_guild_config(guild.id)
-
-        if not config:
-            config = await self.bot.init_guild(guild.id)
-
         if not config:
             return web.json_response(
                 {"error": "Failed to retrieve server configuration"},
