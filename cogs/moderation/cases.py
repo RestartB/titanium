@@ -12,7 +12,7 @@ import lib.views.cases as case_views
 import lib.views.confirm as confirm_views
 import lib.views.pagination as page_views
 from lib.helpers.global_alias import add_global_aliases, global_alias
-from lib.helpers.hybrid_adapters import __stop_loading, defer
+from lib.helpers.hybrid_adapters import _defer, _stop_loading, defer
 from lib.sql.sql import ModCase, get_session
 
 if TYPE_CHECKING:
@@ -33,6 +33,26 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         importlib.reload(case_views)
         importlib.reload(confirm_views)
         importlib.reload(page_views)
+
+    async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
+        await _defer(ctx)
+
+        if not ctx.guild:
+            return False
+
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or not config.moderation_enabled:
+            await ctx.reply(
+                embed=Embed(
+                    colour=Colour.red(),
+                    title=f"{self.bot.error_emoji} Moderation Disabled",
+                    description="The moderation module is disabled. Ask a server admin to turn it on using the `/settings overview` command or the Titanium Dashboard.",
+                ),
+            )
+            await _stop_loading(ctx)
+            return False
+
+        return True
 
     async def _build_embeds(
         self, cases_list: Sequence[ModCase], target: User | Member, user: User | Member
@@ -67,7 +87,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not ctx.guild or not self.bot.user or isinstance(ctx.author, User):
             return
 
-        async with defer(ctx):
+        async with defer(ctx, stop_only=True):
             async with get_session() as session:
                 case_manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
 
@@ -145,7 +165,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not ctx.guild or not self.bot.user:
             return
 
-        async with defer(ctx):
+        async with defer(ctx, stop_only=True):
             try:
                 async with get_session() as session:
                     case = await case_managers.GuildModCaseManager(
@@ -198,7 +218,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not ctx.guild or not self.bot.user:
             return
 
-        async with defer(ctx):
+        async with defer(ctx, stop_only=True):
             try:
                 async with get_session() as session:
                     case = await case_managers.GuildModCaseManager(
@@ -247,7 +267,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not isinstance(ctx.author, Member):
             return await ctx.reply(embed=general_embeds.guild_only(self.bot))
 
-        async with defer(ctx):
+        async with defer(ctx, stop_only=True):
             try:
                 async with get_session() as session:
                     case = await case_managers.GuildModCaseManager(
@@ -277,7 +297,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not ctx.guild or not self.bot.user:
             return
 
-        async with defer(ctx):
+        async with defer(ctx, stop_only=True):
             async with get_session() as session:
                 case_manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
                 case = await case_manager.get_case_by_id(case_id)
@@ -312,7 +332,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                     view=view,
                 )
 
-                await __stop_loading(ctx)
+                await _stop_loading(ctx)
                 await view.wait()
 
                 if not view.value:

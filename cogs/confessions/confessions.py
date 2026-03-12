@@ -56,7 +56,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
                 embed=Embed(
                     colour=Colour.red(),
                     title=f"{self.bot.error_emoji} Confessions Disabled",
-                    description="The confession module is disabled. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
+                    description="The confession module is disabled. Ask a server admin to turn it on using the `/settings overview` command or the Titanium Dashboard.",
                 ),
                 ephemeral=True,
             )

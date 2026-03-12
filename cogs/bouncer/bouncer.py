@@ -55,7 +55,7 @@ class BouncerMonitorCog(commands.Cog):
 
         self.logger.debug(f"Bouncer enabled: {config.bouncer_enabled}")
 
-        if not config.bouncer_enabled:
+        if not config.bouncer_enabled or not config.moderation_enabled:
             self.logger.debug("Bouncer is not enabled, skipping member")
             return
 

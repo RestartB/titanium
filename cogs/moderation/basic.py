@@ -12,7 +12,7 @@ import lib.embeds.mod_actions as mod_embeds
 from lib.duration import DurationConverter
 from lib.enums.moderation import CaseType
 from lib.helpers.global_alias import add_global_aliases, global_alias
-from lib.helpers.hybrid_adapters import defer
+from lib.helpers.hybrid_adapters import _defer, _stop_loading, defer
 from lib.helpers.log_error import log_error
 from lib.sql.sql import get_session
 
@@ -31,6 +31,27 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         importlib.reload(case_managers)
         importlib.reload(general_embeds)
         importlib.reload(mod_embeds)
+
+    async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
+        await _defer(ctx, ephemeral=True)
+
+        if not ctx.guild:
+            return False
+
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or not config.moderation_enabled:
+            await ctx.reply(
+                embed=discord.Embed(
+                    colour=discord.Colour.red(),
+                    title=f"{self.bot.error_emoji} Moderation Disabled",
+                    description="The moderation module is disabled. Ask a server admin to turn it on using the `/settings overview` command or the Titanium Dashboard.",
+                ),
+                ephemeral=True,
+            )
+            await _stop_loading(ctx)
+            return False
+
+        return True
 
     def _purge_check(
         self, message: discord.Message, source: int, target: discord.User | None
@@ -87,7 +108,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
-        async with defer(ctx, ephemeral=True):
+        async with defer(ctx, stop_only=True):
             try:
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
@@ -173,7 +194,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
-        async with defer(ctx, ephemeral=True):
+        async with defer(ctx, stop_only=True):
             try:
                 # Check if guild for type checking
                 if not ctx.guild:
@@ -305,7 +326,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
-        async with defer(ctx, ephemeral=True):
+        async with defer(ctx, stop_only=True):
             try:
                 # Check if guild for type checking
                 if not ctx.guild:
@@ -421,7 +442,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
-        async with defer(ctx, ephemeral=True):
+        async with defer(ctx, stop_only=True):
             try:
                 # Check if guild for type checking
                 if not ctx.guild:
@@ -534,7 +555,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
-        async with defer(ctx, ephemeral=True):
+        async with defer(ctx, stop_only=True):
             try:
                 # Check if guild for type checking
                 if not ctx.guild:
@@ -670,7 +691,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        async with defer(ctx, ephemeral=True):
+        async with defer(ctx, stop_only=True):
             try:
                 # Check if guild for type checking
                 if not ctx.guild:
@@ -781,7 +802,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         if not ctx.guild or not self.bot.user:
             return
 
-        async with defer(ctx, ephemeral=True):
+        async with defer(ctx, stop_only=True):
             try:
                 if isinstance(
                     ctx.channel,

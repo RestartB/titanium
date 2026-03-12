@@ -9,17 +9,19 @@ if TYPE_CHECKING:
 
 
 @asynccontextmanager
-async def defer(ctx: commands.Context[TitaniumBot], ephemeral: bool = False):
+async def defer(ctx: commands.Context[TitaniumBot], ephemeral: bool = False, stop_only=False):
     try:
-        await __defer(ctx, ephemeral)
+        if not stop_only:
+            await _defer(ctx, ephemeral)
+
         yield
     except Exception:
         raise
     finally:
-        await __stop_loading(ctx)
+        await _stop_loading(ctx)
 
 
-async def __defer(ctx: commands.Context["TitaniumBot"], ephemeral: bool = False) -> None:
+async def _defer(ctx: commands.Context["TitaniumBot"], ephemeral: bool = False) -> None:
     if ctx.interaction is not None:
         await ctx.defer(ephemeral=ephemeral)
     else:
@@ -38,7 +40,7 @@ async def __defer(ctx: commands.Context["TitaniumBot"], ephemeral: bool = False)
         await ctx.message.add_reaction(ctx.bot.loading_emoji)
 
 
-async def __stop_loading(ctx: commands.Context["TitaniumBot"]) -> None:
+async def _stop_loading(ctx: commands.Context["TitaniumBot"]) -> None:
     try:
         show_loading = True
 

@@ -142,9 +142,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/guild/{guild_id}/module/{module_name}", self.module_get)
         self.app.router.add_put("/guild/{guild_id}/module/{module_name}", self.module_update)
 
-    async def can_see_channel(
-        self, member: discord.Member, channel: discord.abc.GuildChannel
-    ) -> bool:
+    def can_see_channel(self, member: discord.Member, channel: discord.abc.GuildChannel) -> bool:
         return channel.permissions_for(member).view_channel if member else False
 
     async def index(self, request: web.Request) -> web.Response:

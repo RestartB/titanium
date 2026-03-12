@@ -486,6 +486,8 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
+    elif isinstance(error, commands.errors.CheckFailure):
+        return
     else:
         try:
             error_id = await log_error(
