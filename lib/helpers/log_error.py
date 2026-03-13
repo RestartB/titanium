@@ -2,7 +2,6 @@ import logging
 import os
 import traceback
 import uuid
-from textwrap import shorten
 from typing import TYPE_CHECKING, Optional
 
 import discord
@@ -11,6 +10,13 @@ from lib.sql.sql import ErrorLog, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
+
+
+def shorten_preserve(text: str, width: int, placeholder: str = "...") -> str:
+    if len(text) <= width:
+        return text
+    cut = max(0, width - len(placeholder))
+    return text[:cut] + placeholder
 
 
 async def log_error(
@@ -58,7 +64,7 @@ async def log_error(
 
     embed = discord.Embed(
         title=error,
-        description=f"{f'{details}\n\n' if details else ''}{f'```python\n{shorten("".join(traceback.format_exception(exc)) if exc else "", width=3000)}```' if exc else ''}",
+        description=f"{f'{details}\n\n' if details else ''}{f'```python\n{shorten_preserve("".join(traceback.format_exception(exc)) if exc else "", width=3000)}```' if exc else ''}",
         colour=discord.Colour.red(),
     )
 
