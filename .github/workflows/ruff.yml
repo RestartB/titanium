@@ -7,40 +7,24 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
+  check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-          persist-credentials: false
-          fetch-depth: 0
-    - name: Set up Python 3.13
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.13
-    - name: Install UV
-      run: |
-        pip install uv
-    - name: Check code with Ruff, attempt fixes
-      run: |
-        uvx ruff check --fix
-    - name: Format code with Ruff
-      run: |
-        uvx ruff format
-    - name: Check for changes
-      id: git-check
-      run: |
-        git diff --exit-code || echo "has_changes=true" >> $GITHUB_OUTPUT
-    - name: Commit fixes
-      if: steps.git-check.outputs.has_changes == 'true'
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git commit -a -m "ci: apply ruff fixes"
-    - name: Push fixes
-      if: steps.git-check.outputs.has_changes == 'true'
-      uses: ad-m/github-push-action@master
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
-  
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked --all-extras --dev
+
+      # Update output format to enable automatic inline annotations.
+      - name: Run Ruff
+        run: uv run ruff check --output-format=github .
