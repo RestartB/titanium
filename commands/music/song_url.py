@@ -1,18 +1,13 @@
-import asyncio
 import datetime
 import logging
-from io import BytesIO
 from urllib.parse import quote
 
 import aiohttp
 import asqlite
 import discord
 import spotipy
-from colorthief import ColorThief
-from discord import ButtonStyle, Color, app_commands
+from discord import Color, app_commands
 from discord.ext import commands
-from discord.ui import View
-from discord.utils import escape_markdown
 from spotipy.oauth2 import SpotifyClientCredentials
 from url_cleaner import UrlCleaner
 
@@ -55,9 +50,7 @@ class SongURL(commands.Cog):
 
     # Song URL command
     @app_commands.command(name="song-url", description="Get info about a song link.")
-    @app_commands.describe(
-        url="The target URL."
-    )
+    @app_commands.describe(url="The target URL.")
     @app_commands.describe(
         bypass_cache="Bypass the cache to get a new result for non-Spotify links. Can help if provided match is wrong."
     )
