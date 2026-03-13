@@ -796,7 +796,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
     async def purge(
         self,
         ctx: commands.Context["TitaniumBot"],
-        amount: commands.Range[int, 1, 200],
+        amount: commands.Range[int, 1, 100],
         user: discord.User | None = None,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
