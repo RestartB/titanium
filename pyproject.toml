@@ -42,5 +42,9 @@ line-length = 100
 [tool.ruff.lint]
 extend-select = ["I"]
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+
 [tool.basedpyright]
 typeCheckingMode = "basic"
