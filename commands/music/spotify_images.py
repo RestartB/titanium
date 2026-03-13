@@ -25,7 +25,7 @@ class SpotifyImages(commands.Cog):
         name="image", description="Get high quality album art from a Spotify URL."
     )
     @app_commands.describe(
-        url="The target Spotify URL. Song, album, playlist and spotify.link URLs are supported.",
+        url="The target Spotify URL. Song, album and spotify.link URLs are supported.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.checks.cooldown(1, 10)
@@ -242,74 +242,16 @@ class SpotifyImages(commands.Cog):
                     await interaction.edit_original_response(embed=embed)
             # Playlist URL
             elif "playlist" in url:
-                # Search playlist on Spotify
-                result = self.sp.playlist(url, market="GB")
-
-                image_url = result["images"][0]["url"]
-
-                # Get image, store in memory
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as request:
-                        image_data = BytesIO()
-
-                        async for chunk in request.content.iter_chunked(10):
-                            image_data.write(chunk)
-
-                        image_data.seek(0)
-
-                # Get dominant colour for embed
-                color_thief = ColorThief(image_data)
-                dominant_color = color_thief.get_color()
-
-                if result["images"] is not None:
-                    if (
-                        result["images"][0]["height"] is None
-                        or result["images"][0]["width"] is None
-                    ):
-                        embed = discord.Embed(
-                            title=f"{result['name']} - {result['owner']['display_name']} (Playlist) - Cover Art",
-                            description="Viewing highest quality (Resolution unknown)",
-                            color=Color.from_rgb(
-                                r=dominant_color[0],
-                                g=dominant_color[1],
-                                b=dominant_color[2],
-                            ),
-                        )
-                    else:
-                        embed = discord.Embed(
-                            title=f"{result['name']} - {result['owner']['display_name']} (Playlist) - Cover Art",
-                            description=f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})",
-                            color=Color.from_rgb(
-                                r=dominant_color[0],
-                                g=dominant_color[1],
-                                b=dominant_color[2],
-                            ),
-                        )
-                    embed.set_image(url=result["images"][0]["url"])
-                    embed.set_footer(
-                        text=f"@{interaction.user.name}",
-                        icon_url=interaction.user.display_avatar.url,
-                    )
-
-                    view = View()
-                    view.add_item(
-                        discord.ui.Button(
-                            label="Download",
-                            style=discord.ButtonStyle.url,
-                            url=result["images"][0]["url"],
-                        )
-                    )
-
-                    await interaction.edit_original_response(embed=embed, view=view)
-                else:
-                    embed = discord.Embed(
-                        title="No cover art available.", color=Color.red()
-                    )
-                    embed.set_footer(
-                        text=f"@{interaction.user.name}",
-                        icon_url=interaction.user.display_avatar.url,
-                    )
-                    await interaction.edit_original_response(embed=embed)
+                embed = discord.Embed(
+                    title="Playlists Not Supported",
+                    description="Due to new Spotify restrictions, playlists are no longer supported.",
+                    color=Color.red(),
+                )
+                embed.set_footer(
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
+                )
+                await interaction.followup.send(embed=embed)
             else:
                 embed = discord.Embed(
                     title="Error",
