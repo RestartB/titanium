@@ -2,8 +2,8 @@ from typing import TYPE_CHECKING
 
 from discord import ClientUser, Colour, Embed, Member, User
 
-from ..duration import duration_to_timestring
-from ..sql.sql import ModCase
+from lib.duration import duration_to_timestring
+from lib.sql.sql import ModCase
 
 if TYPE_CHECKING:
     from main import TitaniumBot

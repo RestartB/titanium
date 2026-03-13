@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Sequence
 from discord import Colour, Embed, Member, User
 from sqlalchemy import Column
 
-from ..duration import duration_to_timestring
-from ..sql.sql import ModCase
+from lib.duration import duration_to_timestring
+from lib.sql.sql import ModCase
 
 if TYPE_CHECKING:
     from main import TitaniumBot

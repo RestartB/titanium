@@ -9,13 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from lib.classes.guild_logger import GuildLogger
+from lib.duration import DurationConverter
 from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, unbanned_dm, unmuted_dm, warned_dm
 from lib.enums.moderation import CaseSource, CaseType
 from lib.enums.scheduled_events import EventType
 from lib.helpers.send_dm import send_dm
-
-from ..duration import DurationConverter
-from ..sql.sql import ModCase, ScheduledTask
+from lib.sql.sql import ModCase, ScheduledTask
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -86,6 +85,9 @@ class GuildModCaseManager:
         source: CaseSource = CaseSource.MODERATION,
         external: bool = False,
     ) -> tuple[ModCase, bool, str]:
+        action = CaseType[action.name] if hasattr(action, "name") else action
+        source = CaseSource[source.name] if hasattr(source, "name") else source
+
         if external:
             guild_settings = await self.bot.fetch_guild_config(self.guild.id)
 
@@ -112,14 +114,14 @@ class GuildModCaseManager:
         if action == CaseType.MUTE:
             # set all previous mutes to resolved
             cases = await self.get_cases_by_user(user.id)
-            mute_cases = [c for c in cases if c.type == CaseType.MUTE and not c.resolved]
+            mute_cases = [c for c in cases if c.type.name == CaseType.MUTE.name and not c.resolved]
 
             for mute_case in mute_cases:
                 mute_case.resolved = True
         elif action == CaseType.BAN:
             # set all previous bans to resolved
             cases = await self.get_cases_by_user(user.id)
-            ban_cases = [c for c in cases if c.type == CaseType.BAN and not c.resolved]
+            ban_cases = [c for c in cases if c.type.name == CaseType.BAN.name and not c.resolved]
 
             for ban_case in ban_cases:
                 ban_case.resolved = True

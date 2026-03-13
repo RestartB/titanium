@@ -68,14 +68,17 @@ class BouncerMonitorCog(commands.Cog):
                 self.logger.debug(f"Bouncer rule {rule.id} is disabled, skipping")
                 continue
 
-            if event_type == BouncerEventType.UPDATE and not rule.evaluate_for_existing_members:
+            if (
+                event_type.name == BouncerEventType.UPDATE.name
+                and not rule.evaluate_for_existing_members
+            ):
                 self.logger.debug(
                     f"Bouncer rule {rule.id} is not set to evaluate existing members, skipping"
                 )
                 continue
 
             for criteria in rule.criteria:
-                if criteria.criteria_type == BouncerCriteriaType.USERNAME:
+                if criteria.criteria_type.name == BouncerCriteriaType.USERNAME.name:
                     for word in criteria.words:
                         check_word = word.lower() if not criteria.case_sensitive else word
                         matches = []
@@ -102,7 +105,10 @@ class BouncerMonitorCog(commands.Cog):
                             self.logger.debug("Username match found")
                             spotted = True
                             break
-                elif criteria.criteria_type == BouncerCriteriaType.TAG and member.primary_guild:
+                elif (
+                    criteria.criteria_type.name == BouncerCriteriaType.TAG.name
+                    and member.primary_guild
+                ):
                     if not member.primary_guild.tag:
                         continue
 
@@ -121,14 +127,14 @@ class BouncerMonitorCog(commands.Cog):
                             spotted = True
                             break
                 elif (
-                    criteria.criteria_type == BouncerCriteriaType.AGE
-                    and event_type == BouncerEventType.JOIN
+                    criteria.criteria_type.name == BouncerCriteriaType.AGE.name
+                    and event_type.name == BouncerEventType.JOIN.name
                 ):
                     if (discord.utils.utcnow() - member.created_at).seconds <= criteria.account_age:
                         self.logger.debug("Account age match found")
                         spotted = True
                         break
-                elif criteria.criteria_type == BouncerCriteriaType.AVATAR:
+                elif criteria.criteria_type.name == BouncerCriteriaType.AVATAR.name:
                     if not member.avatar:
                         self.logger.debug("No avatar match found")
                         spotted = True
@@ -141,13 +147,13 @@ class BouncerMonitorCog(commands.Cog):
                     punishments.append(action)
 
         # Get list of punishment types
-        punishment_types = list(set(action.action_type for action in punishments))
+        punishment_types = list(set(action.action_type.name for action in punishments))
 
         async with get_session() as session:
             manager = case_managers.GuildModCaseManager(self.bot, member.guild, session)
 
             for punishment in punishments:
-                if punishment.action_type == BouncerActionType.RESET_NICK:
+                if punishment.action_type.name == BouncerActionType.RESET_NICK.name:
                     if not member.nick:
                         continue
 
@@ -169,7 +175,7 @@ class BouncerMonitorCog(commands.Cog):
                             error=f"Unknown Discord error while resetting nickname of {member.name} ({member.id})",
                             details=e.text,
                         )
-                elif punishment.action_type == BouncerActionType.ADD_ROLE:
+                elif punishment.action_type.name == BouncerActionType.ADD_ROLE.name:
                     role = member.guild.get_role(punishment.role_id)
 
                     if role and role not in member.roles:
@@ -191,7 +197,7 @@ class BouncerMonitorCog(commands.Cog):
                                 error=f"Unknown Discord error while adding role {role.name} ({role.id}) to {member.name} ({member.id})",
                                 details=e.text,
                             )
-                elif punishment.action_type == BouncerActionType.REMOVE_ROLE:
+                elif punishment.action_type.name == BouncerActionType.REMOVE_ROLE.name:
                     role = member.guild.get_role(punishment.role_id)
 
                     if role and role in member.roles:
@@ -213,7 +219,7 @@ class BouncerMonitorCog(commands.Cog):
                                 error=f"Unknown Discord error while removing role {role.name} ({role.id}) from {member.name} ({member.id})",
                                 details=e.text,
                             )
-                elif punishment.action_type == BouncerActionType.TOGGLE_ROLE:
+                elif punishment.action_type.name == BouncerActionType.TOGGLE_ROLE.name:
                     role = member.guild.get_role(punishment.role_id)
 
                     if role:
@@ -240,7 +246,7 @@ class BouncerMonitorCog(commands.Cog):
                                 error=f"Unknown Discord error while toggling role {role.name} ({role.id}) for {member.name} ({member.id})",
                                 details=e.text,
                             )
-                elif punishment.action_type == BouncerActionType.WARN:
+                elif punishment.action_type.name == BouncerActionType.WARN.name:
                     await manager.create_case(
                         action=CaseType.WARN,
                         user=member,
@@ -248,7 +254,7 @@ class BouncerMonitorCog(commands.Cog):
                         reason=f"Bouncer: {punishment.reason}",
                         source=CaseSource.BOUNCER,
                     )
-                elif punishment.action_type == BouncerActionType.MUTE:
+                elif punishment.action_type.name == BouncerActionType.MUTE.name:
                     # Check if user is already timed out
                     if member.is_timed_out():
                         continue
@@ -296,8 +302,8 @@ class BouncerMonitorCog(commands.Cog):
                         )
 
                 elif (
-                    punishment.action_type == BouncerActionType.KICK
-                    and BouncerActionType.BAN not in punishment_types
+                    punishment.action_type.name == BouncerActionType.KICK.name
+                    and BouncerActionType.BAN.name not in punishment_types
                 ):
                     # Kick user
                     try:
@@ -329,7 +335,7 @@ class BouncerMonitorCog(commands.Cog):
                             details=e.text,
                         )
 
-                elif punishment.action_type == BouncerActionType.BAN:
+                elif punishment.action_type.name == BouncerActionType.BAN.name:
                     # Ban user
                     try:
                         await member.ban(

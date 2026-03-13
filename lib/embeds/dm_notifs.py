@@ -4,8 +4,8 @@ from discord import ButtonStyle, Colour, Embed, Guild, Member, Message
 from discord.ext import commands
 from discord.ui import Button
 
-from ..duration import duration_to_timestring
-from ..sql.sql import ModCase
+from lib.duration import duration_to_timestring
+from lib.sql.sql import ModCase
 
 if TYPE_CHECKING:
     from main import TitaniumBot
