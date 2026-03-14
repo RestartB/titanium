@@ -55,8 +55,6 @@ class LeaderboardCog(commands.Cog):
 
                 user_stat.daily_snapshots = snapshots[-30:]
 
-            await session.commit()
-
     # Message event
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -236,7 +234,6 @@ class LeaderboardCog(commands.Cog):
 
             if user_stats:
                 await session.delete(user_stats)
-                await session.commit()
 
     # Leaderboard command
     @commands.hybrid_command(name="leaderboard", aliases=["lb", "top"])

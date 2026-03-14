@@ -156,7 +156,6 @@ class GuildLogger:
                         AvailableWebhook.webhook_url == url,
                     )
                 )
-                await session.commit()
 
             await self.bot.refresh_guild_config_cache(self.guild.id)
 
