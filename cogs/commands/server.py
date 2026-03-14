@@ -109,15 +109,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
         image = ctx.guild.icon.url
         embed.set_image(url=image)
 
-        png_url = image + "?format=png"
-        jpg_url = image + "?format=jpg"
-        webp_url = image + "?format=webp"
-        formats = {"PNG": png_url, "JPG": jpg_url, "WEBP": webp_url}
-
-        view = View()
-        for format_name, format_url in formats.items():
-            view.add_item(Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link))
-
+        view = View().add_item(Button(label="Open in Browser", style=ButtonStyle.link, url=image))
         await ctx.reply(embed=embed, view=view)
 
     @server_group.command(

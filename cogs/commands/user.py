@@ -125,18 +125,9 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
         url = user.avatar.url if user.avatar else user.default_avatar.url
-
         embed.set_image(url=url)
 
-        png_url = url + "?format=png"
-        jpg_url = url + "?format=jpg"
-        webp_url = url + "?format=webp"
-        formats = {"PNG": png_url, "JPG": jpg_url, "WEBP": webp_url}
-
-        view = View()
-        for format_name, format_url in formats.items():
-            view.add_item(Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link))
-
+        view = View().add_item(Button(label="Open in Browser", style=ButtonStyle.link, url=url))
         await ctx.reply(embed=embed, view=view)
 
     @commands.hybrid_command(name="server-pfp", description="Get a user's server profile picture.")
@@ -162,17 +153,9 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
 
         if user.guild_avatar:
             embed.set_image(url=user.guild_avatar.url)
-
-            png_url = user.guild_avatar.url + "?format=png"
-            jpg_url = user.guild_avatar.url + "?format=jpg"
-            webp_url = user.guild_avatar.url + "?format=webp"
-            formats = {"PNG": png_url, "JPG": jpg_url, "WEBP": webp_url}
-
-            view = View()
-            for format_name, format_url in formats.items():
-                view.add_item(
-                    Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link)
-                )
+            view = View().add_item(
+                Button(label="Open in Browser", style=ButtonStyle.link, url=user.guild_avatar.url)
+            )
 
             await ctx.reply(embed=embed, view=view)
         else:
@@ -205,17 +188,9 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
 
         if banner:
             embed.set_image(url=banner)
-
-            png_url = banner + "?format=png"
-            jpg_url = banner + "?format=jpg"
-            webp_url = banner + "?format=webp"
-            formats = {"PNG": png_url, "JPG": jpg_url, "WEBP": webp_url}
-
-            view = View()
-            for format_name, format_url in formats.items():
-                view.add_item(
-                    Button(label=f"{format_name}", url=format_url, style=ButtonStyle.link)
-                )
+            view = View().add_item(
+                Button(label="Open in Browser", style=ButtonStyle.link, url=banner)
+            )
 
             await ctx.reply(embed=embed, view=view)
         else:
