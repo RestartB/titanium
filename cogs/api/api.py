@@ -80,6 +80,7 @@ class APICog(commands.Cog):
         # Get host and port from env with defaults
         self.host = os.getenv("BOT_API_HOST", "127.0.0.1")
         self.port = int(os.getenv("BOT_API_PORT", 5000))
+        self.api_secret = os.getenv("BOT_API_TOKEN")
 
     async def cog_load(self) -> None:
         importlib.reload(case_managers)
@@ -87,9 +88,21 @@ class APICog(commands.Cog):
         self.logger.info(f"Starting API server on {self.host}:{self.port}")
         self.server_task = asyncio.create_task(self.start_server())
 
+    @web.middleware
+    async def auth_middleware(self, request: web.Request, handler) -> web.Response:
+        # Allow public endpoints
+        if request.path in ["/", "/ping", "/status", "/stats", "/info"]:
+            return await handler(request)
+
+        auth_header = request.headers.get("Authorization")
+        if not self.api_secret or auth_header != f"Bearer {self.api_secret}":
+            return web.json_response({"error": "Unauthorized"}, status=401)
+
+        return await handler(request)
+
     async def start_server(self):
         try:
-            self.app = web.Application()
+            self.app = web.Application(middlewares=[self.auth_middleware])
             self.register_routes()
 
             self.runner = web.AppRunner(self.app, access_log=None)
@@ -1300,19 +1313,43 @@ class APICog(commands.Cog):
                     if new_channel.id is None:
                         new_name = await resolve_counter(guild, new_channel.type, new_channel.name)
 
-                        discord_channel = await guild.create_voice_channel(
-                            name=new_name,
-                            reason="Creating server counter channel",
-                        )
-                        channel_ids.append(discord_channel.id)
+                        try:
+                            discord_channel = await guild.create_voice_channel(
+                                name=new_name,
+                                reason="Creating server counter channel",
+                            )
+                            channel_ids.append(discord_channel.id)
 
-                        channel = ServerCounterChannel(
-                            id=discord_channel.id,
-                            guild_id=guild.id,
-                            name=new_channel.name,
-                            count_type=new_channel.type,
-                        )
-                        session.add(channel)
+                            channel = ServerCounterChannel(
+                                id=discord_channel.id,
+                                guild_id=guild.id,
+                                name=new_channel.name,
+                                count_type=new_channel.type,
+                            )
+                            session.add(channel)
+                        except discord.Forbidden:
+                            await log_error(
+                                bot=self.bot,
+                                module="Server Counters",
+                                guild_id=guild.id,
+                                error="Missing permissions to create server counter channel",
+                            )
+                        except discord.HTTPException as e:
+                            await log_error(
+                                bot=self.bot,
+                                module="Server Counters",
+                                guild_id=guild.id,
+                                error="Unexpected Discord error when creating server counter channel",
+                                exc=e,
+                            )
+                        except Exception as e:
+                            await log_error(
+                                bot=self.bot,
+                                module="Server Counters",
+                                guild_id=guild.id,
+                                error="Unexpected error when creating server counter channel",
+                                exc=e,
+                            )
                     else:
                         existing_channel = await session.get(
                             ServerCounterChannel, int(new_channel.id)
