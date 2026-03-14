@@ -1459,6 +1459,7 @@ class APICog(commands.Cog):
                 existing_config.xp_mult = validated_config.xp_mult
                 existing_config.cooldown = validated_config.cooldown
                 existing_config.levelup_notifications = validated_config.levelup_notifications
+                existing_config.notification_ping = validated_config.notification_ping
                 existing_config.notification_channel = (
                     int(validated_config.notification_channel)
                     if validated_config.notification_channel

@@ -521,19 +521,25 @@ class GuildLeaderboardSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="leaderboard_settings", uselist=False
     )
+
     mode: Mapped[LeaderboardCalcType] = MappedColumn(
         Enum(LeaderboardCalcType), nullable=False, server_default=text("'FIXED'")
     )
+    delete_leavers: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+
     cooldown: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
     base_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("10"))
     min_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("15"))
     max_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("25"))
     xp_mult: Mapped[Optional[float]] = MappedColumn(Float, server_default=text("1.0"))
+
     levelup_notifications: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    notification_ping: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     notification_channel: Mapped[Optional[int]] = MappedColumn(BigInteger, nullable=True)
+
     web_leaderboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     web_login_required: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    delete_leavers: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+
     levels: Mapped[list["LeaderboardLevels"]] = relationship(
         "LeaderboardLevels", back_populates="guild_settings", cascade="all, delete-orphan"
     )

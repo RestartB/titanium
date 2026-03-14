@@ -138,13 +138,7 @@ class LeaderboardCog(commands.Cog):
                 to_assign = xp
             elif mode == LeaderboardCalcType.RANDOM and min_xp and max_xp:
                 to_assign = random.randint(min_xp, max_xp)
-            elif (
-                mode == LeaderboardCalcType.LENGTH
-                and xp
-                and xp_mult
-                and max_xp
-                and min_xp
-            ):
+            elif mode == LeaderboardCalcType.LENGTH and xp and xp_mult and max_xp and min_xp:
                 to_assign = int(max(min(xp_mult * math.sqrt(length), max_xp), min_xp))
 
             levels = guild_settings.leaderboard_settings.levels
@@ -166,27 +160,37 @@ class LeaderboardCog(commands.Cog):
         if lb_settings.levelup_notifications and new_level > old_level:
             channel = message.channel
 
-            if lb_settings.notification_channel:
-                channel = message.guild.get_channel(lb_settings.notification_channel)
-
-            if not channel:
-                self.logger.debug(f"Notification channel not found for guild {message.guild.id}")
-                return
-
-            if not isinstance(channel, discord.abc.Messageable):
-                self.logger.debug(
-                    f"Notification channel not messageable in guild {message.guild.id}"
-                )
-                return
-
             try:
-                await channel.send(
-                    content=message.author.mention,
-                    embed=discord.Embed(
-                        description=f"🎉 {message.author.mention} has leveled up to **level {user_stats.level}!**",
-                        colour=discord.Colour.green(),
-                    ),
-                )
+                if lb_settings.notification_channel:
+                    channel = message.guild.get_channel(lb_settings.notification_channel)
+
+                    if not channel:
+                        self.logger.debug(
+                            f"Notification channel not found for guild {message.guild.id}"
+                        )
+                        return
+
+                    if not isinstance(channel, discord.abc.Messageable):
+                        self.logger.debug(
+                            f"Notification channel not messageable in guild {message.guild.id}"
+                        )
+                        return
+
+                    await channel.send(
+                        content=message.author.mention if lb_settings.notification_ping else "",
+                        embed=discord.Embed(
+                            description=f"🎉 {message.author.mention} has leveled up to **level {user_stats.level}!**",
+                            colour=discord.Colour.green(),
+                        ),
+                    )
+                else:
+                    await message.reply(
+                        embed=discord.Embed(
+                            description=f"🎉 {message.author.mention} has leveled up to **level {user_stats.level}!**",
+                            colour=discord.Colour.green(),
+                        ),
+                        mention_author=lb_settings.notification_ping,
+                    )
             except discord.Forbidden as e:
                 await log_error(
                     bot=self.bot,

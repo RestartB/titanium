@@ -14,8 +14,6 @@ from lib.sql.sql import (
     BouncerAction,
     BouncerCriteria,
     BouncerRule,
-    GuildLeaderboardSettings,
-    LeaderboardLevels,
 )
 
 
@@ -406,37 +404,19 @@ class LeaderboardLevelModel(BaseModel):
 
 class LeaderboardConfigModel(BaseModel):
     mode: LeaderboardCalcType
+    delete_leavers: bool
+
     cooldown: int
     base_xp: Optional[int] = None
     min_xp: Optional[int] = None
     max_xp: Optional[int] = None
     xp_mult: Optional[float] = None
+
     levelup_notifications: bool
+    notification_ping: bool
     notification_channel: Optional[str] = None
+
     web_leaderboard_enabled: bool
     web_login_required: bool
-    delete_leavers: bool
-    levels: list[LeaderboardLevelModel] = Field(default_factory=list)
 
-    def to_sqlalchemy(self, guild_id: int) -> GuildLeaderboardSettings:
-        return GuildLeaderboardSettings(
-            guild_id=guild_id,
-            mode=self.mode,
-            cooldown=self.cooldown,
-            base_xp=self.base_xp,
-            min_xp=self.min_xp,
-            max_xp=self.max_xp,
-            xp_mult=self.xp_mult,
-            levelup_notifications=self.levelup_notifications,
-            notification_channel=self.notification_channel,
-            web_leaderboard_enabled=self.web_leaderboard_enabled,
-            web_login_required=self.web_login_required,
-            delete_leavers=self.delete_leavers,
-            levels=[
-                LeaderboardLevels(
-                    xp=level.xp_required,
-                    reward_roles=[int(role) for role in level.reward_roles],
-                )
-                for level in self.levels
-            ],
-        )
+    levels: list[LeaderboardLevelModel] = Field(default_factory=list)

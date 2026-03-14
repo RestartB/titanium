@@ -243,6 +243,7 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
                 "max_xp": 25,
                 "xp_mult": 1.0,
                 "levelup_notifications": True,
+                "notification_ping": True,
                 "notification_channel": None,
                 "web_leaderboard_enabled": True,
                 "web_login_required": False,
@@ -263,6 +264,7 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
             "max_xp": lb_settings.max_xp,
             "xp_mult": lb_settings.xp_mult,
             "levelup_notifications": lb_settings.levelup_notifications,
+            "notification_ping": lb_settings.notification_ping,
             "notification_channel": str(lb_settings.notification_channel)
             if lb_settings.notification_channel
             else None,
