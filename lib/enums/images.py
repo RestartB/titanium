@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class ImageFormats(Enum):
+class ImageFormats(StrEnum):
     PNG = "PNG"
     JPEG = "JPEG"
     WEBP = "WEBP"

@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class ServerCounterType(Enum):
+class ServerCounterType(StrEnum):
     TOTAL_MEMBERS = "total_members"
     USERS = "users"
     BOTS = "bots"

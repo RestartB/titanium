@@ -134,12 +134,12 @@ class LeaderboardCog(commands.Cog):
 
             to_assign = 0
 
-            if mode.name == LeaderboardCalcType.FIXED.name and xp:
+            if mode == LeaderboardCalcType.FIXED and xp:
                 to_assign = xp
-            elif mode.name == LeaderboardCalcType.RANDOM.name and min_xp and max_xp:
+            elif mode == LeaderboardCalcType.RANDOM and min_xp and max_xp:
                 to_assign = random.randint(min_xp, max_xp)
             elif (
-                mode.name == LeaderboardCalcType.LENGTH.name
+                mode == LeaderboardCalcType.LENGTH
                 and xp
                 and xp_mult
                 and max_xp

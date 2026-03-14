@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class GameTypes(Enum):
+class GameTypes(StrEnum):
     DICE = "dice"
     COIN = "coin"

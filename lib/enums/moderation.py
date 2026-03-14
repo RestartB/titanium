@@ -1,14 +1,14 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class CaseType(Enum):
+class CaseType(StrEnum):
     WARN = "warn"
     MUTE = "mute"
     KICK = "kick"
     BAN = "ban"
 
 
-class CaseSource(Enum):
+class CaseSource(StrEnum):
     MODERATION = "moderation"
     AUTOMOD = "automod"
     BOUNCER = "bouncer"

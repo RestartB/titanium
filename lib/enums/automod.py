@@ -1,14 +1,14 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class AutomodRuleType(Enum):
+class AutomodRuleType(StrEnum):
     BADWORD_DETECTION = "badword_detection"
     SPAM_DETECTION = "spam_detection"
     MALICIOUS_LINK = "malicious_link"
     PHISHING_LINK = "phishing_link"
 
 
-class AutomodAntispamType(Enum):
+class AutomodAntispamType(StrEnum):
     MESSAGE = "message"
     MENTION = "mention"
     WORD = "word"
@@ -18,7 +18,7 @@ class AutomodAntispamType(Enum):
     EMOJI = "emoji"
 
 
-class AutomodActionType(Enum):
+class AutomodActionType(StrEnum):
     WARN = "warn"
     MUTE = "mute"
     KICK = "kick"

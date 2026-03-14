@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class LeaderboardCalcType(Enum):
+class LeaderboardCalcType(StrEnum):
     FIXED = "fixed"
     RANDOM = "random"
     LENGTH = "length"

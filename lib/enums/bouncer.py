@@ -1,19 +1,19 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class BouncerEventType(Enum):
-    JOIN = 0
-    UPDATE = 1
+class BouncerEventType(StrEnum):
+    JOIN = "join"
+    UPDATE = "update"
 
 
-class BouncerCriteriaType(Enum):
+class BouncerCriteriaType(StrEnum):
     USERNAME = "username"
     TAG = "tag"
     AGE = "age"
     AVATAR = "avatar"
 
 
-class BouncerActionType(Enum):
+class BouncerActionType(StrEnum):
     WARN = "warn"
     MUTE = "mute"
     KICK = "kick"

@@ -85,8 +85,8 @@ class GuildModCaseManager:
         source: CaseSource = CaseSource.MODERATION,
         external: bool = False,
     ) -> tuple[ModCase, bool, str]:
-        action = CaseType[action.name] if hasattr(action, "name") else action
-        source = CaseSource[source.name] if hasattr(source, "name") else source
+        # action = CaseType[action.name] if hasattr(action, "name") else action
+        # source = CaseSource[source.name] if hasattr(source, "name") else source
 
         if external:
             guild_settings = await self.bot.fetch_guild_config(self.guild.id)
@@ -114,14 +114,14 @@ class GuildModCaseManager:
         if action == CaseType.MUTE:
             # set all previous mutes to resolved
             cases = await self.get_cases_by_user(user.id)
-            mute_cases = [c for c in cases if c.type.name == CaseType.MUTE.name and not c.resolved]
+            mute_cases = [c for c in cases if c.type == CaseType.MUTE and not c.resolved]
 
             for mute_case in mute_cases:
                 mute_case.resolved = True
         elif action == CaseType.BAN:
             # set all previous bans to resolved
             cases = await self.get_cases_by_user(user.id)
-            ban_cases = [c for c in cases if c.type.name == CaseType.BAN.name and not c.resolved]
+            ban_cases = [c for c in cases if c.type == CaseType.BAN and not c.resolved]
 
             for ban_case in ban_cases:
                 ban_case.resolved = True
