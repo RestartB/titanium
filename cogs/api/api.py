@@ -114,7 +114,6 @@ class APICog(commands.Cog):
             self.logger.info(f"API server started successfully on {self.host}:{self.port}")
         except Exception as e:
             self.logger.error(f"Failed to start API server: {e}")
-            exit(1)
 
     def register_routes(self):
         if self.app is None:
@@ -1083,7 +1082,7 @@ class APICog(commands.Cog):
                             status=404,
                         )
 
-                    if member and not self.can_see_channel(member, channel):
+                    if not member or not self.can_see_channel(member, channel):
                         return web.json_response(
                             {
                                 "error": "User can't see channel",
@@ -1480,7 +1479,7 @@ class APICog(commands.Cog):
                             status=404,
                         )
 
-                    if member and not self.can_see_channel(member, channel):
+                    if not member or not self.can_see_channel(member, channel):
                         return web.json_response(
                             {
                                 "error": "User can't see channel",
