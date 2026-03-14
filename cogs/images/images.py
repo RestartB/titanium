@@ -127,7 +127,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
 
     @image_group.command(
         name="invert",
-        description="Invert the colors of an uploaded image.",
+        description="Invert the colours of an uploaded image.",
     )
     @app_commands.describe(
         image="The image to invert.",
@@ -139,7 +139,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         image: Attachment,
         output_format: ImageFormats = ImageFormats.PNG,
     ) -> None:
-        """Invert the colors of an image."""
+        """Invert the colours of an image."""
         async with defer(ctx):
             converter = img_tools.ImageTools(image)
             file = await converter.invert(output_format)

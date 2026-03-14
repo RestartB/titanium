@@ -677,7 +677,7 @@ class ImageTools:
 
     async def invert(self, output_format: ImageFormats) -> File:
         """
-        Invert the colors of the image and return file.
+        Invert the colours of the image and return file.
         """
         img = await self._load_image()
         inverted_img = await asyncio.to_thread(self._invert_sync, img)
