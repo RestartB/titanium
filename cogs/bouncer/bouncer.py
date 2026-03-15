@@ -290,7 +290,6 @@ class BouncerMonitorCog(commands.Cog):
                             error=f"Unknown Discord error while muting {member.name} ({member.id})",
                             details=e.text,
                         )
-
                 elif (
                     punishment.action_type == BouncerActionType.KICK
                     and BouncerActionType.BAN not in punishment_types
@@ -324,7 +323,6 @@ class BouncerMonitorCog(commands.Cog):
                             error=f"Unknown Discord error while kicking {member.name} ({member.id})",
                             details=e.text,
                         )
-
                 elif punishment.action_type == BouncerActionType.BAN:
                     # Ban user
                     try:
@@ -361,6 +359,14 @@ class BouncerMonitorCog(commands.Cog):
                             error=f"Unknown Discord error while banning {member.name} ({member.id})",
                             details=e.text,
                         )
+                else:
+                    await log_error(
+                        bot=self.bot,
+                        module="Bouncer",
+                        guild_id=member.guild.id,
+                        error=f"An internal error occurred while processing bouncer punishments for @{member.name} ({member.id})",
+                        details=f"Punishment action type does not exist: {punishment.action_type}",
+                    )
 
         if triggers:
             guild_logger = GuildLogger(self.bot, member.guild)

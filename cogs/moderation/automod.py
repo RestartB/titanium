@@ -563,6 +563,14 @@ class AutomodMonitorCog(commands.Cog):
                                 details=e.text,
                             )
                             embeds.append(mod_embeds.http_exception(self.bot, message.author))
+                    else:
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"An internal error occurred while processing automod punishments for @{message.author.name} ({message.author.id})",
+                            details=f"Punishment action type does not exist: {punishment.action_type}",
+                        )
 
                     if embeds:
                         self.logger.debug(
