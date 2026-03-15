@@ -13,13 +13,14 @@ from typing import Optional
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
+import lib.helpers.hybrid_adapters as adapters
 from lib.classes.automod_message import AutomodMessage
 from lib.embeds.general import guild_only
-from lib.helpers.hybrid_adapters import SlashCommandOnly
 from lib.helpers.log_error import log_error
 from lib.setup_logger import setup_logging
 from v1_to_v2.migrate import migrate_v1_to_v2
@@ -412,12 +413,47 @@ bot = TitaniumBot(
 
 @bot.event
 async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands.CommandError):
-    if isinstance(error, commands.CommandNotFound) or isinstance(error, commands.NotOwner):
+    if (
+        isinstance(error, commands.CommandNotFound)
+        or isinstance(error, commands.NotOwner)
+        or isinstance(error, adapters.GroupCommandNotFoundException)
+    ):
+        if isinstance(error, adapters.GroupCommandNotFoundException):
+            command_name = error.command_name
+        else:
+            command_name = ctx.invoked_with or "unknown"
+
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Not Found",
-            description=f"The command `{ctx.invoked_with}` does not exist.",
+            description=f"The command `{command_name}` does not exist.",
             colour=discord.Colour.red(),
         )
+
+        command_list = [
+            command.qualified_name
+            for command in ctx.bot.walk_commands()
+            if not command.hidden
+            and not (
+                isinstance(command, commands.Group)
+                and not isinstance(command, commands.HybridGroup)
+            )
+            and not (isinstance(command, commands.HybridGroup) and not command.fallback)
+        ]
+
+        did_you_mean = await asyncio.to_thread(
+            process.extract,
+            command_name,
+            command_list,
+            scorer=fuzz.WRatio,
+            limit=3,
+            score_cutoff=65,
+            processor=utils.default_process,
+        )
+        did_you_mean = [f"`{value[0]}`" for value in did_you_mean]
+
+        if did_you_mean:
+            embed.add_field(name="Did you mean:", value=", ".join(did_you_mean))
+
         await ctx.reply(embed=embed)
     elif isinstance(error, commands.errors.MissingPermissions):
         embed = discord.Embed(
@@ -449,7 +485,7 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
-    elif isinstance(error, SlashCommandOnly):
+    elif isinstance(error, adapters.SlashCommandOnly):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Slash Command Only",
             description="This command is only available as a slash command. Please use the slash command version instead.",
