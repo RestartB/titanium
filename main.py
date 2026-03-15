@@ -419,11 +419,6 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
-
-        if not ctx.interaction and ctx.bot.loading_emoji in [
-            r.emoji for r in ctx.message.reactions
-        ]:
-            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.MissingPermissions):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Missing Permissions",
@@ -431,18 +426,8 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
-
-        if not ctx.interaction and ctx.bot.loading_emoji in [
-            r.emoji for r in ctx.message.reactions
-        ]:
-            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.NoPrivateMessage):
         await ctx.reply(embed=guild_only(bot))
-
-        if not ctx.interaction and ctx.bot.loading_emoji in [
-            r.emoji for r in ctx.message.reactions
-        ]:
-            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.BadArgument):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bad Argument",
@@ -450,11 +435,6 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
-
-        if not ctx.interaction and ctx.bot.loading_emoji in [
-            r.emoji for r in ctx.message.reactions
-        ]:
-            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.MissingRequiredArgument):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Argument Missing",
@@ -462,11 +442,6 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
-
-        if not ctx.interaction and ctx.bot.loading_emoji in [
-            r.emoji for r in ctx.message.reactions
-        ]:
-            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, commands.errors.MissingRequiredAttachment):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Attachment Missing",
@@ -474,11 +449,6 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
-
-        if not ctx.interaction and ctx.bot.loading_emoji in [
-            r.emoji for r in ctx.message.reactions
-        ]:
-            await ctx.message.remove_reaction(bot.loading_emoji, ctx.me)
     elif isinstance(error, SlashCommandOnly):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Slash Command Only",
