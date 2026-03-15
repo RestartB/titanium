@@ -85,9 +85,6 @@ class GuildModCaseManager:
         source: CaseSource = CaseSource.MODERATION,
         external: bool = False,
     ) -> tuple[ModCase, bool, str]:
-        # action = CaseType[action.name] if hasattr(action, "name") else action
-        # source = CaseSource[source.name] if hasattr(source, "name") else source
-
         if external:
             guild_settings = await self.bot.fetch_guild_config(self.guild.id)
 
