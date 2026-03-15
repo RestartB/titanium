@@ -90,12 +90,12 @@ class APICog(commands.Cog):
 
     @web.middleware
     async def auth_middleware(self, request: web.Request, handler) -> web.Response:
-        # Allow public endpoints
-        if request.path in ["/", "/ping", "/status", "/stats", "/info"]:
+        # Allow public endpoints / no token set
+        if request.path in ["/", "/ping", "/status", "/stats", "/info"] or not self.api_secret:
             return await handler(request)
 
         auth_header = request.headers.get("Authorization")
-        if not self.api_secret or auth_header != f"Bearer {self.api_secret}":
+        if auth_header != f"Bearer {self.api_secret}":
             return web.json_response({"error": "Unauthorized"}, status=401)
 
         return await handler(request)
