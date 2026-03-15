@@ -1,4 +1,3 @@
-import importlib
 from typing import TYPE_CHECKING
 
 import discord
@@ -7,9 +6,9 @@ from discord.ext import commands
 from discord.ui import Button, View
 from sqlalchemy import select
 
-import lib.views.pagination as page_views
 from lib.helpers.page_generators import generate_lb_embeds
 from lib.sql.sql import LeaderboardUserStats, get_session
+from lib.views.pagination import LeaderboardReloadPageView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -20,9 +19,6 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-
-    async def cog_load(self) -> None:
-        importlib.reload(page_views)
 
     @commands.hybrid_group(name="server", description="Get information about the server.")
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -198,7 +194,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 title="Messages Sent",
                 attr="message_count",
             )
-            view = page_views.LeaderboardReloadPageView(
+            view = LeaderboardReloadPageView(
                 embeds=pages,
                 timeout=240,
                 title="Messages Sent",
@@ -273,7 +269,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 title="Words Sent",
                 attr="word_count",
             )
-            view = page_views.LeaderboardReloadPageView(
+            view = LeaderboardReloadPageView(
                 embeds=pages,
                 timeout=240,
                 title="Words Sent",
@@ -349,7 +345,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 title="Attachments Sent",
                 attr="attachment_count",
             )
-            view = page_views.LeaderboardReloadPageView(
+            view = LeaderboardReloadPageView(
                 embeds=pages,
                 timeout=240,
                 title="Attachments Sent",
@@ -425,7 +421,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 title="Swear Jar",
                 attr="explicit_count",
             )
-            view = page_views.LeaderboardReloadPageView(
+            view = LeaderboardReloadPageView(
                 embeds=pages,
                 timeout=240,
                 title="Swear Jar",

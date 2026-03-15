@@ -8,6 +8,7 @@ from discord import Colour, app_commands
 from discord.ext import commands
 
 from lib.helpers.global_alias import add_global_aliases, global_alias
+from lib.helpers.hybrid_adapters import handle_group_command_not_found
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -47,7 +48,7 @@ class AnimalCommandsCog(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def animals_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        raise commands.CommandNotFound
+        handle_group_command_not_found(ctx)
 
     # Cat command
     @animals_group.command(name="cat", description="Get a random cat picture.")

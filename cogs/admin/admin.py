@@ -1,4 +1,3 @@
-import importlib
 import logging
 import os
 import textwrap
@@ -9,7 +8,7 @@ import aiohttp
 import discord
 from discord.ext import commands
 
-import lib.helpers.hybrid_adapters as hybrid_adapters
+from lib.helpers.hybrid_adapters import defer, handle_group_command_not_found
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -22,25 +21,22 @@ class AdminCog(commands.Cog):
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("admin")
 
-    async def cog_load(self) -> None:
-        importlib.reload(hybrid_adapters)
-
     @commands.group(name="admin", hidden=True, invoke_without_command=True)
     @commands.is_owner()
     async def admin_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        raise commands.CommandNotFound
+        handle_group_command_not_found(ctx)
 
     @admin_group.command(name="exc", hidden=True)
     @commands.is_owner()
     async def raise_exception(self, ctx: commands.Context["TitaniumBot"]) -> None:
         """Command to raise an exception for testing error logging."""
-        async with hybrid_adapters.defer(ctx):
+        async with defer(ctx):
             raise ValueError("This is a test exception for error logging.")
 
     @admin_group.command(name="clear", hidden=True)
     @commands.is_owner()
     async def clear_console(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 os.system("cls" if os.name == "nt" else "clear")
                 await ctx.reply(
@@ -69,7 +65,7 @@ class AdminCog(commands.Cog):
         ctx: commands.Context["TitaniumBot"],
         server_id: Optional[int] = None,
     ) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             # Sync commands
             self.logger.info("Syncing commands...")
             try:
@@ -103,7 +99,7 @@ class AdminCog(commands.Cog):
     @admin_group.command(name="reload", hidden=True)
     @commands.is_owner()
     async def reload_cogs(self, ctx: commands.Context["TitaniumBot"], cog: str) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 await self.bot.reload_extension(f"cogs.{cog}")
                 await ctx.reply(
@@ -129,7 +125,7 @@ class AdminCog(commands.Cog):
     @admin_group.command(name="load", hidden=True)
     @commands.is_owner()
     async def load_cog(self, ctx: commands.Context["TitaniumBot"], cog_name: str) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 await ctx.bot.load_extension(f"cogs.{cog_name}")
                 await ctx.reply(
@@ -153,7 +149,7 @@ class AdminCog(commands.Cog):
     @admin_group.command(name="unload", hidden=True)
     @commands.is_owner()
     async def unload_cog(self, ctx: commands.Context["TitaniumBot"], cog_name: str) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 await ctx.bot.unload_extension(f"cogs.{cog_name}")
                 await ctx.reply(
@@ -177,7 +173,7 @@ class AdminCog(commands.Cog):
     @admin_group.command(name="migrate-db", hidden=True)
     @commands.is_owner()
     async def migrate_db(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 from lib.sql.sql import init_db
 
@@ -206,7 +202,7 @@ class AdminCog(commands.Cog):
     @commands.is_owner()
     async def reload_server(self, ctx: commands.Context["TitaniumBot"], guild_id: int) -> None:
         """Reload a guild's configuration from the database."""
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 await self.bot.refresh_guild_config_cache(guild_id)
                 await ctx.reply(
@@ -232,7 +228,7 @@ class AdminCog(commands.Cog):
     @admin_group.command(name="unlockuser", aliases=["unlock-user"], hidden=True)
     @commands.is_owner()
     async def unlock_user(self, ctx: commands.Context["TitaniumBot"], user_id: int) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 for server in self.bot.punishing:
                     if user_id in self.bot.punishing[server]:
@@ -269,7 +265,7 @@ class AdminCog(commands.Cog):
     @admin_group.command(name="debuglogs", aliases=["debug-logs", "debuglog"], hidden=True)
     @commands.is_owner()
     async def debug_logs(self, ctx: commands.Context["TitaniumBot"], logger: str) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 target_logger = logging.getLogger(logger)
                 target_logger.setLevel(logging.DEBUG)
@@ -297,7 +293,7 @@ class AdminCog(commands.Cog):
     @admin_group.command(name="infologs", aliases=["info-logs", "infolog"], hidden=True)
     @commands.is_owner()
     async def info_logs(self, ctx: commands.Context["TitaniumBot"], logger: str) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 target_logger = logging.getLogger(logger)
                 target_logger.setLevel(logging.INFO)
@@ -326,7 +322,7 @@ class AdminCog(commands.Cog):
     @commands.is_owner()
     async def get_server_owner(self, ctx: commands.Context["TitaniumBot"], guild_id: int) -> None:
         """Get the owner ID of a specified server."""
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 guild = self.bot.get_guild(guild_id)
                 if guild is None:
@@ -363,7 +359,7 @@ class AdminCog(commands.Cog):
     @admin_group.command(name="msgchannel", aliases=["msg-channel"], hidden=True)
     @commands.is_owner()
     async def msg_channel(self, ctx: commands.Context["TitaniumBot"], msg_id: int) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             message = discord.utils.get(ctx.bot.cached_messages, id=msg_id)
             if message is None:
                 await ctx.reply(
@@ -400,7 +396,7 @@ class AdminCog(commands.Cog):
     @admin_group.command(name="get", hidden=True)
     @commands.is_owner()
     async def get_request(self, ctx: commands.Context["TitaniumBot"], url: str) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 async with aiohttp.ClientSession() as session:
                     headers = {
@@ -437,7 +433,7 @@ class AdminCog(commands.Cog):
     async def post_request(
         self, ctx: commands.Context["TitaniumBot"], url: str, content_type: str, *, content: str
     ) -> None:
-        async with hybrid_adapters.defer(ctx, ephemeral=True):
+        async with defer(ctx, ephemeral=True):
             try:
                 async with aiohttp.ClientSession() as session:
                     headers = {

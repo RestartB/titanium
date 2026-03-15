@@ -65,4 +65,23 @@ async def _stop_loading(ctx: commands.Context["TitaniumBot"]) -> None:
 class SlashCommandOnly(commands.CommandError):
     """Exception for when a command is only available as slash command"""
 
-    pass
+
+class GroupCommandNotFoundException(commands.CommandError):
+    """Exception raised when a command is not found in a hybrid group."""
+
+    def __init__(self, command_name: str) -> None:
+        super().__init__(f"The command {command_name} does not exist.")
+        self.command_name = command_name
+
+
+def handle_group_command_not_found(ctx: commands.Context["TitaniumBot"]):
+    content = ctx.message.content
+    prefix = ctx.prefix or ""
+
+    if prefix and content.startswith(prefix):
+        content = content[len(prefix) :]
+
+    parts = content.strip().split(maxsplit=2)
+    command_name = " ".join(parts[:2]) if len(parts) >= 2 else (ctx.invoked_with or "")
+
+    raise GroupCommandNotFoundException(command_name)

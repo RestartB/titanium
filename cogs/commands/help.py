@@ -1,11 +1,10 @@
-import importlib
 from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-import lib.views.pagination as page_views
+from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -16,9 +15,6 @@ class HelpCommandCog(commands.Cog):
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-
-    async def cog_load(self) -> None:
-        importlib.reload(page_views)
 
     @commands.hybrid_group(name="help", description="Show help information for commands.")
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -103,7 +99,7 @@ class HelpCommandCog(commands.Cog):
             )
 
         if len(command_pages) > 1:
-            view = page_views.PaginationView(embeds=command_pages, timeout=1200)
+            view = PaginationView(embeds=command_pages, timeout=1200)
             await ctx.reply(embed=command_pages[0], view=view)
         else:
             await ctx.reply(

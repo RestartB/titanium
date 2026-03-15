@@ -1,4 +1,3 @@
-import importlib
 import logging
 import math
 import random
@@ -12,11 +11,11 @@ from discord.ext import commands, tasks
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
-import lib.views.pagination as page_views
 from lib.enums.leaderboard import LeaderboardCalcType
 from lib.helpers.log_error import log_error
 from lib.helpers.page_generators import generate_lb_embeds
 from lib.sql.sql import LeaderboardUserStats, get_session
+from lib.views.pagination import LeaderboardReloadPageView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -33,9 +32,6 @@ class LeaderboardCog(commands.Cog):
         self.member_last_trigger: dict[int, dict[int, datetime]] = {}
 
         self.take_daily_snapshots.start()
-
-    async def cog_load(self) -> None:
-        importlib.reload(page_views)
 
     async def cog_unload(self) -> None:
         # Stop tasks on unload
@@ -302,7 +298,7 @@ class LeaderboardCog(commands.Cog):
                 icon_url=ctx.author.display_avatar.url,
             )
 
-            view = page_views.LeaderboardReloadPageView(
+            view = LeaderboardReloadPageView(
                 embeds=pages,
                 timeout=240,
                 title="Leaderboard",

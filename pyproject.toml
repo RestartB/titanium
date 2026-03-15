@@ -21,6 +21,7 @@ dependencies = [
     "pydantic>=2.12.4",
     "pytest-playwright>=0.7.1",
     "qrcode[pil]>=8.2",
+    "rapidfuzz>=3.14.3",
     "shortuuid>=1.0.13",
     "spotipy>=2.25.1",
     "sqlalchemy[asyncio]>=2.0.41",

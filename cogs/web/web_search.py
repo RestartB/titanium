@@ -1,4 +1,3 @@
-import importlib
 import os
 import urllib.parse
 from typing import TYPE_CHECKING
@@ -9,8 +8,9 @@ from discord import Colour, app_commands
 from discord.ext import commands
 from discord.ui import View
 
-import lib.views.pagination as page_views
 from lib.helpers.global_alias import add_global_aliases, global_alias
+from lib.helpers.hybrid_adapters import handle_group_command_not_found
+from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -20,9 +20,6 @@ class WebSearchCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         add_global_aliases(self, bot)
-
-    async def cog_load(self) -> None:
-        importlib.reload(page_views)
 
     def _create_urban_embed(self, data: dict) -> list[discord.Embed]:
         embed = discord.Embed(
@@ -49,7 +46,7 @@ class WebSearchCommandsCog(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def search_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        raise commands.CommandNotFound
+        handle_group_command_not_found(ctx)
 
     # Urban Dictionary command
     @search_group.command(
@@ -117,9 +114,7 @@ class WebSearchCommandsCog(commands.Cog):
             else:
                 await ctx.reply(
                     embeds=embeds_list[0],
-                    view=page_views.PaginationView(
-                        embeds=embeds_list, timeout=900, page_offset=page
-                    ),
+                    view=PaginationView(embeds=embeds_list, timeout=900, page_offset=page),
                     ephemeral=ephemeral,
                 )
         else:

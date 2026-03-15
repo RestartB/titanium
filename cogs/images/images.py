@@ -7,7 +7,7 @@ from discord.ext import commands
 
 from lib.classes import img_tools
 from lib.enums.images import ImageFormats
-from lib.helpers.hybrid_adapters import defer
+from lib.helpers.hybrid_adapters import defer, handle_group_command_not_found
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -49,7 +49,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def image_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        raise commands.CommandNotFound
+        handle_group_command_not_found(ctx)
 
     @image_group.command(
         name="convert",

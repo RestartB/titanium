@@ -1,5 +1,4 @@
 import asyncio
-import importlib
 import logging
 from datetime import timedelta
 from typing import TYPE_CHECKING
@@ -8,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 from sqlalchemy import func, select
 
-import lib.classes.case_manager as case_managers
+from lib.classes.case_manager import GuildModCaseManager
 from lib.enums.scheduled_events import EventType
 from lib.helpers.log_error import log_error
 from lib.sql.sql import ScheduledTask, get_session
@@ -32,9 +31,6 @@ class ScheduledTasksCog(commands.Cog):
         # Start workers
         for i in range(3):
             self.bot.loop.create_task(self.queue_worker())
-
-    async def cog_load(self) -> None:
-        importlib.reload(case_managers)
 
     async def cog_unload(self) -> None:
         self.task_queue.shutdown(immediate=True)
@@ -147,9 +143,7 @@ class ScheduledTasksCog(commands.Cog):
 
             try:
                 async with get_session() as session:
-                    case_manager = case_managers.GuildModCaseManager(
-                        bot=self.bot, guild=guild, session=session
-                    )
+                    case_manager = GuildModCaseManager(bot=self.bot, guild=guild, session=session)
                     await case_manager.close_case(
                         case_id=task.case_id,
                     )
@@ -174,9 +168,7 @@ class ScheduledTasksCog(commands.Cog):
                 )
 
                 async with get_session() as session:
-                    case_manager = case_managers.GuildModCaseManager(
-                        bot=self.bot, guild=guild, session=session
-                    )
+                    case_manager = GuildModCaseManager(bot=self.bot, guild=guild, session=session)
                     await case_manager.close_case(
                         case_id=task.case_id,
                     )

@@ -1,19 +1,18 @@
-import importlib
 from typing import TYPE_CHECKING, Sequence
 
 from discord import AllowedMentions, ButtonStyle, Colour, Embed, Member, Message, User, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
 
-import lib.classes.case_manager as case_managers
 import lib.embeds.cases as case_embeds
-import lib.embeds.general as general_embeds
-import lib.views.cases as case_views
-import lib.views.confirm as confirm_views
-import lib.views.pagination as page_views
+from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
+from lib.embeds.general import cancelled, guild_only
 from lib.helpers.global_alias import add_global_aliases, global_alias
 from lib.helpers.hybrid_adapters import _defer, _stop_loading, defer
 from lib.sql.sql import ModCase, get_session
+from lib.views.cases import CommentPageContainer, ViewCommentsButton
+from lib.views.confirm import ConfirmView
+from lib.views.pagination import PaginationV2View, PaginationView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -25,14 +24,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         add_global_aliases(self, bot)
-
-    async def cog_load(self) -> None:
-        importlib.reload(case_managers)
-        importlib.reload(case_embeds)
-        importlib.reload(general_embeds)
-        importlib.reload(case_views)
-        importlib.reload(confirm_views)
-        importlib.reload(page_views)
 
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
         await _defer(ctx)
@@ -89,7 +80,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
         async with defer(ctx, stop_only=True):
             async with get_session() as session:
-                case_manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+                case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                 if user:
                     if ctx.channel.permissions_for(ctx.author).manage_guild:
@@ -113,7 +104,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                         )
 
                         if len(embeds) > 1:
-                            view = page_views.PaginationView(embeds, 120)
+                            view = PaginationView(embeds, 120)
                             await ctx.reply(embed=embeds[0], view=view)
                         else:
                             await ctx.reply(embed=embeds[0])
@@ -146,7 +137,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                     )
 
                     if len(embeds) > 1:
-                        view = page_views.PaginationView(embeds, 120)
+                        view = PaginationView(embeds, 120)
                         await ctx.reply(embed=embeds[0], view=view)
                     else:
                         await ctx.reply(embed=embeds[0])
@@ -168,10 +159,10 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         async with defer(ctx, stop_only=True):
             try:
                 async with get_session() as session:
-                    case = await case_managers.GuildModCaseManager(
-                        self.bot, ctx.guild, session
-                    ).get_case_by_id(case_id)
-            except case_managers.CaseNotFoundException:
+                    case = await GuildModCaseManager(self.bot, ctx.guild, session).get_case_by_id(
+                        case_id
+                    )
+            except CaseNotFoundException:
                 return await ctx.reply(embed=case_embeds.case_not_found(self.bot, case_id))
 
             # Get creator
@@ -193,7 +184,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 and isinstance(ctx.author, Member)
                 and ctx.author.guild_permissions.manage_guild
             ):
-                view.add_item(case_views.ViewCommentsButton(case=case))
+                view.add_item(ViewCommentsButton(case=case))
 
             view.add_item(
                 Button(
@@ -221,13 +212,13 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         async with defer(ctx, stop_only=True):
             try:
                 async with get_session() as session:
-                    case = await case_managers.GuildModCaseManager(
-                        self.bot, ctx.guild, session
-                    ).get_case_by_id(case_id)
-            except case_managers.CaseNotFoundException:
+                    case = await GuildModCaseManager(self.bot, ctx.guild, session).get_case_by_id(
+                        case_id
+                    )
+            except CaseNotFoundException:
                 return await ctx.reply(embed=case_embeds.case_not_found(self.bot, case_id))
 
-            pages: list[case_views.CommentPageContainer] = []
+            pages: list[CommentPageContainer] = []
             current_page = []
 
             for comment in case.comments:
@@ -236,15 +227,15 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 if len(current_page) % 5 != 0:
                     continue
 
-                container = case_views.CommentPageContainer(self.bot, case, current_page)
+                container = CommentPageContainer(self.bot, case, current_page)
                 pages.append(container)
                 current_page = []
 
             if current_page:
-                container = case_views.CommentPageContainer(self.bot, case, current_page)
+                container = CommentPageContainer(self.bot, case, current_page)
                 pages.append(container)
 
-            layout = page_views.PaginationV2View(pages)
+            layout = PaginationV2View(pages)
             await ctx.reply(view=layout, allowed_mentions=AllowedMentions.none())
 
     @case_group.command(name="addcomment", description="Add a comment to a case.")
@@ -265,19 +256,19 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             return
 
         if not isinstance(ctx.author, Member):
-            return await ctx.reply(embed=general_embeds.guild_only(self.bot))
+            return await ctx.reply(embed=guild_only(self.bot))
 
         async with defer(ctx, stop_only=True):
             try:
                 async with get_session() as session:
-                    case = await case_managers.GuildModCaseManager(
-                        self.bot, ctx.guild, session
-                    ).get_case_by_id(case_id)
+                    case = await GuildModCaseManager(self.bot, ctx.guild, session).get_case_by_id(
+                        case_id
+                    )
 
                     await case.add_comment(
                         member=ctx.author, content=comment, bot=self.bot, guild=ctx.guild
                     )
-            except case_managers.CaseNotFoundException:
+            except CaseNotFoundException:
                 return await ctx.reply(embed=case_embeds.case_not_found(self.bot, str(case_id)))
 
             embed = Embed(
@@ -299,7 +290,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
         async with defer(ctx, stop_only=True):
             async with get_session() as session:
-                case_manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+                case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
                 case = await case_manager.get_case_by_id(case_id)
 
                 if not case:
@@ -326,7 +317,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                     )
                 )
 
-                view = confirm_views.ConfirmView(self.bot)
+                view = ConfirmView(self.bot)
                 msg = await ctx.reply(
                     embeds=embeds,
                     view=view,
@@ -336,7 +327,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 await view.wait()
 
                 if not view.value:
-                    return await msg.edit(embed=general_embeds.cancelled(self.bot), view=None)
+                    return await msg.edit(embed=cancelled(self.bot), view=None)
 
                 await case_manager.delete_case(case_id)
                 await msg.edit(embed=case_embeds.case_deleted(self.bot, case_id), view=None)

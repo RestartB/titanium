@@ -1,4 +1,3 @@
-import importlib
 import logging
 import re
 from datetime import timedelta
@@ -8,9 +7,9 @@ import discord
 import emoji
 from discord.ext import commands
 
-import lib.classes.case_manager as case_managers
 import lib.embeds.mod_actions as mod_embeds
 from lib.classes.automod_message import AutomodMessage
+from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
 from lib.enums.automod import AutomodActionType, AutomodAntispamType
 from lib.enums.moderation import CaseSource, CaseType
@@ -32,10 +31,6 @@ class AutomodMonitorCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("automod")
-
-    async def cog_load(self) -> None:
-        importlib.reload(case_managers)
-        importlib.reload(mod_embeds)
 
     async def handle_message(
         self, message: discord.Message, event_type: Literal["new", "edit"] = "new"
@@ -312,7 +307,7 @@ class AutomodMonitorCog(commands.Cog):
             embeds: list[discord.Embed] = []
 
             async with get_session() as session:
-                manager = case_managers.GuildModCaseManager(self.bot, message.guild, session)
+                manager = GuildModCaseManager(self.bot, message.guild, session)
 
                 self.logger.debug(f"Processing {len(punishments)} punishments")
                 for punishment in punishments:

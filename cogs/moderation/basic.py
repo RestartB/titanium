@@ -1,4 +1,3 @@
-import importlib
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -6,13 +5,13 @@ import discord
 from discord import Message, app_commands
 from discord.ext import commands
 
-import lib.classes.case_manager as case_managers
-import lib.embeds.general as general_embeds
 import lib.embeds.mod_actions as mod_embeds
+from lib.classes.case_manager import GuildModCaseManager
 from lib.duration import DurationConverter
+from lib.embeds.general import not_in_guild
 from lib.enums.moderation import CaseType
 from lib.helpers.global_alias import add_global_aliases, global_alias
-from lib.helpers.hybrid_adapters import _defer, _stop_loading, defer
+from lib.helpers.hybrid_adapters import _defer, _stop_loading, defer, handle_group_command_not_found
 from lib.helpers.log_error import log_error
 from lib.sql.sql import get_session
 
@@ -26,11 +25,6 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         add_global_aliases(self, bot)
-
-    async def cog_load(self) -> None:
-        importlib.reload(case_managers)
-        importlib.reload(general_embeds)
-        importlib.reload(mod_embeds)
 
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
         await _defer(ctx, ephemeral=True)
@@ -89,7 +83,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.default_permissions(moderate_members=True)
     async def mod_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        raise commands.CommandNotFound
+        handle_group_command_not_found(ctx)
 
     @mod_group.command(name="warn", description="Warn a member for a specified reason.")
     @global_alias("warn")
@@ -112,9 +106,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
             try:
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(
-                        ephemeral=True, embed=general_embeds.not_in_guild(self.bot, member)
-                    )
+                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
@@ -140,7 +132,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Create case
                 async with get_session() as session:
-                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+                    manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                     case, dm_success, dm_error = await manager.create_case(
                         action=CaseType.WARN,
@@ -202,9 +194,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(
-                        ephemeral=True, embed=general_embeds.not_in_guild(self.bot, member)
-                    )
+                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
@@ -278,7 +268,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Create case
                 async with get_session() as session:
-                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+                    manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                     case, dm_success, dm_error = await manager.create_case(
                         action=CaseType.MUTE,
@@ -334,9 +324,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(
-                        ephemeral=True, embed=general_embeds.not_in_guild(self.bot, member)
-                    )
+                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
@@ -396,7 +384,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Get last ummute case
                 async with get_session() as session:
-                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+                    manager = GuildModCaseManager(self.bot, ctx.guild, session)
                     cases = await manager.get_cases_by_user(member.id)
 
                     case = next((c for c in cases if c.type == CaseType.MUTE), None)
@@ -450,9 +438,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(
-                        ephemeral=True, embed=general_embeds.not_in_guild(self.bot, member)
-                    )
+                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
@@ -506,7 +492,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Create case
                 async with get_session() as session:
-                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+                    manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                     case, dm_success, dm_error = await manager.create_case(
                         action=CaseType.KICK,
@@ -648,7 +634,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Create case
                 async with get_session() as session:
-                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+                    manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
                     case, dm_success, dm_error = await manager.create_case(
                         action=CaseType.BAN,
@@ -751,7 +737,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
                 # Get last ban case
                 async with get_session() as session:
-                    manager = case_managers.GuildModCaseManager(self.bot, ctx.guild, session)
+                    manager = GuildModCaseManager(self.bot, ctx.guild, session)
                     cases = await manager.get_cases_by_user(user.id)
 
                     case = next((c for c in cases if c.type == CaseType.BAN), None)

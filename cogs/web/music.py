@@ -15,7 +15,7 @@ from discord.utils import escape_markdown
 
 import lib.embeds.spotify as elements
 from lib.classes.spotify import TitaniumSpotifyClient
-from lib.helpers.hybrid_adapters import defer
+from lib.helpers.hybrid_adapters import defer, handle_group_command_not_found
 from lib.helpers.log_error import log_error
 
 if TYPE_CHECKING:
@@ -37,7 +37,7 @@ class MusicCommandsCog(
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def spotify_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        raise commands.CommandNotFound
+        handle_group_command_not_found(ctx)
 
     async def song_search_autocomplete(
         self, interaction: discord.Interaction["TitaniumBot"], current: str

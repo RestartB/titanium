@@ -7,6 +7,7 @@ from discord.ext import commands
 from sqlalchemy import select
 
 from lib.enums.games import GameTypes
+from lib.helpers.hybrid_adapters import handle_group_command_not_found
 from lib.sql.sql import GameStat, get_session
 
 if TYPE_CHECKING:
@@ -23,7 +24,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def game_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        raise commands.CommandNotFound
+        handle_group_command_not_found(ctx)
 
     @game_group.command(
         name="stats", aliases=["stat"], description="Get stats for games that you've played."
