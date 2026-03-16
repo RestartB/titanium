@@ -212,7 +212,6 @@ class LeaderboardCog(commands.Cog):
             not guild_settings
             or not guild_settings.leaderboard_settings
             or not guild_settings.leaderboard_settings.delete_leavers
-            or member.id in self.bot.opt_out
         ):
             return
 
