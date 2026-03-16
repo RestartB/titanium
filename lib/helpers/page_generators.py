@@ -29,9 +29,9 @@ def generate_lb_embeds(
         member = guild.get_member(user_stats.user_id)
 
         if embed.description:
-            embed.description += f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {getattr(user_stats, attr)}{f', Level {user_stats.level}' if show_levels else ''}"
+            embed.description += f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {getattr(user_stats, attr)}XP{f', Level {user_stats.level}' if show_levels else ''}"
         else:
-            embed.description = f"{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {getattr(user_stats, attr)}{f', Level {user_stats.level}' if show_levels else ''}"
+            embed.description = f"{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {getattr(user_stats, attr)}XP{f', Level {user_stats.level}' if show_levels else ''}"
 
         if i % page_size == 0:
             pages.append(embed)
