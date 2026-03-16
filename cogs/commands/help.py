@@ -28,7 +28,7 @@ class HelpCommandCog(commands.Cog):
             f"`{ctx.clean_prefix}help <command>` - coming soon\n"
             f"`{ctx.clean_prefix}help <category>` - coming soon\n"
             "\n**Need more help? Join the [Support Server](https://titaniumbot.me/server)**",
-            colour=discord.Colour.light_gray(),
+            colour=discord.Colour.light_grey(),
         )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
@@ -83,7 +83,7 @@ class HelpCommandCog(commands.Cog):
                         title="All Commands",
                         description=f"There are `{len(command_list)}` commands. When using prefix commands, entering parts of commands that are in brackets is optional.\n\n"
                         + "\n".join(current_page_commands),
-                        colour=discord.Colour.light_gray(),
+                        colour=discord.Colour.light_grey(),
                     )
                 )
                 current_page_commands = []
@@ -94,7 +94,7 @@ class HelpCommandCog(commands.Cog):
                     title="All Commands",
                     description=f"There are `{len(command_list)}` commands. When using prefix commands, entering parts of commands that are in brackets is optional.\n\n"
                     + "\n".join(current_page_commands),
-                    colour=discord.Colour.light_gray(),
+                    colour=discord.Colour.light_grey(),
                 )
             )
 

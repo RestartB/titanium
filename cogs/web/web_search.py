@@ -26,7 +26,7 @@ class WebSearchCommandsCog(commands.Cog):
             title=f"{data['word']}",
             description=f"**Author: {data['author']}**\n\n||{(data['definition'].replace('[', '')).replace(']', '')}||",
             url=data["permalink"],
-            colour=Colour.random(),
+            colour=Colour.light_grey(),
         )
         embed.set_author(
             name="Urban Dictionary",

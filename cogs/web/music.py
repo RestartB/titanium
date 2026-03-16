@@ -224,7 +224,7 @@ class MusicCommandsCog(
                 embed = discord.Embed(
                     title="Select Song",
                     description=f'Showing {len(result.items)} results for "{escape_markdown(search)}"',
-                    colour=Colour.random(),
+                    colour=Colour.light_grey(),
                 )
                 embed.set_footer(
                     text=f"@{ctx.author.name}",
@@ -410,7 +410,7 @@ class MusicCommandsCog(
                 embed = discord.Embed(
                     title="Select Artist",
                     description=f'Showing {len(result.items)} results for "{escape_markdown(search)}"',
-                    colour=Colour.random(),
+                    colour=Colour.light_grey(),
                 )
                 embed.set_footer(
                     text=f"@{ctx.author.name}",
@@ -612,7 +612,7 @@ class MusicCommandsCog(
                 embed = discord.Embed(
                     title="Select Album",
                     description=f'Showing {len(result.items)} results for "{escape_markdown(search)}"',
-                    colour=Colour.random(),
+                    colour=Colour.light_grey(),
                 )
                 embed.set_footer(
                     text=f"@{ctx.author.name}",

@@ -21,7 +21,7 @@ def generate_lb_embeds(
 
     embed = discord.Embed(
         title=title,
-        colour=discord.Colour.random(),
+        colour=discord.Colour.light_grey(),
     )
     embed.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
 
@@ -38,7 +38,7 @@ def generate_lb_embeds(
 
             embed = discord.Embed(
                 title=title,
-                colour=discord.Colour.random(),
+                colour=discord.Colour.light_grey(),
             )
             embed.set_author(
                 name=guild.name,

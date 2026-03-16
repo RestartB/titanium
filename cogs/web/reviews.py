@@ -80,7 +80,7 @@ class ReviewsCommandsCog(commands.Cog):
         page = discord.Embed(
             title="ReviewDB User Reviews",
             description=f"There {'are' if review_amount > 1 else 'is'} **{review_amount} review{'s' if review_amount > 1 else ''}** for this user.",
-            colour=Colour.random(),
+            colour=Colour.light_grey(),
         )
         page.set_author(
             name=f"@{user.name}",
@@ -99,7 +99,7 @@ class ReviewsCommandsCog(commands.Cog):
                 page = discord.Embed(
                     title="ReviewDB User Reviews",
                     description=f"There {'are' if review_amount > 1 else 'is'} **{review_amount} review{'s' if review_amount > 1 else ''}** for this user.",
-                    colour=Colour.random(),
+                    colour=Colour.light_grey(),
                 )
                 page.set_author(
                     name=f"@{user.name}",
@@ -174,7 +174,7 @@ class ReviewsCommandsCog(commands.Cog):
         page = discord.Embed(
             title="ReviewDB Server Reviews",
             description=f"There {'are' if review_amount > 1 else 'is'} **{review_amount} review{'s' if review_amount > 1 else ''}** for this server.",
-            colour=Colour.random(),
+            colour=Colour.light_grey(),
         )
         page.set_author(
             name=ctx.guild.name,
@@ -193,7 +193,7 @@ class ReviewsCommandsCog(commands.Cog):
                 page = discord.Embed(
                     title="ReviewDB Server Reviews",
                     description=f"There {'are' if review_amount > 1 else 'is'} **{review_amount} review{'s' if review_amount > 1 else ''}** for this server.",
-                    colour=Colour.random(),
+                    colour=Colour.light_grey(),
                 )
                 page.set_author(
                     name=ctx.guild.name,

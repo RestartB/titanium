@@ -99,7 +99,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             embed=Embed(
                 title="Anonymous Confession",
                 description=message,
-                colour=Colour.random(),
+                colour=Colour.light_grey(),
                 timestamp=interaction.created_at,
             )
         )

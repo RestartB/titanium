@@ -68,7 +68,7 @@ class BasicCommandsCog(commands.Cog, name="Basic", description="General bot comm
         embed = Embed(
             title="Titanium",
             description="This is a development version of Titanium. For more information, please go to https://github.com/RestartB/titanium/tree/v2.",
-            colour=Colour.light_gray(),
+            colour=Colour.light_grey(),
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url if self.bot.user else None)
         embed.set_footer(

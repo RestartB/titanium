@@ -1875,7 +1875,7 @@ class GuildLogger:
                 f"**From:** {before.channel.mention} (`#{before.channel.name}`, `{before.channel.id}`)\n"
                 f"**To:** {after.channel.mention} (`#{after.channel.name}`, `{after.channel.id}`)\n"
             ),
-            colour=discord.Colour.light_gray(),
+            colour=discord.Colour.light_grey(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)

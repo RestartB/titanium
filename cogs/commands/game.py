@@ -50,7 +50,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
             title="Game Stats",
             description=f"**🎲 Dice Roll:** won **{sum(1 for game in dice_games if game.won)}** games, lost **{sum(1 for game in dice_games if not game.won)}** games\n"
             f"**🪙 Coin Flip:** won **{sum(1 for game in coin_games if game.won)}** games, lost **{sum(1 for game in coin_games if not game.won)}** games",
-            colour=Colour.light_gray(),
+            colour=Colour.light_grey(),
         )
         embed.set_author(name=f"@{user.name}", icon_url=user.display_avatar)
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)

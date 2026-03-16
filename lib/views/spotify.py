@@ -248,7 +248,7 @@ class SongLyricSelection(Select):
                 embed = discord.Embed(
                     title=f"{selected_song_data['name']}",
                     description=page,
-                    colour=Colour.random(),
+                    colour=Colour.light_grey(),
                 )
                 embed.set_author(
                     name=f"{selected_song_data['artistName']} - lrclib.net",

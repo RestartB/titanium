@@ -76,7 +76,7 @@ class AnimalCommandsCog(commands.Cog):
         # Create and send embed
         embed_title = random.choice(self.cat_titles)
 
-        embed = discord.Embed(title=embed_title, colour=Colour.random())
+        embed = discord.Embed(title=embed_title, colour=Colour.light_grey())
         embed.set_image(url=request_data[0]["url"])
         embed.set_footer(
             text=f"@{ctx.author.name}",
@@ -111,7 +111,7 @@ class AnimalCommandsCog(commands.Cog):
         # Create and send embed
         embed_title = random.choice(self.dog_titles)
 
-        embed = discord.Embed(title=embed_title, colour=Colour.random())
+        embed = discord.Embed(title=embed_title, colour=Colour.light_grey())
         embed.set_image(url=request_data["message"])
         embed.set_footer(
             text=f"@{ctx.author.name}",
@@ -164,7 +164,7 @@ class AnimalCommandsCog(commands.Cog):
         embed = discord.Embed(
             title=embed_title,
             description=f"Source: [sandcat.link]({request_data['url']})",
-            colour=Colour.random(),
+            colour=Colour.light_grey(),
         )
         embed.set_image(url=request_data["url"])
         embed.set_footer(

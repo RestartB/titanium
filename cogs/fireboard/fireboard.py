@@ -53,7 +53,7 @@ class FireboardCog(commands.Cog):
         """Creates a fireboard embed message"""
         embed = discord.Embed(
             description=message.content,
-            colour=discord.Colour.random(),
+            colour=discord.Colour.light_grey(),
             timestamp=message.created_at,
         )
         embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)

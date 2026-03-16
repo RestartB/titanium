@@ -329,9 +329,9 @@ class AutomodMonitorCog(commands.Cog):
                                             punishment.embed_colour
                                         )
                                     except ValueError:
-                                        embed.colour = discord.Colour.random()
+                                        embed.colour = discord.Colour.light_grey()
                                 else:
-                                    embed.colour = discord.Colour.random()
+                                    embed.colour = discord.Colour.light_grey()
 
                                 if punishment.message_reply:
                                     await message.reply(

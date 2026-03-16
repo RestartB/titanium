@@ -22,7 +22,7 @@ def cases(
         description=f"You have **{total} cases** against your user."
         if target.id == user.id
         else f"Found **{total} cases** for this user.",
-        colour=Colour.light_gray(),
+        colour=Colour.light_grey(),
     )
 
     embed.set_author(
@@ -67,7 +67,7 @@ def case_embed(
     embed = Embed(
         title=f"`{case.id}` - Info",
         description="\n".join(description_lines),
-        colour=Colour.light_gray(),
+        colour=Colour.light_grey(),
     )
 
     if isinstance(creator, int) or isinstance(creator, Column):
