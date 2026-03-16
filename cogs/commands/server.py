@@ -1,6 +1,9 @@
+import asyncio
+from io import BytesIO
 from typing import TYPE_CHECKING
 
 import discord
+from colorthief import ColorThief
 from discord import ButtonStyle, Colour, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
@@ -30,10 +33,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
         if not ctx.guild:
             raise commands.errors.NoPrivateMessage
 
-        embed = discord.Embed(
-            title="Server Info",
-            colour=ctx.guild.me.accent_colour if ctx.guild.me else Colour.random(),
-        )
+        embed = discord.Embed(title="Server Info", colour=Colour.light_grey())
         embed.set_author(
             name=f"{ctx.guild.name}",
             icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
@@ -78,6 +78,10 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 )
             )
 
+        if ctx.guild.icon:
+            thief = ColorThief(BytesIO(await ctx.guild.icon.read()))
+            embed.colour = Colour.from_rgb(*await asyncio.to_thread(thief.get_color))
+
         await ctx.reply(embed=embed, view=view)
 
     @server_group.command(name="icon", description="Get the server's icon.")
@@ -88,9 +92,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
         if not ctx.guild:
             raise commands.errors.NoPrivateMessage
 
-        embed = discord.Embed(
-            colour=ctx.guild.me.accent_colour if ctx.guild.me else Colour.random(),
-        )
+        embed = discord.Embed(colour=Colour.light_grey())
         embed.set_author(
             name=f"{ctx.guild.name}'s Icon",
             icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
@@ -102,10 +104,47 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
             await ctx.reply(embed=embed)
             return
 
-        image = ctx.guild.icon.url
-        embed.set_image(url=image)
+        image = ctx.guild.icon
+        embed.set_image(url=image.url)
 
-        view = View().add_item(Button(label="Open in Browser", style=ButtonStyle.link, url=image))
+        thief = ColorThief(BytesIO(await image.read()))
+        embed.colour = Colour.from_rgb(*await asyncio.to_thread(thief.get_color))
+
+        view = View().add_item(
+            Button(label="Open in Browser", style=ButtonStyle.link, url=image.url)
+        )
+        await ctx.reply(embed=embed, view=view)
+
+    @server_group.command(name="banner", description="Get the server's banner.")
+    @commands.guild_only()
+    async def server_banner(self, ctx: commands.Context["TitaniumBot"]) -> None:
+        await ctx.defer()
+
+        if not ctx.guild:
+            raise commands.errors.NoPrivateMessage
+
+        embed = discord.Embed(colour=Colour.light_grey())
+        embed.set_author(
+            name=f"{ctx.guild.name}'s Banner",
+            icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+        )
+        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+        if not ctx.guild.banner:
+            embed.description = "This server does not have an banner."
+            await ctx.reply(embed=embed)
+            return
+
+        image = ctx.guild.banner
+        embed.set_image(url=image.url)
+
+        # Get dominant colour for embed
+        thief = ColorThief(BytesIO(await image.read()))
+        embed.colour = Colour.from_rgb(*await asyncio.to_thread(thief.get_color))
+
+        view = View().add_item(
+            Button(label="Open in Browser", style=ButtonStyle.link, url=image.url)
+        )
         await ctx.reply(embed=embed, view=view)
 
     @server_group.command(
@@ -118,10 +157,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
         if not ctx.guild:
             raise commands.errors.NoPrivateMessage
 
-        embed = discord.Embed(
-            title="Server Boosts",
-            colour=ctx.guild.me.accent_colour if ctx.guild.me else Colour.random(),
-        )
+        embed = discord.Embed(title="Server Boosts", colour=Colour.light_grey())
         embed.set_author(
             name=f"{ctx.guild.name}",
             icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
@@ -131,6 +167,10 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
 
         embed.add_field(name="Total Boosts", value=f"`{ctx.guild.premium_subscription_count}`")
         embed.add_field(name="Boost Level", value=f"`Level {ctx.guild.premium_tier}`", inline=True)
+
+        if ctx.guild.icon:
+            thief = ColorThief(BytesIO(await ctx.guild.icon.read()))
+            embed.colour = Colour.from_rgb(*await asyncio.to_thread(thief.get_color))
 
         await ctx.reply(embed=embed)
 
