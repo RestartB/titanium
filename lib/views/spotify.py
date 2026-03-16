@@ -1,3 +1,4 @@
+import os
 from textwrap import shorten
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import quote, quote_plus
@@ -149,7 +150,7 @@ class SongMenuView(View):
         await interaction.response.defer(ephemeral=True)
 
         url = f"https://lrclib.net/api/search?track_name={quote(self.item.name)}&artist_name={quote(self.item.artists[0].name)}"
-        headers = {"User-Agent": "Titanium Discord Bot (https://titaniumbot.me)"}
+        headers = {"User-Agent": os.getenv("REQUEST_USER_AGENT", "")}
 
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=headers) as response:
