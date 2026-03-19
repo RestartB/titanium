@@ -44,8 +44,8 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
         if not webhook_url or not webhook_url.strip():
             e = Embed(
                 colour=Colour.red(),
-                title=f"{str(interaction.client.error_emoji)} Webhook Not Found",
-                description="The bot host has not set up this feature, please try again later.",
+                title=f"{str(interaction.client.error_emoji)} Unavailable",
+                description="Sending feedback is currently unavailable, please try again later.",
             )
             logging.error("The feedback webhook url is not in the .env file")
             return await interaction.followup.send(embed=e, ephemeral=True)
@@ -54,7 +54,7 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
         if not is_success:
             e = Embed(
                 colour=Colour.red(),
-                title=f"{str(interaction.client.error_emoji)} Failed",
+                title=f"{str(interaction.client.error_emoji)} Error",
                 description="Failed to send feedback to the developer. Please try again later.",
             )
             return await interaction.followup.send(embed=e, ephemeral=True)
@@ -68,10 +68,19 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
 
     def _build_embed(self) -> Embed:
         """Build the Feedback notification embed"""
+        # type checker
+        if not isinstance(self.feedback_type.component, discord.ui.Select):
+            raise TypeError("feedback_type.component is not a Select")
+        if not isinstance(self.feedback_content.component, discord.ui.TextInput):
+            raise TypeError("feedback_content.component is not a TextInput")
+
         e = Embed(
             title="📩 New Feedback",
-            description=f"**Feedback Type:** `{self.feedback_type.component.values[0]}`\n**User ID:** `{self.interaction.user.id}`\n**Server ID:** `{self.interaction.guild.id if self.interaction.guild else 'Not Available'}`\n\n**Feedback Content:** {self.feedback_content.component.value}",
-            colour=Colour.blurple(),
+            description=f"**Feedback Type:** `{self.feedback_type.component.values[0]}`\n"
+            f"**User:** `@{self.interaction.user.name}` (`{self.interaction.user.id}`)\n"
+            f"**Server:** {f'`{self.interaction.guild.name}` (`{self.interaction.guild.id}`)' if self.interaction.guild else 'Not Available'}\n\n"
+            f"**Feedback Content:** {self.feedback_content.component.value}",
+            colour=Colour.light_grey(),
         )
         e.timestamp = datetime.now()
         return e
@@ -90,12 +99,5 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
             )
             return True
         except Exception as e:
-            # await log_error(
-            #     bot=self.bot,
-            #     module="Feedback Modal",
-            #     guild_id=self.interaction.guild.id if self.interaction.guild else None,
-            #     error="Unknown error",
-            #     store_err=False,
-            #     exc=e,
-            # )
+            logging.error("Failed to send feedback:", exc_info=e)
             return False
