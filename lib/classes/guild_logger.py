@@ -1101,19 +1101,67 @@ class GuildLogger:
             return
 
         if event.cached_message and embed.description:
-            embed.description += f"\n**Author:** {event.cached_message.author.mention} (`{event.cached_message.author.id}`)"
-            embed.add_field(
-                name="Content",
-                value=event.cached_message.content
-                if event.cached_message.content
-                else "No content",
-                inline=False,
-            )
+            embed.description += f"\n**Author:** {event.cached_message.author.mention} (`{event.cached_message.author.id}`)\nTotal Attachments: `{len(event.cached_message.attachments)}`"
+
+            if event.cached_message.content:
+                embed.add_field(
+                    name="Content",
+                    value=event.cached_message.content,
+                    inline=False,
+                )
+
+            attachment_list = [
+                f"[{attachment.filename}]({attachment.url})"
+                for attachment in event.cached_message.attachments
+            ]
+            attachment_amount = 0
+            attachment_string = ""
+
+            for attachment in attachment_list:
+                if len(attachment_string) + len(attachment) > 1024:
+                    break
+
+                if attachment_string:
+                    attachment_string += "\n" + attachment
+                else:
+                    attachment_string = attachment
+
+                attachment_amount += 1
+
+            if attachment_amount > 1:
+                embed.add_field(
+                    name=f"Attachment List (showing {attachment_amount})",
+                    value=attachment_string,
+                    inline=False,
+                )
 
             embed.set_author(
                 name=f"@{event.cached_message.author.name}",
                 icon_url=event.cached_message.author.display_avatar.url,
             )
+
+        embeds: list[discord.Embed] = []
+
+        if event.cached_message and event.cached_message.attachments:
+            for attachment in event.cached_message.attachments:
+                if not attachment.content_type or not attachment.content_type.startswith("image/"):
+                    continue
+
+                if not embeds:
+                    embeds.append(embed)
+                    embeds[0].set_image(url=attachment.url)
+                    continue
+
+                embeds[0].url = "https://titaniumbot.me"
+                embeds.append(
+                    discord.Embed(url="https://titaniumbot.me").set_image(url=attachment.url)
+                )
+
+                if len(embeds) == 4:
+                    break
+
+        if not embeds:
+            embeds = [embed]
 
         log = await self._get_audit_log_entry(
             discord.AuditLogAction.message_delete, target=event.cached_message
@@ -1123,7 +1171,7 @@ class GuildLogger:
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.message_delete_id),
-            embed,
+            embeds=embeds,
         )
 
     async def message_bulk_delete(self, event: discord.RawBulkMessageDeleteEvent) -> None:
@@ -1132,7 +1180,7 @@ class GuildLogger:
             return
 
         embed = discord.Embed(
-            title=f"{len(event.message_ids)} Messages Bulk Deleted",
+            title=f"`{len(event.message_ids)}` Messages Bulk Deleted",
             description=f"**Channel:** <#{event.channel_id}>\n",
             colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),

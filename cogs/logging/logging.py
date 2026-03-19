@@ -184,12 +184,15 @@ class EventLoggingCog(commands.Cog):
         if not payload.guild_id:
             return
 
-        # if (
-        #     self.bot.user
-        #     and payload.cached_message
-        #     and payload.cached_message.author.id == self.bot.user.id
-        # ):
-        #     return
+        if payload.cached_message and payload.cached_message.webhook_id:
+            return
+
+        if (
+            payload.cached_message
+            and not payload.cached_message.content
+            and not payload.cached_message.attachments
+        ):
+            return
 
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
