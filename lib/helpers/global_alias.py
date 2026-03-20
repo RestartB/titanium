@@ -17,11 +17,7 @@ def global_alias(name: str):
     return decorator
 
 
-# FIXME: get global aliases working
 def add_global_aliases(cog: commands.Cog, bot: TitaniumBot):
-    # disable for now
-    return
-
     for command in cog.walk_commands():
         if isinstance(command, (commands.Group, commands.HybridGroup)):
             continue

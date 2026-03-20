@@ -10,8 +10,7 @@ from lib.classes.case_manager import GuildModCaseManager
 from lib.duration import DurationConverter
 from lib.embeds.general import not_in_guild
 from lib.enums.moderation import CaseType
-from lib.helpers.global_alias import add_global_aliases, global_alias
-from lib.helpers.hybrid_adapters import _defer, _stop_loading, defer, handle_group_command_not_found
+from lib.helpers.hybrid_adapters import _defer, _stop_loading, defer
 from lib.helpers.log_error import log_error
 from lib.sql.sql import get_session
 
@@ -19,12 +18,16 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate server members."):
+@commands.guild_only()
+@app_commands.allowed_installs(guilds=True, users=False)
+@app_commands.default_permissions(moderate_members=True)
+class ModerationBasicCog(
+    commands.GroupCog, group_name="mod", description="Moderate server members."
+):
     """Basic moderation commands"""
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-        add_global_aliases(self, bot)
 
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
         await _defer(ctx, ephemeral=True)
@@ -78,16 +81,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
 
         return True
 
-    @commands.hybrid_group(name="mod", description="Moderation related commands.")
-    @commands.guild_only()
-    @app_commands.allowed_installs(guilds=True, users=False)
-    @app_commands.default_permissions(moderate_members=True)
-    async def mod_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        handle_group_command_not_found(ctx)
-
-    @mod_group.command(name="warn", description="Warn a member for a specified reason.")
-    @global_alias("warn")
-    @commands.guild_only()
+    @commands.hybrid_command(name="warn", description="Warn a member for a specified reason.")
     @commands.has_permissions(manage_guild=True)
     @app_commands.describe(
         member="The member to warn.", reason="Optional: the reason for the warning."
@@ -161,14 +155,11 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 ):
                     self.bot.punishing[ctx.guild.id].remove(member.id)
 
-    @mod_group.command(
+    @commands.hybrid_command(
         name="mute",
-        alias=["timeout"],  # pyright: ignore[reportCallIssue]
+        aliases=["timeout"],
         description="Mute a member for a specified duration.",
     )
-    @global_alias("mute")
-    @global_alias("timeout")
-    @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @app_commands.describe(
         member="The member to mute.",
@@ -298,14 +289,11 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 ):
                     self.bot.punishing[ctx.guild.id].remove(member.id)
 
-    @mod_group.command(
+    @commands.hybrid_command(
         name="unmute",
-        alias=["untimeout"],  # pyright: ignore[reportCallIssue]
+        aliases=["untimeout"],
         description="Unmute a member.",
     )
-    @global_alias("unmute")
-    @global_alias("untimeout")
-    @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @app_commands.describe(member="The member to unmute.")
     async def unmute(
@@ -413,9 +401,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 ):
                     self.bot.punishing[ctx.guild.id].remove(member.id)
 
-    @mod_group.command(name="kick", description="Kick a member from the server.")
-    @global_alias("kick")
-    @commands.guild_only()
+    @commands.hybrid_command(name="kick", description="Kick a member from the server.")
     @commands.has_permissions(kick_members=True)
     @app_commands.describe(
         member="The member to kick.", reason="Optional: the reason for the kick."
@@ -521,9 +507,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 ):
                     self.bot.punishing[ctx.guild.id].remove(member.id)
 
-    @mod_group.command(name="ban", description="Ban a user from the server.")
-    @global_alias("ban")
-    @commands.guild_only()
+    @commands.hybrid_command(name="ban", description="Ban a user from the server.")
     @commands.has_permissions(ban_members=True)
     @app_commands.describe(
         user="The user to ban.",
@@ -664,9 +648,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
                 ):
                     self.bot.punishing[ctx.guild.id].remove(user.id)
 
-    @mod_group.command(name="unban", description="Unban a member from the server.")
-    @global_alias("unban")
-    @commands.guild_only()
+    @commands.hybrid_command(name="unban", description="Unban a member from the server.")
     @commands.has_permissions(ban_members=True)
     @app_commands.describe(user="The user to unban.")
     async def unban(
@@ -771,10 +753,7 @@ class ModerationBasicCog(commands.Cog, name="Moderation", description="Moderate 
         description="Purge up to 100 messages up to 14 days old from a channel.",
         aliases=["clear", "clean", "scrub"],
     )
-    @commands.guild_only()
-    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(manage_messages=True)
-    @app_commands.default_permissions(manage_messages=True)
     @app_commands.describe(
         amount="The number of messages to purge (max 100).",
         user="Optional: the user whose messages should be purged.",

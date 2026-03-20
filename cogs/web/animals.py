@@ -7,52 +7,44 @@ import discord
 from discord import Colour, app_commands
 from discord.ext import commands
 
-from lib.helpers.global_alias import add_global_aliases, global_alias
-from lib.helpers.hybrid_adapters import handle_group_command_not_found
-
 if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class AnimalCommandsCog(commands.Cog):
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="See cute animals."):
     REQUEST_HEADERS = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
     }
 
+    CAT_TITLES = [
+        "🐱 Aww!",
+        "🐱 Cute cat!",
+        "🐱 Adorable!",
+        "🐱 Meow!",
+        "🐱 Mrow!",
+        "🐱 Mrrp!",
+        "🐱 Purrfect!",
+        "🐱 Cat!",
+        "🐱 :3",
+    ]
+
+    DOG_TITLES = [
+        "🐶 Aww!",
+        "🐶 Cute dog!",
+        "🐶 Adorable!",
+        "🐶 Woof!",
+        "🐶 Woof woof!",
+        "🐶 Dog!",
+        "🐶 Bark!",
+    ]
+
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-        add_global_aliases(self, bot)
-
-        self.cat_titles = [
-            "🐱 Aww!",
-            "🐱 Cute cat!",
-            "🐱 Adorable!",
-            "🐱 Meow!",
-            "🐱 Mrow!",
-            "🐱 Mrrp!",
-            "🐱 Purrfect!",
-            "🐱 Cat!",
-            "🐱 :3",
-        ]
-        self.dog_titles = [
-            "🐶 Aww!",
-            "🐶 Cute dog!",
-            "🐶 Adorable!",
-            "🐶 Woof!",
-            "🐶 Woof woof!",
-            "🐶 Dog!",
-            "🐶 Bark!",
-        ]
-
-    @commands.hybrid_group(name="animals", description="See cute animals.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def animals_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        handle_group_command_not_found(ctx)
 
     # Cat command
-    @animals_group.command(name="cat", description="Get a random cat picture.")
-    @global_alias("cat")
+    @commands.hybrid_command(name="cat", description="Get a random cat picture.")
     @commands.cooldown(1, 5)
     async def cat(self, ctx: commands.Context["TitaniumBot"]):
         await ctx.defer()
@@ -74,7 +66,7 @@ class AnimalCommandsCog(commands.Cog):
                     request_data = await request.json()
 
         # Create and send embed
-        embed_title = random.choice(self.cat_titles)
+        embed_title = random.choice(self.CAT_TITLES)
 
         embed = discord.Embed(title=embed_title, colour=Colour.light_grey())
         embed.set_image(url=request_data[0]["url"])
@@ -86,8 +78,7 @@ class AnimalCommandsCog(commands.Cog):
         await ctx.reply(embed=embed)
 
     # Dog command
-    @animals_group.command(name="dog", description="Get a random dog picture.")
-    @global_alias("dog")
+    @commands.hybrid_command(name="dog", description="Get a random dog picture.")
     @commands.cooldown(1, 5)
     async def dog(self, ctx: commands.Context["TitaniumBot"]):
         await ctx.defer()
@@ -109,7 +100,7 @@ class AnimalCommandsCog(commands.Cog):
                     request_data = await request.json()
 
         # Create and send embed
-        embed_title = random.choice(self.dog_titles)
+        embed_title = random.choice(self.DOG_TITLES)
 
         embed = discord.Embed(title=embed_title, colour=Colour.light_grey())
         embed.set_image(url=request_data["message"])
@@ -121,8 +112,7 @@ class AnimalCommandsCog(commands.Cog):
         await ctx.reply(embed=embed)
 
     # Sand Cat command
-    @animals_group.command(name="sandcat", description="Get a random sand cat picture.")
-    @global_alias("sandcat")
+    @commands.hybrid_command(name="sandcat", description="Get a random sand cat picture.")
     @commands.cooldown(1, 5)
     async def sand_cat(self, ctx: commands.Context["TitaniumBot"]):
         await ctx.defer()
@@ -159,7 +149,7 @@ class AnimalCommandsCog(commands.Cog):
                         request_data = await request.json()
 
         # Create and send embed
-        embed_title = random.choice(self.cat_titles)
+        embed_title = random.choice(self.CAT_TITLES)
 
         embed = discord.Embed(
             title=embed_title,

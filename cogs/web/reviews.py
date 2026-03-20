@@ -120,7 +120,7 @@ class ReviewsCommandsCog(commands.Cog):
     # Server reviews command
     @reviews_group.command(name="server", description="Get reviews for the server.")
     @global_alias("serverreviews")
-    @global_alias("server_reviews")
+    @global_alias("server-reviews")
     @commands.guild_only()
     @commands.cooldown(1, 5)
     async def server_reviews(self, ctx: commands.Context["TitaniumBot"]):

@@ -8,25 +8,26 @@ from discord import Colour, app_commands
 from discord.ext import commands
 from discord.ui import View
 
-from lib.helpers.global_alias import add_global_aliases, global_alias
-from lib.helpers.hybrid_adapters import handle_group_command_not_found
 from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class WebSearchCommandsCog(commands.Cog):
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+class WebSearchCommandsCog(
+    commands.GroupCog, group_name="search", description="Search the web using various services."
+):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-        add_global_aliases(self, bot)
 
     def _create_urban_embed(self, data: dict) -> list[discord.Embed]:
         embed = discord.Embed(
             title=f"{data['word']}",
             description=f"**Author: {data['author']}**\n\n||{(data['definition'].replace('[', '')).replace(']', '')}||",
             url=data["permalink"],
-            colour=Colour.light_grey(),
+            colour=Colour.from_str("#F1FE5F"),
         )
         embed.set_author(
             name="Urban Dictionary",
@@ -42,21 +43,12 @@ class WebSearchCommandsCog(commands.Cog):
             embed,
         ]
 
-    @commands.hybrid_group(name="search", description="Search the web using various services.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def search_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        handle_group_command_not_found(ctx)
-
     # Urban Dictionary command
-    @search_group.command(
+    @commands.hybrid_command(
         name="urban-dictionary",
         description="Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!",
         aliases=["ud", "urbandictionary"],
     )
-    @global_alias("urban-dictionary")
-    @global_alias("ud")
-    @global_alias("urbandictionary")
     @app_commands.describe(page="Optional: page to jump to. Defaults to first page.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
@@ -91,7 +83,7 @@ class WebSearchCommandsCog(commands.Cog):
             except IndexError:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Error",
-                    description=f"**Page {page}** does not exist. Try another search query.",
+                    description=f"**Page {page}** does not exist. Please try a different search term.",
                     colour=Colour.red(),
                 )
                 embed.set_footer(
@@ -131,10 +123,9 @@ class WebSearchCommandsCog(commands.Cog):
             await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Wikipedia command
-    @search_group.command(
+    @commands.hybrid_command(
         name="wikipedia", description="Search Wikipedia for information.", aliases=["wiki"]
     )
-    @global_alias("wikipedia")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )

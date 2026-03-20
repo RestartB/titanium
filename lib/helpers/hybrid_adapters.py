@@ -41,6 +41,9 @@ async def _defer(ctx: commands.Context["TitaniumBot"], ephemeral: bool = False) 
 
 
 async def _stop_loading(ctx: commands.Context["TitaniumBot"]) -> None:
+    if ctx.interaction:
+        return
+
     try:
         show_loading = True
 
