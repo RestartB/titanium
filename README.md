@@ -15,9 +15,6 @@ Welcome to the Titanium v2 branch! This branch is used for Titanium v2 developme
 > When developing, you should ensure that you're using ruff to format and lint your code, and Pyright basic type checking to ensure that code remains high quality and type safe. -->
 
 ## Database Setup
-
-### Initial Setup Steps
-
 1. Create a PostgreSQL 18 database - this can be done with Docker or similar tools
 2. Note down the username and password, add these to the .env file along with the host, port and database name
 3. Download and install the [Atlas CLI](https://atlasgo.io/getting-started#installation) (you may also need to install Docker)
@@ -38,11 +35,11 @@ When developing, you may modify, add or remove tables. To migrate the database t
 ## Download Fonts
 Titanium requires some fonts to be downloaded to use features such as the image caption feature. To use these features, please download:
 
-- Figtree Font (.ttf format)
-- Impact Font (.ttf format)
-- Futura Condensed Font (.otf format)
+- Figtree Font (figtree.ttf)
+- Impact Font (impact.ttf)
+- Futura Condensed Font (futura.otf)
 
-Once required fonts have been downloaded, place them into the lib/fonts folder.
+Once required fonts have been downloaded, place them into the `lib/fonts` folder.
 
 ## Dashboard
 It is recommended to run the [Titanium Dashboard](https://github.com/RestartB/titanium-dashboard) alongside the Titanium bot. This allows you to manage Titanium's settings from a web browser. This is required to manage some features of Titanium, such as the automod and bouncer system.
