@@ -296,6 +296,15 @@ def not_allowed(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     return embed
 
 
+def titanium_not_allowed(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
+    embed = Embed(
+        title=f"{bot.error_emoji} Error",
+        description=f"Titanium does not have permission to perform this action on {user.mention}. Please ensure that Titanium has a higher role than the user, then try again.",
+        colour=Colour.red(),
+    )
+    return embed
+
+
 def forbidden(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
         title=f"{bot.error_emoji} Error",

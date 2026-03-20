@@ -8,10 +8,12 @@ from discord.ext import commands
 import lib.embeds.mod_actions as mod_embeds
 from lib.classes.case_manager import GuildModCaseManager
 from lib.duration import DurationConverter
+from lib.embeds.dm_notifs import unbanned_dm, unmuted_dm
 from lib.embeds.general import not_in_guild
 from lib.enums.moderation import CaseType
 from lib.helpers.hybrid_adapters import _defer, _stop_loading, defer
 from lib.helpers.log_error import log_error
+from lib.helpers.send_dm import send_dm
 from lib.sql.sql import get_session
 
 if TYPE_CHECKING:
@@ -73,10 +75,26 @@ class ModerationBasicCog(
         if self.bot.user and target.id == self.bot.user.id:
             return False
 
+        if moderator.id == ctx.guild.owner_id:
+            return True
+
         if target.id == ctx.guild.owner_id:
             return False
 
-        if target.top_role.position >= moderator.top_role.position:
+        if target.top_role >= moderator.top_role:
+            return False
+
+        return True
+
+    def _bot_perms_check(
+        self,
+        target: discord.Member,
+        ctx: commands.Context["TitaniumBot"],
+    ):
+        if not ctx.guild:
+            return False
+
+        if target.top_role >= ctx.guild.me.top_role:
             return False
 
         return True
@@ -110,6 +128,12 @@ class ModerationBasicCog(
                 if not self._hierarchy_check(member, ctx.author, ctx):
                     return await ctx.reply(
                         ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                    )
+
+                # Check if Titanium can punish target
+                if not self._bot_perms_check(member, ctx):
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.titanium_not_allowed(self.bot, member)
                     )
 
                 # Check if member is already being punished
@@ -161,6 +185,7 @@ class ModerationBasicCog(
         description="Mute a member for a specified duration.",
     )
     @commands.has_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
     @app_commands.describe(
         member="The member to mute.",
         duration="Optional: the duration of the mute (e.g., 10m, 1h, 2h30m).",
@@ -195,6 +220,12 @@ class ModerationBasicCog(
                 if not self._hierarchy_check(member, ctx.author, ctx):
                     return await ctx.reply(
                         ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                    )
+
+                # Check if Titanium can punish target
+                if not self._bot_perms_check(member, ctx):
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.titanium_not_allowed(self.bot, member)
                     )
 
                 # Check if user is already timed out
@@ -295,6 +326,7 @@ class ModerationBasicCog(
         description="Unmute a member.",
     )
     @commands.has_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
     @app_commands.describe(member="The member to unmute.")
     async def unmute(
         self,
@@ -322,6 +354,12 @@ class ModerationBasicCog(
                 if not self._hierarchy_check(member, ctx.author, ctx):
                     return await ctx.reply(
                         ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                    )
+
+                # Check if Titanium can punish target
+                if not self._bot_perms_check(member, ctx):
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.titanium_not_allowed(self.bot, member)
                     )
 
                 # Check if user is not muted
@@ -380,6 +418,16 @@ class ModerationBasicCog(
                     if case:
                         # Close case
                         case, dm_success, dm_error = await manager.close_case(case.id)
+                    else:
+                        # Just send DM
+                        embed = unmuted_dm(self.bot, member, case)
+                        dm_success, dm_error = await send_dm(
+                            bot=self.bot,
+                            embed=embed,
+                            user=member,
+                            source_guild=ctx.guild,
+                            module="Moderation",
+                        )
 
                 # Send confirmation message
                 await ctx.reply(
@@ -403,6 +451,7 @@ class ModerationBasicCog(
 
     @commands.hybrid_command(name="kick", description="Kick a member from the server.")
     @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
     @app_commands.describe(
         member="The member to kick.", reason="Optional: the reason for the kick."
     )
@@ -434,6 +483,12 @@ class ModerationBasicCog(
                 if not self._hierarchy_check(member, ctx.author, ctx):
                     return await ctx.reply(
                         ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                    )
+
+                # Check if Titanium can punish target
+                if not self._bot_perms_check(member, ctx):
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.titanium_not_allowed(self.bot, member)
                     )
 
                 # Check if member is already being punished
@@ -509,6 +564,7 @@ class ModerationBasicCog(
 
     @commands.hybrid_command(name="ban", description="Ban a user from the server.")
     @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
     @app_commands.describe(
         user="The user to ban.",
         duration="Optional: the duration of the ban (e.g., 10m, 1h, 2h30m).",
@@ -549,6 +605,12 @@ class ModerationBasicCog(
                 ):
                     return await ctx.reply(
                         ephemeral=True, embed=mod_embeds.not_allowed(self.bot, user)
+                    )
+
+                # Check if Titanium can punish target
+                if isinstance(member, discord.Member) and not self._bot_perms_check(member, ctx):
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.titanium_not_allowed(self.bot, member)
                     )
 
                 # Check if member is already being punished
@@ -650,6 +712,7 @@ class ModerationBasicCog(
 
     @commands.hybrid_command(name="unban", description="Unban a member from the server.")
     @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
     @app_commands.describe(user="The user to unban.")
     async def unban(
         self,
@@ -727,6 +790,16 @@ class ModerationBasicCog(
                     if case:
                         # Close case
                         case, dm_success, dm_error = await manager.close_case(case.id)
+                    else:
+                        # Just send DM
+                        embed = unbanned_dm(self.bot, ctx, case)
+                        dm_success, dm_error = await send_dm(
+                            bot=self.bot,
+                            embed=embed,
+                            user=user,
+                            source_guild=ctx.guild,
+                            module="Moderation",
+                        )
 
                 # Send confirmation message
                 await ctx.reply(
@@ -754,6 +827,7 @@ class ModerationBasicCog(
         aliases=["clear", "clean", "scrub"],
     )
     @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
     @app_commands.describe(
         amount="The number of messages to purge (max 100).",
         user="Optional: the user whose messages should be purged.",

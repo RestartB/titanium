@@ -38,10 +38,10 @@ def muted_dm(
 def unmuted_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
-    case: ModCase,
+    case: ModCase | None,
 ) -> Embed:
     return Embed(
-        title=f"{bot.success_emoji} Unmuted • `{case.id}`",
+        title=f"{bot.success_emoji} Unmuted{f' • `{case.id}`' if case else ''}",
         description=f"A moderator has unmuted you in **{ctx.guild.name if ctx.guild else ''}!**",
         colour=Colour.green(),
     )

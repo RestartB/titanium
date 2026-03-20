@@ -169,7 +169,6 @@ class GuildModerationSettings(Base):
     delete_confirmation: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     dm_users: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     external_cases: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    external_case_dms: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     ban_days: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
 
 

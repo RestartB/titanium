@@ -66,7 +66,6 @@ class ModerationConfigModel(BaseModel):
     delete_confirmation: bool
     dm_users: bool
     external_cases: bool
-    external_case_dms: bool
     ban_days: int = Field(0, ge=0, le=7)
 
 
