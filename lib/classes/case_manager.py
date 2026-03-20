@@ -127,15 +127,18 @@ class GuildModCaseManager:
 
         await self.session.commit()
 
+        if action == CaseType.MUTE:
+            # Delete old scheduled mute refresh tasks
+            await self.delete_scheduled_tasks_for_user(user.id, EventType.PERMA_MUTE_REFRESH)
+        elif action == CaseType.BAN:
+            # Delete old scheduled unban tasks
+            await self.delete_scheduled_tasks_for_user(user.id, EventType.UNBAN)
+
         dm_success = True
         dm_error = ""
 
         if external:
             return case, dm_success, dm_error
-
-        if action == CaseType.MUTE:
-            # Delete old scheduled mute refresh tasks
-            await self.delete_scheduled_tasks_for_user(user.id, EventType.PERMA_MUTE_REFRESH)
 
         if duration and action == CaseType.MUTE:
             # Schedule mute refreshes
@@ -153,9 +156,6 @@ class GuildModCaseManager:
             )
             await self.session.commit()
         elif duration and action == CaseType.BAN:
-            # Delete old scheduled unban tasks
-            await self.delete_scheduled_tasks_for_user(user.id, EventType.UNBAN)
-
             # Schedule unban
             self.session.add(
                 ScheduledTask(
