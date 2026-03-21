@@ -26,7 +26,7 @@ class ModMonitorCog(commands.Cog):
         if before.id == self.bot.user.id:
             return
 
-        if not before.is_timed_out() and after.is_timed_out():
+        if before.timed_out_until != after.timed_out_until:
             # Grab logs
             logs = after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update)
             async for entry in logs:
