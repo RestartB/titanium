@@ -82,6 +82,7 @@ class GuildModCaseManager:
         creator_user: discord.User | discord.Member | discord.ClientUser,
         reason: Optional[str],
         duration: Annotated[timedelta, DurationConverter] | None = None,
+        until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
         external: bool = False,
     ) -> tuple[ModCase, bool, str]:
@@ -102,7 +103,9 @@ class GuildModCaseManager:
             resolved=True if action == CaseType.KICK else False,
         )
 
-        if duration:
+        if until:
+            case.time_expires = until
+        elif duration:
             case.time_expires = datetime.now() + duration
 
         self.session.add(case)

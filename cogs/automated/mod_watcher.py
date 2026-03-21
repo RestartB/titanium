@@ -19,14 +19,14 @@ class ModMonitorCog(commands.Cog):
 
     # Listen for mutes and unmutes
     @commands.Cog.listener()
-    async def on_mmeber_update(self, before: discord.Member, after: discord.Member) -> None:
+    async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
         if not self.bot.user:
             return
 
         if before.id == self.bot.user.id:
             return
 
-        if before.timed_out_until != after.timed_out_until:
+        if before.timed_out_until != after.timed_out_until and after.is_timed_out():
             # Grab logs
             logs = after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update)
 
@@ -49,11 +49,7 @@ class ModMonitorCog(commands.Cog):
                         user=after,
                         creator_user=entry.user,
                         reason=entry.reason,
-                        duration=(
-                            after.timed_out_until - before.timed_out_until
-                            if after.timed_out_until and before.timed_out_until
-                            else None
-                        ),
+                        until=after.timed_out_until,
                         external=True,
                     )
         elif before.is_timed_out() and not after.is_timed_out():
