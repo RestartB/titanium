@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Annotated, Optional, Sequence
 
 import discord
@@ -104,11 +104,9 @@ class GuildModCaseManager:
         )
 
         if until:
-            case.time_expires = until
+            case.time_expires = until.astimezone(timezone.utc).replace(tzinfo=None)
         elif duration:
             case.time_expires = datetime.now() + duration
-
-        self.session.add(case)
 
         # close old cases, this is mainly for external events
         if action == CaseType.MUTE:
@@ -128,6 +126,7 @@ class GuildModCaseManager:
                 ban_case.resolved = True
                 ban_case.time_updated = datetime.now()
 
+        self.session.add(case)
         await self.session.commit()
 
         if action == CaseType.MUTE:
