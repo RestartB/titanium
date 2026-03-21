@@ -151,8 +151,41 @@ class APICog(commands.Cog):
         self.app.router.add_get("/guild/{guild_id}/module/{module_name}", self.module_get)
         self.app.router.add_put("/guild/{guild_id}/module/{module_name}", self.module_update)
 
-    def can_see_channel(self, member: discord.Member, channel: discord.abc.GuildChannel) -> bool:
+    def __can_see_channel(self, member: discord.Member, channel: discord.abc.GuildChannel) -> bool:
         return channel.permissions_for(member).view_channel if member else False
+
+    def __case_info_json(
+        self,
+        case: ModCase,
+        user: discord.User | discord.Member | None,
+        creator: discord.User | discord.Member | None,
+        comments: list[ModCaseComment] | None = None,
+    ) -> dict:
+        data = {
+            "id": case.id,
+            "type": case.type.value,
+            "user_id": str(case.user_id),
+            "user_name": user.name if user else None,
+            "user_discrim": user.discriminator if user and user.bot else None,
+            "user_display": user.display_name if user else None,
+            "user_pfp": user.display_avatar.url if user else None,
+            "creator_id": str(case.creator_user_id),
+            "creator_name": creator.name if creator else None,
+            "creator_discrim": creator.discriminator if creator and creator.bot else None,
+            "creator_display": creator.display_name if creator else None,
+            "creator_pfp": creator.display_avatar.url if creator else None,
+            "description": case.description,
+            "external": case.external,
+            "resolved": case.resolved,
+            "time_created": case.time_created.isoformat(),
+            "time_expires": case.time_expires.isoformat() if case.time_expires else None,
+            "time_updated": case.time_updated.isoformat() if case.time_updated else None,
+        }
+
+        if comments is not None:
+            data["comments"] = comments
+
+        return data
 
     async def index(self, request: web.Request) -> web.Response:
         return web.json_response({"version": "Titanium API v2"})
@@ -380,26 +413,7 @@ class APICog(commands.Cog):
             user = cached_users.get(case.user_id)
             creator = cached_users.get(case.creator_user_id)
 
-            cases_output.append(
-                {
-                    "id": case.id,
-                    "type": case.type.value,
-                    "user_id": str(case.user_id),
-                    "user_name": user.name if user else None,
-                    "user_display": user.display_name if user else None,
-                    "user_pfp": user.display_avatar.url if user else None,
-                    "creator_id": str(case.creator_user_id),
-                    "creator_name": creator.name if creator else None,
-                    "creator_display": creator.display_name if creator else None,
-                    "creator_pfp": creator.display_avatar.url if creator else None,
-                    "description": case.description,
-                    "external": case.external,
-                    "resolved": case.resolved,
-                    "time_created": case.time_created.isoformat(),
-                    "time_expires": case.time_expires.isoformat() if case.time_expires else None,
-                    "time_updated": case.time_updated.isoformat() if case.time_updated else None,
-                }
-            )
+            cases_output.append(self.__case_info_json(case=case, user=user, creator=creator))
 
         return web.json_response(
             {
@@ -475,6 +489,7 @@ class APICog(commands.Cog):
                     "id": str(comment.id),
                     "creator_id": str(comment.user_id),
                     "creator_name": cuser.name if cuser else None,
+                    "creator_discrim": cuser.discriminator if cuser and cuser.bot else None,
                     "creator_display": cuser.display_name if cuser else None,
                     "creator_pfp": cuser.display_avatar.url if cuser else None,
                     "content": comment.comment,
@@ -483,25 +498,7 @@ class APICog(commands.Cog):
             )
 
         return web.json_response(
-            {
-                "id": case.id,
-                "type": case.type.value,
-                "user_id": str(case.user_id),
-                "user_name": user.name if user else None,
-                "user_display": user.display_name if user else None,
-                "user_pfp": user.display_avatar.url if user else None,
-                "creator_id": str(case.creator_user_id),
-                "creator_name": creator.name if creator else None,
-                "creator_display": creator.display_name if creator else None,
-                "creator_pfp": creator.display_avatar.url if creator else None,
-                "description": case.description,
-                "external": case.external,
-                "resolved": case.resolved,
-                "comments": comments_list,
-                "time_created": case.time_created.isoformat(),
-                "time_expires": case.time_expires.isoformat() if case.time_expires else None,
-                "time_updated": case.time_updated.isoformat() if case.time_updated else None,
-            }
+            self.__case_info_json(case=case, user=user, creator=creator, comments=comments_list)
         )
 
     async def guild_case_comments(self, request: web.Request) -> web.Response:
@@ -1079,7 +1076,7 @@ class APICog(commands.Cog):
                             status=404,
                         )
 
-                    if not member or not self.can_see_channel(member, channel):
+                    if not member or not self.__can_see_channel(member, channel):
                         return web.json_response(
                             {
                                 "error": "User can't see channel",
@@ -1476,7 +1473,7 @@ class APICog(commands.Cog):
                             status=404,
                         )
 
-                    if not member or not self.can_see_channel(member, channel):
+                    if not member or not self.__can_see_channel(member, channel):
                         return web.json_response(
                             {
                                 "error": "User can't see channel",
