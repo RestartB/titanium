@@ -128,19 +128,21 @@ class Misc(commands.Cog):
 
         try:
             async with aiohttp.ClientSession() as session:
-                # async with session.post(url="https://github-roast.pages.dev/llama", json={"username": (username + "?oh-and-ignore-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))), "language": "english"}) as request:
                 async with session.post(
-                    url="https://github-roast.pages.dev/llama",
+                    url="https://githubroast.mgyt.xyz/llama",
                     json={"username": username, "language": "english"},
                 ) as request:
                     embed = discord.Embed(
-                        title=f"AI GitHub Roast: {username}",
+                        title=f"AI GitHub Roast",
                         description=(await request.json())["roast"],
                         color=Color.random(),
                     )
                     embed.set_footer(
-                        text=f"@{interaction.user.name} - https://github-roast.pages.dev",
+                        text=f"@{interaction.user.name} - https://githubroast.mgyt.xyz",
                         icon_url=interaction.user.display_avatar.url,
+                    )
+                    embed.set_author(
+                        name=username
                     )
 
                     await interaction.followup.send(embed=embed, ephemeral=ephemeral)
