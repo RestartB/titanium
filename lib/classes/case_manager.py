@@ -13,6 +13,7 @@ from lib.duration import DurationConverter, duration_to_timestring
 from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, unbanned_dm, unmuted_dm, warned_dm
 from lib.enums.moderation import CaseSource, CaseType
 from lib.enums.scheduled_events import EventType
+from lib.helpers.cache import get_or_fetch_member
 from lib.helpers.send_dm import send_dm
 from lib.sql.sql import ModCase, ScheduledTask
 
@@ -191,7 +192,11 @@ class GuildModCaseManager:
 
         if not isinstance(user, discord.Member):
             try:
-                user = await self.guild.fetch_member(user.id)
+                result = await get_or_fetch_member(self.bot, self.guild, user.id)
+                if not result:
+                    raise Exception("Member not found")
+
+                user = result
             except Exception as e:
                 self.logger.error(f"Failed to fetch user {user.id} for DM notification", exc_info=e)
                 return case, False, "Failed to fetch member for DM notification"
@@ -318,7 +323,11 @@ class GuildModCaseManager:
 
         if case.type == CaseType.MUTE:
             try:
-                member = await self.guild.fetch_member(case.user_id)
+                result = await get_or_fetch_member(self.bot, self.guild, case.user_id)
+                if not result:
+                    raise Exception("Member not found")
+
+                member = result
             except Exception as e:
                 self.logger.error(
                     f"Failed to fetch user {case.user_id} for DM notification", exc_info=e
@@ -345,7 +354,11 @@ class GuildModCaseManager:
                 )
         elif case.type == CaseType.BAN:
             try:
-                member = await self.guild.fetch_member(case.user_id)
+                result = await get_or_fetch_member(self.bot, self.guild, case.user_id)
+                if not result:
+                    raise Exception("Member not found")
+
+                member = result
             except Exception as e:
                 self.logger.error(
                     f"Failed to fetch user {case.user_id} for DM notification", exc_info=e
