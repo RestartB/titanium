@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from lib.classes.guild_logger import GuildLogger
-from lib.duration import DurationConverter
+from lib.duration import DurationConverter, duration_to_timestring
 from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, unbanned_dm, unmuted_dm, warned_dm
 from lib.enums.moderation import CaseSource, CaseType
 from lib.enums.scheduled_events import EventType
@@ -81,6 +81,7 @@ class GuildModCaseManager:
         user: discord.User | discord.Member,
         creator_user: discord.User | discord.Member | discord.ClientUser,
         reason: Optional[str],
+        time_created: datetime = datetime.now(),
         duration: Annotated[timedelta, DurationConverter] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
@@ -96,6 +97,7 @@ class GuildModCaseManager:
         case = ModCase(
             guild_id=self.guild.id,
             type=action,
+            time_created=time_created,
             user_id=user.id,
             creator_user_id=creator_user.id,
             description=reason,
@@ -106,7 +108,7 @@ class GuildModCaseManager:
         if until:
             case.time_expires = until.astimezone(timezone.utc).replace(tzinfo=None)
         elif duration:
-            case.time_expires = datetime.now() + duration
+            case.time_expires = time_created + duration
 
         # close old cases, this is mainly for external events
         if action == CaseType.MUTE:
@@ -130,8 +132,22 @@ class GuildModCaseManager:
         await self.session.commit()
 
         if action == CaseType.MUTE:
-            # Delete old scheduled mute refresh tasks
+            # Delete old mute tasks
             await self.delete_scheduled_tasks_for_user(user.id, EventType.PERMA_MUTE_REFRESH)
+            await self.delete_scheduled_tasks_for_user(user.id, EventType.MUTE_REFRESH)
+            await self.delete_scheduled_tasks_for_user(user.id, EventType.CLOSE_MUTE)
+
+            if duration is not None:
+                # create close mute task
+                self.session.add(
+                    ScheduledTask(
+                        guild_id=self.guild.id,
+                        user_id=user.id,
+                        case_id=case.id,
+                        type=EventType.CLOSE_MUTE,
+                        time_scheduled=case.time_expires,
+                    )
+                )
         elif action == CaseType.BAN:
             # Delete old scheduled unban tasks
             await self.delete_scheduled_tasks_for_user(user.id, EventType.UNBAN)
@@ -153,7 +169,7 @@ class GuildModCaseManager:
                     user_id=user.id,
                     case_id=case.id,
                     type=EventType.PERMA_MUTE_REFRESH,
-                    time_scheduled=datetime.now() + timedelta(days=27),
+                    time_scheduled=time_created + timedelta(days=27),
                 )
             )
             await self.session.commit()
@@ -165,7 +181,7 @@ class GuildModCaseManager:
                     user_id=user.id,
                     case_id=case.id,
                     type=EventType.UNBAN,
-                    time_scheduled=datetime.now() + duration,
+                    time_scheduled=time_created + duration,
                 )
             )
             await self.session.commit()
@@ -178,11 +194,25 @@ class GuildModCaseManager:
                 return case, False, "Failed to fetch member for DM notification"
 
         if action == CaseType.BAN:
-            embed = banned_dm(self.bot, user, case)
+            embed = banned_dm(
+                bot=self.bot,
+                ctx=user,
+                duration=duration_to_timestring(case.time_created, case.time_expires)
+                if case.time_expires
+                else "Permanent",
+                reason=case.description,
+            )
         elif action == CaseType.KICK:
-            embed = kicked_dm(self.bot, user, case)
+            embed = kicked_dm(bot=self.bot, ctx=user, reason=case.description)
         elif action == CaseType.MUTE:
-            embed = muted_dm(self.bot, user, case)
+            embed = muted_dm(
+                bot=self.bot,
+                ctx=user,
+                duration=duration_to_timestring(case.time_created, case.time_expires)
+                if case.time_expires
+                else "Permanent",
+                reason=case.description,
+            )
         elif action == CaseType.WARN:
             embed = warned_dm(self.bot, user, case)
         else:
@@ -293,7 +323,7 @@ class GuildModCaseManager:
                 )
                 return case, False, "Failed to fetch member for DM notification"
 
-            embed = unmuted_dm(self.bot, member, case)
+            embed = unmuted_dm(self.bot, member)
             dm_success, dm_error = await send_dm(
                 bot=self.bot,
                 embed=embed,
@@ -320,7 +350,7 @@ class GuildModCaseManager:
                 )
                 return case, False, "Failed to fetch member for DM notification"
 
-            embed = unbanned_dm(self.bot, member, case)
+            embed = unbanned_dm(self.bot, member)
             dm_success, dm_error = await send_dm(
                 bot=self.bot,
                 embed=embed,

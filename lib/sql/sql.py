@@ -661,7 +661,6 @@ class ModCaseComment(Base):
             await session.delete(self)
 
 
-# Game Stats
 class GameStat(Base):
     __tablename__ = "game_stats"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)

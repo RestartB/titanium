@@ -1,11 +1,8 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from discord import ButtonStyle, Colour, Embed, Guild, Member, Message
 from discord.ext import commands
 from discord.ui import Button
-
-from lib.duration import duration_to_timestring
-from lib.sql.sql import ModCase
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -14,11 +11,11 @@ if TYPE_CHECKING:
 def warned_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
-    case: ModCase,
+    reason: Optional[str],
 ) -> Embed:
     return Embed(
-        title=f"{bot.warn_emoji} Warned • `{case.id}`",
-        description=f"A moderator has warned you in **{ctx.guild.name if ctx.guild else ''}.**\n**Reason:** {case.description or 'No reason provided.'}",
+        title=f"{bot.warn_emoji} Warned",
+        description=f"A moderator has warned you in **{ctx.guild.name if ctx.guild else ''}.**\n**Reason:** {reason or 'No reason provided.'}",
         colour=Colour.red(),
     )
 
@@ -26,11 +23,12 @@ def warned_dm(
 def muted_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
-    case: ModCase,
+    duration: str,
+    reason: Optional[str],
 ) -> Embed:
     return Embed(
-        title=f"{bot.warn_emoji} Muted • `{case.id}`",
-        description=f"A moderator has muted you in **{ctx.guild.name if ctx.guild else ''}.**\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
+        title=f"{bot.warn_emoji} Muted",
+        description=f"A moderator has muted you in **{ctx.guild.name if ctx.guild else ''}.**\n**Duration:** {duration}\n**Reason:** {reason or 'No reason provided.'}",
         colour=Colour.red(),
     )
 
@@ -38,10 +36,9 @@ def muted_dm(
 def unmuted_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
-    case: ModCase | None,
 ) -> Embed:
     return Embed(
-        title=f"{bot.success_emoji} Unmuted{f' • `{case.id}`' if case else ''}",
+        title=f"{bot.success_emoji} Unmuted",
         description=f"A moderator has unmuted you in **{ctx.guild.name if ctx.guild else ''}!**",
         colour=Colour.green(),
     )
@@ -50,11 +47,11 @@ def unmuted_dm(
 def kicked_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
-    case: ModCase,
+    reason: Optional[str],
 ) -> Embed:
     return Embed(
-        title=f"{bot.warn_emoji} Kicked • `{case.id}`",
-        description=f"A moderator has kicked you from **{ctx.guild.name if ctx.guild else ''}.**\n**Reason:** {case.description or 'No reason provided.'}",
+        title=f"{bot.warn_emoji} Kicked",
+        description=f"A moderator has kicked you from **{ctx.guild.name if ctx.guild else ''}.**\n**Reason:** {reason or 'No reason provided.'}",
         colour=Colour.red(),
     )
 
@@ -62,11 +59,12 @@ def kicked_dm(
 def banned_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
-    case: ModCase,
+    duration: str,
+    reason: Optional[str],
 ) -> Embed:
     return Embed(
-        title=f"{bot.warn_emoji} Banned • `{case.id}`",
-        description=f"A moderator has banned you from **{ctx.guild.name if ctx.guild else ''}.**\n**Duration:** {duration_to_timestring(case.time_created, case.time_expires) if case.time_expires else 'Permanent'}\n**Reason:** {case.description or 'No reason provided.'}",
+        title=f"{bot.warn_emoji} Banned",
+        description=f"A moderator has banned you from **{ctx.guild.name if ctx.guild else ''}.**\n**Duration:** {duration}\n**Reason:** {reason or 'No reason provided.'}",
         colour=Colour.red(),
     )
 
@@ -74,10 +72,9 @@ def banned_dm(
 def unbanned_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
-    case: ModCase | None,
 ) -> Embed:
     return Embed(
-        title=f"{bot.success_emoji} Unbanned{f' • `{case.id}`' if case else ''}",
+        title=f"{bot.success_emoji} Unbanned",
         description=f"A moderator has unbanned you from **{ctx.guild.name if ctx.guild else ''}!**",
         colour=Colour.green(),
     )

@@ -420,7 +420,7 @@ class ModerationBasicCog(
                         case, dm_success, dm_error = await manager.close_case(case.id)
                     else:
                         # Just send DM
-                        embed = unmuted_dm(self.bot, member, case)
+                        embed = unmuted_dm(self.bot, member)
                         dm_success, dm_error = await send_dm(
                             bot=self.bot,
                             embed=embed,
@@ -792,7 +792,7 @@ class ModerationBasicCog(
                         case, dm_success, dm_error = await manager.close_case(case.id)
                     else:
                         # Just send DM
-                        embed = unbanned_dm(self.bot, ctx, case)
+                        embed = unbanned_dm(self.bot, ctx)
                         dm_success, dm_error = await send_dm(
                             bot=self.bot,
                             embed=embed,

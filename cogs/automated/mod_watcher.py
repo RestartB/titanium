@@ -49,6 +49,7 @@ class ModMonitorCog(commands.Cog):
                         user=after,
                         creator_user=entry.user,
                         reason=entry.reason,
+                        time_created=entry.created_at,
                         until=after.timed_out_until,
                         external=True,
                     )

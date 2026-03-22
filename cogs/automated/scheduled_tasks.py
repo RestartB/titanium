@@ -1,11 +1,11 @@
 import asyncio
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands, tasks
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from lib.classes.case_manager import GuildModCaseManager
 from lib.enums.scheduled_events import EventType
@@ -32,7 +32,10 @@ class ScheduledTasksCog(commands.Cog):
         for i in range(3):
             self.bot.loop.create_task(self.queue_worker())
 
+        self.task_fetcher.start()
+
     async def cog_unload(self) -> None:
+        self.task_fetcher.cancel()
         self.task_queue.shutdown(immediate=True)
 
     async def queue_worker(self):
@@ -43,11 +46,10 @@ class ScheduledTasksCog(commands.Cog):
             try:
                 await self.bot.wait_until_ready()
                 task = await self.task_queue.get()
-
-                async with self.waiting_tasks_lock:
-                    self.waiting_tasks.append(task.id)
             except asyncio.QueueShutDown:
                 return
+
+            self.logger.info(f"Grabbed task {task.id} from the queue")
 
             try:
                 await self.task_handler(task)
@@ -61,6 +63,8 @@ class ScheduledTasksCog(commands.Cog):
                     exc=e,
                 )
             finally:
+                self.logger.info(f"Task {task.id} complete, removing from database")
+
                 try:
                     # Remove from database if exists
                     async with get_session() as session:
@@ -120,7 +124,7 @@ class ScheduledTasksCog(commands.Cog):
             try:
                 await member.timeout(
                     discord.utils.utcnow() + timedelta(days=28),
-                    reason=f"{task.case_id} - continuing mute",
+                    reason=f"{task.case_id} - continuing perma mute",
                 )
             except Exception as e:
                 await log_error(
@@ -180,6 +184,10 @@ class ScheduledTasksCog(commands.Cog):
                     error=f"Failed to auto unban {task.user_id} in guild {guild.name} ({guild.id})",
                     exc=e,
                 )
+        else:
+            self.logger.warning(
+                f"Task {task.id} has unknown task type: {task.type} (guild: {task.guild_id})"
+            )
 
     @tasks.loop(seconds=1)
     async def task_fetcher(self) -> None:
@@ -188,9 +196,7 @@ class ScheduledTasksCog(commands.Cog):
         await self.bot.wait_until_ready()
         async with get_session() as session:
             # Fetch all tasks that are due
-            stmt = select(ScheduledTask).where(
-                ScheduledTask.time_scheduled <= func.strftime("%s", "now")
-            )
+            stmt = select(ScheduledTask).where(ScheduledTask.time_scheduled <= datetime.now())
             result = await session.execute(stmt)
             results = result.scalars().all()
 
@@ -199,7 +205,8 @@ class ScheduledTasksCog(commands.Cog):
                     if task.id in self.waiting_tasks:
                         continue
 
-                self.waiting_tasks.append(task.id)
+                    self.logger.debug(f"Adding task {task.id} to queue")
+                    self.waiting_tasks.append(task.id)
                 await self.task_queue.put(task)
 
 
