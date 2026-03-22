@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
@@ -23,7 +24,7 @@ class ScheduledTasksCog(commands.Cog):
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("tasks")
 
-        self.waiting_tasks: list[int] = []
+        self.waiting_tasks: list[uuid.UUID] = []
         self.waiting_tasks_lock = asyncio.Lock()
 
         self.task_queue: asyncio.Queue[ScheduledTask] = asyncio.Queue()
@@ -196,7 +197,9 @@ class ScheduledTasksCog(commands.Cog):
         await self.bot.wait_until_ready()
         async with get_session() as session:
             # Fetch all tasks that are due
-            stmt = select(ScheduledTask).where(ScheduledTask.time_scheduled <= datetime.now(timezone.utc))
+            stmt = select(ScheduledTask).where(
+                ScheduledTask.time_scheduled <= datetime.now(timezone.utc)
+            )
             result = await session.execute(stmt)
             results = result.scalars().all()
 

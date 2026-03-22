@@ -675,7 +675,7 @@ class GameStat(Base):
 
 class ScheduledTask(Base):
     __tablename__ = "scheduled_tasks"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type: Mapped[EventType] = MappedColumn(Enum(EventType), nullable=False)
     guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
