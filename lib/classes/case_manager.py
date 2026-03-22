@@ -309,6 +309,7 @@ class GuildModCaseManager:
         if case.type == CaseType.MUTE:
             await self.delete_scheduled_tasks_for_user(case.user_id, EventType.PERMA_MUTE_REFRESH)
             await self.delete_scheduled_tasks_for_user(case.user_id, EventType.MUTE_REFRESH)
+            await self.delete_scheduled_tasks_for_user(case.user_id, EventType.CLOSE_MUTE)
         elif case.type == CaseType.BAN:
             await self.delete_scheduled_tasks_for_user(case.user_id, EventType.UNBAN)
 
