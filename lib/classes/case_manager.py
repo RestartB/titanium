@@ -87,6 +87,8 @@ class GuildModCaseManager:
         source: CaseSource = CaseSource.MODERATION,
         external: bool = False,
     ) -> tuple[ModCase, bool, str]:
+        time_created = time_created.astimezone(timezone.utc).replace(tzinfo=None)
+
         if external:
             guild_settings = await self.bot.fetch_guild_config(self.guild.id)
 
@@ -102,7 +104,7 @@ class GuildModCaseManager:
             creator_user_id=creator_user.id,
             description=reason,
             external=external,
-            resolved=True if action == CaseType.KICK else False,
+            resolved=True if action in [CaseType.WARN, CaseType.KICK] else False,
         )
 
         if until:
@@ -110,7 +112,7 @@ class GuildModCaseManager:
         elif duration:
             case.time_expires = time_created + duration
 
-        # close old cases, this is mainly for external events
+        # close old cases
         if action == CaseType.MUTE:
             # set all previous mutes to resolved
             cases = await self.get_cases_by_user(user.id)
@@ -137,7 +139,7 @@ class GuildModCaseManager:
             await self.delete_scheduled_tasks_for_user(user.id, EventType.MUTE_REFRESH)
             await self.delete_scheduled_tasks_for_user(user.id, EventType.CLOSE_MUTE)
 
-            if duration is not None:
+            if case.time_expires:
                 # create close mute task
                 self.session.add(
                     ScheduledTask(
