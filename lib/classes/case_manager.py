@@ -202,6 +202,7 @@ class GuildModCaseManager:
                 return case, False, "Failed to fetch member for DM notification"
 
         if action == CaseType.BAN:
+            # FIXME: DM can't be sent if user isn't in server
             embed = banned_dm(
                 bot=self.bot,
                 ctx=user,
@@ -211,6 +212,7 @@ class GuildModCaseManager:
                 reason=case.description,
             )
         elif action == CaseType.KICK:
+            # FIXME: DM can't be sent if user isn't in server
             embed = kicked_dm(bot=self.bot, ctx=user, reason=case.description)
         elif action == CaseType.MUTE:
             embed = muted_dm(
@@ -365,6 +367,7 @@ class GuildModCaseManager:
                 )
                 return case, False, "Failed to fetch member for DM notification"
 
+            # FIXME: DM can't be sent if user isn't in server
             embed = unbanned_dm(self.bot, member)
             dm_success, dm_error = await send_dm(
                 bot=self.bot,

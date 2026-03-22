@@ -792,6 +792,7 @@ class ModerationBasicCog(
                         case, dm_success, dm_error = await manager.close_case(case.id)
                     else:
                         # Just send DM
+                        # FIXME: DM can't be sent if user isn't in server
                         embed = unbanned_dm(self.bot, ctx)
                         dm_success, dm_error = await send_dm(
                             bot=self.bot,
