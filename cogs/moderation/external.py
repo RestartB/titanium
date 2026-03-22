@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import discord
@@ -17,162 +18,123 @@ class ModMonitorCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
-    # Listen for mutes and unmutes
+    # Listen to server audit log for moderation events
     @commands.Cog.listener()
-    async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
+    async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry) -> None:
         if not self.bot.user:
             return
 
-        if before.id == self.bot.user.id:
+        if entry.user_id == self.bot.user.id:
             return
 
-        if before.timed_out_until != after.timed_out_until and after.is_timed_out():
-            # Grab logs
-            logs = after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update)
-
-            async for entry in logs:
-                if not entry.target or not self.bot.user or not entry.user_id or not entry.user:
-                    break
-
-                if entry.target.id != after.id:
-                    break
-
-                if entry.user_id == self.bot.user.id:
-                    break
-
-                async with get_session() as session:
-                    case_manager = case_managers.GuildModCaseManager(self.bot, after.guild, session)
-
-                    # Create a case
-                    await case_manager.create_case(
-                        action=CaseType.MUTE,
-                        user=after,
-                        creator_user=entry.user,
-                        reason=entry.reason,
-                        time_created=entry.created_at,
-                        until=after.timed_out_until,
-                        external=True,
-                    )
-        elif before.is_timed_out() and not after.is_timed_out():
-            # Grab logs
-            logs = after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update)
-
-            async for entry in logs:
-                if not entry.target or not self.bot.user or not entry.user_id or not entry.user:
-                    break
-
-                if entry.target.id != after.id:
-                    break
-
-                if entry.user_id == self.bot.user.id:
-                    break
-
-                async with get_session() as session:
-                    case_manager = case_managers.GuildModCaseManager(self.bot, after.guild, session)
-
-                    # Close all open mute cases for this user
-                    cases = await case_manager.get_cases_by_user(after.id)
-                    mute_cases = [c for c in cases if c.type == CaseType.MUTE and not c.resolved]
-
-                    if not mute_cases:
-                        return
-
-                    # Close cases
-                    for mute_case in mute_cases:
-                        await case_manager.close_case(mute_case.id)
-
-    # Listen for kicks
-    @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member) -> None:
-        if not self.bot.user:
-            return
-
-        if self.bot.user and member.id == self.bot.user.id:
-            return
-
-        # Grab logs
-        logs = member.guild.audit_logs(limit=1, action=discord.AuditLogAction.kick)
-        async for entry in logs:
-            if not entry.target or not self.bot.user or not entry.user_id or not entry.user:
+        # FIXME: entry.target can be discord.Object
+        if entry.action == discord.AuditLogAction.member_update:
+            if (
+                not entry.target
+                or not isinstance(entry.target, discord.Member)
+                or not self.bot.user
+                or not entry.user_id
+                or not entry.user
+            ):
                 return
 
-            if entry.target.id != member.id:
-                return
+            # Check if the timeout status was specifically changed in this event
+            if hasattr(entry.after, "timed_out_until"):
+                timeout_after: datetime | None = entry.after.timed_out_until
 
-            if entry.user_id == self.bot.user.id:
+                if timeout_after is not None:
+                    # Handle new mutes / updated mutes
+                    async with get_session() as session:
+                        case_manager = case_managers.GuildModCaseManager(
+                            self.bot, entry.guild, session
+                        )
+
+                        # Create a case
+                        await case_manager.create_case(
+                            action=CaseType.MUTE,
+                            user=entry.target,
+                            creator_user=entry.user,
+                            reason=entry.reason,
+                            time_created=entry.created_at,
+                            until=timeout_after,
+                            external=True,
+                        )
+                else:
+                    # Handle unmutes
+                    async with get_session() as session:
+                        case_manager = case_managers.GuildModCaseManager(
+                            self.bot, entry.guild, session
+                        )
+
+                        # Close all open mute cases for this user
+                        cases = await case_manager.get_cases_by_user(entry.target.id)
+                        mute_cases = [
+                            c for c in cases if c.type == CaseType.MUTE and not c.resolved
+                        ]
+
+                        if not mute_cases:
+                            return
+
+                        # Close cases
+                        for mute_case in mute_cases:
+                            await case_manager.close_case(mute_case.id)
+        elif entry.action == discord.AuditLogAction.kick:
+            if (
+                not entry.target
+                or not isinstance(entry.target, (discord.User, discord.Member))
+                or not self.bot.user
+                or not entry.user_id
+                or not entry.user
+            ):
                 return
 
             async with get_session() as session:
-                case_manager = case_managers.GuildModCaseManager(self.bot, member.guild, session)
+                case_manager = case_managers.GuildModCaseManager(self.bot, entry.guild, session)
 
                 # Create a case
                 await case_manager.create_case(
                     action=CaseType.KICK,
-                    user=member,
+                    user=entry.target,
                     creator_user=entry.user,
                     reason=entry.reason,
                     external=True,
                 )
-
-    # Listen for bans
-    @commands.Cog.listener()
-    async def on_member_ban(self, guild: discord.Guild, user: discord.User) -> None:
-        if not self.bot.user:
-            return
-
-        if self.bot.user and user.id == self.bot.user.id:
-            return
-
-        # Grab logs
-        logs = guild.audit_logs(limit=1, action=discord.AuditLogAction.ban)
-        async for entry in logs:
-            if not entry.target or not self.bot.user or not entry.user_id or not entry.user:
-                return
-
-            if entry.target.id != user.id:
-                return
-
-            if entry.user_id == self.bot.user.id:
+        elif entry.action == discord.AuditLogAction.ban:
+            if (
+                not entry.target
+                or not isinstance(entry.target, (discord.User, discord.Member))
+                or not self.bot.user
+                or not entry.user_id
+                or not entry.user
+            ):
                 return
 
             async with get_session() as session:
-                case_manager = case_managers.GuildModCaseManager(self.bot, guild, session)
+                case_manager = case_managers.GuildModCaseManager(self.bot, entry.guild, session)
 
                 # Create a case
                 await case_manager.create_case(
                     action=CaseType.BAN,
-                    user=user,
+                    user=entry.target,
                     creator_user=entry.user,
                     reason=entry.reason,
                     external=True,
                 )
-
-    # Listen for unbans
-    @commands.Cog.listener()
-    async def on_member_unban(self, guild: discord.Guild, user: discord.User) -> None:
-        if not self.bot.user:
-            return
-
-        if self.bot.user and user.id == self.bot.user.id:
-            return
-
-        # Grab logs
-        logs = guild.audit_logs(limit=1, action=discord.AuditLogAction.unban)
-        async for entry in logs:
-            if not entry.target or not self.bot.user or not entry.user_id or not entry.user:
-                return
-
-            if entry.target.id != user.id:
-                return
-
-            if entry.user_id == self.bot.user.id:
+        elif entry.action == discord.AuditLogAction.unban:
+            if (
+                not entry.target
+                or not isinstance(entry.target.id, int)
+                or not self.bot.user
+                or not entry.user_id
+                or not entry.user
+            ):
                 return
 
             async with get_session() as session:
-                case_manager = case_managers.GuildModCaseManager(self.bot, guild, session)
+                case_manager = case_managers.GuildModCaseManager(self.bot, entry.guild, session)
 
                 # Close all open ban cases for this user
-                cases = await case_manager.get_cases_by_user(user.id)
+                cases = await case_manager.get_cases_by_user(entry.target.id)
                 ban_cases = [c for c in cases if c.type == CaseType.BAN and not c.resolved]
 
                 if not ban_cases:
