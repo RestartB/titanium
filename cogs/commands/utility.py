@@ -1,6 +1,5 @@
 import asyncio
 import base64
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 import humanize
@@ -122,10 +121,10 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
 
         await ctx.reply(embed=embed, file=file)
 
-    @commands.hybrid_command(name="file-info", description="Get info of a file.")
+    @commands.hybrid_command(name="file-info", description="Get basic info about a file.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.describe(file="The file attachment to analyse.")
+    @app_commands.describe(file="The file to get info from.")
     async def file_info(self, ctx: commands.Context["TitaniumBot"], *, file: Attachment) -> None:
         """Get detailed information of a file."""
         await ctx.defer()
@@ -137,14 +136,11 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
             title="File Information",
         )
         embed.set_thumbnail(url=file.url)
-        embed.add_field(name="ID", value=f"`{file.id}`")
-        embed.add_field(name="File Name", value=f"`{file.filename}`")
-        embed.add_field(name="File Size", value=f"`{size_hr}`")
+
+        embed.add_field(name="Name", value=f"`{file.filename}`")
+        embed.add_field(name="Size", value=f"`{size_hr}`")
         embed.add_field(name="Content Type", value=f"`{file.content_type}`" or "`Unknown`")
-        embed.add_field(name="URL", value=f"[Click here]({file.url})")
-        embed.add_field(name="Proxy URL", value=f"[Click here]({file.proxy_url})")
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-        embed.timestamp = datetime.now()
 
         await ctx.reply(embed=embed)
 

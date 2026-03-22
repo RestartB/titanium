@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 import discord
@@ -196,7 +196,7 @@ class ScheduledTasksCog(commands.Cog):
         await self.bot.wait_until_ready()
         async with get_session() as session:
             # Fetch all tasks that are due
-            stmt = select(ScheduledTask).where(ScheduledTask.time_scheduled <= datetime.now())
+            stmt = select(ScheduledTask).where(ScheduledTask.time_scheduled <= datetime.now(timezone.utc))
             result = await session.execute(stmt)
             results = result.scalars().all()
 

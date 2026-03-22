@@ -3,7 +3,7 @@ import logging
 import re
 from asyncio import Lock
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Literal, Optional, overload
 from urllib.parse import quote
 
@@ -39,7 +39,7 @@ class TitaniumSpotifyClient:
                     return await self.__fetch_access_token()
 
                 if (
-                    datetime.now() - token_entry.time_added
+                    datetime.now(timezone.utc) - token_entry.time_added
                 ).total_seconds() >= token_entry.expires_in:
                     logging.debug("Token expired, requesting new token")
                     await session.delete(token_entry)

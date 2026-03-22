@@ -586,9 +586,11 @@ class ModCase(Base):
     guild_id: Mapped[int] = MappedColumn(BigInteger)
     user_id: Mapped[int] = MappedColumn(BigInteger)
     creator_user_id: Mapped[int] = MappedColumn(BigInteger)
-    time_created: Mapped[datetime] = MappedColumn(DateTime, server_default=text("NOW()"))
-    time_updated: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
-    time_expires: Mapped[datetime] = MappedColumn(DateTime, nullable=True)
+    time_created: Mapped[datetime] = MappedColumn(
+        DateTime(timezone=True), server_default=text("NOW()")
+    )
+    time_updated: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=True)
+    time_expires: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=True)
     description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
     external: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     resolved: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
@@ -646,7 +648,9 @@ class ModCaseComment(Base):
     case_id: Mapped[str] = MappedColumn(String(length=8), ForeignKey("mod_cases.id"))
     user_id: Mapped[int] = MappedColumn(BigInteger)
     comment: Mapped[str] = MappedColumn(String(length=512))
-    time_created: Mapped[datetime] = MappedColumn(DateTime, server_default=text("NOW()"))
+    time_created: Mapped[datetime] = MappedColumn(
+        DateTime(timezone=True), server_default=text("NOW()")
+    )
     case: Mapped["ModCase"] = relationship("ModCase", back_populates="comments", uselist=False)
 
     async def edit_comment(self, content: str) -> ModCaseComment | None:
@@ -685,7 +689,7 @@ class ScheduledTask(Base):
     case: Mapped["ModCase"] = relationship(
         "ModCase", back_populates="scheduled_tasks", uselist=False
     )
-    time_scheduled: Mapped[datetime] = MappedColumn(DateTime, index=True)
+    time_scheduled: Mapped[datetime] = MappedColumn(DateTime(timezone=True), index=True)
 
 
 class ErrorLog(Base):
@@ -695,7 +699,9 @@ class ErrorLog(Base):
     module: Mapped[str] = MappedColumn(String(length=100))
     error: Mapped[str] = MappedColumn(String(length=512))
     details: Mapped[str] = MappedColumn(String(length=1024), nullable=True)
-    time_occurred: Mapped[datetime] = MappedColumn(DateTime, server_default=text("NOW()"))
+    time_occurred: Mapped[datetime] = MappedColumn(
+        DateTime(timezone=True), server_default=text("NOW()")
+    )
 
 
 class OptOutIDs(Base):
@@ -706,7 +712,9 @@ class OptOutIDs(Base):
 class SpotifyToken(Base):
     __tablename__ = "spotify_tokens"
     token: Mapped[str] = MappedColumn(String, primary_key=True)
-    time_added: Mapped[datetime] = MappedColumn(DateTime, server_default=text("NOW()"))
+    time_added: Mapped[datetime] = MappedColumn(
+        DateTime(timezone=True), server_default=text("NOW()")
+    )
     expires_in: Mapped[int] = MappedColumn(Integer)
 
 

@@ -81,13 +81,16 @@ class GuildModCaseManager:
         user: discord.User | discord.Member,
         creator_user: discord.User | discord.Member | discord.ClientUser,
         reason: Optional[str],
-        time_created: datetime = datetime.now(),
+        time_created: Optional[datetime] = None,
         duration: Annotated[timedelta, DurationConverter] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
         external: bool = False,
     ) -> tuple[ModCase, bool, str]:
-        time_created = time_created.astimezone(timezone.utc).replace(tzinfo=None)
+        if time_created:
+            time_created = time_created.astimezone(timezone.utc)
+        else:
+            time_created = datetime.now(timezone.utc)
 
         if external:
             guild_settings = await self.bot.fetch_guild_config(self.guild.id)
@@ -108,7 +111,7 @@ class GuildModCaseManager:
         )
 
         if until:
-            case.time_expires = until.astimezone(timezone.utc).replace(tzinfo=None)
+            case.time_expires = until.astimezone(timezone.utc)
         elif duration:
             case.time_expires = time_created + duration
 
@@ -120,7 +123,7 @@ class GuildModCaseManager:
 
             for mute_case in mute_cases:
                 mute_case.resolved = True
-                mute_case.time_updated = datetime.now()
+                mute_case.time_updated = datetime.now(timezone.utc)
         elif action == CaseType.BAN:
             # set all previous bans to resolved
             cases = await self.get_cases_by_user(user.id)
@@ -128,10 +131,10 @@ class GuildModCaseManager:
 
             for ban_case in ban_cases:
                 ban_case.resolved = True
-                ban_case.time_updated = datetime.now()
+                ban_case.time_updated = datetime.now(timezone.utc)
 
         self.session.add(case)
-        await self.session.commit()
+        await self.session.flush()
 
         if action == CaseType.MUTE:
             # Delete old mute tasks
@@ -174,7 +177,6 @@ class GuildModCaseManager:
                     time_scheduled=time_created + timedelta(days=27),
                 )
             )
-            await self.session.commit()
         elif duration and action == CaseType.BAN:
             # Schedule unban
             self.session.add(
@@ -186,7 +188,6 @@ class GuildModCaseManager:
                     time_scheduled=time_created + duration,
                 )
             )
-            await self.session.commit()
 
         if not isinstance(user, discord.Member):
             try:
@@ -290,11 +291,10 @@ class GuildModCaseManager:
             case.resolved = True
 
         if duration:
-            case.time_expires = datetime.now() + duration
+            case.time_expires = datetime.now(timezone.utc) + duration
 
-        case.time_updated = datetime.now()
+        case.time_updated = datetime.now(timezone.utc)
 
-        await self.session.commit()
         return case
 
     async def close_case(self, case_id: str) -> tuple[ModCase, bool, str]:
@@ -304,8 +304,7 @@ class GuildModCaseManager:
             raise CaseNotFoundException("Case not found")
 
         case.resolved = True
-        case.time_updated = datetime.now()
-        await self.session.commit()
+        case.time_updated = datetime.now(timezone.utc)
 
         if case.type == CaseType.MUTE:
             await self.delete_scheduled_tasks_for_user(case.user_id, EventType.PERMA_MUTE_REFRESH)
@@ -383,7 +382,6 @@ class GuildModCaseManager:
             await self.close_case(case_id)
 
         await self.session.delete(case)
-        await self.session.commit()
 
         guild_logger = GuildLogger(self.bot, self.guild)
         await guild_logger.titanium_case_delete(case)
@@ -397,7 +395,6 @@ class GuildModCaseManager:
                 ScheduledTask.type == type,
             )
         )
-        await self.session.commit()
 
     async def _schedule_mute_refreshes(self, case: ModCase, duration: timedelta) -> None:
         """Schedule refresh tasks for mutes longer than 28 days"""
@@ -409,10 +406,8 @@ class GuildModCaseManager:
         period_duration = 28 * 24 * 60 * 60  # 28 days
         refresh_interval = 27 * 24 * 60 * 60  # 27 days
 
-        current_time = datetime.now()
-
         # First refresh after 27 days
-        refresh_time = current_time + timedelta(seconds=refresh_interval)
+        refresh_time = case.time_created + timedelta(seconds=refresh_interval)
         remaining_seconds = total_seconds - period_duration
 
         while remaining_seconds > 0:
@@ -436,5 +431,3 @@ class GuildModCaseManager:
             # Schedule next refresh 27 days after
             refresh_time += timedelta(seconds=refresh_interval)
             remaining_seconds -= period_duration
-
-        await self.session.commit()

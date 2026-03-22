@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import discord
@@ -82,7 +82,7 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
             f"**Feedback Content:** {self.feedback_content.component.value}",
             colour=Colour.light_grey(),
         )
-        e.timestamp = datetime.now()
+        e.timestamp = datetime.now(timezone.utc)
         return e
 
     async def _send_notification(self, webhook_url: str) -> bool:

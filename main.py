@@ -390,12 +390,12 @@ class TitaniumBot(commands.Bot):
 
     async def on_resumed(self):
         self.connected = True
-        self.last_resume = datetime.datetime.now()
+        self.last_resume = datetime.datetime.now(datetime.timezone.utc)
 
     async def on_disconnect(self):
         if self.connected:
             self.connected = False
-            self.last_disconnect = datetime.datetime.now()
+            self.last_disconnect = datetime.datetime.now(datetime.timezone.utc)
 
 
 async def get_prefix(bot: TitaniumBot, message: discord.Message):
@@ -596,7 +596,7 @@ if __name__ == "__main__":
         if token is None:
             raise discord.LoginFailure("No bot token provided in .env file.")
 
-        bot.connect_time = datetime.datetime.now()
+        bot.connect_time = datetime.datetime.now(datetime.timezone.utc)
         bot.last_disconnect = None
         bot.last_resume = None
 
