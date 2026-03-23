@@ -1101,7 +1101,7 @@ class GuildLogger:
             return
 
         if event.cached_message and embed.description:
-            embed.description += f"\n**Author:** {event.cached_message.author.mention} (`{event.cached_message.author.id}`)\nTotal Attachments: `{len(event.cached_message.attachments)}`"
+            embed.description += f"\n**Author:** {event.cached_message.author.mention} (`{event.cached_message.author.id}`)\n**Total Attachments:** `{len(event.cached_message.attachments)}`"
 
             if event.cached_message.content:
                 embed.add_field(
