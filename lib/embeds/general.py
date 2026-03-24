@@ -27,3 +27,10 @@ def cancelled(bot: TitaniumBot) -> Embed:
         title=f"{bot.error_emoji} Cancelled.",
         colour=Colour.red(),
     )
+
+
+def please_wait(bot: TitaniumBot) -> Embed:
+    return Embed(
+        title=f"{bot.loading_emoji} Please wait...",
+        colour=Colour.light_grey(),
+    )

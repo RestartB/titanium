@@ -6,7 +6,7 @@ from discord.ui import Button, View
 
 import lib.embeds.cases as case_embeds
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
-from lib.embeds.general import cancelled, guild_only
+from lib.embeds.general import cancelled, guild_only, please_wait
 from lib.helpers.global_alias import add_global_aliases, global_alias
 from lib.helpers.hybrid_adapters import _defer, _stop_loading, defer
 from lib.sql.sql import ModCase, get_session
@@ -326,11 +326,128 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 await _stop_loading(ctx)
                 await view.wait()
 
+                if not view.interaction:
+                    raise Exception("Interaction is missing")
+
+                await view.interaction.response.defer()
+
                 if not view.value:
-                    return await msg.edit(embed=cancelled(self.bot), view=None)
+                    return await view.interaction.edit_original_response(
+                        embed=cancelled(self.bot), view=None
+                    )
 
                 await case_manager.delete_case(case_id)
                 await msg.edit(embed=case_embeds.case_deleted(self.bot, case_id), view=None)
+
+    @case_group.command(name="clean", description="Delete all resolved cases for a user.")
+    @global_alias("cleancases")
+    @global_alias("deletecases")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @app_commands.describe(user="The user to clean.")
+    async def clean_cases(self, ctx: commands.Context["TitaniumBot"], user: User) -> None | Message:
+        await ctx.defer()
+
+        if not ctx.guild or not self.bot.user:
+            return
+
+        embed = Embed(
+            title=f"{self.bot.warn_emoji} Are you sure?",
+            description=f"This will delete **all resolved cases** on record for {user.mention} (@{user.name}). "
+            "Open cases will not be deleted. This action **cannot be undone!**",
+            colour=Colour.orange(),
+        )
+
+        view = ConfirmView(self.bot)
+        msg = await ctx.reply(
+            embed=embed,
+            view=view,
+        )
+
+        await view.wait()
+
+        if not view.interaction:
+            return await msg.edit(embed=cancelled(self.bot), view=None)
+
+        await view.interaction.response.defer()
+
+        if not view.value:
+            return await view.interaction.edit_original_response(
+                embed=cancelled(self.bot), view=None
+            )
+
+        await view.interaction.edit_original_response(embed=please_wait(self.bot), view=None)
+
+        async with get_session() as session:
+            case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
+            result = await case_manager.clean_user_cases(user.id)
+
+            embed = Embed(
+                title=f"{self.bot.success_emoji} Done",
+                description=f"**{result['completed']}** cases deleted.",
+                colour=Colour.green(),
+            )
+
+            if result["errors"] and embed.description:
+                embed.description += f"\n**{result['errors']}** cases failed to delete."
+
+            await view.interaction.edit_original_response(embed=embed, view=None)
+
+    @case_group.command(
+        name="delete-all",
+        description="Delete all resolved cases for the server.",
+        aliases=["deleteall"],
+    )
+    @global_alias("deleteallcases")
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    async def delete_all_cases(self, ctx: commands.Context["TitaniumBot"]) -> None | Message:
+        await ctx.defer()
+
+        if not ctx.guild or not self.bot.user:
+            return
+
+        embed = Embed(
+            title=f"{self.bot.warn_emoji} Are you sure?",
+            description=f"This will delete **all resolved cases** on record for this server (`{ctx.guild.name}`). "
+            "Open cases will not be deleted. This action **cannot be undone!**",
+            colour=Colour.orange(),
+        )
+
+        view = ConfirmView(self.bot)
+        msg = await ctx.reply(
+            embed=embed,
+            view=view,
+        )
+
+        await view.wait()
+
+        if not view.interaction:
+            return await msg.edit(embed=cancelled(self.bot), view=None)
+
+        await view.interaction.response.defer()
+
+        if not view.value:
+            return await view.interaction.edit_original_response(
+                embed=cancelled(self.bot), view=None
+            )
+
+        await view.interaction.edit_original_response(embed=please_wait(self.bot), view=None)
+
+        async with get_session() as session:
+            case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
+            result = await case_manager.delete_all_resolved_cases()
+
+            embed = Embed(
+                title=f"{self.bot.warn_emoji if result['errors'] else self.bot.success_emoji} Done{' with errors' if result['errors'] else ''}",
+                description=f"**{result['completed']}** cases deleted.",
+                colour=Colour.orange() if result["errors"] else Colour.green(),
+            )
+
+            if result["errors"] and embed.description:
+                embed.description += f"\n**{result['errors']}** cases failed to delete."
+
+            await view.interaction.edit_original_response(embed=embed, view=None)
 
 
 async def setup(bot: TitaniumBot) -> None:

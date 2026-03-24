@@ -1,6 +1,7 @@
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Annotated, Optional, Sequence
+from typing import TYPE_CHECKING, Annotated, Literal, Optional, Sequence
 
 import discord
 from discord import Guild
@@ -14,6 +15,7 @@ from lib.embeds.dm_notifs import banned_dm, kicked_dm, muted_dm, unbanned_dm, un
 from lib.enums.moderation import CaseSource, CaseType
 from lib.enums.scheduled_events import EventType
 from lib.helpers.cache import get_or_fetch_member
+from lib.helpers.log_error import log_error
 from lib.helpers.send_dm import send_dm
 from lib.sql.sql import ModCase, ScheduledTask
 
@@ -36,12 +38,11 @@ class GuildModCaseManager:
         self.session = session
         self.logger = logging.getLogger("cases")
 
-    async def get_cases(self) -> Sequence[ModCase]:
-        stmt = (
-            select(ModCase)
-            .where(ModCase.guild_id == self.guild.id)
-            .options(selectinload(ModCase.comments))
-        )
+    async def get_cases(self, load_comments: bool = True) -> Sequence[ModCase]:
+        stmt = select(ModCase).where(ModCase.guild_id == self.guild.id)
+
+        if load_comments:
+            stmt = stmt.options(selectinload(ModCase.comments))
 
         result = await self.session.execute(stmt)
         cases = result.scalars().all()
@@ -402,6 +403,59 @@ class GuildModCaseManager:
 
         guild_logger = GuildLogger(self.bot, self.guild)
         await guild_logger.titanium_case_delete(case)
+
+    async def clean_user_cases(self, user_id: int) -> dict[Literal["completed", "errors"], int]:
+        await asyncio.sleep(10)
+        cases = await self.get_cases_by_user(user_id)
+        result: dict[Literal["completed", "errors"], int] = {"completed": 0, "errors": 0}
+
+        if not cases:
+            return result
+
+        for case in cases:
+            if not case.resolved:
+                continue
+
+            try:
+                await self.delete_case(case.id)
+                result["completed"] += 1
+            except Exception as e:
+                await log_error(
+                    bot=self.bot,
+                    module="Moderation",
+                    guild_id=self.guild.id,
+                    error=f"Failed to delete case {case.id} ({case.user_id})",
+                    exc=e,
+                )
+                result["errors"] += 1
+
+        return result
+
+    async def delete_all_resolved_cases(self) -> dict[Literal["completed", "errors"], int]:
+        cases = await self.get_cases()
+        result: dict[Literal["completed", "errors"], int] = {"completed": 0, "errors": 0}
+
+        if not cases:
+            return result
+
+        for case in cases:
+            if not case.resolved:
+                continue
+
+            try:
+                await self.delete_case(case.id)
+                result["completed"] += 1
+            except Exception as e:
+                await log_error(
+                    bot=self.bot,
+                    module="Moderation",
+                    guild_id=self.guild.id,
+                    error=f"Failed to delete case {case.id} ({case.user_id})",
+                    exc=e,
+                )
+                result["errors"] += 1
+
+        return result
 
     async def delete_scheduled_tasks_for_user(self, user_id: int, type: EventType) -> None:
         """Delete scheduled tasks for a user of a specific type"""
