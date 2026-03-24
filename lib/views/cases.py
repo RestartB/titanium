@@ -172,7 +172,7 @@ class CommentPageContainer(discord.ui.Container):
         buttons = discord.ui.ActionRow()
 
         if show_case_button:
-            buttons.add_item(ViewCaseButton(case=case))
+            buttons.add_item(ViewCaseButton(case=case, bot=bot))
 
         buttons.add_item(
             discord.ui.Button(
@@ -186,8 +186,8 @@ class CommentPageContainer(discord.ui.Container):
 
 
 class ViewCaseButton(discord.ui.Button):
-    def __init__(self, case: ModCase):
-        super().__init__(label="View case", emoji="ℹ️")
+    def __init__(self, case: ModCase, bot: TitaniumBot):
+        super().__init__(label="View case", emoji=bot.info_emoji)
         self.case = case
 
     async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
