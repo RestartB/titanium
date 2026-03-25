@@ -364,6 +364,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             view=view,
         )
 
+        await _stop_loading(ctx)
         await view.wait()
 
         if not view.interaction:
@@ -420,6 +421,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             view=view,
         )
 
+        await _stop_loading(ctx)
         await view.wait()
 
         if not view.interaction:
