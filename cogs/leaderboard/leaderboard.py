@@ -54,7 +54,7 @@ class LeaderboardCog(commands.Cog):
     # Message event
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        if not message.guild or message.author.bot:
+        if not message.guild or message.author.bot or message.is_system():
             return
 
         if message.author.id in self.bot.opt_out:
@@ -375,7 +375,10 @@ class LeaderboardCog(commands.Cog):
                 title="Level Info",
                 colour=discord.Colour.light_grey(),
             )
-            embed.add_field(name="Level", value=str(user_stats.level), inline=True)
+
+            if guild_settings.leaderboard_settings.levels:
+                embed.add_field(name="Level", value=str(user_stats.level), inline=True)
+
             embed.add_field(name="XP", value=str(user_stats.xp), inline=True)
 
             embed.set_author(
