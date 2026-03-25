@@ -109,7 +109,7 @@ class GuildModCaseManager:
             creator_user_id=creator_user.id,
             description=reason,
             external=external,
-            resolved=True if action in [CaseType.WARN, CaseType.KICK] else False,
+            resolved=action == CaseType.KICK,
         )
 
         if until:
