@@ -187,6 +187,7 @@ class FireboardCog(commands.Cog):
                     discord.abc.PrivateChannel,
                 ),
             )
+            or msg_channel.nsfw
         ):
             self.logger.debug("Ignoring reaction")
             return
