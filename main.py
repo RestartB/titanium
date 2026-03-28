@@ -28,7 +28,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from rapidfuzz import fuzz, process, utils
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
@@ -56,7 +56,10 @@ from lib.sql.sql import (  # noqa: E402
     GuildPrefixes,
     GuildServerCounterSettings,
     GuildSettings,
+    LeaderboardUserStats,
+    ModCase,
     OptOutIDs,
+    ScheduledTask,
     get_session,
     init_db,
 )
@@ -189,6 +192,7 @@ class TitaniumBot(commands.Bot):
             )
             result = await session.execute(stmt)
             config = result.scalar()
+
             if config:
                 self.guild_configs[config.guild_id] = config
 
@@ -293,17 +297,42 @@ class TitaniumBot(commands.Bot):
         db_logger.info(f"Guild {guild_id} initialized.")
         return self.guild_configs.get(guild_id)
 
-    async def fetch_guild_config(self, guild_id: int) -> GuildSettings | None:
+    async def fetch_guild_config(
+        self, guild_id: int, create_config: bool = True
+    ) -> GuildSettings | None:
         guild_settings = self.guild_configs.get(guild_id)
 
         if not guild_settings:
             await self.refresh_guild_config_cache(guild_id)
             guild_settings = self.guild_configs.get(guild_id)
 
-        if not guild_settings:
+        if not guild_settings and create_config:
             guild_settings = await self.init_guild(guild_id)
 
         return guild_settings
+
+    async def delete_guild_config(self, guild_id: int) -> None:
+        async with get_session() as session:
+            stmt = delete(GuildSettings).where(GuildSettings.guild_id == guild_id)
+            await session.execute(stmt)
+
+            stmt = delete(GuildPrefixes).where(GuildPrefixes.guild_id == guild_id)
+            await session.execute(stmt)
+
+            stmt = delete(GuildLimits).where(GuildLimits.id == guild_id)
+            await session.execute(stmt)
+
+            stmt = delete(AvailableWebhook).where(AvailableWebhook.guild_id == guild_id)
+            await session.execute(stmt)
+
+            stmt = delete(LeaderboardUserStats).where(LeaderboardUserStats.guild_id == guild_id)
+            await session.execute(stmt)
+
+            stmt = delete(ModCase).where(ModCase.guild_id == guild_id)
+            await session.execute(stmt)
+
+            stmt = delete(ScheduledTask).where(ScheduledTask.guild_id == guild_id)
+            await session.execute(stmt)
 
     async def setup_hook(self):
         await init_db()

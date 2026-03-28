@@ -30,6 +30,7 @@ class ModuleModel(BaseModel):
 
 class SettingsModel(BaseModel):
     loading_reaction: bool
+    delete_after_3_days: bool
 
 
 class GuildSettingsModel(BaseModel):

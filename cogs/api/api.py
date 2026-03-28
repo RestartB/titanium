@@ -882,6 +882,7 @@ class APICog(commands.Cog):
                 },
                 "settings": {
                     "loading_reaction": config.loading_reaction,
+                    "delete_after_3_days": config.delete_after_3_days,
                 },
                 "prefixes": prefixes.prefixes,
                 "permissions": {
