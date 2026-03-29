@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
@@ -14,6 +15,8 @@ if TYPE_CHECKING:
 class DataRetention(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
+        self.logger = logging.getLogger("db")
+
         self.left_server_check.start()
 
     def cog_unload(self) -> None:
@@ -33,8 +36,14 @@ class DataRetention(commands.Cog):
 
                 # delete config or set leaver date
                 if server.delete_after_3_days:
+                    self.logger.info(
+                        f"Left server while bot is offline - {server.guild_id}. Setting leave date."
+                    )
                     server.leave_date = datetime.now(timezone.utc)
                 else:
+                    self.logger.info(
+                        f"Left server while bot is offline - {server.guild_id}. Deleting config."
+                    )
                     await self.bot.delete_guild_config(guild_id=server.guild_id)
 
     # Listen for Titanium rejoining servers
@@ -44,6 +53,7 @@ class DataRetention(commands.Cog):
             settings = await session.get(GuildSettings, guild.id)
 
             if settings and settings.leave_date:
+                self.logger.info(f"Rejoined server - {guild.id}. Clearing leave date.")
                 settings.leave_date = None
 
     # Listen for Titanium leaving servers
@@ -63,8 +73,10 @@ class DataRetention(commands.Cog):
                 if not settings:
                     return
 
+                self.logger.info(f"Left server - {config.guild_id}. Setting leave date.")
                 settings.leave_date = datetime.now(timezone.utc)
         else:
+            self.logger.info(f"Left server - {config.guild_id}. Deleting config.")
             await self.bot.delete_guild_config(guild_id=guild.id)
 
     # Check for old servers
@@ -82,9 +94,11 @@ class DataRetention(commands.Cog):
             for server in old_servers:
                 if self.bot.get_guild(server.guild_id):
                     # skip if we are still in the server
+                    self.logger.info(f"Rejoined server {server.guild_id}. Clearing leave date.")
                     server.leave_date = None
                     continue
 
+                self.logger.info(f"3 days passed for server {server.guild_id}. Deleting config.")
                 await self.bot.delete_guild_config(guild_id=server.guild_id)
 
 

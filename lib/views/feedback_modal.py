@@ -10,6 +10,9 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+LOGGER = logging.getLogger("feedback")
+
+
 class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
     feedback_type = discord.ui.Label(
         text="Feedback Type",
@@ -47,7 +50,7 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
                 title=f"{str(interaction.client.error_emoji)} Unavailable",
                 description="Sending feedback is currently unavailable, please try again later.",
             )
-            logging.error("The feedback webhook url is not in the .env file")
+            LOGGER.error("The feedback webhook url is not in the .env file")
             return await interaction.followup.send(embed=e, ephemeral=True)
 
         is_success = await self._send_notification(webhook_url)
@@ -99,5 +102,5 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
             )
             return True
         except Exception as e:
-            logging.error("Failed to send feedback:", exc_info=e)
+            LOGGER.error("Failed to send feedback:", exc_info=e)
             return False

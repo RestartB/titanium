@@ -74,8 +74,8 @@ init_logger: logging.Logger = logging.getLogger("init")
 cache_logger: logging.Logger = logging.getLogger("cache")
 db_logger: logging.Logger = logging.getLogger("db")
 
-logging.info("Welcome to Titanium - v2 Development Version")
-logging.info("https://github.com/restartb/titanium")
+init_logger.info("Welcome to Titanium - v2 Development Version")
+init_logger.info("https://github.com/restartb/titanium")
 
 
 # titanium needs the message content intent and members intent to function
@@ -627,7 +627,7 @@ if __name__ == "__main__":
         asyncio.run(migrate_v1_to_v2(bot, init_db))
         sys.exit(0)
 
-    logging.info("Starting Titanium bot...")
+    init_logger.info("Starting Titanium bot...")
     try:
         token = os.getenv("BOT_TOKEN")
 
@@ -640,6 +640,6 @@ if __name__ == "__main__":
 
         bot.run(token, log_handler=None)
     except discord.LoginFailure:
-        logging.error("Invalid bot token provided. Please check your .env file.")
+        init_logger.error("Invalid bot token provided. Please check your .env file.")
     except Exception as e:
-        logging.error("An error occurred while starting the bot", exc_info=e)
+        init_logger.error("An error occurred while starting the bot", exc_info=e)

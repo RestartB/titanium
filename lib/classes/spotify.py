@@ -17,6 +17,7 @@ from lib.sql.sql import SpotifyToken, get_session
 
 class TitaniumSpotifyClient:
     SPOTIFY_URL_REGEX = r"https://open\.spotify\.com/(track|artist|album)/([a-zA-Z0-9]{22})"
+    LOGGER = logging.getLogger("spot")
 
     def __init__(self, client_id: str, client_secret: str) -> None:
         self.SPOTIFY_API_BASE = "https://api.spotify.com/v1"
@@ -35,17 +36,17 @@ class TitaniumSpotifyClient:
                 token_entry = result.scalar_one_or_none()
 
                 if not token_entry:
-                    logging.debug("Requesting new access token")
+                    self.LOGGER.debug("Requesting new access token")
                     return await self.__fetch_access_token()
 
                 if (
                     datetime.now(timezone.utc) - token_entry.time_added
                 ).total_seconds() >= token_entry.expires_in:
-                    logging.debug("Token expired, requesting new token")
+                    self.LOGGER.debug("Token expired, requesting new token")
                     await session.delete(token_entry)
                     return await self.__fetch_access_token()
 
-            logging.debug("Token is valid")
+            self.LOGGER.debug("Token is valid")
             return token_entry.token
 
     async def __fetch_access_token(self) -> str:
@@ -68,7 +69,7 @@ class TitaniumSpotifyClient:
             )
             session.add(token_entry)
 
-        logging.debug("Fetched token from Spotify")
+        self.LOGGER.debug("Fetched token from Spotify")
         return token_json["access_token"]
 
     @overload

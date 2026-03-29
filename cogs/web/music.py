@@ -22,6 +22,8 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+# INFO: a lot of commands here are ported from v1 and the code is bad
+# these could probably do with a rewrite at some point, but they work for now
 class MusicCommandsCog(
     commands.Cog, name="Music", description="Search Spotify and get song lyrics."
 ):
@@ -858,91 +860,6 @@ class MusicCommandsCog(
                             icon_url=ctx.author.display_avatar.url,
                         )
                         await ctx.reply(embed=embed, ephemeral=ephemeral)
-                # Playlist URL
-                elif "playlist" in url:
-                    # TODO: implement playlists
-                    return
-                    # Search playlist on Spotify
-                    result = self.sp.playlist(url, market="GB")
-
-                    if result is None:
-                        embed = discord.Embed(
-                            title=f"{self.bot.error_emoji} No results found.",
-                            colour=Colour.red(),
-                        )
-                        embed.set_footer(
-                            text=f"@{ctx.author.name}",
-                            icon_url=ctx.author.display_avatar.url,
-                        )
-                        await ctx.reply(embed=embed, ephemeral=ephemeral)
-                        return
-
-                    image_url = result["images"][0]["url"]
-
-                    # Get image, store in memory
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(image_url, headers=self.REQUEST_HEADERS) as request:
-                            image_data = BytesIO()
-
-                            async for chunk in request.content.iter_chunked(10):
-                                image_data.write(chunk)
-
-                            image_data.seek(0)
-
-                    # Get dominant colour for embed
-                    color_thief = ColorThief(image_data)
-                    dominant_color = color_thief.get_color()
-
-                    if result["images"] is not None:
-                        if (
-                            result["images"][0]["height"] is None
-                            or result["images"][0]["width"] is None
-                        ):
-                            embed = discord.Embed(
-                                title=f"{result['name']} - {result['owner']['display_name']} (Playlist)",
-                                description="Viewing highest quality (Resolution unknown)",
-                                colour=Colour.from_rgb(
-                                    r=dominant_color[0],
-                                    g=dominant_color[1],
-                                    b=dominant_color[2],
-                                ),
-                            )
-                        else:
-                            embed = discord.Embed(
-                                title=f"{result['name']} - {result['owner']['display_name']} (Playlist)",
-                                description=f"Viewing highest quality ({result['images'][0]['width']}x{result['images'][0]['height']})",
-                                colour=Colour.from_rgb(
-                                    r=dominant_color[0],
-                                    g=dominant_color[1],
-                                    b=dominant_color[2],
-                                ),
-                            )
-                        embed.set_image(url=result["images"][0]["url"])
-                        embed.set_footer(
-                            text=f"@{ctx.author.name}",
-                            icon_url=ctx.author.display_avatar.url,
-                        )
-
-                        view = View()
-                        view.add_item(
-                            discord.ui.Button(
-                                label="Download",
-                                style=discord.ButtonStyle.url,
-                                url=result["images"][0]["url"],
-                            )
-                        )
-
-                        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
-                    else:
-                        embed = discord.Embed(
-                            title=f"{self.bot.error_emoji} No cover art available.",
-                            colour=Colour.red(),
-                        )
-                        embed.set_footer(
-                            text=f"@{ctx.author.name}",
-                            icon_url=ctx.author.display_avatar.url,
-                        )
-                        await ctx.reply(embed=embed, ephemeral=ephemeral)
                 else:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} Invalid URL",
@@ -984,4 +901,4 @@ async def setup(bot: TitaniumBot) -> None:
         await bot.add_cog(MusicCommandsCog(bot, api_id, api_secret))
         return
 
-    logging.warning("Spotify API ID or secret is missing, skipping music cog")
+    logging.getLogger("init").warning("Spotify API ID or secret is missing, skipping music cog")
