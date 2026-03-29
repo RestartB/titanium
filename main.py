@@ -312,6 +312,7 @@ class TitaniumBot(commands.Bot):
         return guild_settings
 
     async def delete_guild_config(self, guild_id: int) -> None:
+        # delete db entries
         async with get_session() as session:
             stmt = delete(GuildSettings).where(GuildSettings.guild_id == guild_id)
             await session.execute(stmt)
@@ -333,6 +334,14 @@ class TitaniumBot(commands.Bot):
 
             stmt = delete(ScheduledTask).where(ScheduledTask.guild_id == guild_id)
             await session.execute(stmt)
+
+        # clear from in-memory caches
+        self.guild_configs.pop(guild_id, None)
+        self.guild_prefixes.pop(guild_id, None)
+        self.guild_limits.pop(guild_id, None)
+        self.available_webhooks.pop(guild_id, None)
+        self.automod_messages.pop(guild_id, None)
+        self.fireboard_messages.pop(guild_id, None)
 
     async def setup_hook(self):
         await init_db()

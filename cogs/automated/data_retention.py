@@ -19,6 +19,24 @@ class DataRetention(commands.Cog):
     def cog_unload(self) -> None:
         self.left_server_check.cancel()
 
+    # Handle scanning after coming online
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        async with get_session() as session:
+            stmt = select(GuildSettings).where(GuildSettings.leave_date.is_(None))
+            servers = (await session.execute(stmt)).scalars().all()
+
+            for server in servers:
+                # skip if we are in the server still
+                if self.bot.get_guild(server.guild_id) or server.leave_date:
+                    continue
+
+                # delete config or set leaver date
+                if server.delete_after_3_days:
+                    server.leave_date = datetime.now(timezone.utc)
+                else:
+                    await self.bot.delete_guild_config(guild_id=server.guild_id)
+
     # Listen for Titanium rejoining servers
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
@@ -34,8 +52,10 @@ class DataRetention(commands.Cog):
         config = await self.bot.fetch_guild_config(guild.id, create_config=False)
 
         if not config:
+            # no config to remove
             return
 
+        # delete config or set leaver date
         if config.delete_after_3_days:
             async with get_session() as session:
                 settings = await session.get(GuildSettings, guild.id)
@@ -53,6 +73,7 @@ class DataRetention(commands.Cog):
         await self.bot.wait_until_ready()
 
         async with get_session() as session:
+            # get servers where we left more than 3 days ago
             stmt = select(GuildSettings).where(
                 GuildSettings.leave_date <= datetime.now(timezone.utc) - timedelta(days=3)
             )
@@ -60,6 +81,7 @@ class DataRetention(commands.Cog):
 
             for server in old_servers:
                 if self.bot.get_guild(server.guild_id):
+                    # skip if we are still in the server
                     server.leave_date = None
                     continue
 
