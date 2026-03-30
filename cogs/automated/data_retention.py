@@ -19,7 +19,7 @@ class DataRetention(commands.Cog):
 
         self.left_server_check.start()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         self.left_server_check.cancel()
 
     # Handle scanning after coming online
@@ -73,10 +73,11 @@ class DataRetention(commands.Cog):
                 if not settings:
                     return
 
-                self.logger.info(f"Left server - {config.guild_id}. Setting leave date.")
+                self.logger.info(f"Left server - {guild.id}. Setting leave date.")
                 settings.leave_date = datetime.now(timezone.utc)
+                self.bot.remove_cached_config(guild_id=guild.id)
         else:
-            self.logger.info(f"Left server - {config.guild_id}. Deleting config.")
+            self.logger.info(f"Left server - {guild.id}. Deleting config.")
             await self.bot.delete_guild_config(guild_id=guild.id)
 
     # Check for old servers

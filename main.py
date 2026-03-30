@@ -243,6 +243,14 @@ class TitaniumBot(commands.Bot):
 
         cache_logger.info(f"Guild config cache for guild {guild_id} refreshed.")
 
+    def remove_cached_config(self, guild_id: int) -> None:
+        self.guild_configs.pop(guild_id, None)
+        self.guild_prefixes.pop(guild_id, None)
+        self.guild_limits.pop(guild_id, None)
+        self.available_webhooks.pop(guild_id, None)
+        self.automod_messages.pop(guild_id, None)
+        self.fireboard_messages.pop(guild_id, None)
+
     async def init_guild(self, guild_id: int, refresh: bool = True) -> GuildSettings | None:
         db_logger.info(f"Initializing guild {guild_id}...")
 
@@ -336,12 +344,7 @@ class TitaniumBot(commands.Bot):
             await session.execute(stmt)
 
         # clear from in-memory caches
-        self.guild_configs.pop(guild_id, None)
-        self.guild_prefixes.pop(guild_id, None)
-        self.guild_limits.pop(guild_id, None)
-        self.available_webhooks.pop(guild_id, None)
-        self.automod_messages.pop(guild_id, None)
-        self.fireboard_messages.pop(guild_id, None)
+        self.remove_cached_config(guild_id)
 
     async def setup_hook(self):
         await init_db()

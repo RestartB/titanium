@@ -54,7 +54,7 @@ class GuildSettings(Base):
 
     loading_reaction: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     delete_after_3_days: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    leave_date: Mapped[datetime | None] = MappedColumn(DateTime, nullable=True)
+    leave_date: Mapped[datetime | None] = MappedColumn(DateTime(timezone=True), nullable=True)
 
     dashboard_managers: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
