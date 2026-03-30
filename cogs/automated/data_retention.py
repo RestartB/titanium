@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands, tasks
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
-from lib.sql.sql import GuildSettings, get_session
+from lib.sql.sql import AvailableWebhook, GuildSettings, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -65,9 +65,13 @@ class DataRetention(commands.Cog):
             # no config to remove
             return
 
-        # delete config or set leaver date
-        if config.delete_after_3_days:
-            async with get_session() as session:
+        async with get_session() as session:
+            # delete all stored webhooks - they are deleted from discord when titanium leaves anyway
+            stmt = delete(AvailableWebhook).where(AvailableWebhook.guild_id == guild.id)
+            await session.execute(stmt)
+
+            # delete config or set leaver date
+            if config.delete_after_3_days:
                 settings = await session.get(GuildSettings, guild.id)
 
                 if not settings:
@@ -76,9 +80,9 @@ class DataRetention(commands.Cog):
                 self.logger.info(f"Left server - {guild.id}. Setting leave date.")
                 settings.leave_date = datetime.now(timezone.utc)
                 self.bot.remove_cached_config(guild_id=guild.id)
-        else:
-            self.logger.info(f"Left server - {guild.id}. Deleting config.")
-            await self.bot.delete_guild_config(guild_id=guild.id)
+            else:
+                self.logger.info(f"Left server - {guild.id}. Deleting config.")
+                await self.bot.delete_guild_config(guild_id=guild.id)
 
     # Check for old servers
     @tasks.loop(hours=1)
