@@ -225,6 +225,7 @@ class TitaniumBot(commands.Bot):
             result = await session.execute(stmt)
             webhook_configs = result.scalars().all()
 
+            self.available_webhooks.pop(guild_id, None)
             for webhook in webhook_configs:
                 self.available_webhooks.setdefault(webhook.guild_id, []).append(webhook)
 
@@ -236,8 +237,8 @@ class TitaniumBot(commands.Bot):
             )
             result = await session.execute(stmt)
             fireboard_messages = result.scalars().all()
-            self.fireboard_messages.clear()
 
+            self.fireboard_messages.pop(guild_id, None)
             for message in fireboard_messages:
                 self.fireboard_messages.setdefault(message.guild_id, []).append(message)
 

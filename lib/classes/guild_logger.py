@@ -116,6 +116,7 @@ class GuildLogger:
             raise ValueError("Either embed or embeds must be provided")
 
         try:
+            logging.debug(f"Logging with {url}...")
             webhook = discord.Webhook.from_url(url, client=self.bot)
 
             if view:
