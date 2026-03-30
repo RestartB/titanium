@@ -187,9 +187,16 @@ class FireboardCog(commands.Cog):
                     discord.abc.PrivateChannel,
                 ),
             )
-            or msg_channel.nsfw
         ):
             self.logger.debug("Ignoring reaction")
+            return
+
+        # nsfw check
+        if (
+            isinstance(msg_channel, discord.Thread)
+            and msg_channel.parent
+            and msg_channel.parent.nsfw
+        ) or (not isinstance(msg_channel, discord.Thread) and msg_channel.nsfw):
             return
 
         processed_boards: list[uuid.UUID] = []
