@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+# INFO - if we ever switch from 1 shard / autosharding, this will need a rewrite
 class DataRetention(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
@@ -33,6 +34,10 @@ class DataRetention(commands.Cog):
                 # skip if we are in the server still
                 if self.bot.get_guild(server.guild_id) or server.leave_date:
                     continue
+
+                # delete all stored webhooks - they are deleted from discord when titanium leaves anyway
+                stmt = delete(AvailableWebhook).where(AvailableWebhook.guild_id == server.guild_id)
+                await session.execute(stmt)
 
                 # delete config or set leaver date
                 if server.delete_after_3_days:
