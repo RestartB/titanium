@@ -29,6 +29,8 @@ print_ddl(
         sql.LeaderboardUserStats,
         sql.ModCase,
         sql.ModCaseComment,
+        sql.GuildTagSettings,
+        sql.Tag,
         sql.GameStat,
         sql.ScheduledTask,
         sql.ErrorLog,

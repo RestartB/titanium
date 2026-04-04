@@ -128,18 +128,6 @@ class GuildSettings(Base):
     )
 
 
-class GuildConfessionsSettings(Base):
-    __tablename__ = "guild_confession_settings"
-    guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE"), primary_key=True
-    )
-    guild_settings: Mapped["GuildSettings"] = relationship(
-        "GuildSettings", back_populates="confessions_settings", uselist=False
-    )
-    confessions_in_channel: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    confessions_channel_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
-
-
 class GuildLimits(Base):
     __tablename__ = "guild_limits"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
@@ -161,14 +149,6 @@ class GuildPrefixes(Base):
     )
 
 
-class AvailableWebhook(Base):
-    __tablename__ = "available_webhooks"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    webhook_url: Mapped[str] = MappedColumn(String, nullable=False)
-
-
 class GuildModerationSettings(Base):
     __tablename__ = "guild_moderation_settings"
     guild_id: Mapped[int] = MappedColumn(
@@ -181,6 +161,94 @@ class GuildModerationSettings(Base):
     dm_users: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     external_cases: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     ban_days: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
+
+
+class ModCase(Base):
+    __tablename__ = "mod_cases"
+    id: Mapped[str] = MappedColumn(String(length=8), primary_key=True, default=generate_short_uuid)
+    type: Mapped[CaseType] = MappedColumn(Enum(CaseType), nullable=False)
+    guild_id: Mapped[int] = MappedColumn(BigInteger)
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    creator_user_id: Mapped[int] = MappedColumn(BigInteger)
+    time_created: Mapped[datetime] = MappedColumn(
+        DateTime(timezone=True), server_default=text("NOW()")
+    )
+    time_updated: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=True)
+    time_expires: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=True)
+    description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+    external: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    resolved: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    comments: Mapped[list["ModCaseComment"]] = relationship(
+        "ModCaseComment", back_populates="case", cascade="all, delete-orphan"
+    )
+    scheduled_tasks: Mapped[list["ScheduledTask"]] = relationship(
+        "ScheduledTask", back_populates="case", cascade="all, delete-orphan"
+    )
+
+    async def add_comment(
+        self, member: Member, content: str, bot: TitaniumBot, guild: Guild | PartialInviteGuild
+    ) -> ModCaseComment:
+        from lib.classes.guild_logger import GuildLogger
+        from lib.helpers.log_error import log_error
+
+        comment = ModCaseComment(
+            guild_id=self.guild_id, case_id=self.id, user_id=member.id, comment=content
+        )
+
+        async with get_session() as session:
+            session.add(comment)
+
+        try:
+            log = GuildLogger(bot=bot, guild=guild)
+            await log.titanium_case_comment(case=self, creator=member, comment=content)
+        except Exception as e:
+            await log_error(
+                bot=bot,
+                module="Logging",
+                guild_id=guild.id,
+                error=f"Unknown error while logging new case comment - {comment.id}",
+                user=member,
+                exc=e,
+            )
+
+        return comment
+
+    async def get_user_comment(self, comment: uuid.UUID, user: int) -> ModCaseComment | None:
+        async with get_session() as session:
+            query = await session.execute(
+                select(ModCaseComment)
+                .where(ModCaseComment.id == comment)
+                .where(ModCaseComment.case_id == self.id)
+                .where(ModCaseComment.user_id == user)
+            )
+
+            return query.scalar_one_or_none()
+
+
+class ModCaseComment(Base):
+    __tablename__ = "mod_case_comments"
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    guild_id: Mapped[int] = MappedColumn(BigInteger)
+    case_id: Mapped[str] = MappedColumn(
+        String(length=8), ForeignKey("mod_cases.id", ondelete="CASCADE")
+    )
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    comment: Mapped[str] = MappedColumn(String(length=512))
+    time_created: Mapped[datetime] = MappedColumn(
+        DateTime(timezone=True), server_default=text("NOW()")
+    )
+    case: Mapped["ModCase"] = relationship("ModCase", back_populates="comments", uselist=False)
+
+    async def edit_comment(self, content: str) -> ModCaseComment | None:
+        async with get_session() as session:
+            self.comment = content
+            session.add(self)
+
+        return self
+
+    async def delete_comment(self) -> None:
+        async with get_session() as session:
+            await session.delete(self)
 
 
 class GuildAutomodSettings(Base):
@@ -502,33 +570,6 @@ class FireboardMessage(Base):
     )
 
 
-class GuildServerCounterSettings(Base):
-    __tablename__ = "guild_server_counter_settings"
-    guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE"), primary_key=True
-    )
-    guild: Mapped["GuildSettings"] = relationship(
-        "GuildSettings", back_populates="server_counters_settings", uselist=False
-    )
-    channels: Mapped[list["ServerCounterChannel"]] = relationship(
-        "ServerCounterChannel", back_populates="settings", cascade="all, delete-orphan"
-    )
-
-
-class ServerCounterChannel(Base):
-    __tablename__ = "server_counter_channels"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    guild_id: Mapped[int] = MappedColumn(
-        BigInteger,
-        ForeignKey("guild_server_counter_settings.guild_id", ondelete="CASCADE"),
-    )
-    settings: Mapped["GuildServerCounterSettings"] = relationship(
-        "GuildServerCounterSettings", back_populates="channels", uselist=False
-    )
-    count_type: Mapped[ServerCounterType] = MappedColumn(Enum(ServerCounterType))
-    name: Mapped[str] = MappedColumn(String(length=50), server_default=text("'{value}'"))
-
-
 class GuildLeaderboardSettings(Base):
     __tablename__ = "guild_leaderboard_settings"
     guild_id: Mapped[int] = MappedColumn(
@@ -596,92 +637,75 @@ class LeaderboardUserStats(Base):
     explicit_count: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
 
 
-class ModCase(Base):
-    __tablename__ = "mod_cases"
-    id: Mapped[str] = MappedColumn(String(length=8), primary_key=True, default=generate_short_uuid)
-    type: Mapped[CaseType] = MappedColumn(Enum(CaseType), nullable=False)
-    guild_id: Mapped[int] = MappedColumn(BigInteger)
-    user_id: Mapped[int] = MappedColumn(BigInteger)
-    creator_user_id: Mapped[int] = MappedColumn(BigInteger)
-    time_created: Mapped[datetime] = MappedColumn(
-        DateTime(timezone=True), server_default=text("NOW()")
+class GuildServerCounterSettings(Base):
+    __tablename__ = "guild_server_counter_settings"
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE"), primary_key=True
     )
-    time_updated: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=True)
-    time_expires: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=True)
-    description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
-    external: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    resolved: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    comments: Mapped[list["ModCaseComment"]] = relationship(
-        "ModCaseComment", back_populates="case", cascade="all, delete-orphan"
+    guild: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="server_counters_settings", uselist=False
     )
-    scheduled_tasks: Mapped[list["ScheduledTask"]] = relationship(
-        "ScheduledTask", back_populates="case", cascade="all, delete-orphan"
+    channels: Mapped[list["ServerCounterChannel"]] = relationship(
+        "ServerCounterChannel", back_populates="settings", cascade="all, delete-orphan"
     )
 
-    async def add_comment(
-        self, member: Member, content: str, bot: TitaniumBot, guild: Guild | PartialInviteGuild
-    ) -> ModCaseComment:
-        from lib.classes.guild_logger import GuildLogger
-        from lib.helpers.log_error import log_error
 
-        comment = ModCaseComment(
-            guild_id=self.guild_id, case_id=self.id, user_id=member.id, comment=content
-        )
-
-        async with get_session() as session:
-            session.add(comment)
-
-        try:
-            log = GuildLogger(bot=bot, guild=guild)
-            await log.titanium_case_comment(case=self, creator=member, comment=content)
-        except Exception as e:
-            await log_error(
-                bot=bot,
-                module="Logging",
-                guild_id=guild.id,
-                error=f"Unknown error while logging new case comment - {comment.id}",
-                user=member,
-                exc=e,
-            )
-
-        return comment
-
-    async def get_user_comment(self, comment: uuid.UUID, user: int) -> ModCaseComment | None:
-        async with get_session() as session:
-            query = await session.execute(
-                select(ModCaseComment)
-                .where(ModCaseComment.id == comment)
-                .where(ModCaseComment.case_id == self.id)
-                .where(ModCaseComment.user_id == user)
-            )
-
-            return query.scalar_one_or_none()
-
-
-class ModCaseComment(Base):
-    __tablename__ = "mod_case_comments"
-    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    guild_id: Mapped[int] = MappedColumn(BigInteger)
-    case_id: Mapped[str] = MappedColumn(
-        String(length=8), ForeignKey("mod_cases.id", ondelete="CASCADE")
+class ServerCounterChannel(Base):
+    __tablename__ = "server_counter_channels"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger,
+        ForeignKey("guild_server_counter_settings.guild_id", ondelete="CASCADE"),
     )
-    user_id: Mapped[int] = MappedColumn(BigInteger)
-    comment: Mapped[str] = MappedColumn(String(length=512))
-    time_created: Mapped[datetime] = MappedColumn(
-        DateTime(timezone=True), server_default=text("NOW()")
+    settings: Mapped["GuildServerCounterSettings"] = relationship(
+        "GuildServerCounterSettings", back_populates="channels", uselist=False
     )
-    case: Mapped["ModCase"] = relationship("ModCase", back_populates="comments", uselist=False)
+    count_type: Mapped[ServerCounterType] = MappedColumn(Enum(ServerCounterType))
+    name: Mapped[str] = MappedColumn(String(length=50), server_default=text("'{value}'"))
 
-    async def edit_comment(self, content: str) -> ModCaseComment | None:
-        async with get_session() as session:
-            self.comment = content
-            session.add(self)
 
-        return self
+class GuildConfessionsSettings(Base):
+    __tablename__ = "guild_confession_settings"
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE"), primary_key=True
+    )
+    guild_settings: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="confessions_settings", uselist=False
+    )
+    confessions_in_channel: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    confessions_channel_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
 
-    async def delete_comment(self) -> None:
-        async with get_session() as session:
-            await session.delete(self)
+
+class GuildTagSettings(Base):
+    __tablename__ = "guild_tag_settings"
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE"), primary_key=True
+    )
+    guild_settings: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="tag_settings", uselist=False
+    )
+    prefix_fallback: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    allow_user_tags: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    tags: Mapped[list["Tag"]] = relationship(
+        "Tag", back_populates="settings", cascade="all, delete-orphan"
+    )
+
+
+class Tag(Base):
+    __tablename__ = "server_counter_channels"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger,
+        ForeignKey("guild_tag_settings.guild_id", ondelete="CASCADE"),
+    )
+    settings: Mapped["GuildTagSettings"] = relationship(
+        "GuildTagSettings", back_populates="tags", uselist=False
+    )
+
+    owner_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    is_user: Mapped[bool] = MappedColumn(Boolean, nullable=False)
+    name: Mapped[str] = MappedColumn(String(length=80), nullable=False)
+    content: Mapped[str] = MappedColumn(String(length=1024), nullable=False)
 
 
 class GameStat(Base):
@@ -711,6 +735,14 @@ class ScheduledTask(Base):
         "ModCase", back_populates="scheduled_tasks", uselist=False
     )
     time_scheduled: Mapped[datetime] = MappedColumn(DateTime(timezone=True), index=True)
+
+
+class AvailableWebhook(Base):
+    __tablename__ = "available_webhooks"
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    webhook_url: Mapped[str] = MappedColumn(String, nullable=False)
 
 
 class ErrorLog(Base):
