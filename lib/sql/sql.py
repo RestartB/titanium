@@ -127,6 +127,14 @@ class GuildSettings(Base):
         uselist=False,
     )
 
+    tags_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    tag_settings: Mapped["GuildTagSettings"] = relationship(
+        "GuildTagSettings",
+        cascade="all, delete-orphan",
+        back_populates="guild_settings",
+        uselist=False,
+    )
+
 
 class GuildLimits(Base):
     __tablename__ = "guild_limits"
@@ -692,7 +700,7 @@ class GuildTagSettings(Base):
 
 
 class Tag(Base):
-    __tablename__ = "server_counter_channels"
+    __tablename__ = "tags"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(
         BigInteger,
