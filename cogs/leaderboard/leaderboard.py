@@ -71,6 +71,18 @@ class LeaderboardCog(commands.Cog):
 
         lb_settings = guild_settings.leaderboard_settings
 
+        if message.channel.id in lb_settings.ignored_channels:
+            self.logger.debug(f"Message in ignored channel: {message.channel.id}")
+            return
+
+        if (
+            any(role.id in lb_settings.ignored_roles for role in message.author.roles)
+            if isinstance(message.author, discord.Member)
+            else False
+        ):
+            self.logger.debug(f"Message from member with ignored role: {message.author.id}")
+            return
+
         mode = lb_settings.mode
         xp = lb_settings.base_xp
         min_xp = lb_settings.min_xp
@@ -371,8 +383,19 @@ class LeaderboardCog(commands.Cog):
                 await ctx.send(embed=embed)
                 return
 
+            blocked_roles: list[str] = []
+            if isinstance(user, discord.Member):
+                for role in user.roles:
+                    if role.id not in guild_settings.leaderboard_settings.ignored_roles:
+                        continue
+
+                    blocked_roles.append(role.mention)
+
             embed = discord.Embed(
                 title="Level Info",
+                description=f"{self.bot.warn_emoji} You can't gain new XP as one or more of your roles are ignored: {', '.join(blocked_roles)}"
+                if blocked_roles
+                else "",
                 colour=discord.Colour.light_grey(),
             )
 

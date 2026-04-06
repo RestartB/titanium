@@ -523,12 +523,14 @@ class GuildFireboardSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="fireboard_settings", uselist=False
     )
+
     global_ignored_channels: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
     global_ignored_roles: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
+
     fireboard_boards: Mapped[list["FireboardBoard"]] = relationship(
         "FireboardBoard", back_populates="guild", cascade="all, delete-orphan"
     )
@@ -597,6 +599,13 @@ class GuildLeaderboardSettings(Base):
     min_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("15"))
     max_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("25"))
     xp_mult: Mapped[Optional[float]] = MappedColumn(Float, server_default=text("1.0"))
+
+    ignored_roles: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    ignored_channels: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
 
     levelup_notifications: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     notification_ping: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))

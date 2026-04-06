@@ -187,6 +187,7 @@ class FireboardCog(commands.Cog):
                     discord.abc.PrivateChannel,
                 ),
             )
+            or event.channel_id in config.fireboard_settings.global_ignored_channels
         ):
             self.logger.debug("Ignoring reaction")
             return
@@ -216,6 +217,12 @@ class FireboardCog(commands.Cog):
 
         for fireboard_message in list(self.bot.fireboard_messages.get(event.guild_id, [])):
             if fireboard_message.message_id == event.message_id:
+                if event.channel_id in fireboard_message.fireboard.ignored_channels:
+                    self.logger.debug(
+                        f"Skipping board {fireboard_message.fireboard.id}: channel {event.channel_id} in board blocklist"
+                    )
+                    continue
+
                 normalized_board_reaction = self._normalize_emoji(
                     fireboard_message.fireboard.reaction
                 )
@@ -270,6 +277,35 @@ class FireboardCog(commands.Cog):
                     ):
                         self.logger.debug("Source message not found, deleting fireboard message")
                         await board_msg.delete()
+
+                        continue
+
+                    # check user roles - global blocklist
+                    if (
+                        any(
+                            role.id in config.fireboard_settings.global_ignored_roles
+                            for role in source_msg.author.roles
+                        )
+                        if isinstance(source_msg.author, discord.Member)
+                        else False
+                    ):
+                        self.logger.debug(
+                            f"User's role is on the global blocklist - user: {source_msg.author.id}"
+                        )
+                        return
+
+                    # check user roles - board blocklist
+                    if (
+                        any(
+                            role.id in fireboard_message.fireboard.ignored_roles
+                            for role in source_msg.author.roles
+                        )
+                        if isinstance(source_msg.author, discord.Member)
+                        else False
+                    ):
+                        self.logger.debug(
+                            f"User's role is on the board blocklist - user: {source_msg.author.id}"
+                        )
                         continue
 
                     count = await self._calculate_reaction_count(
@@ -347,6 +383,14 @@ class FireboardCog(commands.Cog):
                 and msg_channel.id not in board.ignored_channels
                 and (
                     any(role.id not in board.ignored_roles for role in source_msg.author.roles)
+                    if isinstance(source_msg.author, discord.Member)
+                    else True
+                )
+                and (
+                    any(
+                        role.id not in config.fireboard_settings.global_ignored_roles
+                        for role in source_msg.author.roles
+                    )
                     if isinstance(source_msg.author, discord.Member)
                     else True
                 )

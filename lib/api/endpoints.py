@@ -240,6 +240,8 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
                 "min_xp": 15,
                 "max_xp": 25,
                 "xp_mult": 1.0,
+                "ignored_roles": [],
+                "ignored_channels": [],
                 "levelup_notifications": True,
                 "notification_ping": True,
                 "notification_channel": None,
@@ -261,6 +263,8 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
             "min_xp": lb_settings.min_xp,
             "max_xp": lb_settings.max_xp,
             "xp_mult": lb_settings.xp_mult,
+            "ignored_roles": [str(role_id) for role_id in lb_settings.ignored_roles],
+            "ignored_channels": [str(channel_id) for channel_id in lb_settings.ignored_channels],
             "levelup_notifications": lb_settings.levelup_notifications,
             "notification_ping": lb_settings.notification_ping,
             "notification_channel": str(lb_settings.notification_channel)

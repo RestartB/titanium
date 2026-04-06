@@ -412,6 +412,9 @@ class LeaderboardConfigModel(BaseModel):
     max_xp: Optional[int] = None
     xp_mult: Optional[float] = None
 
+    ignored_roles: list[str] = Field(default_factory=list)
+    ignored_channels: list[str] = Field(default_factory=list)
+
     levelup_notifications: bool
     notification_ping: bool
     notification_channel: Optional[str] = None
