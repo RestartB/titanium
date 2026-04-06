@@ -54,6 +54,8 @@ class DataRetention(commands.Cog):
     # Listen for Titanium rejoining servers
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
+        await self.bot.wait_until_ready()
+
         async with get_session() as session:
             settings = await session.get(GuildSettings, guild.id)
 
@@ -64,6 +66,7 @@ class DataRetention(commands.Cog):
     # Listen for Titanium leaving servers
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild) -> None:
+        await self.bot.wait_until_ready()
         config = await self.bot.fetch_guild_config(guild.id, create_config=False)
 
         if not config:
