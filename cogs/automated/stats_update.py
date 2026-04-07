@@ -14,7 +14,7 @@ class StatsUpdateCog(commands.Cog):
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-        self.showing_info: bool = True
+        self.current_status: int = -1
 
         # Start tasks
         self.info_update.start()
@@ -52,7 +52,8 @@ class StatsUpdateCog(commands.Cog):
     async def status_update(self) -> None:
         await self.bot.wait_until_ready()
 
-        if self.showing_info:
+        if self.current_status == -1 or self.current_status == 2:
+            self.current_status = 0
             # Show website status
             await self.bot.change_presence(
                 activity=discord.Activity(
@@ -62,8 +63,20 @@ class StatsUpdateCog(commands.Cog):
                     state="🌐 titaniumbot.me",
                 )
             )
-        else:
-            # Show info status
+        elif self.current_status == 0:
+            self.current_status = 1
+            # Show dashboard status
+            await self.bot.change_presence(
+                activity=discord.Activity(
+                    status=discord.Status.online,
+                    type=discord.ActivityType.custom,
+                    name="titanium",
+                    state="🔧 dash.titaniumbot.me",
+                )
+            )
+        elif self.current_status == 1:
+            self.current_status = 2
+            # Show stats status
             await self.bot.change_presence(
                 activity=discord.Activity(
                     status=discord.Status.online,
@@ -72,8 +85,6 @@ class StatsUpdateCog(commands.Cog):
                     state=f"{self.bot.user_installs} users, {self.bot.guild_installs} servers with {self.bot.guild_member_count:,} members",
                 )
             )
-
-        self.showing_info = not self.showing_info
 
     # Measure API latency task
     @tasks.loop(minutes=1)
