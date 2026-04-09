@@ -35,6 +35,14 @@ class RepView(View):
             view=None,
         )
 
+    @button(emoji="🗑️", style=ButtonStyle.grey)
+    async def delete_button(self, interaction: Interaction["TitaniumBot"], button: Button):
+        if not interaction.message:
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        await interaction.delete_original_response()
+
 
 class RepTestCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
@@ -42,18 +50,26 @@ class RepTestCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
+        # no reply / invalid reference - ignore
+        if (
+            not message.reference
+            or not message.reference.resolved
+            or isinstance(message.reference.resolved, discord.DeletedReferencedMessage)
+        ):
+            return
+
         matches = []
-        for check_word in ["thank you", "thx", "thanks"]:
+        for check_word in ["thank you", "thx", "thanks", "i love you"]:
             pattern = r"\b" + re.escape(check_word) + r"\b"
-            matches.extend(re.findall(pattern, message.content.lower()))
+            matches.extend(re.findall(pattern, message.reference.resolved.content.lower()))
 
         if not matches:
             return
 
-        if isinstance(message.author, discord.User):
+        if isinstance(message.reference.resolved.author, discord.User):
             return
 
-        view = RepView(bot=self.bot, target_member=message.author)
+        view = RepView(bot=self.bot, target_member=message.reference.resolved.author)
         await message.reply(view=view, mention_author=False)
 
 
