@@ -28,7 +28,7 @@ def generate_lb_embeds(
 
     for i, user_stats in enumerate(top_users, start=1):
         member = guild.get_member(user_stats.user_id)
-        data_str = f"{getattr(user_stats, attr)}{'XP' if show_xp_label else ''}{f', Level {user_stats.level}' if show_levels else ''}"
+        data_str = f"{getattr(user_stats, attr):,}{'XP' if show_xp_label else ''}{f', Level {user_stats.level:,}' if show_levels else ''}"
 
         if embed.description:
             embed.description += (
