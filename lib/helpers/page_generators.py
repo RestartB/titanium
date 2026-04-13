@@ -11,6 +11,7 @@ def generate_lb_embeds(
     top_users: Sequence[LeaderboardUserStats],
     title,
     attr: str,
+    show_xp_label: bool = True,
     show_levels: bool = False,
 ) -> list[discord.Embed]:
     if not guild:
@@ -27,11 +28,16 @@ def generate_lb_embeds(
 
     for i, user_stats in enumerate(top_users, start=1):
         member = guild.get_member(user_stats.user_id)
+        data_str = f"{getattr(user_stats, attr)}{'XP' if show_xp_label else ''}{f', Level {user_stats.level}' if show_levels else ''}"
 
         if embed.description:
-            embed.description += f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {getattr(user_stats, attr)}XP{f', Level {user_stats.level}' if show_levels else ''}"
+            embed.description += (
+                f"\n{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {data_str}"
+            )
         else:
-            embed.description = f"{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {getattr(user_stats, attr)}XP{f', Level {user_stats.level}' if show_levels else ''}"
+            embed.description = (
+                f"{i}. {member.mention if member else f'`{user_stats.user_id}`'} - {data_str}"
+            )
 
         if i % page_size == 0:
             pages.append(embed)

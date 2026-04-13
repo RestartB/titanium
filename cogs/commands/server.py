@@ -233,6 +233,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 top_users=top_users,
                 title="Messages Sent",
                 attr="message_count",
+                show_xp_label=False,
             )
             view = LeaderboardReloadPageView(
                 embeds=pages,
@@ -308,6 +309,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 top_users=top_users,
                 title="Words Sent",
                 attr="word_count",
+                show_xp_label=False,
             )
             view = LeaderboardReloadPageView(
                 embeds=pages,
@@ -384,6 +386,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 top_users=top_users,
                 title="Attachments Sent",
                 attr="attachment_count",
+                show_xp_label=False,
             )
             view = LeaderboardReloadPageView(
                 embeds=pages,
@@ -460,6 +463,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get user infor
                 top_users=top_users,
                 title="Swear Jar",
                 attr="explicit_count",
+                show_xp_label=False,
             )
             view = LeaderboardReloadPageView(
                 embeds=pages,
