@@ -8,7 +8,7 @@ CREATE TABLE "guild_tag_settings" (
 );
 -- Create "tags" table
 CREATE TABLE "tags" (
-  "id" bigserial NOT NULL,
+  "id" uuid NOT NULL,
   "guild_id" bigint NOT NULL,
   "owner_id" bigint NOT NULL,
   "is_user" boolean NOT NULL,

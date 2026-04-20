@@ -17,6 +17,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -710,10 +711,20 @@ class GuildTagSettings(Base):
 
 class Tag(Base):
     __tablename__ = "tags"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    guild_id: Mapped[int] = MappedColumn(
-        BigInteger,
-        ForeignKey("guild_tag_settings.guild_id", ondelete="CASCADE"),
+    __table_args__ = (
+        UniqueConstraint("guild_id", "name", name="uq_tag_guild_name"),
+        Index(
+            "uq_tag_user_name",
+            "owner_id",
+            "name",
+            unique=True,
+            postgresql_where=text("is_user = true"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    guild_id: Mapped[int | None] = MappedColumn(
+        BigInteger, ForeignKey("guild_tag_settings.guild_id", ondelete="CASCADE"), nullable=True
     )
     settings: Mapped["GuildTagSettings"] = relationship(
         "GuildTagSettings", back_populates="tags", uselist=False
