@@ -19,6 +19,7 @@ class FireboardCog(commands.Cog):
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
+
         self.event_queue: asyncio.Queue[
             discord.RawReactionActionEvent
             | discord.RawMessageUpdateEvent
@@ -27,6 +28,8 @@ class FireboardCog(commands.Cog):
             | discord.Message
         ] = asyncio.Queue()
         self.event_queue_task = self.bot.loop.create_task(self.queue_worker())
+        self.pending_updates: dict[tuple[int, str], asyncio.Task] = {}
+
         self.logger: logging.Logger = logging.getLogger("fireboard")
 
     async def cog_unload(self) -> None:
@@ -68,6 +71,28 @@ class FireboardCog(commands.Cog):
 
         return embed
 
+    async def schedule_update(self, event: discord.RawReactionActionEvent):
+        emoji_id = self._get_emoji_identifier(event.emoji)
+        update_key = (event.message_id, emoji_id)
+
+        # check if this combo is already queued, if it is we don't need to run again
+        if update_key in self.pending_updates:
+            return
+
+        # schedule task
+        task = self.bot.loop.create_task(self.delayed_process(event, update_key))
+        self.pending_updates[update_key] = task
+
+    async def delayed_process(self, event: discord.RawReactionActionEvent, update_key: tuple):
+        # allow 2s for any excess reactions to come in
+        try:
+            await asyncio.sleep(2.0)
+            await self._reaction_add_remove(event)
+        except asyncio.CancelledError:
+            pass
+        finally:
+            self.pending_updates.pop(update_key, None)
+
     async def queue_worker(self):
         self.logger.info("Fireboard event handler started.")
         while True:
@@ -81,14 +106,29 @@ class FireboardCog(commands.Cog):
 
             try:
                 if isinstance(event, discord.RawReactionActionEvent):
-                    await self._reaction_add_remove(event)
+                    await self.schedule_update(event)
                 elif isinstance(event, discord.RawMessageUpdateEvent):
                     await self.message_edit_handler(event)
                 elif isinstance(event, discord.RawMessageDeleteEvent):
+                    for key in list(self.pending_updates.keys()):
+                        if key[0] == event.message_id:
+                            task = self.pending_updates.pop(key)
+                            task.cancel()
+
                     await self.message_delete_handler(event)
                 elif isinstance(event, discord.Reaction):
+                    emoji_id = self._get_emoji_identifier(event.emoji)
+                    update_key = (event.message.id, emoji_id)
+                    if task := self.pending_updates.pop(update_key, None):
+                        task.cancel()
+
                     await self.reaction_emoji_clear_handler(event)
                 elif isinstance(event, discord.Message):
+                    for key in list(self.pending_updates.keys()):
+                        if key[0] == event.id:
+                            task = self.pending_updates.pop(key)
+                            task.cancel()
+
                     await self.reaction_clear_handler(event)
 
                 self.logger.debug(f"Successfully processed event: {type(event).__name__}")
