@@ -1,17 +1,13 @@
-# Titanium
+# Titanium v1
 
 Welcome to Titanium's main code repo! Titanium is your multipurpose, open source Discord bot.
 
 [Add Titanium Now!](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](https://titaniumbot.me/privacy/bot) and [Terms of Use policy](https://titaniumbot.me/terms))
 
-> [!NOTE]
-> Titanium v2 development has started in the v2 branch! Titanium v1 will remain as the main supported version for the foreseeable future.
+> [!IMPORTANT]
+> Titanium v1 is now in maintenance mode and will only receive security patches and urgent bug fixes. To see the latest features coming soon to Titanium, switch to the `v2` branch! v2 will become the only supported version of Titanium when the public instance changes from v1 to v2.
 
-## Contributions Welcome
-
-Contributions to Titanium are welcome! To contribute, make a pull request and I'll take a look. When contributing, please ensure that you use Ruff to check and format your code. This ensures that all of Titanium's code stays high quality and in a consistent style. To do this with the uv package manager, run `uvx ruff check --fix` to scan for any issues in your code and attempt to fix them, and `uvx ruff format` to format your code.
-
-### Licence
+## Licence
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
