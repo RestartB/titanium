@@ -43,7 +43,7 @@ class ModerationBasicCog(
                 embed=discord.Embed(
                     colour=discord.Colour.red(),
                     title=f"{self.bot.error_emoji} Moderation Disabled",
-                    description="The moderation module is disabled. Ask a server admin to turn it on using the `/settings overview` command or the Titanium Dashboard.",
+                    description="The moderation module is disabled in this server. Ask a server admin to turn it on using the `/settings overview` command or the Titanium Dashboard.",
                 ),
                 ephemeral=True,
             )

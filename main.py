@@ -56,6 +56,7 @@ from lib.sql.sql import (  # noqa: E402
     GuildPrefixes,
     GuildServerCounterSettings,
     GuildSettings,
+    GuildTagSettings,
     LeaderboardUserStats,
     ModCase,
     OptOutIDs,
@@ -289,6 +290,10 @@ class TitaniumBot(commands.Bot):
             await session.execute(stmt)
 
             stmt = insert(GuildConfessionsSettings).values(guild_id=guild_id)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
+            await session.execute(stmt)
+
+            stmt = insert(GuildTagSettings).values(guild_id=guild_id)
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 
@@ -527,10 +532,17 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, commands.errors.NoPrivateMessage):
         await ctx.reply(embed=guild_only(bot))
-    elif isinstance(error, commands.errors.BadArgument):
+    elif isinstance(error, (commands.errors.BadArgument, commands.errors.ArgumentParsingError)):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bad Argument",
             description=str(error).replace(str(error)[0], str(error)[0].upper(), 1),
+            colour=discord.Colour.red(),
+        )
+        await ctx.reply(embed=embed, ephemeral=True)
+    elif isinstance(error, commands.errors.BadLiteralArgument):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Bad Argument",
+            description=f"Couldn't find the input for the `{error.param.name}` argument in `{'`, `'.join(list(error.literals))}`.",
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed, ephemeral=True)
@@ -545,13 +557,6 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         embed = discord.Embed(
             title=f"{bot.error_emoji} Attachment Missing",
             description=f"You are missing a required attachment (`{error.param.name}`) for this command.",
-            colour=discord.Colour.red(),
-        )
-        await ctx.reply(embed=embed, ephemeral=True)
-    elif isinstance(error, adapters.SlashCommandOnly):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Slash Command Only",
-            description="This command is only available as a slash command. Please use the slash command version instead.",
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed, ephemeral=True)
