@@ -50,7 +50,7 @@ class ScheduledTasksCog(commands.Cog):
             except asyncio.QueueShutDown:
                 return
 
-            self.logger.info(f"Grabbed task {task.id} from the queue")
+            self.logger.info(f"Grabbed task {task.id} ({task.type}) from the queue")
 
             try:
                 await self.task_handler(task)
