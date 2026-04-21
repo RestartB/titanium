@@ -73,7 +73,11 @@ class TagCommandsCog(commands.Cog):
         self, interaction: discord.Interaction["TitaniumBot"], current: str
     ) -> list[app_commands.Choice[str]]:
         if not current:
-            return []
+            return [
+                app_commands.Choice(
+                    name="Start typing to search for a server or user tag", value=""
+                )
+            ]
 
         server_tags_allowed = self.__server_tag_available(interaction)
         user_tags_allowed = True
@@ -171,6 +175,14 @@ class TagCommandsCog(commands.Cog):
     @app_commands.describe(tag="The tag to send.")
     @app_commands.autocomplete(tag=tag_autocomplete)
     async def tags_group(self, ctx: commands.Context["TitaniumBot"], tag: str):
+        if not tag:
+            embed = discord.Embed(
+                title=f"{ctx.bot.error_emoji} Enter a tag name",
+                description="Please enter a tag name when sending the command.",
+                colour=discord.Colour.red(),
+            )
+            return await ctx.reply(embed=embed)
+
         user_tags_allowed = True
         server_tags_allowed = self.__server_tag_available(ctx)
 
