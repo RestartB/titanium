@@ -3,6 +3,7 @@ import discord
 from discord import ButtonStyle, Color, app_commands
 from discord.ext import commands
 from discord.ui import View
+from discord.utils import escape_markdown
 from thefuzz import process
 
 
@@ -167,7 +168,11 @@ class UserTags(commands.Cog):
             def format_tag_content(content: str) -> str:
                 if content.startswith("https://cdn.discordapp.com/"):
                     return "`[Attachment]`"
-                return f"`{content[:30]}...`" if len(content) > 30 else f"`{content}`"
+                return (
+                    f"`{escape_markdown(content[:30])}...`"
+                    if len(content) > 30
+                    else f"`{escape_markdown(content)}`"
+                )
 
             my_tags = (
                 f"{key} ({format_tag_content(self.tags[interaction.user.id][key])})"
