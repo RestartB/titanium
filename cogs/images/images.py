@@ -1,6 +1,9 @@
 import os
+import random
+from io import BytesIO
 from typing import TYPE_CHECKING, Literal
 
+import aiohttp
 import discord
 from discord import Attachment, app_commands
 from discord.ext import commands
@@ -15,6 +18,34 @@ if TYPE_CHECKING:
 
 class ImageCog(commands.Cog, name="Images", description="Image processing commands."):
     STANDARD_QUALITY = 95
+    NASA_NUMBER_OF = {
+        "A": [0, 1, 2, 3, 4],
+        "B": [0, 1],
+        "C": [0, 1, 2],
+        "D": [0, 1],
+        "E": [0, 1, 2, 3],
+        "F": [0, 1],
+        "G": [0],
+        "H": [0, 1],
+        "I": [0, 1, 2, 3, 4],
+        "J": [0, 1, 2],
+        "K": [0, 1],
+        "L": [0, 1, 2, 3],
+        "M": [0, 1, 2],
+        "N": [0, 1, 2],
+        "O": [0, 1],
+        "P": [0, 1],
+        "Q": [0, 1],
+        "R": [0, 1, 2, 3],
+        "S": [0, 1, 2],
+        "T": [0, 1],
+        "U": [0, 1],
+        "V": [0, 1, 2, 3],
+        "W": [0, 1],
+        "X": [0, 1, 2],
+        "Y": [0, 1],
+        "Z": [0, 1],
+    }
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
@@ -45,7 +76,11 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
 
         await interaction.edit_original_response(embed=embed)
 
-    @commands.hybrid_group(name="image", description="Image processing commands.")
+    @commands.hybrid_group(
+        name="image",
+        aliases=["images", "photo", "photos"],
+        description="Image processing commands.",
+    )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def image_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
@@ -268,6 +303,65 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
             file = await converter.caption(output_format, caption.lower(), selected_font, position)
 
             await ctx.reply(file=file)
+
+    @image_group.command(
+        name="nasa",
+        description="Create an image of characters spelt by Earth images by NASA Landsat.",
+    )
+    @app_commands.describe(
+        word="Word to generate image of. Cannot contain spaces, numbers or special characters.",
+        output_format="Optional: the format to output to. Defaults to GIF.",
+    )
+    async def nasa(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        word: commands.Range[str, 1, 50],
+        output_format: ImageFormats = ImageFormats.GIF,
+    ) -> None:
+        async with defer(ctx):
+            if len(word) > 50:
+                embed = discord.Embed(
+                    title=f"{ctx.bot.error_emoji} Error",
+                    description="The word is too long. It can only be 50 letters long.",
+                    colour=discord.Colour.red(),
+                )
+                await ctx.reply(embed=embed)
+                return
+
+            if not (word.isascii() and word.isalpha()):
+                embed = discord.Embed(
+                    title=f"{ctx.bot.error_emoji} Error",
+                    description="The word can only contain letters.",
+                    colour=discord.Colour.red(),
+                )
+                await ctx.reply(embed=embed)
+                return
+
+            images: list[BytesIO] = []
+            for character in word:
+                number = random.choice(self.NASA_NUMBER_OF[character.upper()])
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(
+                        f"https://science.nasa.gov/specials/your-name-in-landsat/images/{character}_{number}.jpg"
+                    ) as request:
+                        image_data = BytesIO()
+
+                        async for chunk in request.content.iter_chunked(8192):
+                            image_data.write(chunk)
+
+                        image_data.seek(0)
+
+                images.append(image_data)
+
+            converter = img_tools.ImageTools()
+            file = await converter.nasa(output_format, images)
+
+            embed = discord.Embed(
+                description=f"{ctx.bot.info_emoji} Images sourced from NASA and the U.S. Geological Survey.",
+                colour=discord.Colour.light_grey(),
+            )
+            await ctx.reply(embed=embed, file=file)
 
 
 async def setup(bot: TitaniumBot) -> None:

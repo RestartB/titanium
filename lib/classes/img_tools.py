@@ -205,21 +205,25 @@ class ImageTools:
     Handle image manipulation tasks.
     """
 
-    def __init__(self, image: Attachment) -> None:
-        self.image: Attachment = image
+    def __init__(self, image: Attachment | None = None) -> None:
+        self.image: Attachment | None = image
 
     @staticmethod
     def format_types() -> list[str]:
         return [format.value for format in ImageFormats]
 
-    def _get_output_filename(self, output_format: ImageFormats) -> str:
+    def _get_output_filename(self, output_format: ImageFormats, custom: str = "") -> str:
         """Generate output filename safely handling files with or without extensions."""
-        base_name = (
-            self.image.filename.rsplit(".", 1)[0]
-            if "." in self.image.filename
-            else self.image.filename
-        )
-        return f"titanium_{base_name}.{output_format.value.lower()}"
+        if self.image:
+            filename = (
+                self.image.filename.rsplit(".", 1)[0]
+                if "." in self.image.filename
+                else self.image.filename
+            )
+        else:
+            filename = custom
+
+        return f"titanium_{filename}.{output_format.value.lower()}"
 
     def _load_sync(self, data: bytes) -> Image.Image:
         return Image.open(BytesIO(data))
@@ -702,4 +706,26 @@ class ImageTools:
         return File(
             fp=buffer,
             filename=self._get_output_filename(output_format),
+        )
+
+    def _nasa_sync(self, characters: list[BytesIO]) -> Image.Image:
+        width = (272 * len(characters)) + (20 * len(characters)) - 20
+        output_img = Image.new(mode="RGBA", size=[width, 676])
+
+        for i, character in enumerate(characters):
+            char_img = Image.open(character)
+            output_img.paste(char_img, ((i * 272) + (20 * i), 0))
+
+        return output_img
+
+    async def nasa(self, output_format: ImageFormats, characters: list[BytesIO]) -> File:
+        """
+        Generate NASA Earthsat image and return.
+        """
+        nasa_img = await asyncio.to_thread(self._nasa_sync, characters)
+        buffer = await asyncio.to_thread(self._save_sync, nasa_img, output_format, 95)
+
+        return File(
+            fp=buffer,
+            filename=self._get_output_filename(output_format, "nasa"),
         )
