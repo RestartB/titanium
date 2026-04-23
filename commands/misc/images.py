@@ -1,5 +1,6 @@
 import asyncio
 import os
+import random
 import re
 import textwrap
 from io import BytesIO
@@ -27,6 +28,35 @@ class OperationTooLargeError(Exception):
 
 
 class Images(commands.Cog):
+    number_of = {
+        "A": [0, 1, 2, 3, 4],
+        "B": [0, 1],
+        "C": [0, 1, 2],
+        "D": [0, 1],
+        "E": [0, 1, 2, 3],
+        "F": [0, 1],
+        "G": [0],
+        "H": [0, 1],
+        "I": [0, 1, 2, 3, 4],
+        "J": [0, 1, 2],
+        "K": [0, 1],
+        "L": [0, 1, 2, 3],
+        "M": [0, 1, 2],
+        "N": [0, 1, 2],
+        "O": [0, 1],
+        "P": [0, 1],
+        "Q": [0, 1],
+        "R": [0, 1, 2, 3],
+        "S": [0, 1, 2],
+        "T": [0, 1],
+        "U": [0, 1],
+        "V": [0, 1, 2, 3],
+        "W": [0, 1],
+        "X": [0, 1, 2],
+        "Y": [0, 1],
+        "Z": [0, 1],
+    }
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -67,6 +97,97 @@ class Images(commands.Cog):
         allowed_contexts=context,
         allowed_installs=installs,
     )
+
+    def _generate_nasa(
+        self, characters: list[BytesIO]
+    ) -> tuple[BytesIO, tuple[int, int]]:
+        width = (272 * len(characters)) + (20 * len(characters)) - 20
+        output_img = Image.new(mode="RGBA", size=[width, 676])
+
+        for i, character in enumerate(characters):
+            char_img = Image.open(character)
+            output_img.paste(char_img, ((i * 272) + (20 * i), 0))
+
+        output_data = BytesIO()
+        output_img.save(output_data, format="PNG")
+        output_data.seek(0)
+
+        return output_data, (output_img.width, output_img.height)
+
+    @imageGroup.command(
+        name="nasa",
+        description="Create an image of characters spelt by Earth images by NASA Landsat.",
+    )
+    @app_commands.describe(
+        word="Word to generate image of. Cannot contain spaces, numbers or special characters.",
+        spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
+    async def nasa(
+        self,
+        interaction: discord.Interaction,
+        word: app_commands.Range[str, 1, 50],
+        spoiler: bool = False,
+        ephemeral: bool = False,
+    ) -> None:
+        await interaction.response.defer(ephemeral=ephemeral)
+
+        if len(word) > 50:
+            embed = discord.Embed(
+                title="Error",
+                description="The word is too long. It can only be 50 letters long.",
+                color=Color.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
+
+        if not (word.isascii() and word.isalpha()):
+            embed = discord.Embed(
+                title="Error",
+                description="The word can only contain letters.",
+                color=Color.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
+
+        images: list[BytesIO] = []
+        for character in word:
+            number = random.choice(self.number_of[character.upper()])
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"https://science.nasa.gov/specials/your-name-in-landsat/images/{character}_{number}.jpg"
+                ) as request:
+                    image_data = BytesIO()
+
+                    async for chunk in request.content.iter_chunked(8192):
+                        image_data.write(chunk)
+
+                    image_data.seek(0)
+
+            images.append(image_data)
+
+        output, size = self._generate_nasa(images)
+        embed = discord.Embed(
+            title="Image Generated",
+            description=f"**Size: **`{size[0]}x{size[1]}`\n\nImages sourced from NASA and the U.S. Geological Survey.",
+            color=Color.green(),
+        )
+        embed.set_footer(
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+
+        file_processed = discord.File(
+            fp=output,
+            filename="titanium_nasa.png",
+            spoiler=spoiler,
+        )
+        embed.set_image(url=f"attachment://{file_processed.filename}")
+
+        await interaction.followup.send(
+            embed=embed, file=file_processed, ephemeral=ephemeral
+        )
 
     def _resize_image(
         self,
