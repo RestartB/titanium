@@ -32,7 +32,6 @@ class TagSettingsCog(commands.Cog):
     settings_group = app_commands.Group(
         name="tag-settings",
         description="Manage tag settings.",
-        guild_only=True,
         allowed_contexts=context,
         allowed_installs=installs,
     )
@@ -57,7 +56,14 @@ class TagSettingsCog(commands.Cog):
         async with get_session() as session:
             to_edit = await session.get(Tag, tag)
 
-        if not to_edit:
+        if (
+            not to_edit
+            or (to_edit.is_user and to_edit.owner_id != interaction.user.id)
+            or (
+                not to_edit.is_user
+                and (not interaction.guild or to_edit.guild_id != interaction.guild.id)
+            )
+        ):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Not Found",
                 description="Couldn't find the tag. Please select a tag from the autocomplete when typing the tag name.",
@@ -68,7 +74,7 @@ class TagSettingsCog(commands.Cog):
         if not to_edit.is_user and not self.__get_if_server_tag_allowed(interaction):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} No Permissions",
-                description="You are not allowed to create or modify server tags.",
+                description="You are not allowed to create or modify server tags. Please ensure you have the **Manage Guild** permission.",
                 colour=discord.Colour.red(),
             )
             return await interaction.followup.send(embed=embed, ephemeral=True)
@@ -88,7 +94,14 @@ class TagSettingsCog(commands.Cog):
         async with get_session() as session:
             to_delete = await session.get(Tag, tag)
 
-        if not to_delete:
+        if (
+            not to_delete
+            or (to_delete.is_user and to_delete.owner_id != interaction.user.id)
+            or (
+                not to_delete.is_user
+                and (not interaction.guild or to_delete.guild_id != interaction.guild.id)
+            )
+        ):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Not Found",
                 description="Couldn't find the tag. Please select a tag from the autocomplete when typing the tag name.",
@@ -99,7 +112,7 @@ class TagSettingsCog(commands.Cog):
         if not to_delete.is_user and not self.__get_if_server_tag_allowed(interaction):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} No Permissions",
-                description="You are not allowed to create or modify server tags.",
+                description="You are not allowed to create or modify server tags. Please ensure you have the **Manage Guild** permission.",
                 colour=discord.Colour.red(),
             )
             return await interaction.followup.send(embed=embed, ephemeral=True)
