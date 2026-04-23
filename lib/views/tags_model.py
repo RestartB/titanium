@@ -93,7 +93,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
         ):
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} No Permissions",
-                description="You are not allowed to create or modify server tags.",
+                description="You are not allowed to create or modify server tags. Please ensure you have the **Manage Guild** permission.",
                 colour=discord.Colour.red(),
             )
             return await interaction.followup.send(embed=embed, ephemeral=True)
