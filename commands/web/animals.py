@@ -6,24 +6,6 @@ from discord import Color, app_commands
 from discord.ext import commands
 
 
-class ImageView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=60)
-        self.message: discord.InteractionMessage
-
-    # On timeout
-    async def on_timeout(self):
-        await self.message.edit(view=None)
-
-    @discord.ui.button(label="Reload", emoji="🔄", style=discord.ButtonStyle.primary)
-    async def reload(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-
-        await interaction.edit_original_response(
-            embed=interaction.message.embeds[0], view=None
-        )
-
-
 class Animals(commands.Cog):
     # noinspection SpellCheckingInspection
     def __init__(self, bot):
@@ -186,12 +168,7 @@ class Animals(commands.Cog):
             icon_url=interaction.user.display_avatar.url,
         )
 
-        view_instance = ImageView()
-
-        await interaction.followup.send(
-            embed=embed, ephemeral=ephemeral, view=view_instance
-        )
-        view_instance.message = await interaction.original_response()
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot):
