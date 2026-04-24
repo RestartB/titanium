@@ -69,6 +69,7 @@ class SongURL(commands.Cog):
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
+        sent_message = False
         og_url = url
         url = self.cleaner.clean(url)
 
@@ -98,7 +99,7 @@ class SongURL(commands.Cog):
                         text=f"@{interaction.user.name} - Assisted by song.link",
                         icon_url=interaction.user.display_avatar.url,
                     )
-                    await interaction.followup.send(embed=embed)
+                    await interaction.edit_original_response(embed=embed)
                     raise songlink_exceptions.InvalidLinkException()
                 # Unknown Error
                 if not (request_status <= 200 or request_status >= 299) or (
@@ -120,7 +121,7 @@ class SongURL(commands.Cog):
                         text=f"@{interaction.user.name} - Assisted by song.link",
                         icon_url=interaction.user.display_avatar.url,
                     )
-                    await interaction.followup.send(embed=embed)
+                    await interaction.edit_original_response(embed=embed)
                     raise songlink_exceptions.SongLinkErrorException()
                 # Data returned is not song
                 elif (
@@ -146,7 +147,7 @@ class SongURL(commands.Cog):
                         text=f"@{interaction.user.name} - Assisted by song.link",
                         icon_url=interaction.user.display_avatar.url,
                     )
-                    await interaction.followup.send(embed=embed)
+                    await interaction.edit_original_response(embed=embed)
                     raise songlink_exceptions.UnsupportedDataTypeException()
                 # Data valid
                 else:
@@ -158,7 +159,7 @@ class SongURL(commands.Cog):
                     description="Couldn't find the song on Spotify or your selected streaming service.",
                     color=Color.red(),
                 )
-                await interaction.followup.send(embed=embed)
+                await interaction.edit_original_response(embed=embed)
                 return
 
             # Set Platform Strings
@@ -257,6 +258,7 @@ class SongURL(commands.Cog):
                         await interaction.followup.send(
                             embed=embed, ephemeral=ephemeral
                         )
+                        sent_message = True
 
                         url, platform, platform_api = await songlink_request(url)
 
@@ -301,6 +303,7 @@ class SongURL(commands.Cog):
                                 await interaction.followup.send(
                                     embed=embed, ephemeral=ephemeral
                                 )
+                                sent_message = True
 
                                 url = self.cleaner.clean(url)
                                 url, platform, platform_api = await songlink_request(
@@ -346,8 +349,10 @@ class SongURL(commands.Cog):
                             text=f"@{interaction.user.name}",
                             icon_url=interaction.user.display_avatar.url,
                         )
-                        await interaction.followup.send(embed=embed)
-                        return
+
+                        if sent_message:
+                            return await interaction.edit_original_response(embed=embed)
+                        return await interaction.followup.send(embed=embed)
                     else:
                         embed = discord.Embed(
                             title="Error occurred while expanding URL.",
@@ -358,8 +363,10 @@ class SongURL(commands.Cog):
                             text=f"@{interaction.user.name}",
                             icon_url=interaction.user.display_avatar.url,
                         )
-                        await interaction.followup.send(embed=embed)
-                        return
+
+                        if sent_message:
+                            return await interaction.edit_original_response(embed=embed)
+                        return await interaction.followup.send(embed=embed)
 
             # Track URL
             if "track" in url:
@@ -372,18 +379,14 @@ class SongURL(commands.Cog):
                         description="A Spotify error occurred. Check the link is valid.",
                         color=Color.red(),
                     )
-                    embed.add_field(
-                        name="Tip",
-                        value="Is there a reigon code in the Spotify URL - e.g. `/intl-de/`? Remove it and it should fix the URL.",
-                    )
                     embed.set_footer(
                         text=f"@{interaction.user.name}",
                         icon_url=interaction.user.display_avatar.url,
                     )
 
-                    await interaction.followup.send(embed=embed)
-
-                    return
+                    if sent_message:
+                        return await interaction.edit_original_response(embed=embed)
+                    return await interaction.followup.send(embed=embed)
 
                 # Add OG platform button when OG platform isn't Spotify
                 if platform_api != "spotify":
@@ -425,9 +428,9 @@ class SongURL(commands.Cog):
                         icon_url=interaction.user.display_avatar.url,
                     )
 
-                    await interaction.followup.send(embed=embed)
-
-                    return
+                    if sent_message:
+                        return await interaction.edit_original_response(embed=embed)
+                    return await interaction.followup.send(embed=embed)
 
                 # Fetch artist top songs
                 result_top_tracks = self.sp.artist_top_tracks(url)
@@ -450,18 +453,14 @@ class SongURL(commands.Cog):
                         description="A Spotify error occurred. Check the link is valid.",
                         color=Color.red(),
                     )
-                    embed.add_field(
-                        name="Tip",
-                        value="Is there a reigon code in the Spotify URL - e.g. `/intl-de/`? Remove it and it should fix the URL.",
-                    )
                     embed.set_footer(
                         text=f"@{interaction.user.name}",
                         icon_url=interaction.user.display_avatar.url,
                     )
 
-                    await interaction.followup.send(embed=embed)
-
-                    return
+                    if sent_message:
+                        return await interaction.edit_original_response(embed=embed)
+                    return await interaction.followup.send(embed=embed)
 
                 # Add OG platform button when OG platform isn't Spotify
                 if platform_api != "spotify":
@@ -498,15 +497,20 @@ class SongURL(commands.Cog):
                     text=f"@{interaction.user.name}",
                     icon_url=interaction.user.display_avatar.url,
                 )
-                await interaction.followup.send(embed=embed)
+
+                if sent_message:
+                    return await interaction.edit_original_response(embed=embed)
+                return await interaction.followup.send(embed=embed)
         except KeyError:
             embed = discord.Embed(
                 title="Error",
                 description="Couldn't find the song on Spotify or your selected streaming service.",
                 color=Color.red(),
             )
-            await interaction.edit_original_response(embed=embed)
-            return
+
+            if sent_message:
+                return await interaction.edit_original_response(embed=embed)
+            return await interaction.followup.send(embed=embed)
 
 
 async def setup(bot):
