@@ -21,6 +21,7 @@ class Reviews(commands.Cog):
     )
 
     async def generate_user_review_embed(
+        self,
         interaction: discord.Interaction,
         user: discord.Member | discord.User,
         page: list,
@@ -58,6 +59,7 @@ class Reviews(commands.Cog):
         return embed
 
     async def generate_server_review_embed(
+        self,
         interaction: discord.Interaction,
         guild: discord.Guild,
         page: list,
@@ -218,7 +220,7 @@ class Reviews(commands.Cog):
                         item.disabled = True
 
                 await interaction.response.edit_message(
-                    embed=await Reviews.generate_user_review_embed(
+                    embed=await self.generate_user_review_embed(
                         interaction,
                         user,
                         self.pages[self.page],
@@ -249,7 +251,7 @@ class Reviews(commands.Cog):
                         item.disabled = False
 
                 await interaction.response.edit_message(
-                    embed=await Reviews.generate_user_review_embed(
+                    embed=await self.generate_user_review_embed(
                         interaction,
                         user,
                         self.pages[self.page],
@@ -304,7 +306,7 @@ class Reviews(commands.Cog):
                         item.disabled = False
 
                 await interaction.response.edit_message(
-                    embed=await Reviews.generate_user_review_embed(
+                    embed=await self.generate_user_review_embed(
                         interaction,
                         user,
                         self.pages[self.page],
@@ -329,7 +331,7 @@ class Reviews(commands.Cog):
                         item.disabled = True
 
                 await interaction.response.edit_message(
-                    embed=await Reviews.generate_user_review_embed(
+                    embed=await self.generate_user_review_embed(
                         interaction,
                         user,
                         self.pages[self.page],
@@ -343,7 +345,7 @@ class Reviews(commands.Cog):
         if len(pages) != 0:
             if len(pages) == 1:
                 await interaction.followup.send(
-                    embed=await Reviews.generate_user_review_embed(
+                    embed=await self.generate_user_review_embed(
                         interaction, user, pages[0], 0, len(pages), review_amount
                     ),
                     ephemeral=ephemeral,
@@ -352,7 +354,7 @@ class Reviews(commands.Cog):
                 page_view_instance = PageView(pages)
 
                 webhook = await interaction.followup.send(
-                    embed=await Reviews.generate_user_review_embed(
+                    embed=await self.generate_user_review_embed(
                         interaction, user, pages[0], 0, len(pages), review_amount
                     ),
                     view=page_view_instance,
@@ -513,7 +515,7 @@ class Reviews(commands.Cog):
                         item.disabled = True
 
                 await interaction.response.edit_message(
-                    embed=await Reviews.generate_server_review_embed(
+                    embed=await self.generate_server_review_embed(
                         interaction,
                         guild,
                         self.pages[self.page],
@@ -544,7 +546,7 @@ class Reviews(commands.Cog):
                         item.disabled = False
 
                 await interaction.response.edit_message(
-                    embed=await Reviews.generate_server_review_embed(
+                    embed=await self.generate_server_review_embed(
                         interaction,
                         guild,
                         self.pages[self.page],
@@ -599,7 +601,7 @@ class Reviews(commands.Cog):
                         item.disabled = False
 
                 await interaction.response.edit_message(
-                    embed=await Reviews.generate_server_review_embed(
+                    embed=await self.generate_server_review_embed(
                         interaction,
                         guild,
                         self.pages[self.page],
@@ -624,7 +626,7 @@ class Reviews(commands.Cog):
                         item.disabled = True
 
                 await interaction.response.edit_message(
-                    embed=await Reviews.generate_server_review_embed(
+                    embed=await self.generate_server_review_embed(
                         interaction,
                         guild,
                         self.pages[self.page],
@@ -638,7 +640,7 @@ class Reviews(commands.Cog):
         if len(pages) != 0:
             if len(pages) == 1:
                 await interaction.followup.send(
-                    embed=await Reviews.generate_server_review_embed(
+                    embed=await self.generate_server_review_embed(
                         interaction, guild, pages[0], 0, len(pages), review_amount
                     ),
                     ephemeral=ephemeral,
@@ -647,7 +649,7 @@ class Reviews(commands.Cog):
                 page_view_instance = PageView(pages)
 
                 webhook = await interaction.followup.send(
-                    embed=await Reviews.generate_server_review_embed(
+                    embed=await self.generate_server_review_embed(
                         interaction, guild, pages[0], 0, len(pages), review_amount
                     ),
                     view=page_view_instance,
