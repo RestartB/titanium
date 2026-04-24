@@ -134,7 +134,7 @@ class Misc(commands.Cog):
                     json={"username": username, "language": "english"},
                 ) as request:
                     embed = discord.Embed(
-                        title=f"AI GitHub Roast",
+                        title="AI GitHub Roast",
                         description=(await request.json())["roast"],
                         color=Color.random(),
                     )
