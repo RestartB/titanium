@@ -1,5 +1,6 @@
 import asyncio
 import random
+from typing import Literal
 
 import aiohttp
 import discord
@@ -141,9 +142,7 @@ class Misc(commands.Cog):
                         text=f"@{interaction.user.name} - https://githubroast.mgyt.xyz",
                         icon_url=interaction.user.display_avatar.url,
                     )
-                    embed.set_author(
-                        name=username
-                    )
+                    embed.set_author(name=username)
 
                     await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         except KeyError:
@@ -339,14 +338,14 @@ class Misc(commands.Cog):
         description="Convert normal text to freaky text, or the other way around.",
     )
     @app_commands.describe(
-        convert_from="Whether to convert from freaky text to normal text.",
+        mode="The conversion mode to use.",
         text="The text to convert.",
         ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.",
     )
     async def freaky(
         self,
         interaction: discord.Interaction,
-        convert_from: bool,
+        mode: Literal["Convert to freaky text", "Convert to normal text"],
         text: str,
         ephemeral: bool = False,
     ):
@@ -408,20 +407,16 @@ class Misc(commands.Cog):
         }
 
         for char in charMap:
-            if convert_from:
+            if mode == "Convert to normal text":
                 text = text.replace(charMap[char], char)
             else:
                 text = text.replace(char, charMap[char])
 
-        embed = discord.Embed(
-            title="Freaky Text", description=text, color=Color.random()
+        await interaction.followup.send(
+            content=text,
+            allowed_mentions=discord.AllowedMentions.none(),
+            ephemeral=ephemeral,
         )
-        embed.set_footer(
-            text=f"@{interaction.user.name}",
-            icon_url=interaction.user.display_avatar.url,
-        )
-
-        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # --- Misc Utility Commands --- #
 
