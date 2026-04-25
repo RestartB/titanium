@@ -131,7 +131,7 @@ class TitaniumBot(commands.Bot):
         cache_logger.info("Opt-out IDs refreshed.")
 
     async def refresh_all_caches(self) -> None:
-        cache_logger.info("Refreshing guild config caches...")
+        cache_logger.info("Refreshing all guild config caches...")
 
         async with get_session() as session:
             # Settings
@@ -182,7 +182,7 @@ class TitaniumBot(commands.Bot):
         cache_logger.info("Guild configs refreshed.")
 
     async def refresh_guild_config_cache(self, guild_id: int) -> None:
-        cache_logger.info(f"Refreshing guild config cache for guild {guild_id}...")
+        cache_logger.debug(f"Refreshing guild config cache for guild {guild_id}...")
 
         async with get_session() as session:
             # Settings
@@ -243,7 +243,7 @@ class TitaniumBot(commands.Bot):
             for message in fireboard_messages:
                 self.fireboard_messages.setdefault(message.guild_id, []).append(message)
 
-        cache_logger.info(f"Guild config cache for guild {guild_id} refreshed.")
+        cache_logger.debug(f"Guild config cache for guild {guild_id} refreshed.")
 
     def remove_cached_config(self, guild_id: int) -> None:
         self.guild_configs.pop(guild_id, None)
@@ -254,7 +254,7 @@ class TitaniumBot(commands.Bot):
         self.fireboard_messages.pop(guild_id, None)
 
     async def init_guild(self, guild_id: int, refresh: bool = True) -> GuildSettings | None:
-        db_logger.info(f"Initializing guild {guild_id}...")
+        db_logger.debug(f"Initializing guild {guild_id}...")
 
         async with get_session() as session:
             stmt = insert(GuildSettings).values(guild_id=guild_id)
@@ -308,7 +308,7 @@ class TitaniumBot(commands.Bot):
         if refresh:
             await self.refresh_guild_config_cache(guild_id)
 
-        db_logger.info(f"Guild {guild_id} initialized.")
+        db_logger.debug(f"Guild {guild_id} initialized.")
         return self.guild_configs.get(guild_id)
 
     async def fetch_guild_config(
@@ -468,6 +468,7 @@ bot = TitaniumBot(
     case_insensitive=True,
     max_messages=2500,
     help_command=None,
+    chunk_guilds_at_startup=False,
 )
 
 

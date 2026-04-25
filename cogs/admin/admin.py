@@ -8,6 +8,7 @@ import aiohttp
 import discord
 from discord.ext import commands
 
+from lib.helpers.cache import get_or_fetch_member, get_or_fetch_message
 from lib.helpers.hybrid_adapters import defer, handle_group_command_not_found
 
 if TYPE_CHECKING:
@@ -231,16 +232,18 @@ class AdminCog(commands.Cog):
         async with defer(ctx, ephemeral=True):
             try:
                 for server in self.bot.punishing:
-                    if user_id in self.bot.punishing[server]:
-                        self.bot.punishing[server].remove(user_id)
-                        await ctx.reply(
-                            embed=discord.Embed(
-                                title=f"{self.bot.success_emoji} User Unlocked",
-                                description=f"Successfully unlocked user ID `{user_id}`.",
-                                colour=discord.Colour.green(),
-                            ),
-                            ephemeral=True,
-                        )
+                    if user_id not in self.bot.punishing[server]:
+                        continue
+
+                    self.bot.punishing[server].remove(user_id)
+                    await ctx.reply(
+                        embed=discord.Embed(
+                            title=f"{self.bot.success_emoji} User Unlocked",
+                            description=f"Successfully unlocked user ID `{user_id}`.",
+                            colour=discord.Colour.green(),
+                        ),
+                        ephemeral=True,
+                    )
                 else:
                     await ctx.reply(
                         embed=discord.Embed(
@@ -467,6 +470,70 @@ class AdminCog(commands.Cog):
                     ),
                     ephemeral=True,
                 )
+
+    @admin_group.command(name="usertest", hidden=True)
+    @commands.is_owner()
+    @commands.guild_only()
+    async def user_test(
+        self, ctx: commands.Context["TitaniumBot"], user_id: str
+    ) -> discord.Message | None:
+        await ctx.defer(ephemeral=True)
+
+        if not ctx.guild:
+            return
+
+        member = await get_or_fetch_member(self.bot, ctx.guild, int(user_id))
+
+        if not member:
+            return await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Not Found",
+                    description=f"`{user_id}`",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
+
+        await ctx.reply(
+            embed=discord.Embed(
+                title=f"{self.bot.success_emoji} Found",
+                description=f"`{member.id}`",
+                colour=discord.Colour.green(),
+            ),
+            ephemeral=True,
+        )
+
+    @admin_group.command(name="msgtest", hidden=True)
+    @commands.is_owner()
+    @commands.guild_only()
+    async def msg_test(
+        self, ctx: commands.Context["TitaniumBot"], msg_id: str
+    ) -> discord.Message | None:
+        await ctx.defer(ephemeral=True)
+
+        if not ctx.guild:
+            return
+
+        member = await get_or_fetch_message(self.bot, ctx.channel, int(msg_id))
+
+        if not member:
+            return await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Not Found",
+                    description=f"`{msg_id}`",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
+
+        await ctx.reply(
+            embed=discord.Embed(
+                title=f"{self.bot.success_emoji} Found",
+                description=f"`{msg_id}`",
+                colour=discord.Colour.green(),
+            ),
+            ephemeral=True,
+        )
 
 
 async def setup(bot: TitaniumBot) -> None:

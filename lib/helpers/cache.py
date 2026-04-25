@@ -44,3 +44,19 @@ async def get_or_fetch_member(
         return member
     except discord.NotFound:
         return None
+
+
+async def get_or_fetch_user(bot: TitaniumBot, user_id: int) -> discord.User | None:
+    # Try to get the user from cache
+    user = bot.get_user(user_id)
+    if user:
+        LOGGER.debug(f"Got user from cache (user: {user_id})")
+        return user
+
+    # If not in cache, fetch from API
+    try:
+        LOGGER.debug(f"Fetching user from Discord (user: {user_id})")
+        user = await bot.fetch_user(user_id)
+        return user
+    except discord.NotFound:
+        return None
