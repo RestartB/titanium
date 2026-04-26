@@ -166,7 +166,9 @@ class SettingsView(LayoutView):
         container.add_item(confessions_section)
 
         tags_section = Section(accessory=FeatureToggleButton(bot, settings, "tags_enabled"))
-        tags_section.add_item(TextDisplay("### Tags\nSend quick responses with key words."))
+        tags_section.add_item(
+            TextDisplay("### Tags\nSend server wide quick responses with key words.")
+        )
         container.add_item(tags_section)
 
         self.add_item(container)

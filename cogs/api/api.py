@@ -104,7 +104,7 @@ class APICog(commands.Cog):
             self.app = web.Application(middlewares=[self.auth_middleware])
             self.register_routes()
 
-            self.runner = web.AppRunner(self.app, access_log=None)
+            self.runner = web.AppRunner(self.app, access_log=self.logger)
             await self.runner.setup()
 
             self.site = web.TCPSite(self.runner, self.host, self.port)
@@ -387,7 +387,8 @@ class APICog(commands.Cog):
             )
             total_count = total_result.scalar() or 0
 
-            if offset >= total_count:
+            # no need to get errors if we know there will be none
+            if offset >= total_count or total_count == 0:
                 return web.json_response(
                     {
                         "total_count": total_count,
@@ -440,7 +441,8 @@ class APICog(commands.Cog):
             )
             total_count = total_result.scalar() or 0
 
-            if offset >= total_count:
+            # no need to get cases if we know there will be none
+            if offset >= total_count or total_count == 0:
                 return web.json_response(
                     {
                         "total_count": total_count,
@@ -572,18 +574,34 @@ class APICog(commands.Cog):
         offset = max(int(request.query.get("offset", 0)), 0)
 
         async with get_session() as session:
-            # Get case from db
+            # Get total count
+            total_result = await session.execute(
+                select(func.count())
+                .select_from(ModCaseComment)
+                .where(ModCaseComment.guild_id == guild.id, ModCaseComment.case_id == case_id)
+            )
+            total_count = total_result.scalar() or 0
+
+            # no need to get comments if we know there will be none
+            if offset >= total_count or total_count == 0:
+                return web.json_response(
+                    {
+                        "total_count": total_count,
+                        "comments": [],
+                    }
+                )
+
+            # Get comments from db
             result = await session.execute(
                 select(ModCaseComment)
-                .where(ModCaseComment.guild_id == guild.id)
-                .where(ModCaseComment.case_id == case_id)
+                .where(ModCaseComment.guild_id == guild.id, ModCaseComment.case_id == case_id)
                 .limit(limit)
                 .offset(offset)
             )
             comments = result.scalars().all()
 
         if not comments:
-            return web.json_response({"comments": []}, status=200)
+            return web.json_response({"total_count": total_count, "comments": []}, status=200)
 
         # Get user objects to send user info
         cached_users: dict[int, discord.User | discord.Member | None] = {}
@@ -610,7 +628,7 @@ class APICog(commands.Cog):
                 }
             )
 
-        return web.json_response({"comments": comments_list})
+        return web.json_response({"total_count": total_count, "comments": comments_list})
 
     async def guild_case_add_comment(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
@@ -695,6 +713,23 @@ class APICog(commands.Cog):
         offset = max(int(request.query.get("offset", 0)), 0)
 
         async with get_session() as session:
+            # Get total count
+            total_result = await session.execute(
+                select(func.count())
+                .select_from(Tag)
+                .where(Tag.guild_id == guild.id, Tag.is_user.is_(False))
+            )
+            total_count = total_result.scalar() or 0
+
+            # no need to get tags if we know there will be none
+            if offset >= total_count or total_count == 0:
+                return web.json_response(
+                    {
+                        "total_count": total_count,
+                        "tags": [],
+                    }
+                )
+
             # Get tags from db
             result = await session.execute(
                 select(Tag)
@@ -705,7 +740,7 @@ class APICog(commands.Cog):
             tags = result.scalars().all()
 
         if not tags:
-            return web.json_response({"tags": []}, status=200)
+            return web.json_response({"total_count": total_count, "tags": []}, status=200)
 
         # Get user objects to send user info
         cached_users: dict[int, discord.User | discord.Member | None] = {}
@@ -720,7 +755,7 @@ class APICog(commands.Cog):
                     self.bot, guild, tag.modified_by
                 )
 
-        tags_list = []
+        tags_list: list[dict] = []
         for tag in tags:
             cuser = cached_users.get(tag.owner_id)
             muser = cached_users.get(tag.modified_by) if tag.modified_by else None
@@ -741,7 +776,7 @@ class APICog(commands.Cog):
                 }
             )
 
-        return web.json_response({"tags": tags_list})
+        return web.json_response({"total_count": total_count, "tags": tags_list})
 
     async def guild_create_tag(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
@@ -865,6 +900,23 @@ class APICog(commands.Cog):
         offset = max(int(request.query.get("offset", 0)), 0)
 
         async with get_session() as session:
+            # Get total count
+            total_result = await session.execute(
+                select(func.count())
+                .select_from(LeaderboardUserStats)
+                .where(LeaderboardUserStats.guild_id == guild.id)
+            )
+            total_count = total_result.scalar() or 0
+
+            # no need to get leaderboard entries if we know there will be none
+            if offset >= total_count or total_count == 0:
+                return web.json_response(
+                    {
+                        "total_count": total_count,
+                        "leaderboard": [],
+                    }
+                )
+
             result = await session.execute(
                 select(LeaderboardUserStats)
                 .where(LeaderboardUserStats.guild_id == guild.id)
@@ -876,6 +928,7 @@ class APICog(commands.Cog):
 
         return web.json_response(
             {
+                "total_count": total_count,
                 "leaderboard": [
                     {
                         "user_id": str(user_stat.user_id),

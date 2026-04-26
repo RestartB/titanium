@@ -82,7 +82,6 @@ init_logger.info("https://github.com/restartb/titanium")
 # titanium needs the message content intent and members intent to function
 # without these the bot will not run
 # if your bot is in over 100 servers, please get these approved in the discord dev portal first
-
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
