@@ -731,6 +731,7 @@ class Tag(Base):
     )
 
     owner_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    modified_by: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     is_user: Mapped[bool] = MappedColumn(Boolean, nullable=False)
     name: Mapped[str] = MappedColumn(String(length=80), nullable=False)
     content: Mapped[str] = MappedColumn(String(length=1024), nullable=False)

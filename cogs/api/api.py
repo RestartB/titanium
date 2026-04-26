@@ -33,9 +33,10 @@ from lib.api.validators import (
     LoggingConfigModel,
     ModerationConfigModel,
     ServerCountersConfigModel,
+    TagModel,
 )
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
-from lib.helpers.cache import get_or_fetch_member
+from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
 from lib.sql.sql import (
@@ -58,6 +59,7 @@ from lib.sql.sql import (
     ModCase,
     ModCaseComment,
     ServerCounterChannel,
+    Tag,
     get_session,
 )
 
@@ -122,7 +124,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/status", self.status)
         self.app.router.add_get("/stats", self.stats)
 
-        self.app.router.add_get("/user/{user_id}/guilds", self.mutual_guilds)
+        self.app.router.add_post("/user/{user_id}/guilds", self.mutual_guilds)
         self.app.router.add_get("/user/{user_id}/inguild/{guild_id}", self.in_guild)
 
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
@@ -134,13 +136,18 @@ class APICog(commands.Cog):
         self.app.router.add_get(
             "/guild/{guild_id}/cases/{case_id}/comments", self.guild_case_comments
         )
-        self.app.router.add_put(
+        self.app.router.add_post(
             "/guild/{guild_id}/cases/{case_id}/comments", self.guild_case_add_comment
         )
         self.app.router.add_delete(
             "/guild/{guild_id}/cases/{case_id}/comments/{comment_id}",
             self.guild_case_delete_comment,
         )
+
+        self.app.router.add_get("/guild/{guild_id}/tags", self.guild_tags)
+        self.app.router.add_post("/guild/{guild_id}/tags", self.guild_create_tag)
+        self.app.router.add_patch("/guild/{guild_id}/tags/{tag_id}", self.guild_edit_tag)
+        self.app.router.add_delete("/guild/{guild_id}/tags/{tag_id}", self.guild_delete_tag)
 
         self.app.router.add_get("/guild/{guild_id}/perms", self.guild_perms)
         self.app.router.add_put("/guild/{guild_id}/perms", self.set_guild_perms)
@@ -235,12 +242,20 @@ class APICog(commands.Cog):
             return web.json_response({"error": "user_id required"}, status=400)
 
         try:
-            user = await self.bot.fetch_user(int(user_id))
+            body: dict = await request.json()
+            guild_ids: list[str] = body.get("user_guilds", [])
         except Exception:
-            return web.json_response({"error": "user not found"}, status=404)
+            return web.json_response({"error": "invalid payload"}, status=400)
 
-        mutual_guilds = [str(guild.id) for guild in user.mutual_guilds]
-        return web.json_response(mutual_guilds)
+        bot_guild_ids: set[int] = {guild.id for guild in self.bot.guilds}
+
+        return web.json_response(
+            [
+                str(guild_id)
+                for guild_id in guild_ids
+                if guild_id.isdigit() and int(guild_id) in bot_guild_ids
+            ]
+        )
 
     async def in_guild(self, request: web.Request) -> web.Response:
         user_id = request.match_info.get("user_id")
@@ -257,8 +272,7 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        user = guild.get_member(int(user_id))
-        if user:
+        if await get_or_fetch_member(self.bot, guild, int(user_id)):
             return web.json_response({"in_guild": True}, status=200)
         else:
             return web.json_response({"in_guild": False}, status=200)
@@ -351,6 +365,59 @@ class APICog(commands.Cog):
                     "fireboards": guild_limits.fireboards,
                     "server_counters": guild_limits.server_counters,
                 },
+            }
+        )
+
+    async def guild_errors(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        limit = max(min(int(request.query.get("limit", 50)), 100), 1)
+        offset = max(int(request.query.get("offset", 0)), 0)
+
+        async with get_session() as session:
+            # Get total count
+            total_result = await session.execute(
+                select(func.count()).select_from(ErrorLog).where(ErrorLog.guild_id == guild.id)
+            )
+            total_count = total_result.scalar() or 0
+
+            if offset >= total_count:
+                return web.json_response(
+                    {
+                        "total_count": total_count,
+                        "errors": [],
+                    }
+                )
+
+            # Get errors from DB
+            result = await session.execute(
+                select(ErrorLog)
+                .where(ErrorLog.guild_id == guild.id)
+                .order_by(ErrorLog.time_occurred.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+            errors = result.scalars().all()
+
+        return web.json_response(
+            {
+                "total_count": total_count,
+                "errors": [
+                    {
+                        "id": str(error.id),
+                        "module": error.module,
+                        "error": error.error,
+                        "details": error.details,
+                        "time_occurred": error.time_occurred.isoformat(),
+                    }
+                    for error in errors
+                ],
             }
         )
 
@@ -454,33 +521,20 @@ class APICog(commands.Cog):
             if user_id in cached_users:
                 continue
 
-            member = guild.get_member(user_id)
-            if member:
-                cached_users[user_id] = member
-            else:
-                try:
-                    user = await self.bot.fetch_user(user_id)
-                    cached_users[user_id] = user
-                except Exception:
-                    cached_users[user_id] = None
+            cached_users[user_id] = await get_or_fetch_user(self.bot, user_id)
 
             for comment in case.comments:
                 if comment.user_id in cached_users:
                     continue
 
-                member = guild.get_member(comment.user_id)
-                if member:
-                    cached_users[comment.user_id] = member
-                else:
-                    try:
-                        user = await self.bot.fetch_user(comment.user_id)
-                        cached_users[comment.user_id] = user
-                    except Exception:
-                        cached_users[comment.user_id] = None
+                cached_users[comment.user_id] = await get_or_fetch_member(
+                    self.bot, guild, comment.user_id
+                )
 
         user = cached_users.get(case.user_id)
         creator = cached_users.get(case.creator_user_id)
 
+        # TODO: remove this, move to comments endpoint
         comments_list = []
         for comment in case.comments:
             cuser = cached_users.get(comment.user_id)
@@ -514,17 +568,22 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
+        limit = max(min(int(request.query.get("limit", 50)), 100), 1)
+        offset = max(int(request.query.get("offset", 0)), 0)
+
         async with get_session() as session:
             # Get case from db
             result = await session.execute(
                 select(ModCaseComment)
                 .where(ModCaseComment.guild_id == guild.id)
                 .where(ModCaseComment.case_id == case_id)
+                .limit(limit)
+                .offset(offset)
             )
             comments = result.scalars().all()
 
         if not comments:
-            return web.json_response({"comments": []}, status=404)
+            return web.json_response({"comments": []}, status=200)
 
         # Get user objects to send user info
         cached_users: dict[int, discord.User | discord.Member | None] = {}
@@ -532,15 +591,9 @@ class APICog(commands.Cog):
             if comment.user_id in cached_users:
                 continue
 
-            member = guild.get_member(comment.user_id)
-            if member:
-                cached_users[comment.user_id] = member
-            else:
-                try:
-                    user = await self.bot.fetch_user(comment.user_id)
-                    cached_users[comment.user_id] = user
-                except Exception:
-                    cached_users[comment.user_id] = None
+            cached_users[comment.user_id] = await get_or_fetch_member(
+                self.bot, guild, comment.user_id
+            )
 
         comments_list = []
         for comment in comments:
@@ -629,7 +682,7 @@ class APICog(commands.Cog):
 
         return web.Response(status=204)
 
-    async def guild_errors(self, request: web.Request) -> web.Response:
+    async def guild_tags(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
         if not guild_id or not guild_id.isdigit():
             return web.json_response({"error": "guild_id required"}, status=400)
@@ -642,45 +695,149 @@ class APICog(commands.Cog):
         offset = max(int(request.query.get("offset", 0)), 0)
 
         async with get_session() as session:
-            # Get total count
-            total_result = await session.execute(
-                select(func.count()).select_from(ErrorLog).where(ErrorLog.guild_id == guild.id)
-            )
-            total_count = total_result.scalar() or 0
-
-            if offset >= total_count:
-                return web.json_response(
-                    {
-                        "total_count": total_count,
-                        "errors": [],
-                    }
-                )
-
-            # Get errors from DB
+            # Get tags from db
             result = await session.execute(
-                select(ErrorLog)
-                .where(ErrorLog.guild_id == guild.id)
-                .order_by(ErrorLog.time_occurred.desc())
+                select(Tag)
+                .where(Tag.guild_id == guild.id, Tag.is_user.is_(False))
                 .limit(limit)
                 .offset(offset)
             )
-            errors = result.scalars().all()
+            tags = result.scalars().all()
 
-        return web.json_response(
-            {
-                "total_count": total_count,
-                "errors": [
-                    {
-                        "id": str(error.id),
-                        "module": error.module,
-                        "error": error.error,
-                        "details": error.details,
-                        "time_occurred": error.time_occurred.isoformat(),
-                    }
-                    for error in errors
-                ],
-            }
-        )
+        if not tags:
+            return web.json_response({"tags": []}, status=200)
+
+        # Get user objects to send user info
+        cached_users: dict[int, discord.User | discord.Member | None] = {}
+        for tag in tags:
+            if tag.owner_id not in cached_users:
+                cached_users[tag.owner_id] = await get_or_fetch_member(
+                    self.bot, guild, tag.owner_id
+                )
+
+            if tag.modified_by and tag.modified_by not in cached_users:
+                cached_users[tag.modified_by] = await get_or_fetch_member(
+                    self.bot, guild, tag.modified_by
+                )
+
+        tags_list = []
+        for tag in tags:
+            cuser = cached_users.get(tag.owner_id)
+            muser = cached_users.get(tag.modified_by) if tag.modified_by else None
+
+            tags_list.append(
+                {
+                    "id": str(tag.id),
+                    "name": tag.name,
+                    "content": tag.content,
+                    "creator_id": str(tag.owner_id),
+                    "creator_name": cuser.name if cuser else None,
+                    "creator_display": cuser.display_name if cuser else None,
+                    "creator_pfp": cuser.display_avatar.url if cuser else None,
+                    "modified_by_id": str(tag.modified_by) if tag.modified_by else None,
+                    "modified_by_name": muser.name if muser else None,
+                    "modified_by_display": muser.display_name if muser else None,
+                    "modified_by_pfp": muser.display_avatar.url if muser else None,
+                }
+            )
+
+        return web.json_response({"tags": tags_list})
+
+    async def guild_create_tag(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        tag_id = request.match_info.get("tag_id")
+        if not tag_id:
+            return web.json_response({"error": "tag_id required"}, status=400)
+
+        data = await request.json()
+        validated_tag = TagModel(**data)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        user_id = request.query.get("user", None)
+        if not user_id:
+            return web.json_response({"error": "user query parameter required"}, status=400)
+
+        member = await get_or_fetch_member(self.bot, guild, int(user_id))
+        if not member:
+            return web.json_response({"error": "user not found"}, status=404)
+
+        async with get_session() as session:
+            new_tag = Tag()
+
+            new_tag.name = validated_tag.name
+            new_tag.content = validated_tag.content
+            new_tag.owner_id = member.id
+            new_tag.guild_id = guild.id
+            new_tag.is_user = False
+
+            session.add(new_tag)
+
+        return web.Response(status=204)
+
+    async def guild_edit_tag(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        tag_id = request.match_info.get("tag_id")
+        if not tag_id:
+            return web.json_response({"error": "tag_id required"}, status=400)
+
+        data = await request.json()
+        validated_tag = TagModel(**data)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        user_id = request.query.get("user", None)
+        if not user_id:
+            return web.json_response({"error": "user query parameter required"}, status=400)
+
+        member = await get_or_fetch_member(self.bot, guild, int(user_id))
+        if not member:
+            return web.json_response({"error": "user not found"}, status=404)
+
+        async with get_session() as session:
+            to_edit = await session.get(Tag, tag_id)
+
+            if not to_edit or to_edit.is_user or to_edit.guild_id != guild.id:
+                return web.json_response({"error": "tag not found"}, status=404)
+
+            to_edit.name = validated_tag.name
+            to_edit.content = validated_tag.content
+            to_edit.modified_by = member.id
+
+        return web.Response(status=204)
+
+    async def guild_delete_tag(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        tag_id = request.match_info.get("tag_id")
+        if not tag_id:
+            return web.json_response({"error": "tag_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        async with get_session() as session:
+            to_delete = await session.get(Tag, tag_id)
+
+            if not to_delete or to_delete.is_user or to_delete.guild_id != guild.id:
+                return web.json_response({"error": "tag not found"}, status=404)
+
+            await session.execute(delete(Tag).where(Tag.id == to_delete.id))
+
+        return web.Response(status=204)
 
     async def guild_leaderboard(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
@@ -811,7 +968,7 @@ class APICog(commands.Cog):
         if not user_id or not user_id.isdigit():
             return web.json_response({"error": "user_id required"}, status=400)
 
-        member: discord.Member | None = guild.get_member(int(user_id))
+        member: discord.Member | None = await get_or_fetch_member(self.bot, guild, int(user_id))
         if not member:
             return web.json_response(
                 {

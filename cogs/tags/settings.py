@@ -7,7 +7,7 @@ from discord.ext import commands
 from lib.embeds.general import cancelled
 from lib.sql.sql import Tag, get_session
 from lib.views.confirm import ConfirmView
-from lib.views.tags_model import TagModal
+from lib.views.tags_modals import TagModal
 
 if TYPE_CHECKING:
     from main import TitaniumBot

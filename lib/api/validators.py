@@ -1,8 +1,8 @@
 import uuid
-from typing import Optional
+from typing import Annotated, Optional
 
 from emoji import is_emoji
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 
 from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
@@ -26,6 +26,7 @@ class ModuleModel(BaseModel):
     server_counters: bool
     confessions: bool
     leaderboard: bool
+    tags: bool
 
 
 class SettingsModel(BaseModel):
@@ -423,3 +424,8 @@ class LeaderboardConfigModel(BaseModel):
     web_login_required: bool
 
     levels: list[LeaderboardLevelModel] = Field(default_factory=list)
+
+
+class TagModel(BaseModel):
+    name: Annotated[str, StringConstraints(min_length=1, max_length=35)]
+    content: Annotated[str, StringConstraints(min_length=1, max_length=2000)]
