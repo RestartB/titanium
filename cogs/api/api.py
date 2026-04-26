@@ -78,6 +78,10 @@ class APICog(commands.Cog):
 
         self.logger: logging.Logger = logging.getLogger("api")
 
+        self.perm_cache: dict[tuple[int, int], tuple[float, dict]] = {}
+        self.perm_locks: dict[tuple[int, int], asyncio.Lock] = {}
+        self.PERM_CACHE_TTL = 60
+
         # Get host and port from env with defaults
         self.host = os.getenv("BOT_API_HOST", "127.0.0.1")
         self.port = int(os.getenv("BOT_API_PORT", 5000))
@@ -1021,44 +1025,65 @@ class APICog(commands.Cog):
         if not user_id or not user_id.isdigit():
             return web.json_response({"error": "user_id required"}, status=400)
 
-        member: discord.Member | None = await get_or_fetch_member(self.bot, guild, int(user_id))
-        if not member:
-            return web.json_response(
-                {
+        cache_key = (guild.id, int(user_id))
+        loop = asyncio.get_event_loop()
+        current_time = loop.time()
+
+        cached_data = self.perm_cache.get(cache_key)
+        if cached_data is not None:
+            expiry, cached_perms = cached_data
+            if current_time < expiry:
+                return web.json_response(cached_perms)
+
+        if cache_key not in self.perm_locks:
+            self.perm_locks[cache_key] = asyncio.Lock()
+
+        async with self.perm_locks[cache_key]:
+            cached_data = self.perm_cache.get(cache_key)
+            if cached_data is not None and loop.time() < cached_data[0]:
+                return web.json_response(cached_data[1])
+
+            member: discord.Member | None = await get_or_fetch_member(self.bot, guild, int(user_id))
+            if not member:
+                resp = {
                     "dashboard_manager": False,
                     "case_manager": False,
                     "member": False,
                 }
-            )
+                self.perm_cache[cache_key] = (loop.time() + self.PERM_CACHE_TTL, resp)
+                self.perm_locks.pop(cache_key, None)
+                return web.json_response(resp)
 
-        # Get permissions
-        config = await self.bot.fetch_guild_config(guild.id)
-        if not config:
-            return web.json_response(
-                {"error": "Failed to retrieve server configuration"},
-                status=500,
-            )
+            # Get permissions
+            config = await self.bot.fetch_guild_config(guild.id)
+            if not config:
+                self.perm_locks.pop(cache_key, None)
+                return web.json_response(
+                    {"error": "Failed to retrieve server configuration"},
+                    status=500,
+                )
 
-        dashboard_manager = member.guild_permissions.administrator
-        case_manager = member.guild_permissions.manage_guild
+            dashboard_manager = member.guild_permissions.administrator
+            case_manager = member.guild_permissions.manage_guild
 
-        for role in member.roles:
-            if role.id == guild.id:
-                continue
+            for role in member.roles:
+                if role.id == guild.id:
+                    continue
 
-            if role.id in config.dashboard_managers:
-                dashboard_manager = True
+                if role.id in config.dashboard_managers:
+                    dashboard_manager = True
 
-            if role.id in config.case_managers:
-                case_manager = True
+                if role.id in config.case_managers:
+                    case_manager = True
 
-        return web.json_response(
-            {
+            resp = {
                 "dashboard_manager": dashboard_manager,
                 "case_manager": case_manager,
                 "member": True,
             }
-        )
+            self.perm_cache[cache_key] = (loop.time() + self.PERM_CACHE_TTL, resp)
+            self.perm_locks.pop(cache_key, None)
+            return web.json_response(resp)
 
     async def guild_settings(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
