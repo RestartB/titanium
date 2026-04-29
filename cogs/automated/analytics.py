@@ -107,6 +107,11 @@ class Analytics(commands.Cog):
     # Analytics for server removes
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
+        # guild isn't available, let's not touch it
+        # could be a discord outage sending false events
+        if guild.unavailable:
+            return
+
         embed = discord.Embed(
             title="Left Guild",
             description=f"Titanium has left the `{guild.name}` guild.",
