@@ -171,7 +171,7 @@ async def create_quote_image(
         await page.set_content(quote_html)
 
         # Wait for images
-        await page.wait_for_selector('body.ready-for-screenshot')
+        await page.wait_for_selector('body.ready')
 
         # Take screenshot as bytes
         screenshot = await page.screenshot(
