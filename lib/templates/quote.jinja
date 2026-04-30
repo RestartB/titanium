@@ -203,8 +203,7 @@
                 mid = Math.floor((low + high) / 2);
                 element.style.fontSize = mid + 'px';
 
-                
-                if (element.scrollHeight <= 500) {
+                if (element.scrollHeight <= 502) {
                     // fits, try a bigger size
                     bestFit = mid;
                     low = mid + 1;
@@ -218,7 +217,7 @@
             element.style.maxHeight = '502px';
 
             // add fade if required
-            if (element.scrollHeight > element.clientHeight) {
+            if (bestFit === minFontSize && element.scrollHeight > element.clientHeight) {
                 element.classList.add("fade-bottom");
             }
         }
