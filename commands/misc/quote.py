@@ -164,10 +164,10 @@ async def create_quote_image(
         page = await browser.new_page(viewport={"width": 1200, "height": 600})
 
         # Set HTML content
-        await page.set_content(quote_html, wait_until="networkidle")
+        await page.set_content(quote_html)
 
-        # Wait for images
-        await page.wait_for_load_state("networkidle")
+        # Wait for quote to render
+        await page.wait_for_selector('body.ready')
 
         # Take screenshot as bytes
         screenshot = await page.screenshot(
