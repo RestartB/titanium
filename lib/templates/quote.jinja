@@ -203,7 +203,8 @@
                 mid = Math.floor((low + high) / 2);
                 element.style.fontSize = mid + 'px';
 
-                if (element.scrollHeight <= 502) {
+                
+                if (element.scrollHeight <= 500) {
                     // fits, try a bigger size
                     bestFit = mid;
                     low = mid + 1;
