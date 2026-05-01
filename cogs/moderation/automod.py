@@ -1,7 +1,7 @@
 import logging
 import re
 from datetime import timedelta
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import discord
 import emoji
@@ -306,6 +306,12 @@ class AutomodMonitorCog(commands.Cog):
             )
             embeds: list[discord.Embed] = []
 
+            del_kwargs: dict[str, Any] = (
+                {"delete_after": 5.0}
+                if config and config.moderation_settings.delete_confirmation
+                else {}
+            )
+
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, message.guild, session)
 
@@ -576,7 +582,7 @@ class AutomodMonitorCog(commands.Cog):
                         self.logger.debug(
                             f"Sending {len(embeds)} embeds to channel {message.channel.id}"
                         )
-                        await message.channel.send(embeds=embeds)
+                        await message.channel.send(embeds=embeds, **del_kwargs)
 
             if triggers:
                 self.logger.debug(f"Logging {len(triggers)} automod triggers to guild logger")

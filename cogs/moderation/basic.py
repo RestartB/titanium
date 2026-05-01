@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import discord
 from discord import Message, app_commands
@@ -114,26 +114,39 @@ class ModerationBasicCog(
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        del_kwargs: dict[str, Any] = (
+            {"delete_after": 5.0}
+            if config and config.moderation_settings.delete_confirmation
+            else {}
+        )
+
         async with defer(ctx, stop_only=True):
             try:
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=not_in_guild(self.bot, member), **del_kwargs
+                    )
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    )
 
                 # Check if target doesn't have higher role
                 if not self._hierarchy_check(member, ctx.author, ctx):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member), **del_kwargs
                     )
 
                 # Check if Titanium can punish target
                 if not self._bot_perms_check(member, ctx):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.titanium_not_allowed(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.titanium_not_allowed(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Check if member is already being punished
@@ -142,7 +155,9 @@ class ModerationBasicCog(
                     and member.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.already_punishing(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Add member to punishing list
@@ -170,6 +185,7 @@ class ModerationBasicCog(
                         dm_success=dm_success,
                         dm_error=dm_error,
                     ),
+                    **del_kwargs,
                 )
             finally:
                 # Remove member from punishing list
@@ -202,6 +218,13 @@ class ModerationBasicCog(
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        del_kwargs: dict[str, Any] = (
+            {"delete_after": 5.0}
+            if config and config.moderation_settings.delete_confirmation
+            else {}
+        )
+
         async with defer(ctx, stop_only=True):
             try:
                 # Check if guild for type checking
@@ -210,28 +233,36 @@ class ModerationBasicCog(
 
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=not_in_guild(self.bot, member), **del_kwargs
+                    )
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    )
 
                 # Check if target doesn't have higher role
                 if not self._hierarchy_check(member, ctx.author, ctx):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member), **del_kwargs
                     )
 
                 # Check if Titanium can punish target
                 if not self._bot_perms_check(member, ctx):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.titanium_not_allowed(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.titanium_not_allowed(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Check if user is already timed out
                 if member.is_timed_out():
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.already_muted(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.already_muted(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Check if member is already being punished
@@ -240,7 +271,9 @@ class ModerationBasicCog(
                     and member.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.already_punishing(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Add member to punishing list
@@ -273,7 +306,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, member), **del_kwargs
                     )
                 except discord.HTTPException as e:
                     await log_error(
@@ -285,7 +318,9 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.http_exception(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.http_exception(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Create case
@@ -311,6 +346,7 @@ class ModerationBasicCog(
                         dm_success=dm_success,
                         dm_error=dm_error,
                     ),
+                    **del_kwargs,
                 )
             finally:
                 # Remove member from punishing list
@@ -336,6 +372,13 @@ class ModerationBasicCog(
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        del_kwargs: dict[str, Any] = (
+            {"delete_after": 5.0}
+            if config and config.moderation_settings.delete_confirmation
+            else {}
+        )
+
         async with defer(ctx, stop_only=True):
             try:
                 # Check if guild for type checking
@@ -344,28 +387,36 @@ class ModerationBasicCog(
 
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=not_in_guild(self.bot, member), **del_kwargs
+                    )
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    )
 
                 # Check if target doesn't have higher role
                 if not self._hierarchy_check(member, ctx.author, ctx):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member), **del_kwargs
                     )
 
                 # Check if Titanium can punish target
                 if not self._bot_perms_check(member, ctx):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.titanium_not_allowed(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.titanium_not_allowed(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Check if user is not muted
                 if not member.is_timed_out():
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.already_unmuted(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.already_unmuted(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Check if member is already being punished
@@ -374,7 +425,9 @@ class ModerationBasicCog(
                     and member.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.already_punishing(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Add member to punishing list
@@ -393,7 +446,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, member), **del_kwargs
                     )
                 except discord.HTTPException as e:
                     await log_error(
@@ -405,7 +458,9 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.http_exception(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.http_exception(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Get last ummute case
@@ -440,6 +495,7 @@ class ModerationBasicCog(
                         dm_success=dm_success,
                         dm_error=dm_error,
                     ),
+                    **del_kwargs,
                 )
             finally:
                 # Remove member from punishing list
@@ -465,6 +521,13 @@ class ModerationBasicCog(
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        del_kwargs: dict[str, Any] = (
+            {"delete_after": 5.0}
+            if config and config.moderation_settings.delete_confirmation
+            else {}
+        )
+
         async with defer(ctx, stop_only=True):
             try:
                 # Check if guild for type checking
@@ -473,22 +536,28 @@ class ModerationBasicCog(
 
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
-                    return await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member))
+                    return await ctx.reply(
+                        ephemeral=True, embed=not_in_guild(self.bot, member), **del_kwargs
+                    )
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    )
 
                 # Check if target doesn't have higher role
                 if not self._hierarchy_check(member, ctx.author, ctx):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member), **del_kwargs
                     )
 
                 # Check if Titanium can punish target
                 if not self._bot_perms_check(member, ctx):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.titanium_not_allowed(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.titanium_not_allowed(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Check if member is already being punished
@@ -497,7 +566,9 @@ class ModerationBasicCog(
                     and member.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.already_punishing(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Add member to punishing list
@@ -516,7 +587,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, member)
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, member), **del_kwargs
                     )
                 except discord.HTTPException as e:
                     await log_error(
@@ -528,7 +599,9 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.http_exception(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.http_exception(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Create case
@@ -553,6 +626,7 @@ class ModerationBasicCog(
                         dm_success=dm_success,
                         dm_error=dm_error,
                     ),
+                    **del_kwargs,
                 )
             finally:
                 # Remove member from punishing list
@@ -581,6 +655,13 @@ class ModerationBasicCog(
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
 
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        del_kwargs: dict[str, Any] = (
+            {"delete_after": 5.0}
+            if config and config.moderation_settings.delete_confirmation
+            else {}
+        )
+
         async with defer(ctx, stop_only=True):
             try:
                 # Check if guild for type checking
@@ -589,7 +670,9 @@ class ModerationBasicCog(
 
                 # Check if moderating self
                 if user.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    )
 
                 # Try to get member from guild
                 member = ctx.guild.get_member(user.id)
@@ -604,13 +687,15 @@ class ModerationBasicCog(
                     member, ctx.author, ctx
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, user)
+                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, user), **del_kwargs
                     )
 
                 # Check if Titanium can punish target
                 if isinstance(member, discord.Member) and not self._bot_perms_check(member, ctx):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.titanium_not_allowed(self.bot, member)
+                        ephemeral=True,
+                        embed=mod_embeds.titanium_not_allowed(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Check if member is already being punished
@@ -619,7 +704,9 @@ class ModerationBasicCog(
                     and user.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, user)
+                        ephemeral=True,
+                        embed=mod_embeds.already_punishing(self.bot, user),
+                        **del_kwargs,
                     )
 
                 # Add member to punishing list
@@ -629,7 +716,9 @@ class ModerationBasicCog(
                 try:
                     await ctx.guild.fetch_ban(user)
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.already_banned(self.bot, user)
+                        ephemeral=True,
+                        embed=mod_embeds.already_banned(self.bot, user),
+                        **del_kwargs,
                     )
                 except discord.NotFound:
                     pass
@@ -663,7 +752,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, user)
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, user), **del_kwargs
                     )
                 except discord.HTTPException as e:
                     await log_error(
@@ -675,7 +764,9 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.http_exception(self.bot, user)
+                        ephemeral=True,
+                        embed=mod_embeds.http_exception(self.bot, user),
+                        **del_kwargs,
                     )
 
                 # Create case
@@ -701,6 +792,7 @@ class ModerationBasicCog(
                         dm_success=dm_success,
                         dm_error=dm_error,
                     ),
+                    **del_kwargs,
                 )
             finally:
                 # Remove member from punishing list
@@ -722,6 +814,13 @@ class ModerationBasicCog(
         if not ctx.guild or not self.bot.user:
             return
 
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        del_kwargs: dict[str, Any] = (
+            {"delete_after": 5.0}
+            if config and config.moderation_settings.delete_confirmation
+            else {}
+        )
+
         async with defer(ctx, stop_only=True):
             try:
                 # Check if guild for type checking
@@ -730,7 +829,9 @@ class ModerationBasicCog(
 
                 # Check if moderating self
                 if user.id == ctx.author.id:
-                    return await ctx.reply(ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot))
+                    return await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    )
 
                 # Check if user is already being punished
                 if (
@@ -749,7 +850,9 @@ class ModerationBasicCog(
                     await ctx.guild.fetch_ban(user)
                 except discord.NotFound:
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.already_unbanned(self.bot, user)
+                        ephemeral=True,
+                        embed=mod_embeds.already_unbanned(self.bot, user),
+                        **del_kwargs,
                     )
 
                 # Unban user
@@ -765,7 +868,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, user)
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, user), **del_kwargs
                     )
                 except discord.HTTPException as e:
                     await log_error(
@@ -777,7 +880,9 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.http_exception(self.bot, user)
+                        ephemeral=True,
+                        embed=mod_embeds.http_exception(self.bot, user),
+                        **del_kwargs,
                     )
 
                 # Get last ban case
@@ -813,6 +918,7 @@ class ModerationBasicCog(
                         dm_success=dm_success,
                         dm_error=dm_error,
                     ),
+                    **del_kwargs,
                 )
             finally:
                 # Remove user from punishing list
@@ -842,13 +948,22 @@ class ModerationBasicCog(
         if not ctx.guild or not self.bot.user:
             return
 
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        del_kwargs: dict[str, Any] = (
+            {"delete_after": 5.0}
+            if config and config.moderation_settings.delete_confirmation
+            else {}
+        )
+
         async with defer(ctx, stop_only=True):
             try:
                 if isinstance(
                     ctx.channel,
                     (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel),
                 ):
-                    await ctx.reply(ephemeral=True, embed=mod_embeds.cannot_purge(self.bot))
+                    await ctx.reply(
+                        ephemeral=True, embed=mod_embeds.cannot_purge(self.bot), **del_kwargs
+                    )
                     return
 
                 limit = amount if ctx.interaction else amount + 1
@@ -861,7 +976,9 @@ class ModerationBasicCog(
                 )
 
                 await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.purged(self.bot, ctx.author, len(deleted))
+                    ephemeral=True,
+                    embed=mod_embeds.purged(self.bot, ctx.author, len(deleted)),
+                    **del_kwargs,
                 )
             except discord.Forbidden as e:
                 if not isinstance(
@@ -877,7 +994,7 @@ class ModerationBasicCog(
                     )
 
                 return await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.forbidden(self.bot, ctx.author)
+                    ephemeral=True, embed=mod_embeds.forbidden(self.bot, ctx.author), **del_kwargs
                 )
             except discord.HTTPException as e:
                 if not isinstance(
@@ -893,7 +1010,9 @@ class ModerationBasicCog(
                     )
 
                 return await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.http_exception(self.bot, ctx.author)
+                    ephemeral=True,
+                    embed=mod_embeds.http_exception(self.bot, ctx.author),
+                    **del_kwargs,
                 )
 
 
