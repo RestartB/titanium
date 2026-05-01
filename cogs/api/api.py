@@ -634,6 +634,7 @@ class APICog(commands.Cog):
 
         return web.json_response({"total_count": total_count, "comments": comments_list})
 
+    # TODO: validate comments server side
     async def guild_case_add_comment(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
         if not guild_id or not guild_id.isdigit():
@@ -787,10 +788,6 @@ class APICog(commands.Cog):
         if not guild_id or not guild_id.isdigit():
             return web.json_response({"error": "guild_id required"}, status=400)
 
-        tag_id = request.match_info.get("tag_id")
-        if not tag_id:
-            return web.json_response({"error": "tag_id required"}, status=400)
-
         data = await request.json()
         validated_tag = TagModel(**data)
 
@@ -798,11 +795,7 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        user_id = request.query.get("user", None)
-        if not user_id:
-            return web.json_response({"error": "user query parameter required"}, status=400)
-
-        member = await get_or_fetch_member(self.bot, guild, int(user_id))
+        member = await get_or_fetch_member(self.bot, guild, int(validated_tag.user))
         if not member:
             return web.json_response({"error": "user not found"}, status=404)
 
@@ -835,11 +828,7 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        user_id = request.query.get("user", None)
-        if not user_id:
-            return web.json_response({"error": "user query parameter required"}, status=400)
-
-        member = await get_or_fetch_member(self.bot, guild, int(user_id))
+        member = await get_or_fetch_member(self.bot, guild, int(validated_tag.user))
         if not member:
             return web.json_response({"error": "user not found"}, status=404)
 

@@ -879,12 +879,14 @@ async def init_db():
 
 
 @asynccontextmanager
-async def get_session():
+async def get_session(autocommit: bool = True):
     async with async_session() as session:
         session: AsyncSession
         try:
             yield session
-            await session.commit()
+
+            if autocommit:
+                await session.commit()
         except Exception:
             await session.rollback()
             raise

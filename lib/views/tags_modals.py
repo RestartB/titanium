@@ -99,7 +99,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
             return await interaction.followup.send(embed=embed, ephemeral=True)
 
         # validate data from discord
-        if len(cleaned_name) > 35 or len(self.tag_content.component.value) > 2000:
+        if len(cleaned_name) > 35 or len(self.tag_content.component.value.strip()) > 2000:
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Invalid Data",
                 description="The provided tag name or content is too long.",
@@ -139,7 +139,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                     return await interaction.followup.send(embed=embed, ephemeral=True)
 
                 existing_tag.name = cleaned_name
-                existing_tag.content = self.tag_content.component.value
+                existing_tag.content = self.tag_content.component.value.strip()
 
                 try:
                     await session.commit()
@@ -164,7 +164,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
             )
         else:
             # creating tag
-            async with get_session() as session:
+            async with get_session(autocommit=False) as session:
                 new_tag = Tag(
                     guild_id=interaction.guild.id
                     if interaction.guild and self.tag_type.component.value == "server"
@@ -172,7 +172,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                     owner_id=interaction.user.id,
                     is_user=self.tag_type.component.value == "user",
                     name=cleaned_name,
-                    content=self.tag_content.component.value,
+                    content=self.tag_content.component.value.strip(),
                 )
                 session.add(new_tag)
 

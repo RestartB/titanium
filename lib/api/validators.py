@@ -427,5 +427,18 @@ class LeaderboardConfigModel(BaseModel):
 
 
 class TagModel(BaseModel):
-    name: Annotated[str, StringConstraints(min_length=1, max_length=35)]
-    content: Annotated[str, StringConstraints(min_length=1, max_length=2000)]
+    name: Annotated[
+        str,
+        StringConstraints(
+            min_length=1, max_length=35, to_lower=True, ascii_only=True, strip_whitespace=True
+        ),
+    ]
+    content: Annotated[str, StringConstraints(min_length=1, max_length=2000, strip_whitespace=True)]
+    user: str
+
+    @field_validator("user")
+    def validate_user(cls, v: str) -> str:
+        if not v.isdigit():
+            raise ValueError("User must be a numeric string ID")
+
+        return v
