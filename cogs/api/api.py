@@ -20,6 +20,7 @@ from lib.api.endpoints import (
     logging_info,
     moderation_info,
     server_counters_info,
+    tags_info,
 )
 from lib.api.validators import (
     AutomodConfigModel,
@@ -34,6 +35,7 @@ from lib.api.validators import (
     ModerationConfigModel,
     ServerCountersConfigModel,
     TagModel,
+    TagsConfigModel,
 )
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
@@ -54,6 +56,7 @@ from lib.sql.sql import (
     GuildModerationSettings,
     GuildServerCounterSettings,
     GuildSettings,
+    GuildTagSettings,
     LeaderboardLevels,
     LeaderboardUserStats,
     ModCase,
@@ -1103,6 +1106,7 @@ class APICog(commands.Cog):
                     "server_counters": config.server_counters_enabled,
                     "confessions": config.confessions_enabled,
                     "leaderboard": config.leaderboard_enabled,
+                    "tags": config.tags_enabled,
                 },
                 "settings": {
                     "loading_reaction": config.loading_reaction,
@@ -1162,8 +1166,10 @@ class APICog(commands.Cog):
             db_config.fireboard_enabled = validated_settings.modules.fireboard
             db_config.server_counters_enabled = validated_settings.modules.server_counters
             db_config.leaderboard_enabled = validated_settings.modules.leaderboard
+            db_config.tags_enabled = validated_settings.modules.tags
 
             db_config.loading_reaction = validated_settings.settings.loading_reaction
+            db_config.delete_after_3_days = validated_settings.settings.delete_after_3_days
 
             prefixes.prefixes = validated_settings.prefixes
             session.add(db_config)
@@ -1209,6 +1215,8 @@ class APICog(commands.Cog):
             return server_counters_info(self.bot, request, guild)
         elif module_name == "leaderboard":
             return leaderboard_info(self.bot, request, guild)
+        elif module_name == "tags":
+            return tags_info(self.bot, request, guild)
         else:
             return web.json_response({"error": "Module not found"}, status=404)
 
@@ -1260,6 +1268,8 @@ class APICog(commands.Cog):
                 validated_config = ServerCountersConfigModel(**data)
             elif module_name == "leaderboard":
                 validated_config = LeaderboardConfigModel(**data)
+            elif module_name == "tags":
+                validated_config = TagsConfigModel(**data)
         except ValidationError as e:
             error_details = []
             for error in e.errors():
@@ -1732,6 +1742,16 @@ class APICog(commands.Cog):
                 ]
 
                 session.add(existing_config)
+        elif module_name == "tags" and isinstance(validated_config, TagsConfigModel):
+            async with get_session() as session:
+                db_config = await session.get(GuildTagSettings, guild.id)
+                if not db_config:
+                    db_config = GuildTagSettings(guild_id=guild.id)
+
+                db_config.allow_user_tags = validated_config.allow_user_tags
+                db_config.prefix_fallback = validated_config.prefix_fallback
+
+                session.add(db_config)
         else:
             return web.json_response({"error": "Module not found"}, status=404)
 

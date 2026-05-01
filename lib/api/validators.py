@@ -426,6 +426,11 @@ class LeaderboardConfigModel(BaseModel):
     levels: list[LeaderboardLevelModel] = Field(default_factory=list)
 
 
+class TagsConfigModel(BaseModel):
+    allow_user_tags: bool
+    prefix_fallback: bool
+
+
 class TagModel(BaseModel):
     name: Annotated[
         str,
