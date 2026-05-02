@@ -116,7 +116,7 @@ class Misc(commands.Cog):
     # GitHub Roast command
     @funGroup.command(
         name="github-roast",
-        description="Generate a random GitHub account roast. - https://github-roast.pages.dev",
+        description="Generate a random GitHub account roast. - https://githubroast.mgytr.top",
     )
     @app_commands.describe(username="The GitHub account to roast.")
     @app_commands.describe(
@@ -126,11 +126,11 @@ class Misc(commands.Cog):
         self, interaction: discord.Interaction, username: str, ephemeral: bool = False
     ):
         await interaction.response.defer(ephemeral=ephemeral)
-
+        #mgytr was here :3
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    url="https://githubroast.mgyt.xyz/llama",
+                    url=f"https://githubroast.mgytr.top/llama",
                     json={"username": username, "language": "english"},
                 ) as request:
                     embed = discord.Embed(
@@ -139,7 +139,7 @@ class Misc(commands.Cog):
                         color=Color.random(),
                     )
                     embed.set_footer(
-                        text=f"@{interaction.user.name} - https://githubroast.mgyt.xyz",
+                        text=f"@{interaction.user.name} - https://githubroast.mgytr.top",
                         icon_url=interaction.user.display_avatar.url,
                     )
                     embed.set_author(name=username)
