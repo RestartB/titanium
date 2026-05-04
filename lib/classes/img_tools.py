@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import textwrap
 from io import BytesIO
@@ -186,7 +187,7 @@ class EmojiRenderer:
                         current_x += emoji_size
                     except Exception as e:
                         # emoji failed
-                        print(f"Failed to render emoji {segment}: {e}")
+                        logging.error(f"Failed to render emoji {segment}: {e}")
                         current_x += emoji_size
                 else:
                     # render regular text

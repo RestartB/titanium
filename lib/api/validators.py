@@ -4,7 +4,6 @@ from typing import Annotated, Optional
 from emoji import is_emoji
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 
-from lib.classes.guild_logger import LOGGING_EVENT_MAP
 from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
 from lib.enums.leaderboard import LeaderboardCalcType
@@ -278,16 +277,12 @@ class BouncerConfigModel(BaseModel):
 
 
 class LoggingConfigModel(BaseModel):
-    channels: dict[str, Optional[str]] = Field(default_factory=dict)
+    channels: dict[str, Optional[str]] = Field(default_factory=dict, max_length=120)
 
     @model_validator(mode="after")
     def validate_keys(self):
         seen_keys: list[str] = []
-
         for key in self.channels.keys():
-            if key not in LOGGING_EVENT_MAP:
-                raise ValueError(f"Unknown event type: {key}")
-
             if key in seen_keys:
                 raise ValueError(f"Duplicate event type: {key}")
 

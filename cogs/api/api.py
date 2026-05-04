@@ -39,7 +39,7 @@ from lib.api.validators import (
     TagsConfigModel,
 )
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
-from lib.classes.guild_logger import LOGGING_EVENTS
+from lib.classes.guild_logger import LOGGING_EVENT_MAP, LOGGING_EVENTS
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
@@ -1452,7 +1452,7 @@ class APICog(commands.Cog):
                 db_config.channels = {
                     key: int(value)
                     for key, value in validated_config.channels.items()
-                    if value is not None
+                    if value is not None and key in LOGGING_EVENT_MAP
                 }
 
                 session.add(db_config)

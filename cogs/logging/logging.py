@@ -125,6 +125,7 @@ class EventLoggingCog(commands.Cog):
         guild_logger = GuildLogger(self.bot, after.guild)
         await guild_logger.member_nickname_update(before, after)
         await guild_logger.member_roles_update(before, after)
+        await guild_logger.member_server_pfp_update(before, after)
         await guild_logger.member_timeout(before, after)
         await guild_logger.member_untimeout(before, after)
 
@@ -140,9 +141,25 @@ class EventLoggingCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry) -> None:
+        guild_logger = GuildLogger(self.bot, entry.guild)
         if entry.action == discord.AuditLogAction.kick:
-            guild_logger = GuildLogger(self.bot, entry.guild)
             await guild_logger.member_kick(entry)
+        elif entry.action == discord.AuditLogAction.webhook_create:
+            await guild_logger.webhook_create(entry)
+        elif entry.action == discord.AuditLogAction.webhook_update:
+            webhook = None
+
+            if entry.target:
+                try:
+                    webhook = await self.bot.fetch_webhook(int(entry.target.id))
+                except Exception:
+                    pass
+
+            await guild_logger.webhook_channel_update(entry, webhook)
+            await guild_logger.webhook_icon_update(entry, webhook)
+            await guild_logger.webhook_name_update(entry, webhook)
+        elif entry.action == discord.AuditLogAction.webhook_delete:
+            await guild_logger.webhook_delete(entry)
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
@@ -358,6 +375,8 @@ class EventLoggingCog(commands.Cog):
         guild_logger = GuildLogger(self.bot, before.guild)
         await guild_logger.thread_update(before, after)
 
+    # i don't know when this event actually triggers so i've removed it
+
     # @commands.Cog.listener()
     # async def on_thread_remove(self, thread: discord.Thread) -> None:
     #     if not thread.guild:
@@ -396,6 +415,12 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.voice_unmute(member, before, after)
         await guild_logger.voice_deafen(member, before, after)
         await guild_logger.voice_undeafen(member, before, after)
+
+    @commands.Cog.listener()
+    async def on_user_update(self, before: discord.User, after: discord.User):
+        for guild in after.mutual_guilds:
+            guild_logger = GuildLogger(self.bot, guild)
+            await guild_logger.member_user_pfp_update(before, after)
 
 
 async def setup(bot: TitaniumBot) -> None:

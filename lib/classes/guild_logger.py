@@ -9,7 +9,7 @@ from humanize.time import naturaldelta
 from sqlalchemy import delete
 
 from lib.embeds.mod_actions import banned, kicked, muted, unbanned, unmuted, warned
-from lib.helpers.cache import get_or_fetch_user
+from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.sql.sql import (
     AutomodAction,
@@ -57,6 +57,8 @@ LOGGING_EVENTS = [
     LoggingType(event="member_leave", name="Member Left", description="When a member leaves the server.", category="Members"),
     LoggingType(event="member_nickname_update", name="Member Nickname Updated", description="When a user changes their server nickname.", category="Members"),
     LoggingType(event="member_roles_update", name="Member Roles Updated", description="When a user's assigned roles changes.", category="Members"),
+    LoggingType(event="member_user_pfp_update", name="Member PFP Updated", description="When a user updates their PFP.", category="Members"),
+    LoggingType(event="member_server_pfp_update", name="Member Server PFP Updated", description="When a user updates their server PFP.", category="Members"),
     LoggingType(event="member_ban", name="Member Banned", description="When a user is banned from the server.", category="Members"),
     LoggingType(event="member_unban", name="Member Unbanned", description="When a user is unbanned from the server.", category="Members"),
     LoggingType(event="member_kick", name="Member Kicked", description="When a user is kicked from the server.", category="Members"),
@@ -91,6 +93,11 @@ LOGGING_EVENTS = [
     LoggingType(event="voice_unmute", name="Voice Unmuted", description="When a user is unmuted server wide by a moderator.", category="Voice"),
     LoggingType(event="voice_deafen", name="Voice Deafened", description="When a user is deafened server wide by a moderator.", category="Voice"),
     LoggingType(event="voice_undeafen", name="Voice Undeafened", description="When a user is undeafened server wide by a moderator.", category="Voice"),
+    LoggingType(event="webhook_create", name="Webhook Created", description="When a webhook is created.", category="Webhooks"),
+    LoggingType(event="webhook_name_update", name="Webhook Name Updated", description="When a webhook's name is updated.", category="Webhooks"),
+    LoggingType(event="webhook_icon_update", name="Webhook Icon Updated", description="When a webhook's icon is updated.", category="Webhooks"),
+    LoggingType(event="webhook_channel_update", name="Webhook Channel Updated", description="When a webhook's channel is updated.", category="Webhooks"),
+    LoggingType(event="webhook_delete", name="Webhook Deleted", description="When a webhook is deleted.", category="Webhooks"),
     LoggingType(event="titanium_warn", name="Titanium Warn", description="When a user is warned using Titanium.", category="Titanium"),
     LoggingType(event="titanium_mute", name="Titanium Mute", description="When a user is muted using Titanium.", category="Titanium"),
     LoggingType(event="titanium_unmute", name="Titanium Unmute", description="When a user is unmuted using Titanium.", category="Titanium"),
@@ -286,9 +293,18 @@ class GuildLogger:
 
         return None
 
-    def _add_user_footer(self, embed: discord.Embed, log: Optional[discord.AuditLogEntry]) -> None:
-        if log and log.user:
-            embed.set_footer(text=f"@{log.user.name}", icon_url=log.user.display_avatar.url)
+    async def _add_user_footer(
+        self, embed: discord.Embed, log: Optional[discord.AuditLogEntry]
+    ) -> None:
+        if not log:
+            return
+
+        user = log.user
+        if not user and log.user_id:
+            user = await get_or_fetch_member(self.bot, log.guild, log.user_id)
+
+        if user:
+            embed.set_footer(text=f"@{user.name}", icon_url=user.display_avatar.url)
 
     async def app_command_perm_update(
         self, event: discord.RawAppCommandPermissionsUpdateEvent
@@ -364,7 +380,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.app_command_permission_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -387,7 +403,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.automod_rule_create)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -410,7 +426,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.automod_rule_delete)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -433,7 +449,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.automod_rule_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -456,7 +472,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.channel_create)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -477,7 +493,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.channel_delete)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -515,7 +531,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.channel_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -540,7 +556,7 @@ class GuildLogger:
         embed.set_thumbnail(url=after.icon.url if after.icon else None)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.guild_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -567,7 +583,7 @@ class GuildLogger:
         embed.set_thumbnail(url=after.icon.url if after.icon else None)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.guild_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -594,7 +610,7 @@ class GuildLogger:
         embed.set_thumbnail(url=after.icon.url if after.icon else None)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.guild_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -629,7 +645,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.guild_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -696,7 +712,7 @@ class GuildLogger:
                 timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=emoji.url if emoji.url else None)
-            self._add_user_footer(embed, log)
+            await self._add_user_footer(embed, log)
 
             embeds.append(embed)
 
@@ -731,7 +747,7 @@ class GuildLogger:
                 timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=emoji.url if emoji.url else None)
-            self._add_user_footer(embed, log)
+            await self._add_user_footer(embed, log)
 
             embeds.append(embed)
 
@@ -766,7 +782,7 @@ class GuildLogger:
                 timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=sticker.url if sticker.url else None)
-            self._add_user_footer(embed, log)
+            await self._add_user_footer(embed, log)
 
             embeds.append(embed)
 
@@ -813,7 +829,7 @@ class GuildLogger:
                 timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=sticker.url if sticker.url else None)
-            self._add_user_footer(embed, log)
+            await self._add_user_footer(embed, log)
 
             embeds.append(embed)
 
@@ -897,7 +913,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.invite_delete)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -969,7 +985,7 @@ class GuildLogger:
         embed.set_thumbnail(url=after.display_avatar.url)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=after)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1017,12 +1033,94 @@ class GuildLogger:
             )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=after)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(
                 self.config.logging_settings.channels.get("member_roles_update")
+            ),
+            embed,
+        )
+
+    async def member_user_pfp_update(self, before: discord.User, after: discord.User) -> None:
+        await self._ensure_config()
+        if not self._exists_and_enabled("member_user_pfp_update"):
+            return
+
+        if before.avatar == after.avatar:
+            return
+
+        embed = discord.Embed(
+            title="Member PFP Updated",
+            description=f"**User:** {after.mention} (`@{after.name}`)\n**ID:** `{after.id}`",
+            colour=discord.Colour.yellow(),
+            timestamp=discord.utils.utcnow(),
+        )
+        embed.set_thumbnail(url=after.display_avatar.url)
+
+        if not embed.description:
+            embed.description = ""
+
+        embed.description += (
+            f"\n\n**Old PFP:** [Link]({before.avatar.url})"
+            if before.avatar
+            else "\n\n**Old PFP:** `None`"
+        )
+        embed.description += (
+            f"\n**New PFP:** [Link]({after.avatar.url})"
+            if after.avatar
+            else "\n**New PFP:** `None`"
+        )
+
+        log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=after)
+        await self._add_user_footer(embed, log)
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("member_user_pfp_update")
+            ),
+            embed,
+        )
+
+    async def member_server_pfp_update(self, before: discord.Member, after: discord.Member) -> None:
+        await self._ensure_config()
+        if not self._exists_and_enabled("member_server_pfp_update"):
+            return
+
+        if before.guild_avatar == after.guild_avatar:
+            return
+
+        embed = discord.Embed(
+            title="Member Server PFP Updated",
+            description=f"**User:** {after.mention} (`@{after.name}`)\n**ID:** `{after.id}`",
+            colour=discord.Colour.yellow(),
+            timestamp=discord.utils.utcnow(),
+        )
+        embed.set_thumbnail(url=after.display_avatar.url)
+
+        if not embed.description:
+            embed.description = ""
+
+        embed.description += (
+            f"\n\n**Old PFP:** [Link]({before.guild_avatar.url})"
+            if before.guild_avatar
+            else "\n\n**Old PFP:** `None`"
+        )
+        embed.description += (
+            f"\n**New PFP:** [Link]({after.guild_avatar.url})"
+            if after.guild_avatar
+            else "\n**New PFP:** `None`"
+        )
+
+        log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=after)
+        await self._add_user_footer(embed, log)
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("member_server_pfp_update")
             ),
             embed,
         )
@@ -1043,7 +1141,7 @@ class GuildLogger:
         embed.set_thumbnail(url=member.display_avatar.url)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.ban, target=member)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1067,7 +1165,7 @@ class GuildLogger:
         embed.set_thumbnail(url=member.display_avatar.url)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.unban, target=member)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1104,7 +1202,7 @@ class GuildLogger:
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=entry.target.display_avatar.url)
-        self._add_user_footer(embed, entry)
+        await self._add_user_footer(embed, entry)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1135,7 +1233,7 @@ class GuildLogger:
         embed.set_thumbnail(url=after.display_avatar.url)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=after)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1163,7 +1261,7 @@ class GuildLogger:
         embed.set_thumbnail(url=after.display_avatar.url)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=after)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1284,7 +1382,7 @@ class GuildLogger:
         log = await self._get_audit_log_entry(
             discord.AuditLogAction.message_delete, target=event.cached_message
         )
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1307,7 +1405,7 @@ class GuildLogger:
         log = await self._get_audit_log_entry(
             discord.AuditLogAction.message_bulk_delete, target=event
         )
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1482,7 +1580,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.role_create)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1508,7 +1606,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.role_delete)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1549,7 +1647,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.role_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1580,7 +1678,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.scheduled_event_create)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1613,7 +1711,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.scheduled_event_delete)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1666,7 +1764,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.scheduled_event_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1722,7 +1820,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.soundboard_sound_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1788,7 +1886,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.stage_instance_create)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1817,7 +1915,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.stage_instance_delete)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1850,7 +1948,7 @@ class GuildLogger:
         )
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.stage_instance_update)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -2075,7 +2173,7 @@ class GuildLogger:
         embed.set_thumbnail(url=member.display_avatar.url)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.member_move)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -2114,7 +2212,7 @@ class GuildLogger:
         embed.set_thumbnail(url=member.display_avatar.url)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=member)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -2153,7 +2251,7 @@ class GuildLogger:
         embed.set_thumbnail(url=member.display_avatar.url)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=member)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -2192,7 +2290,7 @@ class GuildLogger:
         embed.set_thumbnail(url=member.display_avatar.url)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=member)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -2231,11 +2329,185 @@ class GuildLogger:
         embed.set_thumbnail(url=member.display_avatar.url)
 
         log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=member)
-        self._add_user_footer(embed, log)
+        await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.channels.get("voice_undeafen")),
+            embed,
+        )
+
+    async def webhook_create(self, entry: discord.AuditLogEntry) -> None:
+        await self._ensure_config()
+        if not self._exists_and_enabled("webhook_create"):
+            return
+
+        embed = discord.Embed(
+            title="Webhook Created",
+            description=(
+                f"**Name:** `{entry.after.name}`\n"
+                f"**ID:** `{entry.target.id if entry.target else 'Unknown'}`\n"
+                f"**Channel:** {f'{entry.after.channel.mention} (`#{entry.after.channel.name}`, `{entry.after.channel.id}`)' if entry.after.channel else '`Unknown`'}"
+            ),
+            colour=discord.Colour.green(),
+            timestamp=entry.created_at,
+        )
+        await self._add_user_footer(embed, entry)
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(self.config.logging_settings.channels.get("webhook_create")),
+            embed,
+        )
+
+    async def webhook_name_update(
+        self, entry: discord.AuditLogEntry, webhook: discord.Webhook | None
+    ) -> None:
+        await self._ensure_config()
+        if not self._exists_and_enabled("webhook_name_update"):
+            return
+
+        if (
+            not hasattr(entry.before, "name")
+            or not hasattr(entry.after, "name")
+            or not entry.before.name
+            or not entry.after.name
+            or entry.before.name == entry.after.name
+        ):
+            return
+
+        embed = discord.Embed(
+            title="Webhook Name Updated",
+            description=(
+                f"**Name:** `{entry.before.name}` ➔ `{entry.after.name}`\n"
+                f"**ID:** `{entry.target.id if entry.target else 'Unknown'}`\n"
+                f"**Channel:** {f'{webhook.channel.mention} (`#{webhook.channel.name}`, `{webhook.channel_id}`)' if webhook and webhook.channel else '`Unknown`'}"
+            ),
+            colour=discord.Colour.yellow(),
+            timestamp=entry.created_at,
+        )
+        await self._add_user_footer(embed, entry)
+
+        if webhook and webhook.display_avatar:
+            embed.set_thumbnail(url=webhook.display_avatar.url)
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("webhook_name_update")
+            ),
+            embed,
+        )
+
+    async def webhook_icon_update(
+        self, entry: discord.AuditLogEntry, webhook: discord.Webhook | None
+    ) -> None:
+        await self._ensure_config()
+        if not self._exists_and_enabled("webhook_icon_update"):
+            return
+
+        if (
+            not hasattr(entry.before, "avatar") and not hasattr(entry.after, "avatar")
+        ) or entry.before.avatar == entry.after.avatar:
+            return
+
+        embed = discord.Embed(
+            title="Webhook Icon Updated",
+            description=(
+                f"**Name:** `{webhook.name if webhook and webhook.name else 'Unknown'}`\n"
+                f"**ID:** `{entry.target.id if entry.target else 'Unknown'}`\n"
+                f"**Channel:** {f'{webhook.channel.mention} (`#{webhook.channel.name}`, `{webhook.channel_id}`)' if webhook and webhook.channel else '`Unknown`'}"
+            ),
+            colour=discord.Colour.yellow(),
+            timestamp=entry.created_at,
+        )
+        await self._add_user_footer(embed, entry)
+
+        if not embed.description:
+            embed.description = ""
+
+        embed.description += (
+            f"\n\n**Old Icon:** [Link]({entry.before.avatar.url})"
+            if entry.before.avatar
+            else "\n\n**Old Icon:** `None`"
+        )
+        embed.description += (
+            f"\n**New Icon:** [Link]({entry.after.avatar.url})"
+            if entry.after.avatar
+            else "\n**New Icon:** `None`"
+        )
+
+        if webhook and webhook.display_avatar:
+            embed.set_thumbnail(url=webhook.display_avatar.url)
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("webhook_icon_update")
+            ),
+            embed,
+        )
+
+    async def webhook_channel_update(
+        self, entry: discord.AuditLogEntry, webhook: discord.Webhook | None
+    ) -> None:
+        await self._ensure_config()
+        if not self._exists_and_enabled("webhook_channel_update"):
+            return
+
+        if (
+            not hasattr(entry.before, "channel")
+            or not hasattr(entry.after, "channel")
+            or not entry.before.channel
+            or not entry.after.channel
+            or entry.before.channel.id == entry.after.channel.id
+        ):
+            return
+
+        embed = discord.Embed(
+            title="Webhook Channel Updated",
+            description=(
+                f"**Name:** `{webhook.name if webhook and webhook.name else 'Unknown'}`\n"
+                f"**ID:** `{entry.target.id if entry.target else 'Unknown'}`\n\n"
+                f"**Old Channel:** {f'{entry.before.channel.mention} (`#{entry.before.channel.name}`, `{entry.before.channel.id}`)' if entry.before.channel else '`Unknown`'}\n"
+                f"**New Channel:** {f'{entry.after.channel.mention} (`#{entry.after.channel.name}`, `{entry.after.channel.id}`)' if entry.after.channel else '`Unknown`'}"
+            ),
+            colour=discord.Colour.yellow(),
+            timestamp=entry.created_at,
+        )
+        await self._add_user_footer(embed, entry)
+
+        if webhook and webhook.display_avatar:
+            embed.set_thumbnail(url=webhook.display_avatar.url)
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("webhook_channel_update")
+            ),
+            embed,
+        )
+
+    async def webhook_delete(self, entry: discord.AuditLogEntry) -> None:
+        await self._ensure_config()
+        if not self._exists_and_enabled("webhook_delete"):
+            return
+
+        embed = discord.Embed(
+            title="Webhook Deleted",
+            description=(
+                f"**Name:** `{entry.before.name or 'Unknown'}`\n"
+                f"**ID:** `{entry.target.id if entry.target else 'Unknown'}`\n"
+                f"**Channel:** {f'{entry.before.channel.mention} (`#{entry.before.channel.name}`, `{entry.before.channel.id}`)' if entry.before.channel else '`Unknown`'}"
+            ),
+            colour=discord.Colour.red(),
+            timestamp=entry.created_at,
+        )
+        await self._add_user_footer(embed, entry)
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(self.config.logging_settings.channels.get("webhook_delete")),
             embed,
         )
 
