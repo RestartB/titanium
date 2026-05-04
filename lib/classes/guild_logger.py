@@ -9,6 +9,7 @@ from humanize.time import naturaldelta
 from sqlalchemy import delete
 
 from lib.embeds.mod_actions import banned, kicked, muted, unbanned, unmuted, warned
+from lib.helpers.cache import get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.sql.sql import (
     AutomodAction,
@@ -35,12 +36,12 @@ class LoggingType:
 # fmt: off
 LOGGING_EVENTS = [
     LoggingType(event="app_command_perm_update", name="App Command Permissions Update", description="When an application command's permissions are edited.", category="App Commands"),
-    LoggingType(event="dc_automod_rule_create", name="Discord AutoMod Rule Created", description="When a new Discord AutoMod rule is created.", category="Discord AutoMod"),
-    LoggingType(event="dc_automod_rule_update", name="Discord AutoMod Rule Updated", description="When a Discord AutoMod rule is edited.", category="Discord AutoMod"),
-    LoggingType(event="dc_automod_rule_delete", name="Discord AutoMod Rule Deleted", description="When a Discord AutoMod rule is deleted.", category="Discord AutoMod"),
     LoggingType(event="channel_create", name="Channel Created", description="When a new channel is created.", category="Channels"),
     LoggingType(event="channel_update", name="Channel Updated", description="When a channel is edited.", category="Channels"),
     LoggingType(event="channel_delete", name="Channel Deleted", description="When a channel is deleted.", category="Channels"),
+    LoggingType(event="dc_automod_rule_create", name="Discord AutoMod Rule Created", description="When a new Discord AutoMod rule is created.", category="Discord AutoMod"),
+    LoggingType(event="dc_automod_rule_update", name="Discord AutoMod Rule Updated", description="When a Discord AutoMod rule is edited.", category="Discord AutoMod"),
+    LoggingType(event="dc_automod_rule_delete", name="Discord AutoMod Rule Deleted", description="When a Discord AutoMod rule is deleted.", category="Discord AutoMod"),
     LoggingType(event="guild_name_update", name="Guild Name Updated", description="When the server's name is changed.", category="Server Settings"),
     LoggingType(event="guild_afk_channel_update", name="Guild AFK Channel Updated", description="When the server's AFK channel is changed.", category="Server Settings"),
     LoggingType(event="guild_afk_timeout_update", name="Guild AFK Timeout Updated", description="When the server's AFK timeout is changed.", category="Server Settings"),
@@ -1089,7 +1090,10 @@ class GuildLogger:
             return
 
         if isinstance(entry.target, discord.Object):
-            entry.target = await self.bot.fetch_user(entry.target.id)
+            entry.target = await get_or_fetch_user(self.bot, entry.target.id)
+
+        if not entry.target:
+            return
 
         embed = discord.Embed(
             title="Member Kicked",
@@ -1261,28 +1265,21 @@ class GuildLogger:
                 icon_url=event.cached_message.author.display_avatar.url,
             )
 
-        embeds: list[discord.Embed] = []
+        embeds: list[discord.Embed] = [embed]
 
         if event.cached_message and event.cached_message.attachments:
             for attachment in event.cached_message.attachments:
                 if not attachment.content_type or not attachment.content_type.startswith("image/"):
                     continue
 
-                if not embeds:
-                    embeds.append(embed)
-                    embeds[0].set_image(url=attachment.url)
-                    continue
-
-                embeds[0].url = "https://titaniumbot.me"
                 embeds.append(
-                    discord.Embed(url="https://titaniumbot.me").set_image(url=attachment.url)
+                    discord.Embed(
+                        url="https://titaniumbot.me", colour=discord.Colour.red()
+                    ).set_image(url=attachment.url)
                 )
 
-                if len(embeds) == 4:
+                if len(embeds) == 5:
                     break
-
-        if not embeds:
-            embeds = [embed]
 
         log = await self._get_audit_log_entry(
             discord.AuditLogAction.message_delete, target=event.cached_message
@@ -1576,7 +1573,7 @@ class GuildLogger:
                     if event.end_time is not None
                     else "**End Time:** `None`\n"
                 )
-                + f"**Location:** `{event.location}`\n",
+                + f"**Location:** `{event.location}`\n"
             ),
             colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
@@ -1837,7 +1834,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Stage Instance Updated",
             description=(
-                f"**Topic:** `{before.topic}` ➔ `{after.topic}`"
+                f"**Topic:** `{before.topic}` ➔ `{after.topic}`\n"
                 + f"**Channel:** {after.channel.mention} (`#{after.channel.name}`, `{after.channel.id}`)"
                 if after.channel
                 else "**Channel:** Unknown"
