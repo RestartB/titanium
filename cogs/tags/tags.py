@@ -90,6 +90,9 @@ class TagCommandsCog(commands.Cog):
             if config and config.tag_settings and not config.tag_settings.allow_user_tags:
                 user_tags_allowed = False
 
+        server_tags = []
+        user_tags = []
+
         async with get_session() as session:
             if server_tags_allowed and interaction.guild:
                 stmt = select(Tag).where(Tag.guild_id == interaction.guild.id)
@@ -262,7 +265,7 @@ class TagCommandsCog(commands.Cog):
         if tag_data.is_user and not user_tags_allowed:
             embed = discord.Embed(
                 title=f"{ctx.bot.error_emoji} Not Allowed",
-                description="You are not allowed to use user tags in this server.",
+                description="A server admin has disabled user tags in this server.",
                 colour=discord.Colour.red(),
             )
             if view and view.interaction:
