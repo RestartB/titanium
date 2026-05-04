@@ -1633,19 +1633,25 @@ class GuildLogger:
         changes = []
         if after.name != before.name:
             changes.append(f"**Name:** `{before.name}` ➔ `{after.name}`")
+
         if after.start_time != before.start_time:
             changes.append(
                 f"**Start Time:** <t:{int(before.start_time.timestamp())}:R> (<t:{int(before.start_time.timestamp())}:F>) ➔ <t:{int(after.start_time.timestamp())}:R> (<t:{int(after.start_time.timestamp())}:F>)"
             )
+
         if after.end_time != before.end_time:
-            changes.append(
-                f"**End Time:** <t:{int(before.end_time.timestamp())}:R> (<t:{int(before.end_time.timestamp())}:F>)"
-                if before.end_time is not None
-                else "**End Time:** `None`"
-                + f" ➔ <t:{int(after.end_time.timestamp())}:R> (<t:{int(after.end_time.timestamp())}:F>)"
-                if after.end_time is not None
-                else "**End Time:** `None`"
-            )
+            if before.end_time is not None:
+                before_str = f"**End Time:** <t:{int(before.end_time.timestamp())}:R> (<t:{int(before.end_time.timestamp())}:F>)"
+            else:
+                before_str = "**End Time:** `None`"
+
+            if after.end_time is not None:
+                after_str = f" ➔ <t:{int(after.end_time.timestamp())}:R> (<t:{int(after.end_time.timestamp())}:F>)"
+            else:
+                after_str = " ➔ `None`"
+
+            changes.append(before_str + after_str)
+
         if after.location != before.location:
             changes.append(f"**Location:** `{before.location}` ➔ `{after.location}`")
 
