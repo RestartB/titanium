@@ -906,9 +906,21 @@ class GuildLogger:
         if not self._exists_and_enabled("guild_invite_delete"):
             return
 
+        # Channel
+        if invite.channel:
+            if not isinstance(invite.channel, discord.Object):
+                channel_display = f"{invite.channel.mention} (`#{invite.channel.name}`)"
+            else:
+                channel_display = f"<#{invite.channel.id}> (`{invite.channel.id}`)"
+        else:
+            channel_display = "`Unknown`"
+
         embed = discord.Embed(
             title="Invite Deleted",
-            description=f"**Code:** `{invite.code}`",
+            description=f"**Code:** `{invite.code}`\n"
+            f"**Channel:** {channel_display}\n"
+            f"**Max Uses:** `{invite.max_uses if invite.max_uses and invite.max_uses > 0 else 'Unlimited'}`\n"
+            f"**Temporary:** `{invite.temporary}`",
             colour=discord.Colour.red(),
         )
 
