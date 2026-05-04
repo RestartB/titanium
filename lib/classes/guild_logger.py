@@ -1654,7 +1654,7 @@ class GuildLogger:
 
         embed = discord.Embed(
             title="Scheduled Event Updated",
-            description=f"Name: `{after.name}`\nID: `{after.id}`\n\n" + "\n".join(changes),
+            description=f"**Name:** `{after.name}`\n**ID:** `{after.id}`\n\n" + "\n".join(changes),
             colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
