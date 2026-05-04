@@ -9,6 +9,7 @@ from aiohttp import web
 from discord.ext import commands
 from pydantic import ValidationError
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from lib.api.endpoints import (
@@ -38,6 +39,7 @@ from lib.api.validators import (
     TagsConfigModel,
 )
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
+from lib.classes.guild_logger import LOGGING_EVENTS
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
@@ -111,7 +113,7 @@ class APICog(commands.Cog):
             self.app = web.Application(middlewares=[self.auth_middleware])
             self.register_routes()
 
-            self.runner = web.AppRunner(self.app, access_log=self.logger)
+            self.runner = web.AppRunner(self.app, access_log=None)
             await self.runner.setup()
 
             self.site = web.TCPSite(self.runner, self.host, self.port)
@@ -130,6 +132,8 @@ class APICog(commands.Cog):
         self.app.router.add_get("/ping", self.ping)
         self.app.router.add_get("/status", self.status)
         self.app.router.add_get("/stats", self.stats)
+
+        self.app.router.add_get("/info/logging", self.logging_types)
 
         self.app.router.add_post("/user/{user_id}/guilds", self.mutual_guilds)
         self.app.router.add_get("/user/{user_id}/inguild/{guild_id}", self.in_guild)
@@ -241,6 +245,19 @@ class APICog(commands.Cog):
                 "server_member_count": self.bot.guild_member_count,
                 "user_count": self.bot.user_installs,
             }
+        )
+
+    async def logging_types(self, request: web.Request) -> web.Response:
+        return web.json_response(
+            [
+                {
+                    "event": event.event,
+                    "name": event.name,
+                    "description": event.description,
+                    "category": event.category,
+                }
+                for event in LOGGING_EVENTS
+            ]
         )
 
     async def mutual_guilds(self, request: web.Request) -> web.Response:
@@ -802,16 +819,27 @@ class APICog(commands.Cog):
         if not member:
             return web.json_response({"error": "user not found"}, status=404)
 
-        async with get_session() as session:
-            new_tag = Tag()
-
-            new_tag.name = validated_tag.name
-            new_tag.content = validated_tag.content
-            new_tag.owner_id = member.id
-            new_tag.guild_id = guild.id
-            new_tag.is_user = False
+        async with get_session(autocommit=False) as session:
+            new_tag = Tag(
+                name=validated_tag.name,
+                content=validated_tag.content,
+                owner_id=member.id,
+                guild_id=guild.id,
+                is_user=False,
+            )
 
             session.add(new_tag)
+
+            try:
+                await session.commit()
+            except IntegrityError as e:
+                await session.rollback()
+
+                err_code = getattr(e.orig, "sqlstate", getattr(e.orig, "pgcode", None))
+                if err_code == "23505":  # 23505 = unique_violation
+                    return web.json_response({"error": "tag_in_use"}, status=404)
+                else:
+                    raise e
 
         return web.Response(status=204)
 
@@ -835,7 +863,7 @@ class APICog(commands.Cog):
         if not member:
             return web.json_response({"error": "user not found"}, status=404)
 
-        async with get_session() as session:
+        async with get_session(autocommit=False) as session:
             to_edit = await session.get(Tag, tag_id)
 
             if not to_edit or to_edit.is_user or to_edit.guild_id != guild.id:
@@ -844,6 +872,17 @@ class APICog(commands.Cog):
             to_edit.name = validated_tag.name
             to_edit.content = validated_tag.content
             to_edit.modified_by = member.id
+
+            try:
+                await session.commit()
+            except IntegrityError as e:
+                await session.rollback()
+
+                err_code = getattr(e.orig, "sqlstate", getattr(e.orig, "pgcode", None))
+                if err_code == "23505":  # 23505 = unique_violation
+                    return web.json_response({"error": "tag_in_use"}, status=404)
+                else:
+                    raise e
 
         return web.Response(status=204)
 
@@ -1410,13 +1449,11 @@ class APICog(commands.Cog):
                 if not db_config:
                     db_config = GuildLoggingSettings(guild_id=guild.id)
 
-                for field_name in LoggingConfigModel.model_fields.keys():
-                    if getattr(validated_config, field_name) is not None:
-                        setattr(
-                            db_config,
-                            field_name,
-                            int(getattr(validated_config, field_name)),
-                        )
+                db_config.channels = {
+                    key: int(value)
+                    for key, value in validated_config.channels.items()
+                    if value is not None
+                }
 
                 session.add(db_config)
         elif module_name == "fireboard" and isinstance(validated_config, FireboardConfigModel):

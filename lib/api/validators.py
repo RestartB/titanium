@@ -4,6 +4,7 @@ from typing import Annotated, Optional
 from emoji import is_emoji
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 
+from lib.classes.guild_logger import LOGGING_EVENT_MAP
 from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
 from lib.enums.leaderboard import LeaderboardCalcType
@@ -277,73 +278,22 @@ class BouncerConfigModel(BaseModel):
 
 
 class LoggingConfigModel(BaseModel):
-    app_command_perm_update_id: Optional[str]
-    dc_automod_rule_create_id: Optional[str]
-    dc_automod_rule_update_id: Optional[str]
-    dc_automod_rule_delete_id: Optional[str]
-    channel_create_id: Optional[str]
-    channel_update_id: Optional[str]
-    channel_delete_id: Optional[str]
-    guild_name_update_id: Optional[str]
-    guild_afk_channel_update_id: Optional[str]
-    guild_afk_timeout_update_id: Optional[str]
-    guild_icon_update_id: Optional[str]
-    guild_features_update_id: Optional[str]
-    guild_emoji_create_id: Optional[str]
-    guild_emoji_delete_id: Optional[str]
-    guild_sticker_create_id: Optional[str]
-    guild_sticker_delete_id: Optional[str]
-    guild_invite_create_id: Optional[str]
-    guild_invite_delete_id: Optional[str]
-    member_join_id: Optional[str]
-    member_leave_id: Optional[str]
-    member_nickname_update_id: Optional[str]
-    member_roles_update_id: Optional[str]
-    member_ban_id: Optional[str]
-    member_unban_id: Optional[str]
-    member_kick_id: Optional[str]
-    member_timeout_id: Optional[str]
-    member_untimeout_id: Optional[str]
-    message_edit_id: Optional[str]
-    message_delete_id: Optional[str]
-    message_bulk_delete_id: Optional[str]
-    poll_create_id: Optional[str]
-    poll_delete_id: Optional[str]
-    reaction_clear_id: Optional[str]
-    reaction_clear_emoji_id: Optional[str]
-    role_create_id: Optional[str]
-    role_update_id: Optional[str]
-    role_delete_id: Optional[str]
-    scheduled_event_create_id: Optional[str]
-    scheduled_event_update_id: Optional[str]
-    scheduled_event_delete_id: Optional[str]
-    soundboard_sound_create_id: Optional[str]
-    soundboard_sound_update_id: Optional[str]
-    soundboard_sound_delete_id: Optional[str]
-    stage_instance_create_id: Optional[str]
-    stage_instance_update_id: Optional[str]
-    stage_instance_delete_id: Optional[str]
-    thread_create_id: Optional[str]
-    thread_update_id: Optional[str]
-    thread_delete_id: Optional[str]
-    voice_join_id: Optional[str]
-    voice_leave_id: Optional[str]
-    voice_move_id: Optional[str]
-    voice_mute_id: Optional[str]
-    voice_unmute_id: Optional[str]
-    voice_deafen_id: Optional[str]
-    voice_undeafen_id: Optional[str]
-    titanium_warn_id: Optional[str]
-    titanium_mute_id: Optional[str]
-    titanium_unmute_id: Optional[str]
-    titanium_kick_id: Optional[str]
-    titanium_ban_id: Optional[str]
-    titanium_unban_id: Optional[str]
-    titanium_case_delete_id: Optional[str]
-    titanium_case_comment_id: Optional[str]
-    titanium_automod_trigger_id: Optional[str]
-    titanium_bouncer_trigger_id: Optional[str]
-    titanium_confession_id: Optional[str]
+    channels: dict[str, Optional[str]] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_keys(self):
+        seen_keys: list[str] = []
+
+        for key in self.channels.keys():
+            if key not in LOGGING_EVENT_MAP:
+                raise ValueError(f"Unknown event type: {key}")
+
+            if key in seen_keys:
+                raise ValueError(f"Duplicate event type: {key}")
+
+            seen_keys.append(key)
+
+        return self
 
 
 class FireboardBoardModel(BaseModel):

@@ -6,7 +6,6 @@ from discord import Guild
 if TYPE_CHECKING:
     from main import TitaniumBot
 
-from lib.api.validators import LoggingConfigModel
 from lib.enums.leaderboard import LeaderboardCalcType
 
 
@@ -147,25 +146,9 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
 
 def logging_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
-
-    if not config.logging_settings:
-        default_values = {}
-        for field_name, field_info in LoggingConfigModel.model_fields.items():
-            default_values[field_name] = None
-
-        return web.json_response(default_values)
-
-    logging_settings = config.logging_settings
-    response_data = {}
-
-    for field_name in LoggingConfigModel.model_fields.keys():
-        attr = getattr(logging_settings, field_name, None)
-        if attr is not None:
-            response_data[field_name] = str(attr)
-        else:
-            response_data[field_name] = None
-
-    return web.json_response(response_data)
+    return web.json_response(
+        {"channels": {key: str(value) for key, value in config.logging_settings.channels.items()}}
+    )
 
 
 def fireboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:

@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from datetime import timedelta
 from textwrap import shorten
 from typing import TYPE_CHECKING, Any, Optional, Sequence
@@ -23,6 +24,88 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+@dataclass
+class LoggingType:
+    event: str
+    name: str
+    description: str
+    category: str
+
+
+# fmt: off
+LOGGING_EVENTS = [
+    LoggingType(event="app_command_perm_update", name="App Command Permissions Update", description="When an application command's permissions are edited.", category="App Commands"),
+    LoggingType(event="dc_automod_rule_create", name="Discord AutoMod Rule Created", description="When a new Discord AutoMod rule is created.", category="Discord AutoMod"),
+    LoggingType(event="dc_automod_rule_update", name="Discord AutoMod Rule Updated", description="When a Discord AutoMod rule is edited.", category="Discord AutoMod"),
+    LoggingType(event="dc_automod_rule_delete", name="Discord AutoMod Rule Deleted", description="When a Discord AutoMod rule is deleted.", category="Discord AutoMod"),
+    LoggingType(event="channel_create", name="Channel Created", description="When a new channel is created.", category="Channels"),
+    LoggingType(event="channel_update", name="Channel Updated", description="When a channel is edited.", category="Channels"),
+    LoggingType(event="channel_delete", name="Channel Deleted", description="When a channel is deleted.", category="Channels"),
+    LoggingType(event="guild_name_update", name="Guild Name Updated", description="When the server's name is changed.", category="Server Settings"),
+    LoggingType(event="guild_afk_channel_update", name="Guild AFK Channel Updated", description="When the server's AFK channel is changed.", category="Server Settings"),
+    LoggingType(event="guild_afk_timeout_update", name="Guild AFK Timeout Updated", description="When the server's AFK timeout is changed.", category="Server Settings"),
+    LoggingType(event="guild_icon_update", name="Guild Icon Updated", description="When the guild's icon is changed.", category="Server Settings"),
+    LoggingType(event="guild_features_update", name="Guild Features Updated", description="When the guild's features are updated.", category="Server Settings"),
+    LoggingType(event="guild_emoji_create", name="Guild Emoji Created", description="When a new guild emoji is created.", category="Server Settings"),
+    LoggingType(event="guild_emoji_delete", name="Guild Emoji Deleted", description="When a guild emoji is deleted.", category="Server Settings"),
+    LoggingType(event="guild_sticker_create", name="Guild Sticker Created", description="When a new guild sticker is created.", category="Server Settings"),
+    LoggingType(event="guild_sticker_delete", name="Guild Sticker Deleted", description="When a guild sticker is deleted.", category="Server Settings"),
+    LoggingType(event="guild_invite_create", name="Guild Invite Created", description="When a server invite is created.", category="Server Settings"),
+    LoggingType(event="guild_invite_delete", name="Guild Invite Deleted", description="When a server invite is deleted.", category="Server Settings"),
+    LoggingType(event="member_join", name="Member Joined", description="When a new member joins the server.", category="Members"),
+    LoggingType(event="member_leave", name="Member Left", description="When a member leaves the server.", category="Members"),
+    LoggingType(event="member_nickname_update", name="Member Nickname Updated", description="When a user changes their server nickname.", category="Members"),
+    LoggingType(event="member_roles_update", name="Member Roles Updated", description="When a user's assigned roles changes.", category="Members"),
+    LoggingType(event="member_ban", name="Member Banned", description="When a user is banned from the server.", category="Members"),
+    LoggingType(event="member_unban", name="Member Unbanned", description="When a user is unbanned from the server.", category="Members"),
+    LoggingType(event="member_kick", name="Member Kicked", description="When a user is kicked from the server.", category="Members"),
+    LoggingType(event="member_timeout", name="Member Timed Out", description="When a user is timed out.", category="Members"),
+    LoggingType(event="member_untimeout", name="Member Timeout Removed", description="When a user's timeout is removed.", category="Members"),
+    LoggingType(event="message_edit", name="Message Edited", description="When a message is edited.", category="Messages"),
+    LoggingType(event="message_delete", name="Message Deleted", description="When a message is deleted.", category="Messages"),
+    LoggingType(event="message_bulk_delete", name="Message Bulk Deleted", description="When multiple messages are deleted, normally by the purge feature.", category="Messages"),
+    LoggingType(event="poll_create", name="Poll Created", description="When a new poll is created.", category="Polls"),
+    LoggingType(event="poll_delete", name="Poll Deleted", description="When a poll is deleted.", category="Polls"),
+    LoggingType(event="reaction_clear", name="Reactions Cleared", description="When all reactions on a message are cleared.", category="Reactions"),
+    LoggingType(event="reaction_clear_emoji", name="Reaction Cleared (Emoji)", description="When a specific reaction on a message is cleared.", category="Reactions"),
+    LoggingType(event="role_create", name="Role Created", description="When a new role is created.", category="Roles"),
+    LoggingType(event="role_update", name="Role Updated", description="When a role is edited.", category="Roles"),
+    LoggingType(event="role_delete", name="Role Deleted", description="When a role is deleted.", category="Roles"),
+    LoggingType(event="scheduled_event_create", name="Scheduled Event Created", description="When a new scheduled event is created.", category="Scheduled Events"),
+    LoggingType(event="scheduled_event_update", name="Scheduled Event Updated", description="When a scheduled event is edited.", category="Scheduled Events"),
+    LoggingType(event="scheduled_event_delete", name="Scheduled Event Deleted", description="When a scheduled event is deleted.", category="Scheduled Events"),
+    LoggingType(event="soundboard_sound_create", name="Soundboard Sound Created", description="When a new soundboard sound is created.", category="Soundboard"),
+    LoggingType(event="soundboard_sound_update", name="Soundboard Sound Updated", description="When a soundboard sound is edited.", category="Soundboard"),
+    LoggingType(event="soundboard_sound_delete", name="Soundboard Sound Deleted", description="When a soundboard sound is deleted.", category="Soundboard"),
+    LoggingType(event="stage_instance_create", name="Stage Instance Created", description="When a user starts a stage instance.", category="Stage Instances"),
+    LoggingType(event="stage_instance_update", name="Stage Instance Updated", description="When a stage instance is edited.", category="Stage Instances"),
+    LoggingType(event="stage_instance_delete", name="Stage Instance Deleted", description="When a user finishes a stage instance.", category="Stage Instances"),
+    LoggingType(event="thread_create", name="Thread Created", description="When a user creates a new thread.", category="Threads"),
+    LoggingType(event="thread_update", name="Thread Updated", description="When a user edits a thread.", category="Threads"),
+    LoggingType(event="thread_delete", name="Thread Deleted", description="When a thread is deleted.", category="Threads"),
+    LoggingType(event="voice_join", name="Voice Joined", description="When a user joins a voice channel.", category="Voice"),
+    LoggingType(event="voice_leave", name="Voice Left", description="When a user leaves a voice channel.", category="Voice"),
+    LoggingType(event="voice_move", name="Voice Moved", description="When a user moves / is moved to a different voice channel.", category="Voice"),
+    LoggingType(event="voice_mute", name="Voice Muted", description="When a user is muted server wide by a moderator.", category="Voice"),
+    LoggingType(event="voice_unmute", name="Voice Unmuted", description="When a user is unmuted server wide by a moderator.", category="Voice"),
+    LoggingType(event="voice_deafen", name="Voice Deafened", description="When a user is deafened server wide by a moderator.", category="Voice"),
+    LoggingType(event="voice_undeafen", name="Voice Undeafened", description="When a user is undeafened server wide by a moderator.", category="Voice"),
+    LoggingType(event="titanium_warn", name="Titanium Warn", description="When a user is warned using Titanium.", category="Titanium"),
+    LoggingType(event="titanium_mute", name="Titanium Mute", description="When a user is muted using Titanium.", category="Titanium"),
+    LoggingType(event="titanium_unmute", name="Titanium Unmute", description="When a user is unmuted using Titanium.", category="Titanium"),
+    LoggingType(event="titanium_kick", name="Titanium Kick", description="When a user is kicked using Titanium.", category="Titanium"),
+    LoggingType(event="titanium_ban", name="Titanium Ban", description="When a user is banned using Titanium.", category="Titanium"),
+    LoggingType(event="titanium_unban", name="Titanium Unban", description="When a user is unbanned using Titanium.", category="Titanium"),
+    LoggingType(event="titanium_case_delete", name="Titanium Case Deleted", description="When a moderator deletes a Titanium case.", category="Titanium"),
+    LoggingType(event="titanium_case_comment", name="Titanium Case Commented", description="When a moderator comments on a Titanium case.", category="Titanium"),
+    LoggingType(event="titanium_automod_trigger", name="Titanium AutoMod Triggered", description="When a message triggers a Titanium AutoMod rule.", category="Titanium"),
+    LoggingType(event="titanium_bouncer_trigger", name="Titanium Bouncer Triggered", description="When a user triggers a Titanium Bouncer action.", category="Titanium"),
+    LoggingType(event="titanium_confession", name="Titanium Confession Posted", description="When a confession is posted using the confessions feature.", category="Titanium")
+]
+# fmt: on
+LOGGING_EVENT_MAP = {event.event: event for event in LOGGING_EVENTS}
+
+
 class GuildLogger:
     """Server logging class, used to log Discord events to server webhooks"""
 
@@ -42,15 +125,17 @@ class GuildLogger:
             self.logger.debug(f"Logging in {self.guild.id} is disabled")
             return False
 
-        field_value = getattr(self.config.logging_settings, entry, None)
-        if not field_value:
+        if not self.config.logging_settings.channels.get(entry):
             self.logger.debug(f"{entry} log type is disabled")
             return False
 
         self.logger.debug(f"{entry} log type is enabled")
         return True
 
-    async def _find_webhook(self, channel_id: int) -> Optional[str]:
+    async def _find_webhook(self, channel_id: int | None) -> Optional[str]:
+        if not channel_id:
+            return None
+
         if self.guild.id in self.bot.available_webhooks:
             for webhook in self.bot.available_webhooks[self.guild.id]:
                 if webhook.channel_id == channel_id:
@@ -208,7 +293,7 @@ class GuildLogger:
         self, event: discord.RawAppCommandPermissionsUpdateEvent
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("app_command_perm_update_id"):
+        if not self._exists_and_enabled("app_command_perm_update"):
             return
 
         if not isinstance(self.guild, discord.Guild):
@@ -282,13 +367,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.app_command_perm_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("app_command_perm_update")
+            ),
             embed,
         )
 
     async def automod_rule_create(self, rule: discord.AutoModRule) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("dc_automod_rule_create_id"):
+        if not self._exists_and_enabled("dc_automod_rule_create"):
             return
 
         embed = discord.Embed(
@@ -303,13 +390,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.dc_automod_rule_create_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("dc_automod_rule_create")
+            ),
             embed,
         )
 
     async def automod_rule_delete(self, rule: discord.AutoModRule) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("dc_automod_rule_delete_id"):
+        if not self._exists_and_enabled("dc_automod_rule_delete"):
             return
 
         embed = discord.Embed(
@@ -324,13 +413,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.dc_automod_rule_delete_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("dc_automod_rule_delete")
+            ),
             embed,
         )
 
     async def automod_rule_update(self, rule: discord.AutoModRule) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("dc_automod_rule_update_id"):
+        if not self._exists_and_enabled("dc_automod_rule_update"):
             return
 
         embed = discord.Embed(
@@ -345,13 +436,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.dc_automod_rule_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("dc_automod_rule_update")
+            ),
             embed,
         )
 
     async def channel_create(self, channel: discord.abc.GuildChannel) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("channel_create_id"):
+        if not self._exists_and_enabled("channel_create"):
             return
 
         embed = discord.Embed(
@@ -366,13 +459,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.channel_create_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("channel_create")),
             embed,
         )
 
     async def channel_delete(self, channel: discord.abc.GuildChannel) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("channel_delete_id"):
+        if not self._exists_and_enabled("channel_delete"):
             return
 
         embed = discord.Embed(
@@ -387,7 +480,7 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.channel_delete_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("channel_delete")),
             embed,
         )
 
@@ -397,7 +490,7 @@ class GuildLogger:
         after: discord.abc.GuildChannel,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("channel_update_id"):
+        if not self._exists_and_enabled("channel_update"):
             return
 
         changes = []
@@ -425,13 +518,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.channel_update_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("channel_update")),
             embed,
         )
 
     async def guild_name_update(self, before: discord.Guild, after: discord.Guild) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_name_update_id"):
+        if not self._exists_and_enabled("guild_name_update"):
             return
 
         if before.name == after.name:
@@ -450,13 +543,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.guild_name_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("guild_name_update")
+            ),
             embed,
         )
 
     async def guild_afk_channel_update(self, before: discord.Guild, after: discord.Guild) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_afk_channel_update_id"):
+        if not self._exists_and_enabled("guild_afk_channel_update"):
             return
 
         if before.afk_channel == after.afk_channel:
@@ -475,13 +570,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.guild_afk_channel_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("guild_afk_channel_update")
+            ),
             embed,
         )
 
     async def guild_afk_timeout_update(self, before: discord.Guild, after: discord.Guild) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_afk_timeout_update_id"):
+        if not self._exists_and_enabled("guild_afk_timeout_update"):
             return
 
         if before.afk_timeout == after.afk_timeout:
@@ -500,13 +597,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.guild_afk_timeout_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("guild_afk_timeout_update")
+            ),
             embed,
         )
 
     async def guild_icon_update(self, before: discord.Guild, after: discord.Guild) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_icon_update_id"):
+        if not self._exists_and_enabled("guild_icon_update"):
             return
 
         if before.icon == after.icon:
@@ -533,12 +632,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.guild_icon_update_id), embed
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("guild_icon_update")
+            ),
+            embed,
         )
 
     async def guild_features_update(self, before: discord.Guild, after: discord.Guild) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_features_update_id"):
+        if not self._exists_and_enabled("guild_features_update"):
             return
 
         if before.features == after.features:
@@ -565,7 +667,9 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.guild_features_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("guild_features_update")
+            ),
             embed,
         )
 
@@ -575,7 +679,7 @@ class GuildLogger:
         after: Sequence[discord.Emoji],
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_emoji_create_id"):
+        if not self._exists_and_enabled("guild_emoji_create"):
             return
 
         before_ids = {e.id for e in before}
@@ -598,7 +702,9 @@ class GuildLogger:
         for embed in embeds:
             assert self.config is not None and self.config.logging_settings is not None
             await self._send_to_webhook(
-                await self._find_webhook(self.config.logging_settings.guild_emoji_create_id),
+                await self._find_webhook(
+                    self.config.logging_settings.channels.get("guild_emoji_create")
+                ),
                 embed,
             )
 
@@ -608,7 +714,7 @@ class GuildLogger:
         after: Sequence[discord.Emoji],
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_emoji_delete_id"):
+        if not self._exists_and_enabled("guild_emoji_delete"):
             return
 
         after_ids = {e.id for e in after}
@@ -631,7 +737,9 @@ class GuildLogger:
         for embed in embeds:
             assert self.config is not None and self.config.logging_settings is not None
             await self._send_to_webhook(
-                await self._find_webhook(self.config.logging_settings.guild_emoji_delete_id),
+                await self._find_webhook(
+                    self.config.logging_settings.channels.get("guild_emoji_delete")
+                ),
                 embed,
             )
 
@@ -641,7 +749,7 @@ class GuildLogger:
         after: Sequence[discord.GuildSticker],
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_sticker_create_id"):
+        if not self._exists_and_enabled("guild_sticker_create"):
             return
 
         before_ids = {e.id for e in before}
@@ -676,7 +784,9 @@ class GuildLogger:
         for group in embed_groups:
             assert self.config is not None and self.config.logging_settings is not None
             await self._send_to_webhook(
-                await self._find_webhook(self.config.logging_settings.guild_sticker_create_id),
+                await self._find_webhook(
+                    self.config.logging_settings.channels.get("guild_sticker_create")
+                ),
                 embeds=group,
             )
 
@@ -686,7 +796,7 @@ class GuildLogger:
         after: Sequence[discord.GuildSticker],
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_sticker_delete_id"):
+        if not self._exists_and_enabled("guild_sticker_delete"):
             return
 
         after_ids = {e.id for e in after}
@@ -721,13 +831,15 @@ class GuildLogger:
         for group in embed_groups:
             assert self.config is not None and self.config.logging_settings is not None
             await self._send_to_webhook(
-                await self._find_webhook(self.config.logging_settings.guild_sticker_delete_id),
+                await self._find_webhook(
+                    self.config.logging_settings.channels.get("guild_sticker_delete")
+                ),
                 embeds=group,
             )
 
     async def guild_invite_create(self, invite: discord.Invite) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_invite_create_id"):
+        if not self._exists_and_enabled("guild_invite_create"):
             return
 
         # Channel
@@ -766,13 +878,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.guild_invite_create_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("guild_invite_create")
+            ),
             embed,
         )
 
     async def guild_invite_delete(self, invite: discord.Invite) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("guild_invite_delete_id"):
+        if not self._exists_and_enabled("guild_invite_delete"):
             return
 
         embed = discord.Embed(
@@ -786,13 +900,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.guild_invite_delete_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("guild_invite_delete")
+            ),
             embed,
         )
 
     async def member_join(self, member: discord.Member) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("member_join_id"):
+        if not self._exists_and_enabled("member_join"):
             return
 
         embed = discord.Embed(
@@ -807,13 +923,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.member_join_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("member_join")),
             embed,
         )
 
     async def member_leave(self, member: discord.Member) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("member_leave_id"):
+        if not self._exists_and_enabled("member_leave"):
             return
 
         embed = discord.Embed(
@@ -828,13 +944,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.member_leave_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("member_leave")),
             embed,
         )
 
     async def member_nickname_update(self, before: discord.Member, after: discord.Member) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("member_nickname_update_id"):
+        if not self._exists_and_enabled("member_nickname_update"):
             return
 
         if before.nick == after.nick:
@@ -856,13 +972,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.member_nickname_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("member_nickname_update")
+            ),
             embed,
         )
 
     async def member_roles_update(self, before: discord.Member, after: discord.Member) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("member_roles_update_id"):
+        if not self._exists_and_enabled("member_roles_update"):
             return
 
         # Get updated roles
@@ -902,13 +1020,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.member_roles_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("member_roles_update")
+            ),
             embed,
         )
 
     async def member_ban(self, member: discord.User | discord.Member) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("member_ban_id"):
+        if not self._exists_and_enabled("member_ban"):
             return
 
         embed = discord.Embed(
@@ -926,13 +1046,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.member_ban_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("member_ban")),
             embed,
         )
 
     async def member_unban(self, member: discord.User | discord.Member) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("member_unban_id"):
+        if not self._exists_and_enabled("member_unban"):
             return
 
         embed = discord.Embed(
@@ -950,14 +1070,14 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.member_unban_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("member_unban")),
             embed,
         )
 
     # We only get an audit log record for this
     async def member_kick(self, entry: discord.AuditLogEntry) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("member_kick_id"):
+        if not self._exists_and_enabled("member_kick"):
             return
 
         if not entry.action == discord.AuditLogAction.kick:
@@ -984,13 +1104,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.member_kick_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("member_kick")),
             embed,
         )
 
     async def member_timeout(self, before: discord.Member, after: discord.Member) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("member_timeout_id"):
+        if not self._exists_and_enabled("member_timeout"):
             return
 
         if before.timed_out_until == after.timed_out_until:
@@ -1015,13 +1135,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.member_timeout_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("member_timeout")),
             embed,
         )
 
     async def member_untimeout(self, before: discord.Member, after: discord.Member) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("member_untimeout_id"):
+        if not self._exists_and_enabled("member_untimeout"):
             return
 
         if before.timed_out_until == after.timed_out_until:
@@ -1043,13 +1163,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.member_untimeout_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("member_untimeout")),
             embed,
         )
 
     async def message_edit(self, event: discord.RawMessageUpdateEvent) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("message_edit_id"):
+        if not self._exists_and_enabled("message_edit"):
             return
 
         embed = discord.Embed(
@@ -1081,14 +1201,14 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.message_edit_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("message_edit")),
             embed,
             view=view,
         )
 
     async def message_delete(self, event: discord.RawMessageDeleteEvent) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("message_delete_id"):
+        if not self._exists_and_enabled("message_delete"):
             return
 
         embed = discord.Embed(
@@ -1171,13 +1291,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.message_delete_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("message_delete")),
             embeds=embeds,
         )
 
     async def message_bulk_delete(self, event: discord.RawBulkMessageDeleteEvent) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("message_bulk_delete_id"):
+        if not self._exists_and_enabled("message_bulk_delete"):
             return
 
         embed = discord.Embed(
@@ -1194,13 +1314,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.message_bulk_delete_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("message_bulk_delete")
+            ),
             embed,
         )
 
     async def poll_create(self, message: discord.Message) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("poll_create_id"):
+        if not self._exists_and_enabled("poll_create"):
             return
 
         if (
@@ -1226,13 +1348,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.poll_create_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("poll_create")),
             embed,
         )
 
     async def poll_delete(self, event: discord.RawMessageDeleteEvent) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("poll_delete_id"):
+        if not self._exists_and_enabled("poll_delete"):
             return
 
         if (
@@ -1261,7 +1383,7 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.poll_delete_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("poll_delete")),
             embed,
         )
 
@@ -1269,7 +1391,7 @@ class GuildLogger:
         self, message: discord.Message, reactions: list[discord.Reaction]
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("reaction_clear_id"):
+        if not self._exists_and_enabled("reaction_clear"):
             return
 
         if isinstance(message.channel, discord.DMChannel) or isinstance(
@@ -1299,14 +1421,14 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.reaction_clear_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("reaction_clear")),
             embed,
             view=view,
         )
 
     async def reaction_clear_emoji(self, reaction: discord.Reaction) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("reaction_clear_emoji_id"):
+        if not self._exists_and_enabled("reaction_clear_emoji"):
             return
 
         message = reaction.message
@@ -1338,14 +1460,16 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.reaction_clear_emoji_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("reaction_clear_emoji")
+            ),
             embed,
             view=view,
         )
 
     async def role_create(self, role: discord.Role) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("role_create_id"):
+        if not self._exists_and_enabled("role_create"):
             return
 
         embed = discord.Embed(
@@ -1365,13 +1489,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.role_create_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("role_create")),
             embed,
         )
 
     async def role_delete(self, role: discord.Role) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("role_delete_id"):
+        if not self._exists_and_enabled("role_delete"):
             return
 
         embed = discord.Embed(
@@ -1391,13 +1515,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.role_delete_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("role_delete")),
             embed,
         )
 
     async def role_update(self, before: discord.Role, after: discord.Role) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("role_update_id"):
+        if not self._exists_and_enabled("role_update"):
             return
 
         changes = []
@@ -1432,13 +1556,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.role_update_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("role_update")),
             embed,
         )
 
     async def scheduled_event_create(self, event: discord.ScheduledEvent):
         await self._ensure_config()
-        if not self._exists_and_enabled("scheduled_event_create_id"):
+        if not self._exists_and_enabled("scheduled_event_create"):
             return
 
         embed = discord.Embed(
@@ -1463,13 +1587,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.scheduled_event_create_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("scheduled_event_create")
+            ),
             embed,
         )
 
     async def scheduled_event_delete(self, event: discord.ScheduledEvent):
         await self._ensure_config()
-        if not self._exists_and_enabled("scheduled_event_delete_id"):
+        if not self._exists_and_enabled("scheduled_event_delete"):
             return
 
         embed = discord.Embed(
@@ -1494,7 +1620,9 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.scheduled_event_delete_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("scheduled_event_delete")
+            ),
             embed,
         )
 
@@ -1502,7 +1630,7 @@ class GuildLogger:
         self, before: discord.ScheduledEvent, after: discord.ScheduledEvent
     ):
         await self._ensure_config()
-        if not self._exists_and_enabled("scheduled_event_update_id"):
+        if not self._exists_and_enabled("scheduled_event_update"):
             return
 
         changes = []
@@ -1539,13 +1667,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.scheduled_event_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("scheduled_event_update")
+            ),
             embed,
         )
 
     async def soundboard_sound_create(self, sound: discord.SoundboardSound) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("soundboard_sound_create_id"):
+        if not self._exists_and_enabled("soundboard_sound_create"):
             return
 
         embed = discord.Embed(
@@ -1565,13 +1695,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.soundboard_sound_create_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("soundboard_sound_create")
+            ),
             embed,
         )
 
     async def soundboard_sound_delete(self, sound: discord.SoundboardSound) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("soundboard_sound_delete_id"):
+        if not self._exists_and_enabled("soundboard_sound_delete"):
             return
 
         embed = discord.Embed(
@@ -1591,7 +1723,9 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.soundboard_sound_delete_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("soundboard_sound_delete")
+            ),
             embed,
         )
 
@@ -1599,7 +1733,7 @@ class GuildLogger:
         self, before: discord.SoundboardSound, after: discord.SoundboardSound
     ):
         await self._ensure_config()
-        if not self._exists_and_enabled("soundboard_sound_update_id"):
+        if not self._exists_and_enabled("soundboard_sound_update"):
             return
 
         changes = []
@@ -1626,13 +1760,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.soundboard_sound_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("soundboard_sound_update")
+            ),
             embed,
         )
 
     async def stage_instance_create(self, instance: discord.StageInstance) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("stage_instance_create_id"):
+        if not self._exists_and_enabled("stage_instance_create"):
             return
 
         embed = discord.Embed(
@@ -1653,13 +1789,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.stage_instance_create_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("stage_instance_create")
+            ),
             embed,
         )
 
     async def stage_instance_delete(self, instance: discord.StageInstance) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("stage_instance_delete_id"):
+        if not self._exists_and_enabled("stage_instance_delete"):
             return
 
         embed = discord.Embed(
@@ -1680,7 +1818,9 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.stage_instance_delete_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("stage_instance_delete")
+            ),
             embed,
         )
 
@@ -1688,7 +1828,7 @@ class GuildLogger:
         self, before: discord.StageInstance, after: discord.StageInstance
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("stage_instance_update_id"):
+        if not self._exists_and_enabled("stage_instance_update"):
             return
 
         if before.topic == after.topic:
@@ -1711,13 +1851,15 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.stage_instance_update_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("stage_instance_update")
+            ),
             embed,
         )
 
     async def thread_create(self, thread: discord.Thread) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("thread_create_id"):
+        if not self._exists_and_enabled("thread_create"):
             return
 
         embed = discord.Embed(
@@ -1744,13 +1886,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.thread_create_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("thread_create")),
             embed,
         )
 
     async def thread_update(self, before: discord.Thread, after: discord.Thread) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("thread_update_id"):
+        if not self._exists_and_enabled("thread_update"):
             return
 
         changes = []
@@ -1796,13 +1938,13 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.thread_update_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("thread_update")),
             embed,
         )
 
     async def thread_delete(self, payload: discord.RawThreadDeleteEvent) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("thread_delete_id"):
+        if not self._exists_and_enabled("thread_delete"):
             return
 
         if payload.thread:
@@ -1837,7 +1979,7 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.thread_delete_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("thread_delete")),
             embed,
         )
 
@@ -1848,7 +1990,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("voice_join_id"):
+        if not self._exists_and_enabled("voice_join"):
             return
 
         if before.channel is not None or after.channel is None:
@@ -1868,7 +2010,7 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.voice_join_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("voice_join")),
             embed,
         )
 
@@ -1879,7 +2021,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("voice_leave_id"):
+        if not self._exists_and_enabled("voice_leave"):
             return
 
         if before.channel is None or after.channel is not None:
@@ -1899,7 +2041,7 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.voice_leave_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("voice_leave")),
             embed,
         )
 
@@ -1910,7 +2052,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("voice_move_id"):
+        if not self._exists_and_enabled("voice_move"):
             return
 
         if before.channel == after.channel or before.channel is None or after.channel is None:
@@ -1934,7 +2076,7 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.voice_move_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("voice_move")),
             embed,
         )
 
@@ -1945,7 +2087,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("voice_mute_id"):
+        if not self._exists_and_enabled("voice_mute"):
             return
 
         if before.mute == after.mute:
@@ -1973,7 +2115,7 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.voice_mute_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("voice_mute")),
             embed,
         )
 
@@ -1984,7 +2126,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("voice_unmute_id"):
+        if not self._exists_and_enabled("voice_unmute"):
             return
 
         if before.mute == after.mute:
@@ -2012,7 +2154,7 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.voice_unmute_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("voice_unmute")),
             embed,
         )
 
@@ -2023,7 +2165,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("voice_deafen_id"):
+        if not self._exists_and_enabled("voice_deafen"):
             return
 
         if before.deaf == after.deaf:
@@ -2051,7 +2193,7 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.voice_deafen_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("voice_deafen")),
             embed,
         )
 
@@ -2062,7 +2204,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("voice_undeafen_id"):
+        if not self._exists_and_enabled("voice_undeafen"):
             return
 
         if before.deaf == after.deaf:
@@ -2090,7 +2232,7 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.voice_undeafen_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("voice_undeafen")),
             embed,
         )
 
@@ -2103,12 +2245,12 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_warn_id"):
+        if not self._exists_and_enabled("titanium_warn"):
             return
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_warn_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("titanium_warn")),
             warned(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
@@ -2121,12 +2263,12 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_mute_id"):
+        if not self._exists_and_enabled("titanium_mute"):
             return
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_mute_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("titanium_mute")),
             muted(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
@@ -2139,12 +2281,12 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_unmute_id"):
+        if not self._exists_and_enabled("titanium_unmute"):
             return
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_unmute_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("titanium_unmute")),
             unmuted(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
@@ -2157,12 +2299,12 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_kick_id"):
+        if not self._exists_and_enabled("titanium_kick"):
             return
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_kick_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("titanium_kick")),
             kicked(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
@@ -2175,12 +2317,12 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_ban_id"):
+        if not self._exists_and_enabled("titanium_ban"):
             return
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_ban_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("titanium_ban")),
             banned(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
@@ -2193,12 +2335,12 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_unban_id"):
+        if not self._exists_and_enabled("titanium_unban"):
             return
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_unban_id),
+            await self._find_webhook(self.config.logging_settings.channels.get("titanium_unban")),
             unbanned(self.bot, target, creator, case, dm_success, dm_error, log=True),
         )
 
@@ -2206,7 +2348,7 @@ class GuildLogger:
         self, case: ModCase, creator: discord.Member, comment: str
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_case_comment_id"):
+        if not self._exists_and_enabled("titanium_case_comment"):
             return
 
         embed = discord.Embed(
@@ -2220,7 +2362,9 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_case_comment_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("titanium_case_comment")
+            ),
             embed=embed,
         )
 
@@ -2228,7 +2372,7 @@ class GuildLogger:
         self, case: ModCase, deleted_by: Optional[discord.Member] = None
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_case_delete_id"):
+        if not self._exists_and_enabled("titanium_case_delete"):
             return
 
         embed = discord.Embed(
@@ -2243,7 +2387,9 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_case_comment_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("titanium_case_comment")
+            ),
             embed=embed,
         )
 
@@ -2254,7 +2400,7 @@ class GuildLogger:
         message: discord.Message,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_automod_trigger_id"):
+        if not self._exists_and_enabled("titanium_automod_trigger"):
             return
 
         if isinstance(message.channel, (discord.DMChannel, discord.GroupChannel)):
@@ -2299,7 +2445,9 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_automod_trigger_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("titanium_automod_trigger")
+            ),
             embed=embed,
         )
 
@@ -2310,7 +2458,7 @@ class GuildLogger:
         member: discord.Member,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_bouncer_trigger_id"):
+        if not self._exists_and_enabled("titanium_bouncer_trigger"):
             return
 
         embed = discord.Embed(
@@ -2352,7 +2500,9 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_automod_trigger_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("titanium_automod_trigger")
+            ),
             embed=embed,
         )
 
@@ -2363,7 +2513,7 @@ class GuildLogger:
         message: str,
     ) -> None:
         await self._ensure_config()
-        if not self._exists_and_enabled("titanium_confession_id"):
+        if not self._exists_and_enabled("titanium_confession"):
             return
 
         if isinstance(interaction.channel, (discord.DMChannel, discord.GroupChannel)):
@@ -2401,6 +2551,8 @@ class GuildLogger:
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
-            await self._find_webhook(self.config.logging_settings.titanium_confession_id),
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("titanium_confession")
+            ),
             embed=embed,
         )
