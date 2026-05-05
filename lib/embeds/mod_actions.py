@@ -212,6 +212,22 @@ def purged(
     return embed
 
 
+# No messages to purge
+def none_to_purge(
+    bot: TitaniumBot,
+    creator: Member | User | ClientUser,
+) -> Embed:
+    embed = Embed(
+        title=f"{bot.info_emoji} Nothing Purged",
+        description="No messages were purged. Ensure that target messages meet any specified criteria, and are less than 14 days old.",
+        colour=Colour.light_grey(),
+    )
+
+    embed.set_footer(text=f"@{creator.name}", icon_url=creator.display_avatar.url)
+
+    return embed
+
+
 # Fallback done
 def done(
     bot: TitaniumBot,

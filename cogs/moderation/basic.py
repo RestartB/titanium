@@ -53,10 +53,18 @@ class ModerationBasicCog(
         return True
 
     def _purge_check(
-        self, message: discord.Message, source: int, target: discord.User | None
+        self, message: discord.Message, source: int, target: discord.User | None, bot_only: bool
     ) -> bool:
+        # don't delete the user's command message
         if message.id == source:
             return False
+
+        # we can only bulk delete messages 14 days old or newer
+        if discord.utils.utcnow() - message.created_at > timedelta(days=14):
+            return False
+
+        if bot_only:
+            return message.author.bot
 
         if target:
             return message.author.id == target.id
@@ -930,20 +938,22 @@ class ModerationBasicCog(
 
     @commands.hybrid_command(
         name="purge",
-        description="Purge up to 100 messages up to 14 days old from a channel.",
+        description="Purge up to 300 messages up to 14 days old from a channel.",
         aliases=["clear", "clean", "scrub"],
     )
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     @app_commands.describe(
-        amount="The number of messages to purge (max 100).",
+        amount="The number of messages to purge (max 300).",
         user="Optional: the user whose messages should be purged.",
+        bot_only="Optional: whether to delete messages from bots only. Defaults to false.",
     )
     async def purge(
         self,
         ctx: commands.Context["TitaniumBot"],
-        amount: commands.Range[int, 1, 100],
+        amount: commands.Range[int, 1, 300],
         user: discord.User | None = None,
+        bot_only: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
@@ -972,14 +982,21 @@ class ModerationBasicCog(
                     limit=limit,
                     bulk=True,
                     reason=f"Purged by @{ctx.author.name}",
-                    check=lambda m: self._purge_check(m, ctx.message.id, user),
+                    check=lambda m: self._purge_check(m, ctx.message.id, user, bot_only),
                 )
 
-                await ctx.reply(
-                    ephemeral=True,
-                    embed=mod_embeds.purged(self.bot, ctx.author, len(deleted)),
-                    **del_kwargs,
-                )
+                if len(deleted) == 0:
+                    await ctx.reply(
+                        ephemeral=True,
+                        embed=mod_embeds.none_to_purge(self.bot, ctx.author),
+                        **del_kwargs,
+                    )
+                else:
+                    await ctx.reply(
+                        ephemeral=True,
+                        embed=mod_embeds.purged(self.bot, ctx.author, len(deleted)),
+                        **del_kwargs,
+                    )
             except discord.Forbidden as e:
                 if not isinstance(
                     ctx.channel,
