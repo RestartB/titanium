@@ -170,6 +170,10 @@ class TagSettingsCog(commands.Cog):
         async with get_session() as session:
             await session.delete(to_delete)
 
+        # reload cache if this is a server tag
+        if interaction.guild_id and not to_delete.is_user:
+            await self.bot.refresh_guild_config_cache(interaction.guild_id)
+
         embed = discord.Embed(
             title=f"{self.bot.success_emoji} Done",
             description=f"The `{to_delete.name}` tag has been deleted.",

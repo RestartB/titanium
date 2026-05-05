@@ -58,6 +58,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
         super().__init__(timeout=timeout)
         self.server_tag_allowed = server_tag_allowed
         self.existing_tag = existing_tag
+        self.is_server_tag = False
 
         assert isinstance(self.tag_type.component, discord.ui.RadioGroup)
         assert isinstance(self.tag_name.component, discord.ui.TextInput)
@@ -70,6 +71,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
             self.remove_item(self.tag_type)
             self.tag_name.component.default = existing_tag.name
             self.tag_content.component.default = existing_tag.content
+            self.is_server_tag = not existing_tag.is_user
 
     async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
         await interaction.response.defer(ephemeral=True)
@@ -164,6 +166,8 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
             )
         else:
             # creating tag
+            self.is_server_tag = self.tag_type.component.value == "server"
+
             async with get_session(autocommit=False) as session:
                 new_tag = Tag(
                     guild_id=interaction.guild.id
@@ -197,5 +201,9 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                 description=f"Created a new {self.tag_type.component.value} tag: `{cleaned_name}`",
                 colour=discord.Colour.green(),
             )
+
+        # reload cache if this is a server tag
+        if interaction.guild_id and self.is_server_tag:
+            await interaction.client.refresh_guild_config_cache(interaction.guild_id)
 
         await interaction.followup.send(embed=embed, ephemeral=True)

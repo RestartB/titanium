@@ -842,6 +842,7 @@ class APICog(commands.Cog):
                 else:
                     raise e
 
+        await self.bot.refresh_guild_config_cache(guild.id)
         return web.Response(status=204)
 
     async def guild_edit_tag(self, request: web.Request) -> web.Response:
@@ -885,6 +886,7 @@ class APICog(commands.Cog):
                 else:
                     raise e
 
+        await self.bot.refresh_guild_config_cache(guild.id)
         return web.Response(status=204)
 
     async def guild_delete_tag(self, request: web.Request) -> web.Response:
@@ -908,6 +910,7 @@ class APICog(commands.Cog):
 
             await session.execute(delete(Tag).where(Tag.id == to_delete.id))
 
+        await self.bot.refresh_guild_config_cache(guild.id)
         return web.Response(status=204)
 
     async def guild_leaderboard(self, request: web.Request) -> web.Response:
