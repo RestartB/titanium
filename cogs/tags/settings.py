@@ -4,7 +4,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from cogs.tags.tags import tag_autocomplete_base
 from lib.embeds.general import cancelled
+from lib.helpers.validation import is_valid_uuid
 from lib.sql.sql import Tag, get_session
 from lib.views.confirm import ConfirmView
 from lib.views.tags_modals import TagModal
@@ -46,15 +48,34 @@ class TagSettingsCog(commands.Cog):
         modal = TagModal(server_tag_allowed=self.__get_if_server_tag_allowed(interaction))
         await interaction.response.send_modal(modal)
 
+    async def tag_autocomplete(
+        self, interaction: discord.Interaction["TitaniumBot"], current: str
+    ) -> list[app_commands.Choice[str]]:
+        return await tag_autocomplete_base(
+            bot=self.bot,
+            interaction=interaction,
+            current=current,
+            verify=self.__get_if_server_tag_allowed(interaction),
+        )
+
     # Edit tag command
     @settings_group.command(
         name="edit", description="Open the wizard to edit an existing server or user tag."
     )
     @app_commands.describe(tag="The tag to edit.")
+    @app_commands.autocomplete(tag=tag_autocomplete)
     @app_commands.checks.cooldown(1, 3)
     async def edit_tag(self, interaction: discord.Interaction["TitaniumBot"], tag: str):
         async with get_session() as session:
             to_edit = await session.get(Tag, tag)
+
+        if not is_valid_uuid(tag):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Invalid Tag ID",
+                description="The provided tag ID is invalid. Please select a tag from the autocomplete when typing the tag name.",
+                colour=discord.Colour.red(),
+            )
+            return await interaction.followup.send(embed=embed, ephemeral=True)
 
         if (
             not to_edit
@@ -87,9 +108,18 @@ class TagSettingsCog(commands.Cog):
     # Delete tag command
     @settings_group.command(name="delete", description="Delete an existing server or user tag.")
     @app_commands.describe(tag="The tag to delete.")
+    @app_commands.autocomplete(tag=tag_autocomplete)
     @app_commands.checks.cooldown(1, 3)
     async def delete_tag(self, interaction: discord.Interaction["TitaniumBot"], tag: str):
         await interaction.response.defer(ephemeral=True)
+
+        if not is_valid_uuid(tag):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Invalid Tag ID",
+                description="The provided tag ID is invalid. Please select a tag from the autocomplete when typing the tag name.",
+                colour=discord.Colour.red(),
+            )
+            return await interaction.followup.send(embed=embed, ephemeral=True)
 
         async with get_session() as session:
             to_delete = await session.get(Tag, tag)

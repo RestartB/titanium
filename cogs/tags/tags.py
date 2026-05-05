@@ -1,5 +1,4 @@
 import asyncio
-import uuid
 from typing import TYPE_CHECKING, Literal
 
 import discord
@@ -9,6 +8,7 @@ from rapidfuzz import fuzz, process
 from sqlalchemy import select
 
 from lib.embeds.general import cancelled
+from lib.helpers.validation import is_valid_uuid
 from lib.sql.sql import Tag, get_session
 from lib.views.pagination import PaginationView
 
@@ -47,6 +47,81 @@ class TagOptionView(discord.ui.View):
         self.stop()
 
 
+async def tag_autocomplete_base(
+    bot: TitaniumBot, interaction: discord.Interaction["TitaniumBot"], current: str, verify: bool
+) -> list[app_commands.Choice[str]]:
+    if not current:
+        return [
+            app_commands.Choice(name="Start typing to search for a server or user tag", value="")
+        ]
+
+    server_tags_allowed = verify
+    user_tags_allowed = True
+
+    if server_tags_allowed and interaction.guild:
+        config = await bot.fetch_guild_config(interaction.guild.id)
+        if config and not config.tags_enabled:
+            user_tags_allowed = False
+
+        if config and config.tag_settings and not config.tag_settings.allow_user_tags:
+            user_tags_allowed = False
+
+    server_tags = []
+    user_tags = []
+
+    async with get_session() as session:
+        if server_tags_allowed and interaction.guild:
+            stmt = select(Tag).where(Tag.guild_id == interaction.guild.id)
+            results = await session.execute(stmt)
+            server_tags = results.scalars().all()
+
+        if user_tags_allowed:
+            stmt = select(Tag).where(Tag.owner_id == interaction.user.id, Tag.is_user)
+            results = await session.execute(stmt)
+            user_tags = results.scalars().all()
+
+    if not server_tags and not user_tags:
+        return []
+
+    server_fuzz = None
+    if server_tags_allowed and interaction.guild and server_tags:
+        server_fuzz = await asyncio.to_thread(
+            process.extract,
+            current,
+            server_tags,
+            scorer=fuzz.WRatio,
+            limit=5,
+            score_cutoff=65,
+            processor=lambda tag: tag.name if isinstance(tag, Tag) else tag,
+        )
+
+    user_fuzz = None
+    if user_tags_allowed and user_tags:
+        user_fuzz = await asyncio.to_thread(
+            process.extract,
+            current,
+            user_tags,
+            scorer=fuzz.WRatio,
+            limit=5,
+            score_cutoff=65,
+            processor=lambda tag: tag.name if isinstance(tag, Tag) else tag,
+        )
+
+    results = []
+    if server_fuzz:
+        for result in server_fuzz:
+            results.append(
+                app_commands.Choice(name=f"Server: {result[0].name}", value=str(result[0].id))
+            )
+    if user_fuzz:
+        for result in user_fuzz:
+            results.append(
+                app_commands.Choice(name=f"User: {result[0].name}", value=str(result[0].id))
+            )
+
+    return results
+
+
 class TagCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
@@ -61,89 +136,15 @@ class TagCommandsCog(commands.Cog):
             and ctx.guild.id in [role.id for role in author.roles]
         )
 
-    def is_valid_uuid(self, uuid_to_test, version=4):
-        # https://stackoverflow.com/a/33245493
-        try:
-            uuid_obj = uuid.UUID(uuid_to_test, version=version)
-        except ValueError:
-            return False
-        return str(uuid_obj) == uuid_to_test
-
     async def tag_autocomplete(
         self, interaction: discord.Interaction["TitaniumBot"], current: str
     ) -> list[app_commands.Choice[str]]:
-        if not current:
-            return [
-                app_commands.Choice(
-                    name="Start typing to search for a server or user tag", value=""
-                )
-            ]
-
-        server_tags_allowed = self.__server_tag_available(interaction)
-        user_tags_allowed = True
-
-        if server_tags_allowed and interaction.guild:
-            config = await self.bot.fetch_guild_config(interaction.guild.id)
-            if config and not config.tags_enabled:
-                user_tags_allowed = False
-
-            if config and config.tag_settings and not config.tag_settings.allow_user_tags:
-                user_tags_allowed = False
-
-        server_tags = []
-        user_tags = []
-
-        async with get_session() as session:
-            if server_tags_allowed and interaction.guild:
-                stmt = select(Tag).where(Tag.guild_id == interaction.guild.id)
-                results = await session.execute(stmt)
-                server_tags = results.scalars().all()
-
-            if user_tags_allowed:
-                stmt = select(Tag).where(Tag.owner_id == interaction.user.id, Tag.is_user)
-                results = await session.execute(stmt)
-                user_tags = results.scalars().all()
-
-        if not server_tags and not user_tags:
-            return []
-
-        server_fuzz = None
-        if server_tags_allowed and interaction.guild and server_tags:
-            server_fuzz = await asyncio.to_thread(
-                process.extract,
-                current,
-                server_tags,
-                scorer=fuzz.WRatio,
-                limit=5,
-                score_cutoff=65,
-                processor=lambda tag: tag.name if isinstance(tag, Tag) else tag,
-            )
-
-        user_fuzz = None
-        if user_tags_allowed and user_tags:
-            user_fuzz = await asyncio.to_thread(
-                process.extract,
-                current,
-                user_tags,
-                scorer=fuzz.WRatio,
-                limit=5,
-                score_cutoff=65,
-                processor=lambda tag: tag.name if isinstance(tag, Tag) else tag,
-            )
-
-        results = []
-        if server_fuzz:
-            for result in server_fuzz:
-                results.append(
-                    app_commands.Choice(name=f"Server: {result[0].name}", value=str(result[0].id))
-                )
-        if user_fuzz:
-            for result in user_fuzz:
-                results.append(
-                    app_commands.Choice(name=f"User: {result[0].name}", value=str(result[0].id))
-                )
-
-        return results
+        return await tag_autocomplete_base(
+            bot=self.bot,
+            interaction=interaction,
+            current=current,
+            verify=self.__server_tag_available(interaction),
+        )
 
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
         await ctx.defer()
@@ -202,7 +203,7 @@ class TagCommandsCog(commands.Cog):
         user_result: Tag | None = None
 
         async with get_session() as session:
-            if self.is_valid_uuid(tag):
+            if is_valid_uuid(tag):
                 tag_data = await session.get(Tag, tag)
 
             if not tag_data:
