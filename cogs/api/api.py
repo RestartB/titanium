@@ -40,6 +40,7 @@ from lib.api.validators import (
 )
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.classes.guild_logger import LOGGING_EVENT_MAP, LOGGING_EVENTS
+from lib.enums.server_counters import ServerCounterType
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
@@ -1570,13 +1571,27 @@ class APICog(commands.Cog):
                     existing_config = GuildServerCounterSettings(guild_id=guild.id)
 
                 channel_ids = []
+                guild_preview = None
 
                 for new_channel in validated_config.channels:
                     if new_channel.id is not None:
                         channel_ids.append(int(new_channel.id))
 
                     if new_channel.id is None:
-                        new_name = await resolve_counter(guild, new_channel.type, new_channel.name)
+                        if (
+                            new_channel.type == ServerCounterType.ONLINE_MEMBERS
+                            or new_channel.type == ServerCounterType.OFFLINE_MEMBERS
+                        ):
+                            if not guild_preview:
+                                guild_preview = await self.bot.fetch_guild_preview(guild.id)
+
+                            new_name = await resolve_counter(
+                                guild_preview, new_channel.type, new_channel.name
+                            )
+                        else:
+                            new_name = await resolve_counter(
+                                guild, new_channel.type, new_channel.name
+                            )
 
                         try:
                             discord_channel = await guild.create_voice_channel(
