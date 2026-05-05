@@ -58,6 +58,6 @@ async def resolve_counter(
 
             updated_value = total_xp or 0
     else:
-        return ""
+        raise ValueError(f"Unknown counter type: {type}")
 
     return name.replace("{value}", humanize.intcomma(updated_value))
