@@ -1,5 +1,5 @@
 import asyncio
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import discord
 from discord import app_commands
@@ -124,6 +124,7 @@ async def tag_autocomplete_base(
 
 class TagCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
+        bot.pre_not_found = self.command_not_found_hook
         self.bot = bot
 
     def __server_tag_available(
@@ -135,6 +136,29 @@ class TagCommandsCog(commands.Cog):
             and isinstance(author, discord.Member)
             and ctx.guild.id in [role.id for role in author.roles]
         )
+
+    async def command_not_found_hook(
+        self, ctx: commands.Context["TitaniumBot"], error: Any
+    ) -> bool:
+        if not self.__server_tag_available(ctx) or not ctx.guild:
+            return False
+
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or (
+            not config.tags_enabled
+            or not config.tag_settings
+            or not config.tag_settings.prefix_fallback
+        ):
+            return False
+
+        for tag in config.tag_settings.tags:
+            if not (tag.name == ctx.invoked_with or str(tag.id) == ctx.invoked_with):
+                continue
+
+            await ctx.reply(content=tag.content, allowed_mentions=discord.AllowedMentions.none())
+            return True
+
+        return False
 
     async def tag_autocomplete(
         self, interaction: discord.Interaction["TitaniumBot"], current: str

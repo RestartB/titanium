@@ -1,7 +1,6 @@
 # Titanium v2
 # Made by Restart, 2025-
 
-# --- LICENCE INFO ---
 # Copyright (C) 2026, RestartB
 #
 # This program is free software: you can redistribute it and/or modify
@@ -22,7 +21,7 @@ import logging
 import os
 import sys
 from glob import glob
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
 import discord
 from discord.ext import commands
@@ -114,6 +113,18 @@ class TitaniumBot(commands.Bot):
     opt_out: list[int] = []
 
     trusted_servers: list[int] = []
+
+    pre_not_found: Optional[
+        Callable[
+            [
+                commands.Context["TitaniumBot"],
+                commands.CommandNotFound
+                | commands.NotOwner
+                | adapters.GroupCommandNotFoundException,
+            ],
+            Awaitable[bool],
+        ]
+    ] = None
 
     async def refresh_opt_out(self) -> None:
         cache_logger.info("Refreshing opt-out IDs...")
@@ -478,6 +489,10 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         or isinstance(error, commands.NotOwner)
         or isinstance(error, adapters.GroupCommandNotFoundException)
     ):
+        if ctx.bot.pre_not_found:
+            if await ctx.bot.pre_not_found(ctx, error):
+                return
+
         if isinstance(error, adapters.GroupCommandNotFoundException):
             command_name = error.command_name
         else:
