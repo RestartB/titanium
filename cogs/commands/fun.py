@@ -1,6 +1,7 @@
 import random
 from typing import TYPE_CHECKING, Literal
 
+import aiohttp
 import discord
 from discord import Colour, Embed, app_commands
 from discord.ext import commands
@@ -348,6 +349,51 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
             text = text.replace(char, self.freaky_map[char])
 
         await ctx.reply(content=text, allowed_mentions=discord.AllowedMentions.none())
+
+    # GitHub Roast command
+    @commands.hybrid_command(
+        name="github-roast",
+        aliases=["githubroast", "gh-roast", "ghroast"],
+        description="Generate a random GitHub account roast. - https://githubroast.mgytr.top",
+    )
+    @app_commands.describe(
+        username="The GitHub account to roast.",
+        ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.",
+    )
+    async def gh_roast(
+        self, ctx: commands.Context["TitaniumBot"], username: str, ephemeral: bool = False
+    ):
+        await ctx.defer(ephemeral=ephemeral)
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url="https://githubroast.mgytr.top/llama",
+                    json={"username": username, "language": "english"},
+                ) as request:
+                    request.raise_for_status()
+                    response = await request.json()
+        except aiohttp.ClientResponseError as e:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Error",
+                description=f"The roast API returned an error (`{e.status}`). Please try again later.",
+                colour=Colour.red(),
+            )
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            return
+
+        embed = discord.Embed(
+            title="AI GitHub Roast",
+            description=response["roast"],
+            colour=Colour.light_grey(),
+        )
+        embed.set_footer(
+            text=f"@{ctx.author.name} - https://githubroast.mgytr.top",
+            icon_url=ctx.author.display_avatar.url,
+        )
+        embed.set_author(name=username)
+
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

@@ -130,7 +130,11 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
         view = View().add_item(Button(label="Open in Browser", style=ButtonStyle.link, url=url))
         await ctx.reply(embed=embed, view=view)
 
-    @commands.hybrid_command(name="server-pfp", description="Get a user's server profile picture.")
+    @commands.hybrid_command(
+        name="server-pfp",
+        aliases=["serverpfp", "guildpfp", "guild-pfp"],
+        description="Get a user's server profile picture.",
+    )
     @commands.guild_only()
     @app_commands.allowed_installs(guilds=True, users=True)
     async def server_pfp(
