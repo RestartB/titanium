@@ -130,7 +130,7 @@ class Misc(commands.Cog):
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    url=f"https://githubroast.mgytr.top/llama",
+                    url="https://githubroast.mgytr.top/llama",
                     json={"username": username, "language": "english"},
                 ) as request:
                     embed = discord.Embed(
