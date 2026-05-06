@@ -38,6 +38,11 @@ class AutomodMonitorCog(commands.Cog):
         self.logger.debug(f"Processing message from {message.author}: {message.id}")
         config = await self.bot.fetch_guild_config(message.guild.id) if message.guild else None
 
+        # support forwarded messages
+        content_to_check = message.content
+        if message.message_snapshots:
+            content_to_check = message.message_snapshots[0].content
+
         try:
             # Check for server ID in config list
             if (
@@ -70,7 +75,7 @@ class AutomodMonitorCog(commands.Cog):
             for rule in autmod_config.badword_detection_rules:
                 triggered_word_rule_amount[rule.id] = 0
                 content_to_check = (
-                    message.content.lower() if not rule.case_sensitive else message.content
+                    content_to_check.lower() if not rule.case_sensitive else content_to_check
                 )
 
                 for word in rule.words:
@@ -91,14 +96,14 @@ class AutomodMonitorCog(commands.Cog):
 
             self.logger.debug(f"Starting malicious link check for message {message.id}")
             for link in self.bot.malicious_links:
-                if link in message.content:
+                if link in content_to_check:
                     malicious_link_count += 1
 
             self.logger.debug(f"Malicious link check complete. Count: {malicious_link_count}")
 
             self.logger.debug(f"Starting phishing link check for message {message.id}")
             for link in self.bot.phishing_links:
-                if link in message.content:
+                if link in content_to_check:
                     phishing_link_count += 1
 
             self.logger.debug(f"Phishing link check complete. Count: {phishing_link_count}")
@@ -125,12 +130,12 @@ class AutomodMonitorCog(commands.Cog):
                         link_count=len(
                             re.findall(
                                 r"(http|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
-                                message.content,
+                                content_to_check,
                             )
                         ),
                         attachment_count=len(message.attachments),
-                        emoji_count=len(emoji.emoji_list(message.content))
-                        + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", message.content)),
+                        emoji_count=len(emoji.emoji_list(content_to_check))
+                        + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", content_to_check)),
                         timestamp=message.created_at,
                     )
                 )
@@ -167,12 +172,12 @@ class AutomodMonitorCog(commands.Cog):
                         link_count=len(
                             re.findall(
                                 r"(http|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
-                                message.content,
+                                content_to_check,
                             )
                         ),
                         attachment_count=len(message.attachments),
-                        emoji_count=len(emoji.emoji_list(message.content))
-                        + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", message.content)),
+                        emoji_count=len(emoji.emoji_list(content_to_check))
+                        + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", content_to_check)),
                         timestamp=message.edited_at if message.edited_at else message.created_at,
                     )
                 ]
