@@ -16,26 +16,54 @@ class HelpCommandCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
-    @commands.hybrid_group(name="help", description="Show help information for commands.")
+    @commands.hybrid_group(
+        name="help",
+        description="Show help information for Titanium, commands and categories.",
+        fallback="info",
+    )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def help_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
+    async def help_group(
+        self, ctx: commands.Context["TitaniumBot"], *, command_or_category: str = ""
+    ) -> None:
         await ctx.defer()
 
+        if not command_or_category:
+            embed = discord.Embed(
+                title=f"{self.bot.info_emoji} Help",
+                description=f"`{ctx.clean_prefix}help commands` - get a list of all commands\n"
+                f"`{ctx.clean_prefix}help <command>` - coming soon\n"
+                f"`{ctx.clean_prefix}help <category>` - coming soon\n"
+                "\n**Need more help? Join the [Support Server](https://titaniumbot.me/server)**",
+                colour=discord.Colour.light_grey(),
+            )
+            embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+            if self.bot.user:
+                embed.set_author(
+                    name=self.bot.user.display_name, icon_url=self.bot.user.display_avatar.url
+                )
+
+            await ctx.reply(embed=embed, ephemeral=True)
+
+        command = self.bot.get_command(command_or_category)
+        if not command:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Not Found",
+                description=f"Couldn't find a command or category called `{command_or_category}`.",
+                colour=discord.Colour.red(),
+            )
+            embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+            await ctx.reply(embed=embed, ephemeral=True)
+            return
+
         embed = discord.Embed(
-            title=f"{self.bot.info_emoji} Help",
-            description=f"`{ctx.clean_prefix}help commands` - get a list of all commands\n"
-            f"`{ctx.clean_prefix}help <command>` - coming soon\n"
-            f"`{ctx.clean_prefix}help <category>` - coming soon\n"
-            "\n**Need more help? Join the [Support Server](https://titaniumbot.me/server)**",
+            title=f"`{ctx.clean_prefix}{command.qualified_name}`",
+            description=f"`{ctx.clean_prefix}{command.qualified_name}{f'|{"|".join(alias for alias in command.aliases) if command.aliases else ""}'} {command.signature}`\n\n{command.description}",
             colour=discord.Colour.light_grey(),
         )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-
-        if self.bot.user:
-            embed.set_author(
-                name=self.bot.user.display_name, icon_url=self.bot.user.display_avatar.url
-            )
 
         await ctx.reply(embed=embed, ephemeral=True)
 
