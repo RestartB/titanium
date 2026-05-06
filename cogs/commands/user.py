@@ -142,7 +142,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
             user = ctx.author if isinstance(ctx.author, Member) else None
 
         if not user:
-            raise Exception("Member object not returned")
+            raise Exception("Impossible: member object not returned")
 
         embed = Embed(colour=user.accent_colour)
         embed.set_author(

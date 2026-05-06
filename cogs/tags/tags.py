@@ -256,7 +256,7 @@ class TagCommandsCog(commands.Cog):
             await view.wait()
 
             if not view.interaction:
-                raise Exception("Interaction is missing")
+                raise Exception("Impossible: interaction is missing")
 
             if view.value is None:
                 return await view.interaction.edit_original_response(

@@ -171,7 +171,7 @@ async def create_quote_image(
         await page.set_content(quote_html)
 
         # Wait for images
-        await page.wait_for_selector('body.ready')
+        await page.wait_for_selector("body.ready")
 
         # Take screenshot as bytes
         screenshot = await page.screenshot(
@@ -387,7 +387,7 @@ class QuoteView(View):
         )
 
         embed = discord.Embed(
-            title=f"{self.titanium.success_emoji} Done!",
+            title=f"{self.titanium.success_emoji} Done",
             colour=discord.Colour.green(),
         )
 
@@ -507,7 +507,7 @@ class QuoteView(View):
         )
 
         embed = discord.Embed(
-            title=f"{self.titanium.success_emoji} Done!",
+            title=f"{self.titanium.success_emoji} Done",
             colour=discord.Colour.green(),
         )
 
@@ -629,7 +629,7 @@ class QuoteView(View):
         )
 
         embed = discord.Embed(
-            title=f"{self.titanium.success_emoji} Done!",
+            title=f"{self.titanium.success_emoji} Done",
             colour=discord.Colour.green(),
         )
 
@@ -646,7 +646,7 @@ class QuoteView(View):
             await interaction.delete_original_response()
 
             embed = discord.Embed(
-                title=f"{self.titanium.success_emoji} Done!",
+                title=f"{self.titanium.success_emoji} Done",
                 colour=discord.Colour.green(),
             )
 

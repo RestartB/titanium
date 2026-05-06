@@ -7,7 +7,7 @@ from discord.ui import Button, View
 import lib.embeds.cases as case_embeds
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.embeds.general import cancelled, guild_only, please_wait
-from lib.helpers.global_alias import add_global_aliases, global_alias
+from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.helpers.hybrid_adapters import _defer, _stop_loading, defer
 from lib.sql.sql import ModCase, get_session
 from lib.views.cases import CommentPageContainer, ViewCommentsButton
@@ -24,6 +24,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         add_global_aliases(self, bot)
+
+    async def cog_unload(self) -> None:
+        remove_global_aliases(self, self.bot)
 
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
         await _defer(ctx)
@@ -327,7 +330,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 await view.wait()
 
                 if not view.interaction:
-                    raise Exception("Interaction is missing")
+                    raise Exception("Impossible: interaction is missing")
 
                 await view.interaction.response.defer()
 

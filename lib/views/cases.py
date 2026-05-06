@@ -49,7 +49,7 @@ class CommentModal(discord.ui.Modal, title="Enter Content"):
             return
 
         if not isinstance(self.comment_label.component, discord.ui.TextInput):
-            raise Exception("Text input component is of wrong type")
+            raise Exception("Impossible: text input component is of wrong type")
 
         if self.comment:
             await self.comment.edit_comment(self.comment_label.component.value)

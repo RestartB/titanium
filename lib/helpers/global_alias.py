@@ -44,3 +44,22 @@ def add_global_aliases(cog: commands.Cog, bot: TitaniumBot):
                 cmd_copy.cog = cog
 
                 bot.add_command(cmd_copy)
+
+
+def remove_global_aliases(cog: commands.Cog, bot: TitaniumBot):
+    for command in cog.walk_commands():
+        if isinstance(command, (commands.Group, commands.HybridGroup)):
+            continue
+
+        callback = command.callback
+
+        if hasattr(callback, "_global_aliases"):
+            aliases: list[str] = getattr(callback, "_global_aliases")
+
+            # remove commands
+            for alias in aliases:
+                for existing_cmd in bot.commands:
+                    if existing_cmd.name != alias:
+                        continue
+
+                    bot.remove_command(alias)

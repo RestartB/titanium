@@ -195,7 +195,7 @@ class GuildModCaseManager:
             try:
                 result = await get_or_fetch_member(self.bot, self.guild, user.id)
                 if not result:
-                    raise Exception("Member not found")
+                    raise Exception("Impossible: member not found")
 
                 user = result
             except Exception as e:
@@ -328,7 +328,7 @@ class GuildModCaseManager:
             try:
                 result = await get_or_fetch_member(self.bot, self.guild, case.user_id)
                 if not result:
-                    raise Exception("Member not found")
+                    raise Exception("Impossible: member not found")
 
                 member = result
             except Exception as e:
@@ -359,7 +359,7 @@ class GuildModCaseManager:
             try:
                 result = await get_or_fetch_member(self.bot, self.guild, case.user_id)
                 if not result:
-                    raise Exception("Member not found")
+                    raise Exception("Impossible: member not found")
 
                 member = result
             except Exception as e:
