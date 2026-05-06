@@ -557,7 +557,7 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
     elif isinstance(error, commands.errors.BadLiteralArgument):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bad Argument",
-            description=f"Couldn't find the input for the `{error.param.name}` argument in `{'`, `'.join(list(error.literals))}`.",
+            description=f"Couldn't find your input for the `{error.param.name}` argument in `{'`, `'.join([str(lit) for lit in error.literals])}`.",
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed, ephemeral=True)

@@ -1,4 +1,5 @@
 import datetime
+import os
 import platform
 import time
 from datetime import timedelta
@@ -6,14 +7,19 @@ from typing import TYPE_CHECKING
 
 import cpuinfo
 import psutil
-from discord import Colour, Embed, Emoji, app_commands
+from discord import ButtonStyle, Colour, Embed, Emoji, __version__, app_commands
 from discord.ext import commands
+from discord.ui import Button, View
 
 if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class BasicCommandsCog(commands.Cog, name="Basic", description="General bot commands."):
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+class BasicCommandsCog(
+    commands.GroupCog, group_name="bot", description="General bot related commands."
+):
     """Basic commands."""
 
     def __init__(self, bot: TitaniumBot) -> None:
@@ -36,8 +42,6 @@ class BasicCommandsCog(commands.Cog, name="Basic", description="General bot comm
             return self.bot.error_emoji
 
     @commands.hybrid_command(name="ping", description="Get the bot's ping.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def ping(self, ctx: commands.Context["TitaniumBot"]) -> None:
         await ctx.defer()
 
@@ -60,8 +64,6 @@ class BasicCommandsCog(commands.Cog, name="Basic", description="General bot comm
     @commands.hybrid_command(
         name="info", description="Get information about the bot.", aliases=["about"]
     )
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def info(self, ctx: commands.Context["TitaniumBot"]) -> None:
         await ctx.defer()
 
@@ -78,8 +80,28 @@ class BasicCommandsCog(commands.Cog, name="Basic", description="General bot comm
 
         await ctx.reply(embed=embed)
 
+    @commands.hybrid_command(name="invite", description="Get an invite link for the bot.")
+    async def invite(self, ctx: commands.Context["TitaniumBot"]):
+        embed = Embed(
+            title=f"{ctx.bot.info_emoji} Invite",
+            description="Use this invite to add Titanium to your account or server.",
+            colour=Colour.light_grey(),
+        )
+        embed.add_field(name="Invite", value="https://titaniumbot.me/invite")
+
+        view = View()
+        view.add_item(
+            Button(
+                label="Add Bot",
+                style=ButtonStyle.url,
+                url=f"https://discord.com/oauth2/authorize?client_id={ctx.me.id}",
+            )
+        )
+
     # Host Info command
-    @commands.hybrid_command(name="host-info", description="Info about the bot host.")
+    @commands.hybrid_command(
+        name="host-info", aliases=["hostinfo"], description="Info about the bot host."
+    )
     @commands.cooldown(1, 5)
     async def host_info(self, ctx: commands.Context["TitaniumBot"]):
         await ctx.defer()
@@ -93,18 +115,29 @@ class BasicCommandsCog(commands.Cog, name="Basic", description="General bot comm
         sysinfo = cpuinfo.get_cpu_info()
 
         embed.add_field(name="Python Version", value=f"`{sysinfo['python_version']}`")
+        embed.add_field(name="discord.py Version", value=f"`{__version__}`")
+        embed.add_field(
+            name="Operating System", value=f"`{platform.system()} {platform.release()}`"
+        )
+
         embed.add_field(
             name="System Uptime",
             value=f"`{(d.day - 1):02d}:{d.hour:02d}:{d.minute:02d}:{d.second:02d}`",
         )
-        embed.add_field(
-            name="Operating System", value=f"`{platform.system()} {platform.release()}`"
-        )
         embed.add_field(name="CPU Name", value=f"`{sysinfo['brand_raw']}`")
         embed.add_field(name="CPU Usage", value=f"`{psutil.cpu_percent()}%`")
+
+        process = psutil.Process(os.getpid())
+        mem_info = process.memory_info()
+        process_ram_mb = mem_info.rss / (1024 * 1024)
+
+        embed.add_field(
+            name="Process RAM Usage",
+            value=f"`{process_ram_mb:.2f}MB`",
+        )
         embed.add_field(
             name="System RAM Usage",
-            value=f"`{psutil.virtual_memory().percent}%` (`{psutil.virtual_memory().used / 1000000:.2f}MB` used, `{psutil.virtual_memory().total / 1000000:.2f}MB` total)",
+            value=f"`{psutil.virtual_memory().percent}%` (`{psutil.virtual_memory().used / (1024 * 1024):.2f}MB` used, `{psutil.virtual_memory().total / (1024 * 1024):.2f}MB` total)",
         )
 
         embed.set_footer(
@@ -114,10 +147,10 @@ class BasicCommandsCog(commands.Cog, name="Basic", description="General bot comm
 
         await ctx.reply(embed=embed)
 
-    @commands.hybrid_command(name="prefixes", description="Get the bot's command prefixes.")
+    @commands.hybrid_command(
+        name="prefixes", aliases=["prefix"], description="Get the bot's command prefixes."
+    )
     @commands.guild_only()
-    @app_commands.allowed_installs(guilds=True, users=False)
-    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     async def prefixes(self, ctx: commands.Context["TitaniumBot"]) -> None:
         if not ctx.guild or not self.bot.user:
             return

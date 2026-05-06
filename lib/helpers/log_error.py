@@ -6,18 +6,11 @@ from typing import TYPE_CHECKING, Optional
 
 import discord
 
+from lib.helpers.shorten import shorten_preserve
 from lib.sql.sql import ErrorLog, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
-
-
-def shorten_preserve(text: str, width: int, placeholder: str = "...") -> str:
-    if len(text) <= width:
-        return text
-    cut = max(0, width - len(placeholder))
-    return text[:cut] + placeholder
-
 
 async def log_error(
     bot: TitaniumBot,
