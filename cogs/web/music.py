@@ -35,7 +35,9 @@ class MusicCommandsCog(
         self.bot: TitaniumBot = bot
         self.sp = TitaniumSpotifyClient(client_id=client_id, client_secret=client_secret)
 
-    @commands.hybrid_group(name="spotify")
+    @commands.hybrid_group(
+        name="spotify", description="Search Spotify for songs, artists, albums and more."
+    )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def spotify_group(self, ctx: commands.Context["TitaniumBot"]) -> None:

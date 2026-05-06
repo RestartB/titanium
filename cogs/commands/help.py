@@ -32,8 +32,7 @@ class HelpCommandCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.info_emoji} Help",
                 description=f"`{ctx.clean_prefix}help commands` - get a list of all commands\n"
-                f"`{ctx.clean_prefix}help <command>` - coming soon\n"
-                f"`{ctx.clean_prefix}help <category>` - coming soon\n"
+                f"`{ctx.clean_prefix}help <command | group>` - get info about a command or command group\n"
                 "\n**Need more help? Join the [Support Server](https://titaniumbot.me/server)**",
                 colour=discord.Colour.light_grey(),
             )
@@ -45,6 +44,7 @@ class HelpCommandCog(commands.Cog):
                 )
 
             await ctx.reply(embed=embed, ephemeral=True)
+            return
 
         command = self.bot.get_command(command_or_category)
         if not command:
@@ -60,10 +60,19 @@ class HelpCommandCog(commands.Cog):
 
         embed = discord.Embed(
             title=f"`{ctx.clean_prefix}{command.qualified_name}`",
-            description=f"`{ctx.clean_prefix}{command.qualified_name}{f'|{"|".join(alias for alias in command.aliases) if command.aliases else ""}'} {command.signature}`\n\n{command.description}",
+            description=f"`{ctx.clean_prefix}{command.qualified_name}{f'|{"|".join(alias for alias in command.aliases) if command.aliases else ""}' if command.aliases else ''}{' ' + command.signature if command.signature else ''}`\n\n{command.description}",
             colour=discord.Colour.light_grey(),
         )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+        if isinstance(command, (commands.Group, commands.HybridGroup, app_commands.Group)):
+            embed.add_field(
+                name="Subcommands",
+                value="\n".join(
+                    f"`{ctx.clean_prefix}{subcommand.qualified_name}`"
+                    for subcommand in command.commands
+                ),
+            )
 
         await ctx.reply(embed=embed, ephemeral=True)
 
