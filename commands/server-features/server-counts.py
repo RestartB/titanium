@@ -44,7 +44,7 @@ class ServerCounts(commands.Cog):
                 )
                 await sql.commit()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         # Stop tasks on unload
         self.channel_update.cancel()
 

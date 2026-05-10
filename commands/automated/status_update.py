@@ -18,7 +18,7 @@ class StatusUpdate(commands.Cog):
         self.info_update.start()
         self.status_update.start()
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         # Stop tasks on unload
         self.info_update.cancel()
         self.status_update.cancel()

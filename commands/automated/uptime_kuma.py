@@ -33,7 +33,7 @@ class UptimeKuma(commands.Cog):
             )
             self.uptime_kuma_server = None
 
-    def cog_unload(self):
+    async def cog_unload(self):
         if self.uptime_kuma_server is not None:
             self.kuma_ping.cancel()
 
