@@ -283,7 +283,7 @@ class Reviews(commands.Cog):
                     embed = discord.Embed(
                         title="Error",
                         description="Only the command runner can toggle the page controls lock.",
-                        color=Color.red,
+                        color=Color.red(),
                     )
                     await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -579,7 +579,7 @@ class Reviews(commands.Cog):
                     embed = discord.Embed(
                         title="Error",
                         description="Only the command runner can toggle the page controls lock.",
-                        color=Color.red,
+                        color=Color.red(),
                     )
                     await interaction.response.send_message(embed=embed, ephemeral=True)
 
