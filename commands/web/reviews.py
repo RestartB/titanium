@@ -164,10 +164,11 @@ class Reviews(commands.Cog):
             pages.append(page)
 
         class PageView(View):
-            def __init__(self, pages):
+            def __init__(self, pages, parent: "Reviews"):
                 super().__init__(timeout=900)
                 self.page = 0
                 self.pages = pages
+                self.parent = parent
 
                 self.locked = False
 
@@ -220,7 +221,7 @@ class Reviews(commands.Cog):
                         item.disabled = True
 
                 await interaction.response.edit_message(
-                    embed=await self.generate_user_review_embed(
+                    embed=await self.parent.generate_user_review_embed(
                         interaction,
                         user,
                         self.pages[self.page],
@@ -251,7 +252,7 @@ class Reviews(commands.Cog):
                         item.disabled = False
 
                 await interaction.response.edit_message(
-                    embed=await self.generate_user_review_embed(
+                    embed=await self.parent.generate_user_review_embed(
                         interaction,
                         user,
                         self.pages[self.page],
@@ -282,7 +283,7 @@ class Reviews(commands.Cog):
                     embed = discord.Embed(
                         title="Error",
                         description="Only the command runner can toggle the page controls lock.",
-                        color=Color.red(),
+                        color=Color.red,
                     )
                     await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -306,7 +307,7 @@ class Reviews(commands.Cog):
                         item.disabled = False
 
                 await interaction.response.edit_message(
-                    embed=await self.generate_user_review_embed(
+                    embed=await self.parent.generate_user_review_embed(
                         interaction,
                         user,
                         self.pages[self.page],
@@ -331,7 +332,7 @@ class Reviews(commands.Cog):
                         item.disabled = True
 
                 await interaction.response.edit_message(
-                    embed=await self.generate_user_review_embed(
+                    embed=await self.parent.generate_user_review_embed(
                         interaction,
                         user,
                         self.pages[self.page],
@@ -351,7 +352,7 @@ class Reviews(commands.Cog):
                     ephemeral=ephemeral,
                 )
             else:
-                page_view_instance = PageView(pages)
+                page_view_instance = PageView(pages, self)
 
                 webhook = await interaction.followup.send(
                     embed=await self.generate_user_review_embed(
@@ -459,10 +460,11 @@ class Reviews(commands.Cog):
             pages.append(page)
 
         class PageView(View):
-            def __init__(self, pages):
+            def __init__(self, pages, parent: "Reviews"):
                 super().__init__(timeout=900)
                 self.page = 0
                 self.pages = pages
+                self.parent = parent
 
                 self.locked = False
 
@@ -515,7 +517,7 @@ class Reviews(commands.Cog):
                         item.disabled = True
 
                 await interaction.response.edit_message(
-                    embed=await self.generate_server_review_embed(
+                    embed=await self.parent.generate_server_review_embed(
                         interaction,
                         guild,
                         self.pages[self.page],
@@ -546,7 +548,7 @@ class Reviews(commands.Cog):
                         item.disabled = False
 
                 await interaction.response.edit_message(
-                    embed=await self.generate_server_review_embed(
+                    embed=await self.parent.generate_server_review_embed(
                         interaction,
                         guild,
                         self.pages[self.page],
@@ -577,7 +579,7 @@ class Reviews(commands.Cog):
                     embed = discord.Embed(
                         title="Error",
                         description="Only the command runner can toggle the page controls lock.",
-                        color=Color.red(),
+                        color=Color.red,
                     )
                     await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -601,7 +603,7 @@ class Reviews(commands.Cog):
                         item.disabled = False
 
                 await interaction.response.edit_message(
-                    embed=await self.generate_server_review_embed(
+                    embed=await self.parent.generate_server_review_embed(
                         interaction,
                         guild,
                         self.pages[self.page],
@@ -626,7 +628,7 @@ class Reviews(commands.Cog):
                         item.disabled = True
 
                 await interaction.response.edit_message(
-                    embed=await self.generate_server_review_embed(
+                    embed=await self.parent.generate_server_review_embed(
                         interaction,
                         guild,
                         self.pages[self.page],
@@ -646,7 +648,7 @@ class Reviews(commands.Cog):
                     ephemeral=ephemeral,
                 )
             else:
-                page_view_instance = PageView(pages)
+                page_view_instance = PageView(pages, self)
 
                 webhook = await interaction.followup.send(
                     embed=await self.generate_server_review_embed(
