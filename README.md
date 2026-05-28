@@ -1,11 +1,11 @@
-# Titanium v1
+# Titanium v1 (Legacy)
 
-Welcome to Titanium's main code repo! Titanium is your multipurpose, open source Discord bot.
+> [!WARNING]
+> Titanium v1 now discontinued and is no longer receiving updates. Please switch to the `v2` branch instead for the latest Titanium updates and features.
+
+Welcome to Titanium's code repo! Titanium is your multipurpose, open source Discord bot.
 
 [Add Titanium Now!](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](https://titaniumbot.me/privacy/bot) and [Terms of Use policy](https://titaniumbot.me/terms))
-
-> [!IMPORTANT]
-> Titanium v1 is now in maintenance mode and will only receive security patches and urgent bug fixes. To see the latest features coming soon to Titanium, switch to the `v2` branch! v2 will become the only supported version of Titanium when the public instance changes from v1 to v2.
 
 ## Licence
 
