@@ -25,7 +25,7 @@ dependencies = [
     "shortuuid>=1.0.13",
     "spotipy>=2.25.1",
     "sqlalchemy[asyncio]>=2.0.49",
-    "wand>=0.6.13",
+    "wand>=0.7.1",
 ]
 
 [dependency-groups]
