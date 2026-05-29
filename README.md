@@ -5,7 +5,7 @@
 
 Welcome to Titanium's code repo! Titanium is your multipurpose, open source Discord bot.
 
-[Add Titanium Now!](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](https://titaniumbot.me/privacy/bot) and [Terms of Use policy](https://titaniumbot.me/terms))
+[Add Titanium Now!](https://titanium.fyi/invite) (you will agree to the [Privacy Policy](https://titanium.fyi/privacy/bot) and [Terms of Use policy](https://titanium.fyi/terms))
 
 ## Licence
 
@@ -38,7 +38,7 @@ The best way to see all of Titanium's commands is to add the bot to your server 
 ## Quick Start
 
 You can quickly start using Titanium with the following link to add the main Titanium instance:\
-[Add Titanium](https://titaniumbot.me/invite) (you will agree to the [Privacy Policy](https://titaniumbot.me/privacy/bot) and [Terms of Use policy](https://titaniumbot.me/terms))
+[Add Titanium](https://titanium.fyi/invite) (you will agree to the [Privacy Policy](https://titanium.fyi/privacy/bot) and [Terms of Use policy](https://titanium.fyi/terms))
 
 If you would like to self-host your own instance of Titanium instead, please see the section below.
 

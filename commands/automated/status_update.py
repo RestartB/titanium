@@ -51,7 +51,7 @@ class StatusUpdate(commands.Cog):
                     status=discord.Status.online,
                     type=discord.ActivityType.custom,
                     name="custom",
-                    state="🌐 titaniumbot.me - use /",
+                    state="🌐 titanium.fyi - use /",
                 )
             )
         else:

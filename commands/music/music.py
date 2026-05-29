@@ -288,7 +288,7 @@ class Music(commands.Cog):
         if url == "":
             url = f"https://lrclib.net/api/search?track_name={quote(search)}"
 
-        headers = {"User-Agent": "Titanium Discord Bot (https://titaniumbot.me)"}
+        headers = {"User-Agent": "Titanium Discord Bot (https://titanium.fyi)"}
 
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=headers) as response:

@@ -151,7 +151,7 @@ class SongMenuView(View):
         await interaction.response.defer(ephemeral=True)
 
         url = f"https://lrclib.net/api/search?track_name={quote(self.item['name'])}&artist_name={quote(self.item['artists'][0]['name'])}"
-        headers = {"User-Agent": "Titanium Discord Bot (https://titaniumbot.me)"}
+        headers = {"User-Agent": "Titanium Discord Bot (https://titanium.fyi)"}
 
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=headers) as response:

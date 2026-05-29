@@ -1,6 +1,6 @@
 # Self-hosting Titanium
 
-This guide will walk you though how to self host your own instance of Titanium. If you find any issues when selfhosting, such as hardcodes values or an inaccuracy in the guide, please create a GitHub issue or send a message in the [Discord server.](https://titaniumbot.me/server)
+This guide will walk you though how to self host your own instance of Titanium. If you find any issues when selfhosting, such as hardcodes values or an inaccuracy in the guide, please create a GitHub issue or send a message in the [Discord server.](https://titanium.fyi/server)
 
 > [!IMPORTANT]
 > While I have taken every precaution to block offensive content from being displayed without a disclaimer, it is your responsibility as the bot host to monitor for any offensive content being posted using the bot.

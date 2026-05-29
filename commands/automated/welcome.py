@@ -43,7 +43,7 @@ class Welcome(commands.Cog):
                 discord.ui.Button(
                     label="Website",
                     style=discord.ButtonStyle.url,
-                    url="https://titaniumbot.me",
+                    url="https://titanium.fyi",
                 )
             )
             view.add_item(
@@ -57,7 +57,7 @@ class Welcome(commands.Cog):
                 discord.ui.Button(
                     label="Support Server",
                     style=discord.ButtonStyle.url,
-                    url="https://titaniumbot.me/server",
+                    url="https://titanium.fyi/server",
                 )
             )
 

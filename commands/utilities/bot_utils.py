@@ -58,7 +58,7 @@ class BotUtils(commands.Cog):
             description="Use this invite to add the bot to your account or server!",
             color=Color.green(),
         )
-        embed.add_field(name="Invite", value="https://titaniumbot.me/invite")
+        embed.add_field(name="Invite", value="https://titanium.fyi/invite")
 
         view = View()
         view.add_item(
@@ -125,7 +125,7 @@ class BotUtils(commands.Cog):
             discord.ui.Button(
                 label="Website",
                 style=discord.ButtonStyle.url,
-                url="https://titaniumbot.me",
+                url="https://titanium.fyi",
             )
         )
         view.add_item(
@@ -139,7 +139,7 @@ class BotUtils(commands.Cog):
             discord.ui.Button(
                 label="Support Server",
                 style=discord.ButtonStyle.url,
-                url="https://titaniumbot.me/server",
+                url="https://titanium.fyi/server",
             )
         )
 
