@@ -1,708 +1,446 @@
-# Titanium v2
-# Made by Restart, 2025-
-
-# Copyright (C) 2026, RestartB
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License or the LICENCE file for more details.
-
+# Titanium
+# Made by Restart, 2024 - 2025
 
 # Imports
 import asyncio
+import configparser
 import datetime
 import logging
+import logging.handlers
 import os
-import sys
+import random
+import traceback
 from glob import glob
-from typing import Awaitable, Callable, Optional
+from textwrap import shorten
 
+import aiohttp
+import asqlite
 import discord
+from discord import Color
 from discord.ext import commands
-from dotenv import load_dotenv
-from rapidfuzz import fuzz, process, utils
-from sqlalchemy import delete, select
-from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import selectinload
-
-import lib.helpers.hybrid as adapters
-from lib.classes.automod_message import AutomodMessage
-from lib.embeds.general import guild_only
-from lib.helpers.log_error import log_error
-from lib.setup_logger import setup_logging
-from v1_to_v2.migrate import migrate_v1_to_v2
-
-# load the env variables
-load_dotenv()
-
-from lib.sql.sql import (  # noqa: E402
-    AvailableWebhook,
-    FireboardMessage,
-    GuildAutomodSettings,
-    GuildBouncerSettings,
-    GuildConfessionsSettings,
-    GuildFireboardSettings,
-    GuildLeaderboardSettings,
-    GuildLimits,
-    GuildLoggingSettings,
-    GuildModerationSettings,
-    GuildServerCounterSettings,
-    GuildSettings,
-    GuildTagSettings,
-    LeaderboardUserStats,
-    ModCase,
-    OptOutIDs,
-    ScheduledTask,
-    get_session,
-    init_db,
-)
 
 # Current Running Path
 path = os.getcwd()
 
-# setup the logging
-setup_logging()
+# Create Root Logger
+dt_fmt = "%Y-%m-%d %H:%M:%S"
+logging.basicConfig(
+    level=logging.INFO,
+    format="[{asctime}] [{levelname:<8}] {name}: {message}",
+    datefmt=dt_fmt,
+    style="{",
+)
 
-init_logger: logging.Logger = logging.getLogger("init")
-cache_logger: logging.Logger = logging.getLogger("cache")
-db_logger: logging.Logger = logging.getLogger("db")
+# Get loggers
+rootLogger = logging.getLogger()
 
-init_logger.info("Welcome to Titanium v2")
-init_logger.info("https://github.com/restartb/titanium")
+discordLogger = logging.getLogger("discord")
+discordLogger.setLevel(logging.INFO)
+
+# Make file handler
+(os.mkdir("logs") if not os.path.exists("logs") else None)
+handler = logging.handlers.RotatingFileHandler(
+    filename="logs/titanium.log",
+    encoding="utf-8",
+    maxBytes=20 * 1024 * 1024,  # 20 MiB
+    backupCount=5,  # Rotate through 5 files
+)
+
+# Set formatter, apply to file and console handlers
+formatter = logging.Formatter(
+    "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
+)
+handler.setFormatter(formatter)
+rootLogger.handlers[0].setFormatter(formatter)
+
+# Add loggers to file handler
+rootLogger.addHandler(handler)
+discordLogger.addHandler(handler)
+
+logging.info("Welcome to Titanium.")
+logging.info("https://github.com/restartb/titanium\n")
+
+# Config Parser
+config = configparser.RawConfigParser()
+
+# SQL path check
+logging.info("[INIT] Checking SQL path...")
+basedir = os.path.dirname("content/sql/")
+
+if not os.path.exists(basedir):
+    logging.info("[INIT] Path not present. Creating path...")
+    os.makedirs(basedir)
+
+# SQL path check
+logging.info("[INIT] Checking temp path...")
+basedir = os.path.dirname("tmp/")
+
+if not os.path.exists(basedir):
+    logging.info("[INIT] Path not present. Creating path...")
+    os.makedirs(basedir)
+
+logging.info("[INIT] Path check complete.\n")
 
 
-# titanium needs the message content intent and members intent to function
-# without these the bot will not run
-# if your bot is in over 100 servers, please get these approved in the discord dev portal first
+# ------ Config File Reader ------
+def read_config_file(path) -> tuple[dict, dict]:
+    # Read options section of config file, add it to dict
+    try:
+        config.read(path)
+        tokens = dict(config.items("TOKENS"))
+    except Exception:
+        logging.critical(
+            "[INIT] Config file malformed: Error while reading Tokens section! The file may be missing or malformed."
+        )
+        exit(1)
+
+    # Read path section of config file, add it to dict
+    try:
+        config.read(path)
+        options = dict(config.items("OPTIONS"))
+    except Exception:
+        logging.critical(
+            "[INIT] Config file malformed: Error while reading Options section! The file may be missing or malformed."
+        )
+        exit(1)
+
+    global discord_token
+    discord_token = tokens["discord-bot-token"]
+
+    return options, tokens
+
+
+# Bot Setup
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
 
 class TitaniumBot(commands.Bot):
-    user_installs: int = 0
-    guild_installs: int = 0
-    guild_member_count: int = 0
+    user_installs = 0
+    guild_installs = 0
+    guild_member_count = 0
 
-    connected: bool = False
     connect_time: datetime.datetime
-    last_disconnect: Optional[datetime.datetime]
-    last_resume: Optional[datetime.datetime]
-    api_latency: float = 0.0
-
-    guild_configs: dict[int, GuildSettings] = {}
-    available_webhooks: dict[int, list[AvailableWebhook]] = {}
-    automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
-    fireboard_messages: dict[int, list[FireboardMessage]] = {}
-
-    punishing: dict[int, list[int]] = {}
-
-    malicious_links: list[str] = []
-    phishing_links: list[str] = []
-    nsfw_links: list[str] = []
-    explicit_phrases: list[str] = []
-
-    opt_out: list[int] = []
-
-    trusted_servers: list[int] = []
-
-    pre_not_found: Optional[
-        Callable[
-            [
-                commands.Context["TitaniumBot"],
-                commands.CommandNotFound
-                | commands.NotOwner
-                | adapters.GroupCommandNotFoundException,
-            ],
-            Awaitable[bool],
-        ]
-    ] = None
-
-    async def refresh_opt_out(self) -> None:
-        cache_logger.info("Refreshing opt-out IDs...")
-
-        async with get_session() as session:
-            stmt = select(OptOutIDs)
-            result = await session.execute(stmt)
-            opt_out_ids = result.scalars().all()
-            self.opt_out.clear()
-
-            for opt_out in opt_out_ids:
-                self.opt_out.append(opt_out.id)
-
-        cache_logger.info("Opt-out IDs refreshed.")
-
-    async def refresh_all_caches(self) -> None:
-        cache_logger.info("Refreshing all guild config caches...")
-
-        async with get_session() as session:
-            # Settings
-            stmt = select(GuildSettings).options(selectinload("*"))
-            result = await session.execute(stmt)
-            configs = result.scalars().all()
-            self.guild_configs.clear()
-
-            for config in configs:
-                self.guild_configs[config.guild_id] = config
-
-            # Available webhooks
-            stmt = select(AvailableWebhook).options(selectinload("*"))
-            result = await session.execute(stmt)
-            webhook_configs = result.scalars().all()
-            self.available_webhooks.clear()
-
-            for webhook in webhook_configs:
-                self.available_webhooks.setdefault(webhook.guild_id, []).append(webhook)
-
-            # Fireboard messages
-            stmt = select(FireboardMessage).options(selectinload("*"))
-            result = await session.execute(stmt)
-            fireboard_messages = result.scalars().all()
-            self.fireboard_messages.clear()
-
-            for message in fireboard_messages:
-                self.fireboard_messages.setdefault(message.guild_id, []).append(message)
-
-        cache_logger.info("Guild configs refreshed.")
-
-    async def refresh_guild_config_cache(self, guild_id: int) -> None:
-        cache_logger.debug(f"Refreshing guild config cache for guild {guild_id}...")
-
-        async with get_session() as session:
-            # Settings
-            stmt = (
-                select(GuildSettings)
-                .where(GuildSettings.guild_id == guild_id)
-                .options(selectinload("*"))
-            )
-            result = await session.execute(stmt)
-            config = result.scalar()
-
-            if config:
-                self.guild_configs[config.guild_id] = config
-
-            # Available webhooks
-            stmt = (
-                select(AvailableWebhook)
-                .where(AvailableWebhook.guild_id == guild_id)
-                .options(selectinload("*"))
-            )
-            result = await session.execute(stmt)
-            webhook_configs = result.scalars().all()
-
-            self.available_webhooks.pop(guild_id, None)
-            for webhook in webhook_configs:
-                self.available_webhooks.setdefault(webhook.guild_id, []).append(webhook)
-
-            # Fireboard messages
-            stmt = (
-                select(FireboardMessage)
-                .where(FireboardMessage.guild_id == guild_id)
-                .options(selectinload("*"))
-            )
-            result = await session.execute(stmt)
-            fireboard_messages = result.scalars().all()
-
-            self.fireboard_messages.pop(guild_id, None)
-            for message in fireboard_messages:
-                self.fireboard_messages.setdefault(message.guild_id, []).append(message)
-
-        cache_logger.debug(f"Guild config cache for guild {guild_id} refreshed.")
-
-    def remove_cached_config(self, guild_id: int) -> None:
-        self.guild_configs.pop(guild_id, None)
-        self.available_webhooks.pop(guild_id, None)
-        self.automod_messages.pop(guild_id, None)
-        self.fireboard_messages.pop(guild_id, None)
-        self.punishing.pop(guild_id, None)
-
-    async def init_guild(self, guild_id: int, refresh: bool = True) -> GuildSettings | None:
-        db_logger.debug(f"Initializing guild {guild_id}...")
-
-        async with get_session() as session:
-            stmt = insert(GuildSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildModerationSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildAutomodSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildBouncerSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildLoggingSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildFireboardSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildServerCounterSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildLeaderboardSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildConfessionsSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildTagSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildLimits).values(id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["id"])
-            await session.execute(stmt)
-
-        if refresh:
-            await self.refresh_guild_config_cache(guild_id)
-
-        db_logger.debug(f"Guild {guild_id} initialized.")
-        return self.guild_configs.get(guild_id)
-
-    async def fetch_guild_config(
-        self, guild_id: int, create_config: bool = True
-    ) -> GuildSettings | None:
-        guild_settings = self.guild_configs.get(guild_id)
-
-        if not guild_settings:
-            await self.refresh_guild_config_cache(guild_id)
-            guild_settings = self.guild_configs.get(guild_id)
-
-        if not guild_settings and create_config:
-            guild_settings = await self.init_guild(guild_id)
-
-        return guild_settings
-
-    async def delete_guild_config(self, guild_id: int) -> None:
-        # delete db entries
-        async with get_session() as session:
-            stmt = delete(GuildSettings).where(GuildSettings.guild_id == guild_id)
-            await session.execute(stmt)
-
-            stmt = delete(AvailableWebhook).where(AvailableWebhook.guild_id == guild_id)
-            await session.execute(stmt)
-
-            stmt = delete(LeaderboardUserStats).where(LeaderboardUserStats.guild_id == guild_id)
-            await session.execute(stmt)
-
-            stmt = delete(ModCase).where(ModCase.guild_id == guild_id)
-            await session.execute(stmt)
-
-            stmt = delete(ScheduledTask).where(ScheduledTask.guild_id == guild_id)
-            await session.execute(stmt)
-
-        # clear from in-memory caches
-        self.remove_cached_config(guild_id)
 
     async def setup_hook(self):
-        await init_db()
-        await self.refresh_opt_out()
-        await self.refresh_all_caches()
+        logging.info("[INIT] Reading config files.")
 
-        self.trusted_servers = (
-            [int(x) for x in os.getenv("TRUSTED_SERVERS", "").split(",")]
-            if os.getenv("TRUSTED_SERVERS")
-            else []
+        # Read config files
+        self.options, self.tokens = read_config_file("config.cfg")
+
+        # Config File Vars
+        try:
+            self.path = path
+
+            self.options["owner-ids"] = self.options["owner-ids"].split(",")
+
+            if self.options["sync-on-start"] == "True":
+                self.options["sync-on-start"] = True
+            else:
+                self.options["sync-on-start"] = False
+
+            # Convert Dev IDs from str to int
+            dev_ids = []
+            for id in self.options["owner-ids"]:
+                dev_ids.append(int(id))
+
+            self.options["owner-ids"] = dev_ids
+
+            logging.info("[INIT] Config files read.\n")
+        except Exception as error:
+            logging.critical("[INIT] Bad value in config file! Exiting.")
+            logging.critical(error)
+
+            exit(1)
+
+        logging.info("[INIT] Creating SQL pools...")
+
+        # Cache DB Pool
+        open(os.path.join("content", "sql", "cache.db"), "a").close()
+        self.cache_pool = await asqlite.create_pool(
+            os.path.join("content", "sql", "cache.db")
         )
 
-        init_logger.info("Getting custom emojis...")
-        try:
-            info_emoji = os.getenv("INFO_EMOJI")
-            if info_emoji and info_emoji.strip() != "":
-                self.info_emoji = await self.fetch_application_emoji(int(info_emoji))
-            else:
-                self.info_emoji = "ℹ️"
+        # Fireboard DB Pool
+        open(os.path.join("content", "sql", "fireboard.db"), "a").close()
+        self.fireboard_pool = await asqlite.create_pool(
+            os.path.join("content", "sql", "fireboard.db")
+        )
 
-            success_emoji = os.getenv("SUCCESS_EMOJI")
-            if success_emoji and success_emoji.strip() != "":
-                self.success_emoji = await self.fetch_application_emoji(int(success_emoji))
-            else:
-                self.success_emoji = "✅"
+        # Leaderboard DB Pool
+        open(os.path.join("content", "sql", "lb.db"), "a").close()
+        self.lb_pool = await asqlite.create_pool(
+            os.path.join("content", "sql", "lb.db")
+        )
 
-            error_emoji = os.getenv("ERROR_EMOJI")
-            if error_emoji and error_emoji.strip() != "":
-                self.error_emoji = await self.fetch_application_emoji(int(error_emoji))
-            else:
-                self.error_emoji = "❌"
+        # Economy Pool
+        open(os.path.join("content", "sql", "economy.db"), "a").close()
+        self.economy_pool = await asqlite.create_pool(
+            os.path.join("content", "sql", "economy.db")
+        )
 
-            loading_emoji = os.getenv("LOADING_EMOJI")
-            if loading_emoji and loading_emoji.strip() != "":
-                self.loading_emoji = await self.fetch_application_emoji(int(loading_emoji))
-            else:
-                self.loading_emoji = "⏳"
+        # Tags Pool
+        open(os.path.join("content", "sql", "tags.db"), "a").close()
+        self.tags_pool = await asqlite.create_pool(
+            os.path.join("content", "sql", "tags.db")
+        )
 
-            warn_emoji = os.getenv("WARN_EMOJI")
-            if warn_emoji and warn_emoji.strip() != "":
-                self.warn_emoji = await self.fetch_application_emoji(int(warn_emoji))
-            else:
-                self.warn_emoji = "⚠️"
+        # Server Counters Pool
+        open(os.path.join("content", "sql", "server-counts.db"), "a").close()
+        self.server_counts_pool = await asqlite.create_pool(
+            os.path.join("content", "sql", "server-counts.db")
+        )
 
-            explicit_emoji = os.getenv("EXPLICIT_EMOJI")
-            if explicit_emoji and explicit_emoji.strip() != "":
-                self.explicit_emoji = await self.fetch_application_emoji(int(explicit_emoji))
-            else:
-                self.explicit_emoji = "🇪"
+        async with self.tags_pool.acquire() as sql:
+            # Create table if it doesn't exist
+            await sql.execute(
+                "CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY, creatorID INTEGER, name TEXT, content TEXT)"
+            )
+            await sql.commit()
 
-            menu_emoji = os.getenv("MENU_EMOJI")
-            if menu_emoji and menu_emoji.strip() != "":
-                self.menu_emoji = await self.fetch_application_emoji(int(menu_emoji))
-            else:
-                self.menu_emoji = "⚙️"
-        except discord.HTTPException as e:
-            init_logger.error("Failed to fetch emojis", exc_info=e)
-            raise
-        init_logger.info("Custom emojis loaded.")
+        logging.info("[INIT] SQL pools created.\n")
 
-        init_logger.info("Loading cogs...")
+        logging.info("[INIT] Loading cogs...")
         # Find all cogs in command dir
-        for filename in glob(os.path.join("cogs", "**"), recursive=True, include_hidden=False):
+        for filename in glob(
+            os.path.join("commands", "**"), recursive=True, include_hidden=False
+        ):
             if not os.path.isdir(filename):
                 # Determine if file is a python file
                 if filename.endswith(".py") and not filename.startswith("."):
                     filename = filename.replace("\\", "/").replace("/", ".")[:-3]
 
-                    init_logger.debug(f"Loading normal cog: {filename}...")
+                    logging.debug(f"[INIT] Loading normal cog: {filename}...")
+                    await bot.load_extension(filename)
+                    logging.debug(f"[INIT] Loaded normal cog: {filename}")
 
-                    try:
-                        await bot.load_extension(filename)
-                        init_logger.debug(f"Loaded normal cog: {filename}")
-                    except Exception as e:
-                        init_logger.error(f"Failed to load normal cog: {filename}", exc_info=e)
+        logging.info("[INIT] Loaded normal cogs.\n")
 
-                        continue
-        init_logger.info("Loading cogs complete.")
+        # Read cogs from private commands folder if it exists
+        if os.path.exists("commands_private"):
+            logging.info("[INIT] Loading private cogs...")
+            # Find all cogs in private command dir
+            for filename in os.listdir("commands_private"):
+                # Determine if file is a python file
+                if filename.endswith(".py") and not filename.startswith("."):
+                    logging.debug(f"[INIT] Loading private cog: {filename}...")
+                    await bot.load_extension(f"commands_private.{filename[:-3]}")
+                    logging.debug(f"[INIT] Loaded private cog: {filename}")
 
-    async def on_ready(self):
-        init_logger.info(f"Bot is ready and connected as {bot.user}.")
+            logging.info("[INIT] Loaded private cogs.\n")
+        else:
+            logging.info("[INIT] Skipping private cogs.\n")
+
+    async def close(self):
+        await self.cache_pool.close()
+        await self.fireboard_pool.close()
+        await self.lb_pool.close()
+        await self.economy_pool.close()
+        await self.tags_pool.close()
+        await self.server_counts_pool.close()
+
+        await super().close()
 
     async def on_connect(self):
         self.connected = True
 
     async def on_resumed(self):
         self.connected = True
-        self.last_resume = datetime.datetime.now(datetime.timezone.utc)
+        self.last_resume = datetime.datetime.now()
 
     async def on_disconnect(self):
         if self.connected:
             self.connected = False
-            self.last_disconnect = datetime.datetime.now(datetime.timezone.utc)
-
-    async def on_error(self, event: str, *args, **kwargs):
-        exc = sys.exc_info()[1]
-        if not isinstance(exc, Exception):
-            exc = None
-
-        try:
-            await log_error(
-                bot=self,
-                module=event,
-                guild_id=0,
-                error="Uncaught Error",
-                store_err=False,
-                exc=exc,
-            )
-        except Exception:
-            if exc:
-                logging.exception(exc)
-            else:
-                logging.error(f"Unexpected error in {event}")
+            self.last_disconnect = datetime.datetime.now()
 
 
-async def get_prefix(bot: TitaniumBot, message: discord.Message):
-    if message.guild:
-        config = await bot.fetch_guild_config(message.guild.id)
-
-        if config:
-            base = config.prefixes
-        else:
-            base = ["t!"]
-    else:
-        base = ["t!"]
-
-    return commands.when_mentioned_or(*base)(bot, message)
+bot = TitaniumBot(intents=intents, command_prefix="", help_command=None)
 
 
-bot = TitaniumBot(
-    intents=intents,
-    command_prefix=get_prefix,
-    strip_after_prefix=True,
-    case_insensitive=True,
-    max_messages=2500,
-    help_command=None,
-    chunk_guilds_at_startup=False,
-)
-
-
-@bot.check
-async def check(ctx: commands.Context["TitaniumBot"]):
-    if ctx.interaction or not ctx.guild:
-        return True
-
-    config = await ctx.bot.fetch_guild_config(ctx.guild.id)
-
-    if not config:
-        return True
-
-    if not config.allow_prefix:
-        if not config.send_not_allowed:
-            return False
-
-        embed = discord.Embed(
-            title=f"{ctx.bot.error_emoji} Not Allowed",
-            description="Prefix commands have been disabled in this server.",
-            colour=discord.Colour.red(),
-        )
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-
-        await ctx.reply(embed=embed)
-        return False
-
-    if ctx.channel.id in config.blocked_channels:
-        if not config.send_not_allowed:
-            return False
-
-        embed = discord.Embed(
-            title=f"{ctx.bot.error_emoji} Not Allowed",
-            description="You are not allowed to run prefix commands in this channel.",
-            colour=discord.Colour.red(),
-        )
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-
-        await ctx.reply(embed=embed)
-        return False
-
-    if isinstance(ctx.author, discord.Member) and any(
-        role.id in config.blocked_roles for role in ctx.author.roles
-    ):
-        if not config.send_not_allowed:
-            return False
-
-        embed = discord.Embed(
-            title=f"{ctx.bot.error_emoji} Not Allowed",
-            description="You have a role which blocks you from running prefix commands in this server.",
-            colour=discord.Colour.red(),
-        )
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-
-        await ctx.reply(embed=embed)
-        return False
-
-    return True
-
-
+# Sync bot cogs when started
 @bot.event
-async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands.CommandError):
-    if (
-        isinstance(error, commands.CommandNotFound)
-        or isinstance(error, commands.NotOwner)
-        or isinstance(error, adapters.GroupCommandNotFoundException)
-    ):
-        if ctx.bot.pre_not_found:
-            if await ctx.bot.pre_not_found(ctx, error):
-                return
-
-        if isinstance(error, adapters.GroupCommandNotFoundException):
-            command_name = error.command_name
-        else:
-            command_name = ctx.invoked_with or "unknown"
-
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Command Not Found",
-            description=f"The command `{command_name}` does not exist.",
-            colour=discord.Colour.red(),
+async def on_ready():
+    # Sync tree if sync on start is enabled
+    if bot.options["sync-on-start"]:
+        # Control Server Sync
+        logging.info(
+            f"[INIT] Syncing control server command tree ({bot.options['control-guild']})..."
+        )
+        guild = await bot.fetch_guild(bot.options["control-guild"])
+        sync = await bot.tree.sync(guild=guild)
+        logging.info(
+            f"[INIT] Control server command tree synced. {len(sync)} command total."
         )
 
-        command_list = [
-            command.qualified_name
-            for command in ctx.bot.walk_commands()
-            if not command.hidden
-            and not (
-                isinstance(command, commands.Group)
-                and not isinstance(command, commands.HybridGroup)
-            )
-            and not (isinstance(command, commands.HybridGroup) and not command.fallback)
-        ]
+        # Global Sync
+        logging.info("[INIT] Syncing global command tree...")
+        sync = await bot.tree.sync(guild=None)
+        logging.info(f"[INIT] Global command tree synced. {len(sync)} commands total.")
 
-        did_you_mean = await asyncio.to_thread(
-            process.extract,
-            command_name,
-            command_list,
-            scorer=fuzz.WRatio,
-            limit=3,
-            score_cutoff=65,
-            processor=utils.default_process,
-        )
-
-        if did_you_mean:
-            embed.add_field(
-                name="Did you mean:", value=", ".join([f"`{value[0]}`" for value in did_you_mean])
-            )
-
-        await ctx.reply(embed=embed)
-    elif isinstance(error, commands.errors.CommandOnCooldown):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Cooldown",
-            description=error,
-            colour=discord.Colour.red(),
-        )
-        await ctx.reply(embed=embed, ephemeral=True)
-    elif isinstance(error, commands.errors.MissingPermissions):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Missing Permissions",
-            description=error,
-            colour=discord.Colour.red(),
-        )
-        await ctx.reply(embed=embed, ephemeral=True)
-    elif isinstance(error, commands.errors.NoPrivateMessage):
-        await ctx.reply(embed=guild_only(bot))
-    elif isinstance(error, (commands.errors.BadArgument, commands.errors.ArgumentParsingError)):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Bad Argument",
-            description=str(error).replace(str(error)[0], str(error)[0].upper(), 1),
-            colour=discord.Colour.red(),
-        )
-        await ctx.reply(embed=embed, ephemeral=True)
-    elif isinstance(error, commands.errors.BadLiteralArgument):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Bad Argument",
-            description=f"Couldn't find your input for the `{error.param.name}` argument in `{'`, `'.join([str(lit) for lit in error.literals])}`.",
-            colour=discord.Colour.red(),
-        )
-        await ctx.reply(embed=embed, ephemeral=True)
-    elif isinstance(error, commands.errors.MissingRequiredArgument):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Argument Missing",
-            description=f"You are missing the `{error.param.name}` argument.",
-            colour=discord.Colour.red(),
-        )
-        await ctx.reply(embed=embed, ephemeral=True)
-    elif isinstance(error, commands.errors.MissingRequiredAttachment):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Attachment Missing",
-            description=f"You are missing a required attachment (`{error.param.name}`) for this command.",
-            colour=discord.Colour.red(),
-        )
-        await ctx.reply(embed=embed, ephemeral=True)
-    elif isinstance(error, commands.errors.CheckFailure):
-        return
     else:
-        try:
-            error_id = await log_error(
-                bot=ctx.bot,
-                module="Commands",
-                guild_id=ctx.guild.id if ctx.guild else None,
-                error=f"Unexpected error in prefix command /{ctx.command.qualified_name if ctx.command else 'unknown'}.",
-                exc=error,
-            )
-        except Exception as log_exc:
-            error_id = "Unknown"
-            logging.error("Failed to log error to database", exc_info=log_exc)
-            logging.exception(error)
-
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Command Error",
-            description="An error occurred while executing the command. Please try again later.",
-            colour=discord.Colour.red(),
+        logging.info(
+            "[INIT] Skipping command tree sync. Please manually sync commands later."
         )
 
-        embed.add_field(
-            name="Error ID",
-            value=f"`{error_id}`",
-            inline=False,
-        )
-
-        await ctx.reply(embed=embed, ephemeral=True)
-
-    # stop loading reaction
-    await adapters._stop_loading(ctx)
+    logging.info(f"[INIT] Bot is ready and connected as {bot.user}.\n")
 
 
+# Ignore normal user messages
+@bot.event
+async def on_message(message):
+    pass
+
+
+# Cooldown / No Permissions / Error Handler
 @bot.tree.error
 async def on_app_command_error(
-    interaction: discord.Interaction["TitaniumBot"], error: discord.app_commands.AppCommandError
-):
-    if not isinstance(error, discord.app_commands.CommandNotFound):
-        try:
-            error_id = await log_error(
-                bot=interaction.client,
-                module="Commands",
-                guild_id=interaction.guild.id if interaction.guild else None,
-                error=f"Unexpected error in interaction /{interaction.command.qualified_name if interaction.command else 'unknown'}.",
-                exc=error,
+    interaction: discord.Interaction, error: discord.app_commands.AppCommandError
+) -> None:
+    # Unexpected Error
+    if isinstance(error, discord.app_commands.errors.CommandInvokeError):
+        if isinstance(error.original, discord.errors.HTTPException):
+            if "automod" in str(error.original).lower():
+                embed = discord.Embed(
+                    title="Error",
+                    description="Message has been blocked by server AutoMod policies. Server admins may have been notified.",
+                    color=Color.red(),
+                )
+                embed.set_footer(
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            # Generate error ID
+            error_id = "-".join(
+                "".join(str(random.randint(0, 9)) for _ in range(4)) for _ in range(4)
             )
-        except Exception as log_exc:
-            error_id = "Unknown"
-            logging.error("Failed to log error to database", exc_info=log_exc)
-            logging.exception(error)
+
+            logging.error("*** Unexpected error occurred. ***")
+            logging.error("Error ID: " + error_id)
+            logging.error(f"{traceback.format_exc()}\n")
+
+            if bot.options["error-webhook"] == "":
+                logging.info("\nNo error webhook present. Editing user message.\n")
+
+                embed = discord.Embed(
+                    title="Unexpected Error",
+                    description="An unexpected error has occurred. Try again later.",
+                    color=Color.red(),
+                )
+                embed.set_footer(
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
+                )
+
+                await interaction.edit_original_response(embed=embed, view=None)
+            else:
+                logging.info("Editing user message.")
+
+                embed = discord.Embed(
+                    title="Unexpected Error",
+                    description="An unexpected error has occurred. Try again later. If you ask for help, please provide the error ID displayed below.",
+                    color=Color.red(),
+                )
+
+                embed.add_field(
+                    name="Error ID",
+                    value=f"`{error_id}`",
+                    inline=False,
+                )
+
+                embed.set_footer(
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
+                )
+
+                await interaction.edit_original_response(embed=embed, view=None)
+
+                async with aiohttp.ClientSession() as session:
+                    logging.info("Sending error to webhook.")
+                    embed = discord.Embed(
+                        title="Error",
+                        description=f"```python\n{shorten(traceback.format_exc(), width=4085, placeholder='```')}{'```' if len(traceback.format_exc()) < 4085 else ''}",
+                        color=Color.red(),
+                    )
+
+                    embed.timestamp = datetime.datetime.now()
+                    embed.set_author(name=str(bot.user))
+
+                    embed.add_field(name="Error ID", value=f"`{error_id}`")
+                    embed.add_field(name="User", value=f"{interaction.user.mention}")
+                    embed.add_field(name="Channel", value=interaction.channel.jump_url)
+                    embed.add_field(
+                        name="Time",
+                        value=interaction.created_at.strftime("%d/%m/%Y, %H:%M:%S"),
+                    )
+
+                    embed.add_field(name="Command", value=interaction.command.name)
+
+                    # Safely get parameters if they exist
+                    try:
+                        params = []
+                        for param in interaction.command.parameters:
+                            if param.name in interaction.namespace:
+                                params.append(
+                                    f"{param.name}: {interaction.namespace[param.name]}"
+                                )
+                        if params:
+                            embed.add_field(name="Parameters", value=", ".join(params))
+                    except Exception:
+                        pass
+
+                    try:
+                        webhook = discord.Webhook.from_url(
+                            str(bot.options["error-webhook"]), session=session
+                        )
+                        await webhook.send(embed=embed)
+
+                        logging.info("Error sent to webhook.\n")
+                    except Exception as webhookException:
+                        logging.error(f"Error sending to webhook: {webhookException}\n")
+    # Cooldown
+    elif isinstance(error, discord.app_commands.errors.CommandOnCooldown):
+        await interaction.response.defer(ephemeral=True)
+
+        embed = discord.Embed(title="Cooldown", description=error, color=Color.red())
+        msg = await interaction.followup.send(embed=embed, wait=True)
+
+        await asyncio.sleep(5)
+        await msg.delete()
+    elif isinstance(error, discord.app_commands.MissingAnyRole):
+        await interaction.response.defer(ephemeral=True)
 
         embed = discord.Embed(
-            title=f"{bot.error_emoji} Interaction Error",
-            description="An error occurred while processing the interaction. Please try again later.",
-            colour=discord.Colour.red(),
+            title="Missing Role", description=error, color=Color.red()
         )
+        msg = await interaction.followup.send(embed=embed, wait=True)
+    # Missing Perms
+    elif isinstance(error, discord.app_commands.errors.MissingPermissions):
+        await interaction.response.defer(ephemeral=True)
 
-        embed.add_field(
-            name="Error ID",
-            value=f"`{error_id}`",
-            inline=False,
+        embed = discord.Embed(
+            title="Missing Permissions", description=error, color=Color.red()
         )
+        msg = await interaction.followup.send(embed=embed, wait=True)
 
-        await interaction.edit_original_response(embed=embed, view=None)
+        await asyncio.sleep(5)
+        await msg.delete()
 
 
-if __name__ == "__main__":
-    if "--migrate" in sys.argv:
-        init_logger.info("Starting Titanium in migration mode...")
-        asyncio.run(init_db())
-        sys.exit(0)
+try:
+    config.read("config.cfg")
+    bot_token = dict(config.items("TOKENS"))["discord-bot-token"]
 
-    try:
-        token = os.getenv("BOT_TOKEN")
+    bot.connect_time = datetime.datetime.now()
+    bot.last_disconnect = None
+    bot.last_resume = None
 
-        if token is None:
-            raise discord.LoginFailure("No bot token provided in .env file.")
-
-        if "--v1tov2" in sys.argv:
-            init_logger.info("Starting Titanium in v1 to v2 mode...")
-
-            async def migration_hook():
-                await init_db()
-
-                async def run_migration():
-                    await bot.wait_until_ready()
-                    await migrate_v1_to_v2(bot)
-
-                bot.loop.create_task(run_migration())
-
-            bot.setup_hook = migration_hook
-            bot.run(token, log_handler=None)
-            sys.exit(0)
-
-        init_logger.info("Starting Titanium bot...")
-
-        bot.connect_time = datetime.datetime.now(datetime.timezone.utc)
-        bot.last_disconnect = None
-        bot.last_resume = None
-
-        bot.run(token, log_handler=None)
-    except discord.LoginFailure:
-        init_logger.critical("Invalid bot token provided. Please check your .env file.")
-    except Exception as e:
-        init_logger.critical("An error occurred while starting the bot", exc_info=e)
+    # Run bot with token
+    bot.run(bot_token, log_handler=None)
+except discord.errors.PrivilegedIntentsRequired:
+    logging.critical(
+        "[FATAL] Bot is missing a Privileged Intent! Please ensure they are enabled in the Discord Developers web portal. Exiting..."
+    )
+    exit(1)

@@ -1,0 +1,6 @@
+*
+!.gitignore
+!/templates/
+!/templates/**
+!speech_border.png
+!speech.png

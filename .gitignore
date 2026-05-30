@@ -1,26 +1,28 @@
-# OS
-.DS_Store
+# Contents / Assets
+/assets
+/tmp
+
+# Commands
+/commands/.*
+/commands_private
+__pycache__
+
+# Testing
+/test
+/testing
+/.vscode
+TEST_*.py
 
 # IDEs
-.vscode/
-.idea/
-
-# Caches
-__pycache__/
-*.pyc
-.ruff_cache/
-.cache
-
-# Virtual Environments
-.venv/
-
-# Logs
-logs/
-*.log
-
-# .env
+config.cfg
 .env
+.replit
+.idea
+.nova
 
-# Other
-cogs/private
-cogs/ignore
+# Misc
+.cache
+*.json
+*.db
+*.log
+.DS_Store
