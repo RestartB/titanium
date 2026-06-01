@@ -118,6 +118,11 @@ class BasicCommandsCog(
             )
         )
 
+        await ctx.reply(
+            embed=embed,
+            view=view
+        )
+
     # Host Info command
     @commands.hybrid_command(
         name="host-info", aliases=["hostinfo"], description="Info about the bot host."
