@@ -1,0 +1,14 @@
+## Summary
+
+When `get_or_fetch_member` fails to find a user as a guild member (e.g. they left the server), it previously returned `None`. This adds a fallback to `bot.fetch_user()` so callers still get useful `discord.User` info (username, avatar, etc.) instead of nothing.
+
+## Changes
+
+- `lib/helpers/cache.py`: After `guild.fetch_member()` raises `discord.NotFound`, try `bot.fetch_user(user_id)` as a fallback
+- Return type expanded from `discord.Member | None` to `discord.Member | discord.User | None`
+
+## Motivation
+
+This is useful for populating member/user information in the dashboard and other contexts where a user may have left the guild but their basic profile info is still needed.
+
+Closes #192

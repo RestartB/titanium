@@ -30,7 +30,7 @@ async def get_or_fetch_message(
 
 async def get_or_fetch_member(
     bot: TitaniumBot, guild: discord.Guild, user_id: int
-) -> discord.Member | None:
+) -> discord.Member | discord.User | None:
     # Try to get the member from cache
     member = guild.get_member(user_id)
     if member:
@@ -42,6 +42,15 @@ async def get_or_fetch_member(
         LOGGER.debug(f"Fetching member from Discord (guild: {guild.id}, user: {user_id})")
         member = await guild.fetch_member(user_id)
         return member
+    except discord.NotFound:
+        pass
+
+    # Fallback: if user left the guild or never joined, fetch as User
+    # This is useful for populating member/user info in the dashboard
+    try:
+        LOGGER.debug(f"Member not in guild, falling back to user fetch (user: {user_id})")
+        user = await bot.fetch_user(user_id)
+        return user
     except discord.NotFound:
         return None
 
