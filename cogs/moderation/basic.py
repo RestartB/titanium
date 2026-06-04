@@ -8,12 +8,12 @@ from discord.ext import commands
 
 import lib.embeds.mod_actions as mod_embeds
 from lib.classes.case_manager import GuildModCaseManager
-from lib.duration import DurationConverter
 from lib.embeds.dm_notifs import unmuted_dm
 from lib.embeds.general import not_in_guild
 from lib.enums.moderation import CaseType
 from lib.helpers.cache import get_or_fetch_member
 from lib.helpers.dm import send_dm
+from lib.helpers.duration import DurationConverter
 from lib.helpers.hybrid import _defer, _stop_loading, defer
 from lib.helpers.log_error import log_error
 from lib.sql.sql import ModCase, get_session

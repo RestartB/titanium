@@ -9,6 +9,9 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+# TODO: could be worth maybe switching to https://github.com/scrapinghub/dateparser at some point
+
+
 class DurationConverter(commands.Converter):
     MAX_YEARS = 60
     MAX_SECONDS = MAX_YEARS * 31536000

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Sequence
 from discord import Colour, Embed, Member, User
 from sqlalchemy import Column
 
-from lib.duration import duration_to_timestring
+from lib.helpers.duration import duration_to_timestring
 from lib.sql.sql import ModCase
 
 if TYPE_CHECKING:

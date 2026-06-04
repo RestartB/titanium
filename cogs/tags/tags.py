@@ -218,7 +218,7 @@ class TagCommandsCog(commands.Cog):
                     client=self.bot,
                 )
                 await webhook.send(embed=embed)
-            
+
             return True
 
         self.logger.debug("No tags found, skipping")

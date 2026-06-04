@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 from discord import ClientUser, Colour, Embed, Member, Object, User
 
-from lib.duration import duration_to_timestring
+from lib.helpers.duration import duration_to_timestring
 from lib.sql.sql import ModCase
 
 if TYPE_CHECKING:
