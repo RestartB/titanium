@@ -44,16 +44,28 @@ class LeaderboardCog(commands.Cog):
     # Snapshot task
     @tasks.loop(hours=24)
     async def take_daily_snapshots(self) -> None:
-        async with get_session() as session:
-            stmt = select(LeaderboardUserStats)
-            result = await session.execute(stmt)
-            all_stats = result.scalars().all()
+        guild_ids = []
+        for guild in self.bot.guilds:
+            config = await self.bot.fetch_guild_config(guild.id, create_config=False)
+            if not config or not config.leaderboard_enabled:
+                continue
+            guild_ids.append(guild.id)
 
-            for i, user_stat in enumerate(all_stats, start=1):
-                snapshots = user_stat.daily_snapshots or []
-                snapshots.append(i)
+        for guild_id in guild_ids:
+            async with get_session() as session:
+                stmt = (
+                    select(LeaderboardUserStats)
+                    .where(LeaderboardUserStats.guild_id == guild_id)
+                    .order_by(LeaderboardUserStats.xp.desc())
+                )
+                result = await session.execute(stmt)
+                all_stats = result.scalars().all()
 
-                user_stat.daily_snapshots = snapshots[-30:]
+                for i, user_stat in enumerate(all_stats, start=1):
+                    snapshots = user_stat.daily_snapshots or []
+                    snapshots.append(i)
+
+                    user_stat.daily_snapshots = snapshots[-30:]
 
     # Message event
     @commands.Cog.listener()
