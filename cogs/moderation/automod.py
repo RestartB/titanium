@@ -61,7 +61,7 @@ class AutomodMonitorCog(commands.Cog):
             punishments: list[AutomodAction] = []
 
             if not config.automod_enabled or not config.moderation_enabled:
-                self.logger.debug("Automod is not enabled, skipping message")
+                self.logger.debug("Automod is disabled, skipping message")
                 return
 
             autmod_config = config.automod_settings

@@ -208,7 +208,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         ):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
-                description="The leaderboard system is not enabled in this server.",
+                description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
             await ctx.reply(embed=embed)
@@ -285,7 +285,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         ):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
-                description="The leaderboard system is not enabled in this server.",
+                description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
             await ctx.reply(embed=embed)
@@ -363,7 +363,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         ):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
-                description="The leaderboard system is not enabled in this server.",
+                description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
             await ctx.reply(embed=embed)
@@ -441,7 +441,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         ):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Leaderboard Disabled",
-                description="The leaderboard system is not enabled in this server.",
+                description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
             await ctx.reply(embed=embed)
