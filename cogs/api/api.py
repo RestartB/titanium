@@ -1087,6 +1087,7 @@ class APICog(commands.Cog):
                         "historical": user_stat.daily_snapshots,
                     }
                     for user_stat in leaderboard
+                    if user_stat.xp > 0
                 ],
             }
         )

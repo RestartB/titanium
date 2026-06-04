@@ -49,9 +49,9 @@ class LeaderboardCog(commands.Cog):
             result = await session.execute(stmt)
             all_stats = result.scalars().all()
 
-            for user_stat in all_stats:
+            for i, user_stat in enumerate(all_stats, start=1):
                 snapshots = user_stat.daily_snapshots or []
-                snapshots.append(user_stat.level)
+                snapshots.append(i)
 
                 user_stat.daily_snapshots = snapshots[-30:]
 
