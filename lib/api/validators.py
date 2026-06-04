@@ -77,7 +77,7 @@ class ModerationConfigModel(BaseModel):
 
 class CaseComment(BaseModel):
     user: str
-    comment: Annotated[
+    content: Annotated[
         str,
         StringConstraints(min_length=1, max_length=500, strip_whitespace=True),
     ]
