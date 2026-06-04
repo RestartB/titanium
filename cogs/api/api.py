@@ -168,6 +168,9 @@ class APICog(commands.Cog):
         self.app.router.add_post(
             "/guild/{guild_id}/cases/{case_id}/comments", self.guild_case_add_comment
         )
+        self.app.router.add_patch(
+            "/guild/{guild_id}/cases/{case_id}/comments/{comment_id}", self.guild_case_edit_comment
+        )
         self.app.router.add_delete(
             "/guild/{guild_id}/cases/{case_id}/comments/{comment_id}",
             self.guild_case_delete_comment,
@@ -727,10 +730,58 @@ class APICog(commands.Cog):
                 return web.json_response({"error": "case not found"}, status=404)
 
             comment = await case.add_comment(
-                member=member, content=validated_tag.comment, bot=self.bot, guild=guild
+                member=member, content=validated_tag.content, bot=self.bot, guild=guild
             )
 
         return web.json_response({"id": str(comment.id)})
+
+    async def guild_case_edit_comment(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        case_id = request.match_info.get("case_id")
+        if not case_id:
+            return web.json_response({"error": "case_id required"}, status=400)
+
+        comment_id = request.match_info.get("comment_id")
+        if not comment_id:
+            return web.json_response({"error": "comment_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        config = await self.bot.fetch_guild_config(guild.id)
+        if not config:
+            return web.json_response({"error": "failed to get guild config"}, status=500)
+
+        if not config.moderation_enabled:
+            return web.json_response({"error": "moderation is disabled in this server"}, status=403)
+
+        try:
+            data: dict = await request.json()
+            validated_comment = CaseComment(**data)
+        except ValidationError as e:
+            return web.json_response(self.__format_validation_error(e), status=400)
+
+        async with get_session(autocommit=False) as session:
+            manager = GuildModCaseManager(self.bot, guild, session)
+
+            try:
+                case = await manager.get_case_by_id(case_id)
+            except CaseNotFoundException:
+                return web.json_response({"error": "case not found"}, status=404)
+
+            comment = await case.get_user_comment(
+                user=int(validated_comment.user), comment=uuid.UUID(comment_id)
+            )
+            if not comment:
+                return web.json_response({"error": "comment not found"}, status=404)
+            await comment.edit_comment(content=validated_comment.content)
+
+        await self.bot.refresh_guild_config_cache(guild.id)
+        return web.Response(status=204)
 
     async def guild_case_delete_comment(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
@@ -771,8 +822,7 @@ class APICog(commands.Cog):
 
             if not comment:
                 return web.json_response({"error": "comment not found"}, status=404)
-
-            await session.execute(delete(ModCaseComment).where(ModCaseComment.id == comment.id))
+            await comment.delete_comment()
 
         return web.Response(status=204)
 
@@ -1019,7 +1069,7 @@ class APICog(commands.Cog):
         lb_config = config.leaderboard_settings
 
         if not lb_config or not config.leaderboard_enabled:
-            return web.json_response({"error": "leaderboard module not enabled"}, status=403)
+            return web.json_response({"error": "leaderboard module disabled"}, status=403)
 
         limit = max(min(int(request.query.get("limit", 25)), 100), 1)
         offset = max(int(request.query.get("offset", 0)), 0)
