@@ -370,8 +370,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
     @app_commands.describe(user="The user to clean.")
     @commands.cooldown(1, 3)
     async def clean_cases(self, ctx: commands.Context["TitaniumBot"], user: User) -> None | Message:
-        await ctx.defer()
-
         if not ctx.guild or not self.bot.user:
             return
 
@@ -419,8 +417,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3)
     async def delete_all_cases(self, ctx: commands.Context["TitaniumBot"]) -> None | Message:
-        await ctx.defer()
-
         if not ctx.guild or not self.bot.user:
             return
 
