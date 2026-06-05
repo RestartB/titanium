@@ -7,7 +7,7 @@
     <title>title</title>
 
     <style>
-        @import url("https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap");
+        @import url("https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap");
 
         html,
         body {
@@ -17,7 +17,7 @@
             padding: 0;
             color: white;
             background-color: black;
-            font-family: "Figtree", "Noto Color Emoji", sans-serif;
+            font-family: "Figtree", "Noto Sans JP", "Noto Sans SC", "Noto Sans TC", "Noto Sans KR", "Noto Color Emoji", sans-serif;
             font-optical-sizing: auto;
             font-weight: 500;
             font-style: normal;
@@ -59,10 +59,12 @@
             margin-top: auto;
             height: fit-content;
             font-size: 37px;
+            line-height: 1.15;
+            padding-bottom: 0.18em;
             overflow: hidden;
-            word-break: break-word;
+            word-break: normal;
             overflow-wrap: break-word;
-            hyphens: auto;
+            hyphens: manual;
             text-align: center;
             width: 100%;
             white-space: pre-wrap;
@@ -193,6 +195,8 @@
 
     <script>
         function fitTextToContainer(element, minFontSize = 32, maxFontSize = 65) {
+            const maxContentHeight = 492;
+            
             let low = minFontSize;
             let high = maxFontSize;
             let mid;
@@ -203,7 +207,7 @@
                 mid = Math.floor((low + high) / 2);
                 element.style.fontSize = mid + 'px';
 
-                if (element.scrollHeight <= 502) {
+                if (element.scrollHeight <= maxContentHeight) {
                     // fits, try a bigger size
                     bestFit = mid;
                     low = mid + 1;
@@ -214,7 +218,7 @@
             }
 
             element.style.fontSize = bestFit + 'px';
-            element.style.maxHeight = '502px';
+            element.style.maxHeight = maxContentHeight + 'px';
 
             // add fade if required
             if (bestFit === minFontSize && element.scrollHeight > element.clientHeight) {
