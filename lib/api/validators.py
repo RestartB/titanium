@@ -357,12 +357,13 @@ class ServerCountersConfigModel(BaseModel):
 
 class LeaderboardLevelModel(BaseModel):
     xp_required: int
-    reward_roles: list[str] = Field(default_factory=list)
+    reward_roles: list[str] = Field(default_factory=list, max_length=5)
 
 
 class LeaderboardConfigModel(BaseModel):
     mode: LeaderboardCalcType
     delete_leavers: bool
+    stack_roles: bool
 
     cooldown: int
     base_xp: Optional[int] = None

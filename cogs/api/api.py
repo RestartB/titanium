@@ -2040,10 +2040,11 @@ class APICog(commands.Cog):
                 existing_config.web_leaderboard_enabled = validated_config.web_leaderboard_enabled
                 existing_config.web_login_required = validated_config.web_login_required
                 existing_config.delete_leavers = validated_config.delete_leavers
+                existing_config.stack_roles = validated_config.stack_roles
                 existing_config.levels = [
                     LeaderboardLevels(
                         xp=level.xp_required,
-                        reward_roles=level.reward_roles,
+                        reward_roles=[int(role) for role in level.reward_roles if role.isdigit()],
                     )
                     for level in validated_config.levels
                 ]

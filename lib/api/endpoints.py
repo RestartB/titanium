@@ -231,6 +231,7 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
                 "web_leaderboard_enabled": True,
                 "web_login_required": False,
                 "delete_leavers": False,
+                "stack_roles": True,
                 "levels": [],
             }
         )
@@ -256,6 +257,7 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
             "web_leaderboard_enabled": lb_settings.web_leaderboard_enabled,
             "web_login_required": lb_settings.web_login_required,
             "delete_leavers": lb_settings.delete_leavers,
+            "stack_roles": lb_settings.stack_roles,
             "levels": [
                 {
                     "id": str(level.id),

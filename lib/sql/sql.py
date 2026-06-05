@@ -572,6 +572,7 @@ class GuildLeaderboardSettings(Base):
         Enum(LeaderboardCalcType), nullable=False, server_default=text("'FIXED'")
     )
     delete_leavers: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    stack_roles: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
 
     cooldown: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
     base_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("10"))

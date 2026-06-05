@@ -41,6 +41,94 @@ class LeaderboardCog(commands.Cog):
         self.take_daily_snapshots.cancel()
         remove_global_aliases(self, self.bot)
 
+    async def sync_user_level(
+        self, member: discord.Member, user_stats: LeaderboardUserStats, lb_settings
+    ) -> tuple[int, int]:
+        levels = lb_settings.levels
+        levels.sort(key=lambda level: level.xp)
+
+        old_level = user_stats.level
+        new_level = 0
+        for level in levels:
+            if user_stats.xp >= level.xp:
+                new_level += 1
+            else:
+                break
+
+        if new_level != old_level:
+            user_stats.level = new_level
+
+            roles_to_remove = set()
+            roles_to_add = set()
+
+            for i, level in enumerate(levels, start=1):
+                if not lb_settings.stack_roles:
+                    if i == new_level:
+                        roles_to_add.update(
+                            member.guild.get_role(role_id) for role_id in level.reward_roles
+                        )
+                    else:
+                        roles_to_remove.update(
+                            member.guild.get_role(role_id) for role_id in level.reward_roles
+                        )
+                else:
+                    if i <= new_level:
+                        roles_to_add.update(
+                            member.guild.get_role(role_id) for role_id in level.reward_roles
+                        )
+                    else:
+                        roles_to_remove.update(
+                            member.guild.get_role(role_id) for role_id in level.reward_roles
+                        )
+
+            roles_to_add = {r for r in roles_to_add if r and r < member.guild.me.top_role}
+            roles_to_remove = {
+                r for r in roles_to_remove if r and r < member.guild.me.top_role
+            } - roles_to_add
+
+            if member.guild.me.guild_permissions.manage_roles:
+                try:
+                    if roles_to_remove:
+                        await member.remove_roles(
+                            *roles_to_remove,
+                            reason=f"Level changed (level {new_level})",
+                            atomic=False,
+                        )
+
+                    if roles_to_add:
+                        await member.add_roles(
+                            *roles_to_add, reason=f"Level changed (level {new_level})", atomic=False
+                        )
+                except discord.Forbidden as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Leaderboard",
+                        guild_id=member.guild.id,
+                        error=f"Titanium was not allowed to add / remove roles for {member.id}",
+                        details=str(e.text),
+                        exc=e,
+                    )
+                except discord.HTTPException as e:
+                    await log_error(
+                        bot=self.bot,
+                        module="Leaderboard",
+                        guild_id=member.guild.id,
+                        error=f"Unknown Discord error while adding / removing roles for {member.id}",
+                        details=str(e.text),
+                        exc=e,
+                    )
+            elif roles_to_add or roles_to_remove:
+                await log_error(
+                    bot=self.bot,
+                    module="Leaderboard",
+                    guild_id=member.guild.id,
+                    error="Titanium does not have permission to add or remove roles",
+                    details='Please ensure that Titanium has the "Manage Roles" permission so it can add / remove roles.',
+                    send_webhook=False,
+                )
+
+        return old_level, new_level
+
     # Snapshot task
     @tasks.loop(hours=24)
     async def take_daily_snapshots(self) -> None:
@@ -70,7 +158,12 @@ class LeaderboardCog(commands.Cog):
     # Message event
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        if not message.guild or message.author.bot or message.is_system():
+        if (
+            not message.guild
+            or message.is_system()
+            or isinstance(message.author, discord.User)
+            or message.author.bot
+        ):
             return
 
         if message.author.id in self.bot.opt_out:
@@ -163,21 +256,15 @@ class LeaderboardCog(commands.Cog):
             elif mode == LeaderboardCalcType.LENGTH and xp and xp_mult and max_xp and min_xp:
                 to_assign = int(max(min(xp_mult * math.sqrt(length), max_xp), min_xp))
 
+            user_stats.xp = min(user_stats.xp + to_assign, POSTGRES_MAX_INT)
+
             levels = guild_settings.leaderboard_settings.levels
             levels.sort(key=lambda level: level.xp)
 
-            user_stats.xp = min(user_stats.xp + to_assign, POSTGRES_MAX_INT)
-
-            old_level = user_stats.level
-            new_level = 0
-            for level in levels:
-                if user_stats.xp >= level.xp:
-                    new_level += 1
-                else:
-                    break
-
-            if new_level != old_level:
-                user_stats.level = new_level
+            old_level, new_level = await self.sync_user_level(
+                message.author, user_stats, lb_settings
+            )
+            user_stats.level = new_level
 
         if lb_settings.levelup_notifications and new_level > old_level:
             channel = message.channel
@@ -487,19 +574,24 @@ class LeaderboardCog(commands.Cog):
         async with get_session() as session:
             stmt = select(LeaderboardUserStats).where(
                 LeaderboardUserStats.guild_id == ctx.guild.id,
-                LeaderboardUserStats.user_id == ctx.author.id,
+                LeaderboardUserStats.user_id == user.id,
             )
             user_stats = (await session.execute(stmt)).scalar_one_or_none()
 
             if not user_stats:
                 user_stats = LeaderboardUserStats(
                     guild_id=ctx.guild.id,
-                    user_id=ctx.author.id,
+                    user_id=user.id,
                     xp=max(min(xp, POSTGRES_MAX_INT), POSTGRES_MIN_INT),
                 )
                 session.add(user_stats)
             else:
                 user_stats.xp = max(min(xp, POSTGRES_MAX_INT), POSTGRES_MIN_INT)
+
+            _, new_level = await self.sync_user_level(
+                user, user_stats, guild_settings.leaderboard_settings
+            )
+            user_stats.level = new_level
 
         embed = discord.Embed(
             title=f"{self.bot.success_emoji} Done",
@@ -547,7 +639,7 @@ class LeaderboardCog(commands.Cog):
         async with get_session() as session:
             stmt = select(LeaderboardUserStats).where(
                 LeaderboardUserStats.guild_id == ctx.guild.id,
-                LeaderboardUserStats.user_id == ctx.author.id,
+                LeaderboardUserStats.user_id == user.id,
             )
             user_stats = (await session.execute(stmt)).scalar_one_or_none()
 
@@ -563,6 +655,11 @@ class LeaderboardCog(commands.Cog):
 
             old_xp = user_stats.xp
             user_stats.xp = min(user_stats.xp + xp, POSTGRES_MAX_INT)
+
+            _, new_level = await self.sync_user_level(
+                user, user_stats, guild_settings.leaderboard_settings
+            )
+            user_stats.level = new_level
 
         embed = discord.Embed(
             title=f"{self.bot.success_emoji} Done",
@@ -611,7 +708,7 @@ class LeaderboardCog(commands.Cog):
         async with get_session() as session:
             stmt = select(LeaderboardUserStats).where(
                 LeaderboardUserStats.guild_id == ctx.guild.id,
-                LeaderboardUserStats.user_id == ctx.author.id,
+                LeaderboardUserStats.user_id == user.id,
             )
             user_stats = (await session.execute(stmt)).scalar_one_or_none()
 
@@ -627,6 +724,11 @@ class LeaderboardCog(commands.Cog):
 
             old_xp = user_stats.xp
             user_stats.xp = max(user_stats.xp - xp, POSTGRES_MIN_INT)
+
+            _, new_level = await self.sync_user_level(
+                user, user_stats, guild_settings.leaderboard_settings
+            )
+            user_stats.level = new_level
 
         embed = discord.Embed(
             title=f"{self.bot.success_emoji} Done",
