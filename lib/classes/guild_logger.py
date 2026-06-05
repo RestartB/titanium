@@ -13,6 +13,7 @@ from sqlalchemy import delete
 from lib.embeds.mod_actions import banned, kicked, muted, unbanned, unmuted, warned
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
+from lib.helpers.shorten import shorten_preserve
 from lib.sql.sql import (
     AutomodAction,
     AutomodRule,
@@ -1476,8 +1477,16 @@ class GuildLogger:
         )
 
         if event.cached_message:
-            embed.add_field(name="Old Content", value=event.cached_message.content, inline=False)
-        embed.add_field(name="New Content", value=event.message.content, inline=False)
+            embed.add_field(
+                name="Old Content",
+                value=shorten_preserve(event.cached_message.content, width=1024),
+                inline=False,
+            )
+        embed.add_field(
+            name="New Content",
+            value=shorten_preserve(event.message.content, width=1024),
+            inline=False,
+        )
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
@@ -1507,7 +1516,7 @@ class GuildLogger:
             if event.cached_message.content:
                 embed.add_field(
                     name="Content",
-                    value=event.cached_message.content,
+                    value=shorten_preserve(event.cached_message.content, width=1024),
                     inline=False,
                 )
 
