@@ -20,6 +20,16 @@ async def send_dm(
     dm_success = True
     dm_error = ""
 
+    if user.bot:
+        await log_error(
+            bot=bot,
+            module=module,
+            guild_id=source_guild.id,
+            error=f"Can't send DM to @{user.name} ({user.id}) (user is a bot)",
+            send_webhook=False,
+        )
+        return False, "Can't send DMs to other bots."
+
     try:
         await user.send(
             embed=embed,

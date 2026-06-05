@@ -231,7 +231,7 @@ class GuildModCaseManager:
         else:
             embed = None
 
-        if embed:
+        if embed and not user.bot:
             dm_success, dm_error = await send_dm(
                 bot=self.bot,
                 embed=embed,
@@ -245,6 +245,9 @@ class GuildModCaseManager:
                 if source == CaseSource.BOUNCER
                 else "Unknown",
             )
+        elif embed and user.bot:
+            dm_success = False
+            dm_error = "Can't send DMs to other bots"
 
         guild_logger = GuildLogger(self.bot, self.guild)
         if action == CaseType.WARN:
@@ -339,14 +342,18 @@ class GuildModCaseManager:
                 )
                 return case, False, "Failed to fetch member for DM notification"
 
-            embed = unmuted_dm(self.bot, member)
-            dm_success, dm_error = await send_dm(
-                bot=self.bot,
-                embed=embed,
-                user=member,
-                source_guild=self.guild,
-                module="Moderation",
-            )
+            if not member.bot:
+                embed = unmuted_dm(self.bot, member)
+                dm_success, dm_error = await send_dm(
+                    bot=self.bot,
+                    embed=embed,
+                    user=member,
+                    source_guild=self.guild,
+                    module="Moderation",
+                )
+            else:
+                dm_success = False
+                dm_error = "Can't send DMs to other bots"
 
             if self.bot.user:
                 guild_logger = GuildLogger(self.bot, self.guild)

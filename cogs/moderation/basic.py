@@ -707,7 +707,7 @@ class ModerationBasicCog(
                     if case:
                         # Close case
                         case, dm_success, dm_error = await manager.close_case(case.id)
-                    else:
+                    elif not member.bot:
                         # Just send DM
                         embed = unmuted_dm(self.bot, member)
                         dm_success, dm_error = await send_dm(
@@ -717,6 +717,9 @@ class ModerationBasicCog(
                             source_guild=ctx.guild,
                             module="Moderation",
                         )
+                    else:
+                        dm_success = False
+                        dm_error = "Can't send DMs to other bots"
 
                 # Send confirmation message
                 await ctx.reply(
