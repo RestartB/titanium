@@ -1123,7 +1123,7 @@ class GuildLogger:
             embed,
         )
 
-    async def member_leave(self, member: discord.Member) -> None:
+    async def member_leave(self, member: discord.User | discord.Member) -> None:
         await self._ensure_config()
         if not self._exists_and_enabled("member_leave"):
             return

@@ -55,6 +55,7 @@ class RepTestCog(commands.Cog):
             not message.reference
             or not message.reference.resolved
             or isinstance(message.reference.resolved, discord.DeletedReferencedMessage)
+            or message.reference.type != discord.MessageReferenceType.reply
         ):
             return
 
@@ -70,7 +71,7 @@ class RepTestCog(commands.Cog):
             return
 
         view = RepView(bot=self.bot, target_member=message.reference.resolved.author)
-        await message.reply(view=view, mention_author=False)
+        await message.reply(view=view, mention_author=False, delete_after=60)
 
 
 async def setup(bot: TitaniumBot) -> None:

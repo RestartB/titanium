@@ -2,9 +2,9 @@ import logging
 import time
 from typing import TYPE_CHECKING
 
-import aiohttp
 import discord
 from discord.ext import commands, tasks
+from discord.http import Route
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -90,25 +90,17 @@ class StatsUpdateCog(commands.Cog):
     # Measure API latency task
     @tasks.loop(minutes=1)
     async def measure_api_latency(self) -> None:
-        assert self.bot.http.token, "No HTTP token"
+        try:
+            start = time.perf_counter()
+            r = Route("GET", "/users/@me")
 
-        async with aiohttp.ClientSession() as session:
-            try:
-                start = time.perf_counter()
-                async with session.get(
-                    "https://discord.com/api/v10/users/@me",
-                    headers={
-                        "Content-Type": "Application/json",
-                        "Authorization": "Bot " + self.bot.http.token,
-                    },
-                ) as request:
-                    request.raise_for_status()
+            await self.bot.http.request(r)
+            delta = time.perf_counter() - start
 
-                    delta = time.perf_counter() - start
-                    self.bot.api_latency = delta
-            except Exception as e:
-                self.bot.api_latency = 0
-                logging.exception(e)
+            self.bot.api_latency = delta
+        except Exception as e:
+            self.bot.api_latency = 0
+            logging.exception(e)
 
 
 async def setup(bot: TitaniumBot):

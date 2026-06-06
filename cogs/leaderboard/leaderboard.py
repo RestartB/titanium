@@ -555,8 +555,8 @@ class LeaderboardCog(commands.Cog):
 
     # Member leave event
     @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member) -> None:
-        guild_settings = await self.bot.fetch_guild_config(member.guild.id)
+    async def on_raw_member_remove(self, payload: discord.RawMemberRemoveEvent) -> None:
+        guild_settings = await self.bot.fetch_guild_config(payload.guild_id)
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -568,8 +568,8 @@ class LeaderboardCog(commands.Cog):
             stmt = (
                 select(LeaderboardUserStats)
                 .where(
-                    LeaderboardUserStats.guild_id == member.guild.id,
-                    LeaderboardUserStats.user_id == member.id,
+                    LeaderboardUserStats.guild_id == payload.guild_id,
+                    LeaderboardUserStats.user_id == payload.user.id,
                 )
                 .limit(1)
             )

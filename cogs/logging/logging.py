@@ -118,9 +118,13 @@ class EventLoggingCog(commands.Cog):
         await guild_logger.member_join(member)
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member) -> None:
-        guild_logger = GuildLogger(self.bot, member.guild)
-        await guild_logger.member_leave(member)
+    async def on_raw_member_remove(self, payload: discord.RawMemberRemoveEvent) -> None:
+        guild = self.bot.get_guild(payload.guild_id)
+        if not guild:
+            return
+
+        guild_logger = GuildLogger(self.bot, guild)
+        await guild_logger.member_leave(payload.user)
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
