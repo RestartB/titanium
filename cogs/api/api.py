@@ -116,8 +116,10 @@ class APICog(commands.Cog):
     @web.middleware
     async def auth_middleware(self, request: web.Request, handler) -> web.Response:
         # Allow public endpoints / no token set
-        if request.path in ["/", "/ping", "/status", "/stats", "/info"] or not self.api_secret:
+        if request.path in ["/", "/info", "/ping", "/status", "/stats"] or not self.api_secret:
             return await handler(request)
+
+        await self.bot.wait_until_ready()
 
         auth_header = request.headers.get("Authorization")
         if auth_header != f"Bearer {self.api_secret}":
@@ -258,7 +260,8 @@ class APICog(commands.Cog):
         )
 
     async def stats(self, request: web.Request) -> web.Response:
-        await self.bot.wait_until_ready()
+        if not self.bot.is_ready():
+            return web.Response(status=503)
 
         return web.json_response(
             {
@@ -1166,8 +1169,6 @@ class APICog(commands.Cog):
         )
 
     async def set_guild_perms(self, request: web.Request) -> web.Response:
-        await self.bot.wait_until_ready()
-
         guild_id = request.match_info.get("guild_id")
         if not guild_id or not guild_id.isdigit():
             return web.json_response({"error": "guild_id required"}, status=400)
@@ -1330,8 +1331,6 @@ class APICog(commands.Cog):
         )
 
     async def update_guild_settings(self, request: web.Request) -> web.Response:
-        await self.bot.wait_until_ready()
-
         guild_id = request.match_info.get("guild_id")
         if not guild_id or not guild_id.isdigit():
             return web.json_response({"error": "guild_id required"}, status=400)
@@ -1392,8 +1391,6 @@ class APICog(commands.Cog):
         return web.Response(status=204)
 
     async def module_get(self, request: web.Request) -> web.Response:
-        await self.bot.wait_until_ready()
-
         guild_id = request.match_info.get("guild_id")
         module_name = request.match_info.get("module_name")
         module_name = module_name.lower() if module_name else None
@@ -1434,8 +1431,6 @@ class APICog(commands.Cog):
             return web.json_response({"error": "Module not found"}, status=404)
 
     async def module_update(self, request: web.Request) -> web.Response:
-        await self.bot.wait_until_ready()
-
         guild_id_str = request.match_info.get("guild_id")
         guild_id = int(guild_id_str) if guild_id_str and guild_id_str.isdigit() else None
 
