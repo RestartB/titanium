@@ -373,7 +373,7 @@ class LeaderboardConfigModel(BaseModel):
 
     vc_enabled: bool
     vc_mode: LeaderboardVcCalcType
-    vc_delay: int = Field(0, ge=0, le=7)
+    vc_delay: int = Field(0, ge=0, le=1440)
     vc_base_xp: Optional[int] = None
     vc_min_xp: Optional[int] = None
     vc_max_xp: Optional[int] = None
