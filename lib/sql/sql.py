@@ -740,25 +740,50 @@ class GameStat(Base):
     won: Mapped[bool] = MappedColumn(Boolean, nullable=False)
 
 
+class Reminder(Base):
+    __tablename__ = "reminders"
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=True, index=True)
+    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
+    dm: Mapped[bool] = MappedColumn(Boolean, nullable=False)
+    time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), index=True, nullable=False)
+
+    content: Mapped[str] = MappedColumn(String(), nullable=False)
+    scheduled_task: Mapped[ScheduledTask] = relationship(
+        "ScheduledTask", back_populates="reminder", cascade="all, delete-orphan"
+    )
+
+
 class ScheduledTask(Base):
     __tablename__ = "scheduled_tasks"
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    time_scheduled: Mapped[datetime] = MappedColumn(DateTime(timezone=True), index=True)
     type: Mapped[EventType] = MappedColumn(Enum(EventType), nullable=False)
+
     guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     role_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     message_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+
+    # moderation
     case_id: Mapped[str] = MappedColumn(
         String(length=8), ForeignKey("mod_cases.id", ondelete="CASCADE"), nullable=True
+    )
+    case: Mapped["ModCase"] = relationship(
+        "ModCase", back_populates="scheduled_tasks", uselist=False
     )
     duration: Mapped[int] = MappedColumn(
         BigInteger, nullable=True
     )  # for refresh_mute - how long we need to extend mute by
-    case: Mapped["ModCase"] = relationship(
-        "ModCase", back_populates="scheduled_tasks", uselist=False
+
+    # reminders
+    reminder: Mapped["Reminder"] = relationship(
+        "Reminder", back_populates="scheduled_task", uselist=False
     )
-    time_scheduled: Mapped[datetime] = MappedColumn(DateTime(timezone=True), index=True)
 
 
 class AvailableWebhook(Base):

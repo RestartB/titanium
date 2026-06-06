@@ -6,3 +6,4 @@ class EventType(StrEnum):
     PERMA_MUTE_REFRESH = "perma_mute_refresh"
     CLOSE_MUTE = "close_mute"
     UNBAN = "unban"
+    REMINDER = "reminder"
