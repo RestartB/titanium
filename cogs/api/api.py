@@ -2023,6 +2023,12 @@ class APICog(commands.Cog):
                 existing_config.min_xp = validated_config.min_xp
                 existing_config.max_xp = validated_config.max_xp
                 existing_config.xp_mult = validated_config.xp_mult
+                existing_config.vc_enabled = validated_config.vc_enabled
+                existing_config.vc_mode = validated_config.vc_mode
+                existing_config.vc_delay = validated_config.vc_delay
+                existing_config.vc_base_xp = validated_config.vc_base_xp
+                existing_config.vc_min_xp = validated_config.vc_min_xp
+                existing_config.vc_max_xp = validated_config.vc_max_xp
                 existing_config.ignored_channels = [
                     int(channel) for channel in validated_config.ignored_channels
                 ]

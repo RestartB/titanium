@@ -31,7 +31,7 @@ from sqlalchemy.orm import Mapped, MappedColumn, declarative_base, relationship
 from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
 from lib.enums.games import GameTypes
-from lib.enums.leaderboard import LeaderboardCalcType
+from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
 from lib.enums.moderation import CaseType
 from lib.enums.scheduled_events import EventType
 from lib.enums.server_counters import ServerCounterType
@@ -580,6 +580,15 @@ class GuildLeaderboardSettings(Base):
     max_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("25"))
     xp_mult: Mapped[Optional[float]] = MappedColumn(Float, server_default=text("1.0"))
 
+    vc_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    vc_mode: Mapped[LeaderboardVcCalcType] = MappedColumn(
+        Enum(LeaderboardVcCalcType), nullable=False, server_default=text("'FIXED'")
+    )
+    vc_delay: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
+    vc_base_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("10"))
+    vc_min_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("15"))
+    vc_max_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("25"))
+
     ignored_roles: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
@@ -637,6 +646,7 @@ class LeaderboardUserStats(Base):
     word_count: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
     attachment_count: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
     explicit_count: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
+    vc_minutes: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
 
 
 class GuildServerCounterSettings(Base):

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, StringConstraints, field_validator, model
 
 from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
-from lib.enums.leaderboard import LeaderboardCalcType
+from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
 from lib.enums.server_counters import ServerCounterType
 from lib.sql.sql import (
     AutomodAction,
@@ -370,6 +370,13 @@ class LeaderboardConfigModel(BaseModel):
     min_xp: Optional[int] = None
     max_xp: Optional[int] = None
     xp_mult: Optional[float] = None
+
+    vc_enabled: bool
+    vc_mode: LeaderboardVcCalcType
+    vc_delay: int = Field(0, ge=0, le=7)
+    vc_base_xp: Optional[int] = None
+    vc_min_xp: Optional[int] = None
+    vc_max_xp: Optional[int] = None
 
     ignored_roles: list[str] = Field(default_factory=list, max_length=100)
     ignored_channels: list[str] = Field(default_factory=list, max_length=100)

@@ -1,9 +1,11 @@
+import asyncio
 import logging
 import math
 import random
 import re
+from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Awaitable
 
 import discord
 from discord import app_commands
@@ -12,11 +14,12 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
 from lib.embeds.leaderboard import generate_lb_embeds
-from lib.enums.leaderboard import LeaderboardCalcType
+from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
+from lib.helpers.cache import get_or_fetch_member
 from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.helpers.hybrid import handle_group_command_not_found
 from lib.helpers.log_error import log_error
-from lib.sql.sql import LeaderboardUserStats, get_session
+from lib.sql.sql import GuildLeaderboardSettings, LeaderboardUserStats, get_session
 from lib.views.pagination import LeaderboardReloadPageView
 
 if TYPE_CHECKING:
@@ -26,6 +29,12 @@ POSTGRES_MAX_INT = 9223372036854775807
 POSTGRES_MIN_INT = -9223372036854775808
 
 
+@dataclass
+class UserVoiceTimes:
+    start_date: datetime
+    last_check: datetime
+
+
 class LeaderboardCog(commands.Cog):
     """Monitors messages and processes leaderboard"""
 
@@ -33,16 +42,85 @@ class LeaderboardCog(commands.Cog):
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("leaderboard")
         self.member_last_trigger: dict[int, dict[int, datetime]] = {}
+        self.voice_states: dict[int, dict[int, UserVoiceTimes]] = {}
 
         self.take_daily_snapshots.start()
+        self.check_voice.start()
         add_global_aliases(self, bot)
+
+    async def cog_load(self) -> None:
+        asyncio.create_task(self.get_initial_vc_state())
 
     async def cog_unload(self) -> None:
         self.take_daily_snapshots.cancel()
+        self.check_voice.cancel()
         remove_global_aliases(self, self.bot)
 
+    async def get_initial_vc_state(self) -> None:
+        await self.bot.wait_until_ready()
+        self.logger.info("Checking guild VC states...")
+
+        for guild in self.bot.guilds:
+            self.logger.debug(f"Checking guild {guild.id}...")
+            config = await self.bot.fetch_guild_config(guild.id)
+            if (
+                not config
+                or not config.leaderboard_enabled
+                or not config.leaderboard_settings.vc_enabled
+            ):
+                self.logger.debug(f"Leaderboard disabled in {guild.id}")
+                continue
+
+            now = discord.utils.utcnow()
+            for channel in guild.channels:
+                if not isinstance(channel, (discord.VoiceChannel, discord.StageChannel)):
+                    continue
+
+                self.logger.debug(f"Checking channel {channel.name}...")
+                for voice_state in channel.voice_states:
+                    if voice_state in self.voice_states.setdefault(guild.id, {}):
+                        continue
+                    self.voice_states.setdefault(guild.id, {})[voice_state] = UserVoiceTimes(
+                        start_date=now, last_check=now
+                    )
+
+                self.logger.debug(
+                    f"{len(self.voice_states.get(guild.id, []))} user VC states being tracked in {guild.id}"
+                )
+
+        self.logger.info(f"Done. Tracking {len(self.voice_states)} guilds.")
+
+    # Snapshot task
+    @tasks.loop(hours=24)
+    async def take_daily_snapshots(self) -> None:
+        guild_ids = []
+        for guild in self.bot.guilds:
+            config = await self.bot.fetch_guild_config(guild.id, create_config=False)
+            if not config or not config.leaderboard_enabled:
+                continue
+            guild_ids.append(guild.id)
+
+        for guild_id in guild_ids:
+            async with get_session() as session:
+                stmt = (
+                    select(LeaderboardUserStats)
+                    .where(LeaderboardUserStats.guild_id == guild_id)
+                    .order_by(LeaderboardUserStats.xp.desc())
+                )
+                result = await session.execute(stmt)
+                all_stats = result.scalars().all()
+
+                for i, user_stat in enumerate(all_stats, start=1):
+                    snapshots = user_stat.daily_snapshots or []
+                    snapshots.append(i)
+
+                    user_stat.daily_snapshots = snapshots[-30:]
+
     async def sync_user_level(
-        self, member: discord.Member, user_stats: LeaderboardUserStats, lb_settings
+        self,
+        member: discord.Member,
+        user_stats: LeaderboardUserStats,
+        lb_settings: GuildLeaderboardSettings,
     ) -> tuple[int, int]:
         levels = lb_settings.levels
         levels.sort(key=lambda level: level.xp)
@@ -129,31 +207,187 @@ class LeaderboardCog(commands.Cog):
 
         return old_level, new_level
 
-    # Snapshot task
-    @tasks.loop(hours=24)
-    async def take_daily_snapshots(self) -> None:
-        guild_ids = []
-        for guild in self.bot.guilds:
-            config = await self.bot.fetch_guild_config(guild.id, create_config=False)
-            if not config or not config.leaderboard_enabled:
-                continue
-            guild_ids.append(guild.id)
+    async def handle_voice_xp(self, member: discord.Member, start_time: datetime) -> None:
+        # dropped out of tracking
+        if (
+            member.guild.id not in self.voice_states
+            or member.id not in self.voice_states[member.guild.id]
+        ):
+            return
 
-        for guild_id in guild_ids:
-            async with get_session() as session:
-                stmt = (
-                    select(LeaderboardUserStats)
-                    .where(LeaderboardUserStats.guild_id == guild_id)
-                    .order_by(LeaderboardUserStats.xp.desc())
+        # stop tracking as they have opted out
+        if member.id in self.bot.opt_out and member.id in self.voice_states[member.guild.id]:
+            self.logger.debug(f"User has opted out: {member.id}")
+            del self.voice_states[member.guild.id][member.id]
+            return
+
+        # stop tracking as leaderboard is disabled
+        guild_settings = await self.bot.fetch_guild_config(member.guild.id)
+        if (
+            not guild_settings
+            or not guild_settings.leaderboard_settings
+            or not guild_settings.leaderboard_enabled
+            or not guild_settings.leaderboard_settings.vc_enabled
+        ):
+            self.logger.debug(f"Leaderboard disabled for guild: {member.guild.id}")
+            del self.voice_states[member.guild.id]
+            return
+
+        lb_settings = guild_settings.leaderboard_settings
+
+        if any(role.id in lb_settings.ignored_roles for role in member.roles):
+            self.logger.debug(f"Tracking from member with ignored role: {member.id}")
+            return
+
+        async with get_session() as session:
+            stmt = select(LeaderboardUserStats).where(
+                LeaderboardUserStats.guild_id == member.guild.id,
+                LeaderboardUserStats.user_id == member.id,
+            )
+            result = await session.execute(stmt)
+            user_stats = result.scalar_one_or_none()
+
+            if not user_stats:
+                user_stats = LeaderboardUserStats(guild_id=member.guild.id, user_id=member.id)
+                session.add(user_stats)
+                await session.commit()
+
+            user_stats.vc_minutes += 1
+
+            if (discord.utils.utcnow() - start_time).total_seconds() < 60 * lb_settings.vc_delay:
+                self.logger.debug(f"Delay not met yet: {member.id}")
+                return
+
+            to_assign = 0
+            if lb_settings.vc_mode == LeaderboardVcCalcType.FIXED and lb_settings.vc_base_xp:
+                to_assign = lb_settings.vc_base_xp
+            elif (
+                lb_settings.vc_mode == LeaderboardVcCalcType.RANDOM
+                and lb_settings.vc_min_xp
+                and lb_settings.vc_max_xp
+            ):
+                to_assign = random.randint(lb_settings.vc_min_xp, lb_settings.vc_max_xp)
+
+            user_stats.xp = min(user_stats.xp + to_assign, POSTGRES_MAX_INT)
+
+            levels = guild_settings.leaderboard_settings.levels
+            levels.sort(key=lambda level: level.xp)
+
+            old_level, new_level = await self.sync_user_level(member, user_stats, lb_settings)
+            user_stats.level = new_level
+
+        if (
+            lb_settings.levelup_notifications
+            and lb_settings.notification_channel
+            and new_level > old_level
+        ):
+            try:
+                channel = member.guild.get_channel(lb_settings.notification_channel)
+
+                if not channel:
+                    self.logger.debug(f"Notification channel not found for guild {member.guild.id}")
+                    return
+
+                if not isinstance(channel, discord.abc.Messageable):
+                    self.logger.debug(
+                        f"Notification channel not messageable in guild {member.guild.id}"
+                    )
+                    return
+
+                await channel.send(
+                    content=member.mention if lb_settings.notification_ping else "",
+                    embed=discord.Embed(
+                        description=f"🎉 {member.mention} has leveled up to **level {user_stats.level}!**",
+                        colour=discord.Colour.green(),
+                    ),
                 )
-                result = await session.execute(stmt)
-                all_stats = result.scalars().all()
+            except discord.Forbidden as e:
+                await log_error(
+                    bot=self.bot,
+                    module="Leaderboard",
+                    guild_id=member.guild.id,
+                    error=f"Titanium was not allowed to send leaderboard notification in #{channel.name if channel and not isinstance(channel, (discord.PartialMessageable, discord.DMChannel)) else 'Unknown'} ({channel.id if channel else 'unknown'})",
+                    details=str(e.text),
+                    exc=e,
+                )
+            except discord.HTTPException as e:
+                await log_error(
+                    bot=self.bot,
+                    module="Leaderboard",
+                    guild_id=member.guild.id,
+                    error=f"Unknown Discord error while sending leaderboard notification in #{channel.name if channel and not isinstance(channel, (discord.PartialMessageable, discord.DMChannel)) else 'Unknown'} ({channel.id if channel else 'unknown'})",
+                    details=str(e.text),
+                    exc=e,
+                )
 
-                for i, user_stat in enumerate(all_stats, start=1):
-                    snapshots = user_stat.daily_snapshots or []
-                    snapshots.append(i)
+    # Check voice status every second
+    @tasks.loop(seconds=1)
+    async def check_voice(self) -> None:
+        now = discord.utils.utcnow()
 
-                    user_stat.daily_snapshots = snapshots[-30:]
+        to_run: list[Awaitable[None]] = []
+        for guild_id, states in list(self.voice_states.items()):
+            guild = self.bot.get_guild(guild_id)
+            if not guild:
+                self.logger.debug(f"Voice guild not found: {guild_id}")
+                del self.voice_states[guild_id]
+                continue
+
+            states = self.voice_states[guild_id]
+
+            for user_id, user in list(states.items()):
+                if (now - user.last_check).total_seconds() < 60:
+                    self.logger.debug(f"60 seconds not passed: {user_id}")
+                    continue
+
+                self.voice_states[guild_id][user_id].last_check = now
+                member = await get_or_fetch_member(self.bot, guild, user_id)
+                if not member:
+                    self.logger.debug(f"Voice member not found: {user_id}")
+                    del self.voice_states[guild_id][user_id]
+                    continue
+
+                to_run.append(self.handle_voice_xp(member, user.start_date))
+
+        self.logger.debug(f"Running {len(to_run)} checks")
+        await asyncio.gather(*to_run)
+
+    # Voice change event
+    @commands.Cog.listener()
+    async def on_voice_state_update(
+        self,
+        member: discord.Member,
+        before: discord.VoiceState,
+        after: discord.VoiceState,
+    ) -> None:
+        now = discord.utils.utcnow()
+
+        # opted out / bot
+        if member.id in self.bot.opt_out or member.bot:
+            return
+
+        if (
+            not before.channel
+            and after.channel
+            and member.id not in self.voice_states.setdefault(member.guild.id, {})
+        ):
+            # start tracking
+            self.voice_states.setdefault(member.guild.id, {})[member.id] = UserVoiceTimes(
+                start_date=now, last_check=now
+            )
+        elif before.channel and not after.channel and member.guild.id in self.voice_states:
+            # stop tracking
+            self.voice_states[member.guild.id].pop(member.id, None)
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild: discord.Guild):
+        # guild isn't available, let's not touch it
+        # could be a discord outage sending false events
+        if guild.unavailable:
+            return
+
+        if guild.id in self.voice_states:
+            del self.voice_states[guild.id]
 
     # Message event
     @commands.Cog.listener()
@@ -384,7 +618,7 @@ class LeaderboardCog(commands.Cog):
         async with get_session() as session:
             stmt = (
                 select(LeaderboardUserStats)
-                .where(LeaderboardUserStats.guild_id == ctx.guild.id)
+                .where(LeaderboardUserStats.guild_id == ctx.guild.id, LeaderboardUserStats.xp != 0)
                 .order_by(LeaderboardUserStats.xp.desc())
                 .limit(1000)
             )

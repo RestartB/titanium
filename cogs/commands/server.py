@@ -294,7 +294,10 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         async with get_session() as session:
             stmt = (
                 select(LeaderboardUserStats)
-                .where(LeaderboardUserStats.guild_id == ctx.guild.id)
+                .where(
+                    LeaderboardUserStats.guild_id == ctx.guild.id,
+                    LeaderboardUserStats.word_count > 0,
+                )
                 .order_by(LeaderboardUserStats.word_count.desc())
                 .limit(1000)
             )
@@ -372,7 +375,10 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         async with get_session() as session:
             stmt = (
                 select(LeaderboardUserStats)
-                .where(LeaderboardUserStats.guild_id == ctx.guild.id)
+                .where(
+                    LeaderboardUserStats.guild_id == ctx.guild.id,
+                    LeaderboardUserStats.attachment_count > 0,
+                )
                 .order_by(LeaderboardUserStats.attachment_count.desc())
                 .limit(1000)
             )
@@ -403,6 +409,88 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_description="No users have any recorded attachments yet.",
                 sort_type=LeaderboardUserStats.attachment_count,
                 reload_type="attachment_count",
+                error_emoji=str(self.bot.error_emoji),
+            )
+
+            if len(pages) > 1:
+                await ctx.reply(embed=pages[0], view=view)
+            else:
+                await ctx.reply(embed=pages[0])
+
+    # VC leaderboard command
+    @server_group.command(
+        name="vc",
+        aliases=["voice", "voice-chat"],
+        description="Get the amount of time that users have spent in VC in the server.",
+    )
+    @commands.guild_only()
+    @commands.cooldown(1, 5)
+    async def vc_lb_command(self, ctx: commands.Context["TitaniumBot"]):
+        if not ctx.guild:
+            return
+
+        await ctx.defer()
+
+        if ctx.author.id in self.bot.opt_out:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Opted Out",
+                description="You have opted out of data collection and cannot use leaderboard features.",
+                colour=discord.Colour.red(),
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+        if (
+            not guild_settings
+            or not guild_settings.leaderboard_settings
+            or not guild_settings.leaderboard_enabled
+        ):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Leaderboard Disabled",
+                description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
+                colour=discord.Colour.red(),
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        async with get_session() as session:
+            stmt = (
+                select(LeaderboardUserStats)
+                .where(
+                    LeaderboardUserStats.guild_id == ctx.guild.id,
+                    LeaderboardUserStats.vc_minutes > 0,
+                )
+                .order_by(LeaderboardUserStats.vc_minutes.desc())
+                .limit(1000)
+            )
+            result = await session.execute(stmt)
+            top_users = result.scalars().all()
+
+            if not top_users:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} No Data",
+                    description="No users have any recorded VC time yet.",
+                    colour=discord.Colour.red(),
+                )
+                await ctx.reply(embed=embed)
+                return
+
+            pages = generate_lb_embeds(
+                guild=ctx.guild,
+                author=ctx.author,
+                top_users=top_users,
+                title="Voice Chat Time",
+                attr="vc_minutes",
+                show_xp_label=False,
+            )
+            view = LeaderboardReloadPageView(
+                embeds=pages,
+                timeout=240,
+                title="Voice Chat Time",
+                error_description="No users have any recorded VC time yet.",
+                sort_type=LeaderboardUserStats.vc_minutes,
+                reload_type="vc_minutes",
                 error_emoji=str(self.bot.error_emoji),
             )
 
@@ -450,7 +538,10 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         async with get_session() as session:
             stmt = (
                 select(LeaderboardUserStats)
-                .where(LeaderboardUserStats.guild_id == ctx.guild.id)
+                .where(
+                    LeaderboardUserStats.guild_id == ctx.guild.id,
+                    LeaderboardUserStats.explicit_count > 0,
+                )
                 .order_by(LeaderboardUserStats.explicit_count.desc())
                 .limit(1000)
             )

@@ -2,6 +2,7 @@ from typing import Sequence
 
 import discord
 
+from lib.helpers.duration import duration_to_timestring
 from lib.sql.sql import LeaderboardUserStats
 
 
@@ -27,7 +28,12 @@ def generate_lb_embeds(
     embed.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
 
     for i, user_stats in enumerate(top_users, start=1):
-        data_str = f"{getattr(user_stats, attr):,}{'XP' if show_xp_label else ''}{f', Level {user_stats.level:,}' if show_levels else ''}"
+        value_str = (
+            duration_to_timestring(getattr(user_stats, attr, 0))
+            if attr == "vc_minutes"
+            else f"{getattr(user_stats, attr):,}"
+        )
+        data_str = f"{value_str}{'XP' if show_xp_label else ''}{f', Level {user_stats.level:,}' if show_levels else ''}"
 
         if embed.description:
             embed.description += f"\n{i}. <@{user_stats.user_id}> - {data_str}"

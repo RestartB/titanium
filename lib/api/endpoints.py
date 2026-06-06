@@ -6,7 +6,7 @@ from discord import Guild
 if TYPE_CHECKING:
     from main import TitaniumBot
 
-from lib.enums.leaderboard import LeaderboardCalcType
+from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
 
 
 def confessions_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
@@ -223,6 +223,12 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
                 "min_xp": 15,
                 "max_xp": 25,
                 "xp_mult": 1.0,
+                "vc_enabled": False,
+                "vc_mode": LeaderboardVcCalcType.FIXED.value,
+                "vc_delay": 0,
+                "vc_base_xp": 10,
+                "vc_min_xp": 15,
+                "vc_max_xp": 25,
                 "ignored_roles": [],
                 "ignored_channels": [],
                 "levelup_notifications": True,
@@ -247,6 +253,12 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
             "min_xp": lb_settings.min_xp,
             "max_xp": lb_settings.max_xp,
             "xp_mult": lb_settings.xp_mult,
+            "vc_enabled": lb_settings.vc_enabled,
+            "vc_mode": lb_settings.vc_mode,
+            "vc_delay": lb_settings.vc_delay,
+            "vc_base_xp": lb_settings.vc_base_xp,
+            "vc_min_xp": lb_settings.vc_min_xp,
+            "vc_max_xp": lb_settings.vc_max_xp,
             "ignored_roles": [str(role_id) for role_id in lb_settings.ignored_roles],
             "ignored_channels": [str(channel_id) for channel_id in lb_settings.ignored_channels],
             "levelup_notifications": lb_settings.levelup_notifications,

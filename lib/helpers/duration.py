@@ -44,17 +44,21 @@ class DurationConverter(commands.Converter):
 
 
 def duration_to_timestring(
-    start: datetime | Column[datetime] | timedelta, end: datetime | Column[datetime] | None = None
+    start: datetime | Column[datetime] | timedelta | int,
+    end: datetime | Column[datetime] | None = None,
 ) -> str:
-    if isinstance(start, timedelta):
-        delta = start
-    elif end is not None:
-        delta = end - start
-    else:
-        raise ValueError("Start and end, or delta must be provided")
-
-    seconds = delta.total_seconds()
     string = ""
+    if isinstance(start, int):
+        seconds = start * 60
+    else:
+        if isinstance(start, timedelta):
+            delta = start
+        elif end is not None:
+            delta = end - start
+        else:
+            raise ValueError("Start and end, or delta must be provided")
+
+        seconds = delta.total_seconds()
 
     if seconds >= 31536000:  # Year
         string += f"{int(seconds // 31536000)}y "
