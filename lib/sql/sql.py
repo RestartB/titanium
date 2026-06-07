@@ -781,6 +781,9 @@ class ScheduledTask(Base):
     )  # for refresh_mute - how long we need to extend mute by
 
     # reminders
+    reminder_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("reminders.id", ondelete="CASCADE"), nullable=True
+    )
     reminder: Mapped["Reminder"] = relationship(
         "Reminder", back_populates="scheduled_task", uselist=False
     )
