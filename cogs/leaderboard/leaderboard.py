@@ -4,7 +4,7 @@ import math
 import random
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, time, timezone
 from typing import TYPE_CHECKING, Awaitable
 
 import discord
@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 POSTGRES_MAX_INT = 9223372036854775807
 POSTGRES_MIN_INT = -9223372036854775808
+DAILY_SNAPSHOT_TIME = time(hour=0, minute=0, tzinfo=timezone.utc)
 
 
 @dataclass
@@ -91,8 +92,10 @@ class LeaderboardCog(commands.Cog):
         self.logger.info(f"Done. Tracking {len(self.voice_states)} guilds.")
 
     # Snapshot task
-    @tasks.loop(hours=24)
+    @tasks.loop(time=DAILY_SNAPSHOT_TIME)
     async def take_daily_snapshots(self) -> None:
+        await self.bot.wait_until_ready()
+
         guild_ids = []
         for guild in self.bot.guilds:
             config = await self.bot.fetch_guild_config(guild.id, create_config=False)
@@ -272,9 +275,6 @@ class LeaderboardCog(commands.Cog):
                 to_assign = random.randint(lb_settings.vc_min_xp, lb_settings.vc_max_xp)
 
             user_stats.xp = min(user_stats.xp + to_assign, POSTGRES_MAX_INT)
-
-            levels = guild_settings.leaderboard_settings.levels
-            levels.sort(key=lambda level: level.xp)
 
             old_level, new_level = await self.sync_user_level(member, user_stats, lb_settings)
             user_stats.level = new_level
@@ -494,9 +494,6 @@ class LeaderboardCog(commands.Cog):
                 to_assign = int(max(min(xp_mult * math.sqrt(length), max_xp), min_xp))
 
             user_stats.xp = min(user_stats.xp + to_assign, POSTGRES_MAX_INT)
-
-            levels = guild_settings.leaderboard_settings.levels
-            levels.sort(key=lambda level: level.xp)
 
             old_level, new_level = await self.sync_user_level(
                 message.author, user_stats, lb_settings
