@@ -17,6 +17,7 @@ class StatsUpdateCog(commands.Cog):
         self.bot = bot
         self.current_status: int = -1
 
+    async def cog_load(self) -> None:
         # Start tasks
         self.info_update.start()
         self.status_update.start()

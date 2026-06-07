@@ -21,6 +21,7 @@ class ServerCountersCog(commands.Cog):
         self.bot = bot
         self.logger = logging.getLogger("counters")
 
+    async def cog_load(self) -> None:
         # Start tasks
         self.channel_update.start()
 

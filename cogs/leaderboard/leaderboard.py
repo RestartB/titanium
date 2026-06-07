@@ -43,18 +43,22 @@ class LeaderboardCog(commands.Cog):
         self.logger: logging.Logger = logging.getLogger("leaderboard")
         self.member_last_trigger: dict[int, dict[int, datetime]] = {}
         self.voice_states: dict[int, dict[int, UserVoiceTimes]] = {}
-
-        self.take_daily_snapshots.start()
-        self.check_voice.start()
-        add_global_aliases(self, bot)
+        self.initial_vc_state_task: asyncio.Task[None] | None = None
 
     async def cog_load(self) -> None:
-        asyncio.create_task(self.get_initial_vc_state())
+        self.take_daily_snapshots.start()
+        self.check_voice.start()
+        add_global_aliases(self, self.bot)
+
+        self.initial_vc_state_task = asyncio.create_task(self.get_initial_vc_state())
 
     async def cog_unload(self) -> None:
         self.take_daily_snapshots.cancel()
         self.check_voice.cancel()
         remove_global_aliases(self, self.bot)
+
+        if self.initial_vc_state_task:
+            self.initial_vc_state_task.cancel()
 
     async def get_initial_vc_state(self) -> None:
         await self.bot.wait_until_ready()
@@ -63,11 +67,7 @@ class LeaderboardCog(commands.Cog):
         for guild in self.bot.guilds:
             self.logger.debug(f"Checking guild {guild.id}...")
             config = await self.bot.fetch_guild_config(guild.id)
-            if (
-                not config
-                or not config.leaderboard_enabled
-                or not config.leaderboard_settings.vc_enabled
-            ):
+            if not config or not config.leaderboard_enabled:
                 self.logger.debug(f"Leaderboard disabled in {guild.id}")
                 continue
 
@@ -227,7 +227,6 @@ class LeaderboardCog(commands.Cog):
             not guild_settings
             or not guild_settings.leaderboard_settings
             or not guild_settings.leaderboard_enabled
-            or not guild_settings.leaderboard_settings.vc_enabled
         ):
             self.logger.debug(f"Leaderboard disabled for guild: {member.guild.id}")
             del self.voice_states[member.guild.id]
@@ -253,6 +252,10 @@ class LeaderboardCog(commands.Cog):
                 await session.commit()
 
             user_stats.vc_minutes += 1
+
+            if not lb_settings.vc_enabled:
+                self.logger.debug(f"VC XP not enabled for guild: {member.guild.id}")
+                return
 
             if (discord.utils.utcnow() - start_time).total_seconds() < 60 * lb_settings.vc_delay:
                 self.logger.debug(f"Delay not met yet: {member.id}")

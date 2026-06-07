@@ -18,6 +18,7 @@ class DataRetention(commands.Cog):
         self.bot = bot
         self.logger = logging.getLogger("db")
 
+    async def cog_load(self) -> None:
         self.left_server_check.start()
 
     async def cog_unload(self) -> None:

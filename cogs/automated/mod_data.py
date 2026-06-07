@@ -21,6 +21,7 @@ class BadLinkFetcherCog(commands.Cog):
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("links")
 
+    async def cog_load(self) -> None:
         # Start tasks
         self.malicious_update.start()
         self.phishing_update.start()

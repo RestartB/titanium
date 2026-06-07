@@ -29,8 +29,9 @@ class ScheduledTasksCog(commands.Cog):
 
         self.task_queue: asyncio.Queue[ScheduledTask] = asyncio.Queue()
 
+    async def cog_load(self) -> None:
         # Start workers
-        for i in range(3):
+        for _ in range(3):
             self.bot.loop.create_task(self.queue_worker())
 
         self.task_fetcher.start()
