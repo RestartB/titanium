@@ -7,9 +7,11 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands, tasks
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from lib.classes.case_manager import GuildModCaseManager
 from lib.enums.scheduled_events import EventType
+from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.sql.sql import ScheduledTask, get_session
 
@@ -136,7 +138,7 @@ class ScheduledTasksCog(commands.Cog):
                     error=f"Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})",
                     exc=e,
                 )
-        elif task.type == EventType.CLOSE_MUTE:
+        elif task.type == EventType.CLOSE_MUTE and task.case_id:
             # Close mute cases task
             guild = self.bot.get_guild(task.guild_id)
 
@@ -161,7 +163,7 @@ class ScheduledTasksCog(commands.Cog):
                     error=f"Failed to send unmute info for {task.user_id} in guild {guild.name} ({guild.id})",
                     exc=e,
                 )
-        elif task.type == EventType.UNBAN:
+        elif task.type == EventType.UNBAN and task.case_id:
             # Auto unban task
             guild = self.bot.get_guild(task.guild_id)
             if not guild:
@@ -186,6 +188,79 @@ class ScheduledTasksCog(commands.Cog):
                     error=f"Failed to auto unban {task.user_id} in guild {guild.name} ({guild.id})",
                     exc=e,
                 )
+        elif task.type == EventType.REMINDER:
+            reminder = task.reminder
+            if not reminder:
+                return
+
+            try:
+                if reminder.dm:
+                    channel = await get_or_fetch_user(self.bot, reminder.user_id)
+                    if not channel:
+                        return
+                    member = channel
+                else:
+                    guild = self.bot.get_guild(task.guild_id)
+                    if not guild:
+                        return
+
+                    channel = guild.get_channel(reminder.channel_id)
+                    if not channel:
+                        return
+
+                    if not isinstance(channel, discord.abc.Messageable):
+                        return
+
+                    member = await get_or_fetch_member(self.bot, guild, reminder.user_id)
+                    if not member:
+                        return
+
+                    permissions = channel.permissions_for(guild.me)
+                    if not permissions.view_channel or not permissions.send_messages:
+                        await log_error(
+                            bot=self.bot,
+                            module="Reminders",
+                            guild_id=task.guild_id,
+                            error=f"No permissions to send reminder message in #{channel.name} ({channel.id})",
+                            send_webhook=False,
+                        )
+                        return
+
+                    member_permissions = channel.permissions_for(member)
+                    if not member_permissions.view_channel:
+                        return
+
+                embed = discord.Embed(
+                    title="⏰ Reminder",
+                    description=reminder.content,
+                    timestamp=reminder.time_created,
+                    colour=discord.Colour.light_grey(),
+                ).set_footer(
+                    text=f"@{member.name} • Created at",
+                    icon_url=member.display_avatar.url,
+                )
+
+                reply_message = None
+                if task.message_id:
+                    try:
+                        reply_message = await channel.fetch_message(task.message_id)
+                        print("fetched")
+                    except Exception as e:
+                        print(e)
+                        pass
+                else:
+                    print("no message id")
+
+                if reply_message:
+                    await reply_message.reply(embed=embed)
+                else:
+                    await channel.send(
+                        content=member.mention if not reminder.dm and not reply_message else None,
+                        embed=embed,
+                    )
+            finally:
+                await reminder.delete()
+
         else:
             self.logger.warning(
                 f"Task {task.id} has unknown task type: {task.type} (guild: {task.guild_id})"
@@ -198,8 +273,10 @@ class ScheduledTasksCog(commands.Cog):
         await self.bot.wait_until_ready()
         async with get_session() as session:
             # Fetch all tasks that are due
-            stmt = select(ScheduledTask).where(
-                ScheduledTask.time_scheduled <= datetime.now(timezone.utc)
+            stmt = (
+                select(ScheduledTask)
+                .options(selectinload(ScheduledTask.reminder))
+                .where(ScheduledTask.time_scheduled <= datetime.now(timezone.utc))
             )
             result = await session.execute(stmt)
             results = result.scalars().all()

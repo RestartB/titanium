@@ -742,18 +742,41 @@ class GameStat(Base):
 
 class Reminder(Base):
     __tablename__ = "reminders"
-    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[str] = MappedColumn(String(length=8), primary_key=True, default=generate_short_uuid)
 
-    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=True, index=True)
+    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
     dm: Mapped[bool] = MappedColumn(Boolean, nullable=False)
-    time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), index=True, nullable=False)
+    time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=False)
+    time_created: Mapped[datetime] = MappedColumn(
+        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+    )
 
     content: Mapped[str] = MappedColumn(String(), nullable=False)
     scheduled_task: Mapped[ScheduledTask] = relationship(
         "ScheduledTask", back_populates="reminder", cascade="all, delete-orphan"
     )
+
+    async def edit(self, content: Optional[str] = None, time: Optional[datetime] = None) -> Tag:
+        if not content and not time:
+            raise ValueError("Content or time must be specified")
+
+        async with get_session() as session:
+            if time is not None:
+                self.time = time
+                self.scheduled_task.time_scheduled = time
+
+            if content is not None:
+                self.content = content
+
+            session.add(self)
+
+        return self
+
+    async def delete(self) -> None:
+        async with get_session() as session:
+            await session.delete(self)
 
 
 class ScheduledTask(Base):
@@ -770,7 +793,7 @@ class ScheduledTask(Base):
     message_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
 
     # moderation
-    case_id: Mapped[str] = MappedColumn(
+    case_id: Mapped[str | None] = MappedColumn(
         String(length=8), ForeignKey("mod_cases.id", ondelete="CASCADE"), nullable=True
     )
     case: Mapped["ModCase"] = relationship(
@@ -781,8 +804,8 @@ class ScheduledTask(Base):
     )  # for refresh_mute - how long we need to extend mute by
 
     # reminders
-    reminder_id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), ForeignKey("reminders.id", ondelete="CASCADE"), nullable=True
+    reminder_id: Mapped[str | None] = MappedColumn(
+        String(length=8), ForeignKey("reminders.id", ondelete="CASCADE"), nullable=True
     )
     reminder: Mapped["Reminder"] = relationship(
         "Reminder", back_populates="scheduled_task", uselist=False
