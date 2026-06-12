@@ -255,7 +255,7 @@ class BouncerMonitorCog(commands.Cog):
                         await member.timeout(
                             (
                                 timedelta(seconds=punishment.duration)
-                                if punishment.duration > 0
+                                if punishment.duration and punishment.duration > 0
                                 and timedelta(seconds=punishment.duration).total_seconds()
                                 <= 2419200
                                 else timedelta(seconds=2419200)
@@ -270,7 +270,7 @@ class BouncerMonitorCog(commands.Cog):
                             reason=f"Bouncer: {punishment.reason}",
                             duration=(
                                 timedelta(seconds=punishment.duration)
-                                if punishment.duration > 0
+                                if punishment.duration and punishment.duration > 0
                                 else None
                             ),
                             source=CaseSource.BOUNCER,
@@ -345,7 +345,7 @@ class BouncerMonitorCog(commands.Cog):
                             reason=f"Bouncer: {punishment.reason}",
                             duration=(
                                 timedelta(seconds=punishment.duration)
-                                if punishment.duration > 0
+                                if punishment.duration and punishment.duration > 0
                                 else None
                             ),
                             source=CaseSource.BOUNCER,
