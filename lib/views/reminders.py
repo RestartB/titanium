@@ -1,0 +1,130 @@
+from typing import TYPE_CHECKING
+
+import discord
+
+from lib.embeds.general import guild_only
+from lib.embeds.reminders import reminder_deleted, reminder_edited
+from lib.helpers.components import embed_to_v2
+from lib.sql.sql import Reminder
+
+if TYPE_CHECKING:
+    from main import TitaniumBot
+
+
+class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
+    def __init__(self, reminder: Reminder):
+        super().__init__(timeout=360)
+        self.reminder = reminder
+
+        assert isinstance(self.content_label.component, discord.ui.TextInput)
+        assert isinstance(self.duration_label.component, discord.ui.TextInput)
+
+        self.content_label.component.default = reminder.content
+
+    content_label = discord.ui.Label(
+        text="Content",
+        description="Enter the reminder content here.",
+        component=discord.ui.TextInput(
+            style=discord.TextStyle.long,
+            min_length=1,
+            max_length=1000,
+            required=True,
+        ),
+    )
+
+    duration_label = discord.ui.Label(
+        text="Content",
+        description="Enter the duration of the reminder here.",
+        component=discord.ui.TextInput(
+            style=discord.TextStyle.short,
+            required=True,
+        ),
+    )
+
+    async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        assert isinstance(self.content_label.component, discord.ui.TextInput)
+        assert isinstance(self.duration_label.component, discord.ui.TextInput)
+
+        if not isinstance(interaction.user, discord.Member) or not interaction.guild:
+            await interaction.edit_original_response(
+                view=embed_to_v2(guild_only(interaction.client))
+            )
+            return
+
+        await self.reminder.edit(content=self.content_label.component.value)
+        await interaction.edit_original_response(
+            view=embed_to_v2(reminder_edited(interaction.client))
+        )
+
+
+class DeleteReminderButton(discord.ui.Button):
+    def __init__(self, reminder: Reminder) -> None:
+        super().__init__(label="Delete", emoji="🗑️", style=discord.ButtonStyle.red)
+        self.reminder = reminder
+
+    async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        await self.reminder.delete()
+        await interaction.edit_original_response(
+            view=embed_to_v2(reminder_deleted(interaction.client))
+        )
+
+
+class EditReminderButton(discord.ui.Button):
+    def __init__(self, reminder: Reminder) -> None:
+        super().__init__(label="Edit", emoji="✏️", style=discord.ButtonStyle.secondary)
+        self.reminder = reminder
+
+    async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        modal = ReminderModal(reminder=self.reminder)
+        await interaction.response.send_modal(modal)
+
+
+class OptionsRow(discord.ui.ActionRow):
+    def __init__(self, reminder: Reminder) -> None:
+        super().__init__()
+
+        self.add_item(EditReminderButton(reminder))
+        self.add_item(DeleteReminderButton(reminder))
+
+
+class MenuButton(discord.ui.Button):
+    def __init__(self, bot: TitaniumBot, reminder: Reminder) -> None:
+        super().__init__(emoji=bot.menu_emoji)
+        self.reminder = reminder
+
+    async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        view = discord.ui.LayoutView()
+        options_row = OptionsRow(self.reminder)
+
+        await interaction.followup.send(view=view.add_item(options_row), ephemeral=True)
+
+
+class ReminderRow(discord.ui.Section):
+    def __init__(self, bot: TitaniumBot, reminder: Reminder) -> None:
+        super().__init__(accessory=MenuButton(bot, reminder))
+        self.add_item(
+            discord.ui.TextDisplay(
+                content=f"-# <@{reminder.user_id}> - <t:{int(reminder.time_created.timestamp())}:d>\n{discord.utils.escape_markdown(discord.utils.escape_mentions(reminder.content))}"
+            )
+        )
+
+
+class RemindersPageContainer(discord.ui.Container):
+    def __init__(self, bot: TitaniumBot, reminders: list[Reminder], reminder_count: int):
+        super().__init__(accent_colour=discord.Colour.light_grey())
+
+        self.add_item(
+            discord.ui.TextDisplay(
+                content=f"## Your Reminders\n{bot.info_emoji} There are **{reminder_count} reminder{'s' if reminder_count > 1 else ''}** to show."
+            )
+        )
+
+        self.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
+        for reminder in reminders:
+            self.add_item(ReminderRow(bot, reminder))
