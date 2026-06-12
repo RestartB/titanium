@@ -121,6 +121,9 @@ class BouncerMonitorCog(commands.Cog):
                     criteria.criteria_type == BouncerCriteriaType.AGE
                     and event_type == BouncerEventType.JOIN
                 ):
+                    if not criteria.account_age:
+                        continue
+
                     if (discord.utils.utcnow() - member.created_at).seconds <= criteria.account_age:
                         self.logger.debug("Account age match found")
                         spotted = True
@@ -167,76 +170,86 @@ class BouncerMonitorCog(commands.Cog):
                             details=e.text,
                         )
                 elif punishment.action_type == BouncerActionType.ADD_ROLE:
-                    role = member.guild.get_role(punishment.role_id)
+                    if not punishment.role_id:
+                        continue
 
-                    if role and role not in member.roles:
-                        try:
-                            await member.add_roles(role, reason=f"Bouncer: {punishment.reason}")
-                        except discord.Forbidden as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Bouncer",
-                                guild_id=member.guild.id,
-                                error=f"Titanium was not allowed to add the {role.name} ({role.id}) role to {member.name} ({member.id})",
-                                details=e.text,
-                            )
-                        except discord.HTTPException as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Bouncer",
-                                guild_id=member.guild.id,
-                                error=f"Unknown Discord error while adding role {role.name} ({role.id}) to {member.name} ({member.id})",
-                                details=e.text,
-                            )
+                    role = member.guild.get_role(punishment.role_id)
+                    if not role or role in member.roles:
+                        continue
+
+                    try:
+                        await member.add_roles(role, reason=f"Bouncer: {punishment.reason}")
+                    except discord.Forbidden as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Titanium was not allowed to add the {role.name} ({role.id}) role to {member.name} ({member.id})",
+                            details=e.text,
+                        )
+                    except discord.HTTPException as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Unknown Discord error while adding role {role.name} ({role.id}) to {member.name} ({member.id})",
+                            details=e.text,
+                        )
                 elif punishment.action_type == BouncerActionType.REMOVE_ROLE:
-                    role = member.guild.get_role(punishment.role_id)
+                    if not punishment.role_id:
+                        continue
 
-                    if role and role in member.roles:
-                        try:
-                            await member.remove_roles(role, reason=f"Bouncer: {punishment.reason}")
-                        except discord.Forbidden as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Bouncer",
-                                guild_id=member.guild.id,
-                                error=f"Titanium was not allowed to remove the {role.name} ({role.id}) role from {member.name} ({member.id})",
-                                details=e.text,
-                            )
-                        except discord.HTTPException as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Bouncer",
-                                guild_id=member.guild.id,
-                                error=f"Unknown Discord error while removing role {role.name} ({role.id}) from {member.name} ({member.id})",
-                                details=e.text,
-                            )
+                    role = member.guild.get_role(punishment.role_id)
+                    if not role or role not in member.roles:
+                        continue
+
+                    try:
+                        await member.remove_roles(role, reason=f"Bouncer: {punishment.reason}")
+                    except discord.Forbidden as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Titanium was not allowed to remove the {role.name} ({role.id}) role from {member.name} ({member.id})",
+                            details=e.text,
+                        )
+                    except discord.HTTPException as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Unknown Discord error while removing role {role.name} ({role.id}) from {member.name} ({member.id})",
+                            details=e.text,
+                        )
                 elif punishment.action_type == BouncerActionType.TOGGLE_ROLE:
-                    role = member.guild.get_role(punishment.role_id)
+                    if not punishment.role_id:
+                        continue
 
-                    if role:
-                        try:
-                            if role in member.roles:
-                                await member.remove_roles(
-                                    role, reason=f"Bouncer: {punishment.reason}"
-                                )
-                            else:
-                                await member.add_roles(role, reason=f"Bouncer: {punishment.reason}")
-                        except discord.Forbidden as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Bouncer",
-                                guild_id=member.guild.id,
-                                error=f"Titanium was not allowed to toggle the {role.name} ({role.id}) role for {member.name} ({member.id})",
-                                details=e.text,
-                            )
-                        except discord.HTTPException as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Bouncer",
-                                guild_id=member.guild.id,
-                                error=f"Unknown Discord error while toggling role {role.name} ({role.id}) for {member.name} ({member.id})",
-                                details=e.text,
-                            )
+                    role = member.guild.get_role(punishment.role_id)
+                    if not role:
+                        continue
+
+                    try:
+                        if role in member.roles:
+                            await member.remove_roles(role, reason=f"Bouncer: {punishment.reason}")
+                        else:
+                            await member.add_roles(role, reason=f"Bouncer: {punishment.reason}")
+                    except discord.Forbidden as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Titanium was not allowed to toggle the {role.name} ({role.id}) role for {member.name} ({member.id})",
+                            details=e.text,
+                        )
+                    except discord.HTTPException as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Bouncer",
+                            guild_id=member.guild.id,
+                            error=f"Unknown Discord error while toggling role {role.name} ({role.id}) for {member.name} ({member.id})",
+                            details=e.text,
+                        )
                 elif punishment.action_type == BouncerActionType.WARN:
                     await manager.create_case(
                         action=CaseType.WARN,
@@ -255,7 +268,8 @@ class BouncerMonitorCog(commands.Cog):
                         await member.timeout(
                             (
                                 timedelta(seconds=punishment.duration)
-                                if punishment.duration > 0
+                                if punishment.duration
+                                and punishment.duration > 0
                                 and timedelta(seconds=punishment.duration).total_seconds()
                                 <= 2419200
                                 else timedelta(seconds=2419200)
@@ -270,7 +284,7 @@ class BouncerMonitorCog(commands.Cog):
                             reason=f"Bouncer: {punishment.reason}",
                             duration=(
                                 timedelta(seconds=punishment.duration)
-                                if punishment.duration > 0
+                                if punishment.duration and punishment.duration > 0
                                 else None
                             ),
                             source=CaseSource.BOUNCER,
@@ -298,7 +312,7 @@ class BouncerMonitorCog(commands.Cog):
                     # Kick user
                     case: ModCase
                     try:
-                        case, dm_success, dm_error = await manager.create_case(
+                        case, _, _ = await manager.create_case(
                             action=CaseType.KICK,
                             user=member,
                             creator_user=self.bot.user,
@@ -338,14 +352,14 @@ class BouncerMonitorCog(commands.Cog):
                     # Ban user
                     case: ModCase
                     try:
-                        case, dm_success, dm_error = await manager.create_case(
+                        case, _, _ = await manager.create_case(
                             action=CaseType.BAN,
                             user=member,
                             creator_user=self.bot.user,
                             reason=f"Bouncer: {punishment.reason}",
                             duration=(
                                 timedelta(seconds=punishment.duration)
-                                if punishment.duration > 0
+                                if punishment.duration and punishment.duration > 0
                                 else None
                             ),
                             source=CaseSource.BOUNCER,

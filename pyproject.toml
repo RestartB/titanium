@@ -39,5 +39,8 @@ line-length = 100
 [tool.ruff.lint]
 extend-select = ["I"]
 
+[tool.pyright]
+typeCheckingMode = "basic"
+
 [tool.basedpyright]
 typeCheckingMode = "basic"

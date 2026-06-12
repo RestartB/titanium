@@ -366,17 +366,17 @@ class LeaderboardConfigModel(BaseModel):
     stack_roles: bool
 
     cooldown: int
-    base_xp: Optional[int] = None
-    min_xp: Optional[int] = None
-    max_xp: Optional[int] = None
-    xp_mult: Optional[float] = None
+    base_xp: int = 10
+    min_xp: int = 15
+    max_xp: int = 25
+    xp_mult: float = 1.0
 
     vc_enabled: bool
     vc_mode: LeaderboardVcCalcType
-    vc_delay: int = Field(0, ge=0, le=1440)
-    vc_base_xp: Optional[int] = None
-    vc_min_xp: Optional[int] = None
-    vc_max_xp: Optional[int] = None
+    vc_delay: int = Field(5, ge=0, le=1440)
+    vc_base_xp: int = 10
+    vc_min_xp: int = 15
+    vc_max_xp: int = 25
 
     ignored_roles: list[str] = Field(default_factory=list, max_length=100)
     ignored_channels: list[str] = Field(default_factory=list, max_length=100)

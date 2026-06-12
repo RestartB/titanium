@@ -424,7 +424,8 @@ class AutomodMonitorCog(commands.Cog):
                             await message.author.timeout(
                                 (
                                     timedelta(seconds=punishment.duration)
-                                    if punishment.duration > 0
+                                    if punishment.duration
+                                    and punishment.duration > 0
                                     and timedelta(seconds=punishment.duration).total_seconds()
                                     <= 2419200
                                     else timedelta(seconds=2419200)
@@ -439,7 +440,7 @@ class AutomodMonitorCog(commands.Cog):
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                                 duration=(
                                     timedelta(seconds=punishment.duration)
-                                    if punishment.duration > 0
+                                    if punishment.duration and punishment.duration > 0
                                     else None
                                 ),
                                 source=CaseSource.AUTOMOD,
@@ -549,7 +550,7 @@ class AutomodMonitorCog(commands.Cog):
                                 reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
                                 duration=(
                                     timedelta(seconds=punishment.duration)
-                                    if punishment.duration > 0
+                                    if punishment.duration and punishment.duration > 0
                                     else None
                                 ),
                                 source=CaseSource.AUTOMOD,

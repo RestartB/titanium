@@ -87,6 +87,12 @@ class ScheduledTasksCog(commands.Cog):
         """Handles a task from the queue worker"""
 
         if task.type == EventType.MUTE_REFRESH:
+            if not task.guild_id or not task.user_id:
+                raise ValueError("Guild ID or user ID is missing (mute refresh)")
+
+            if not task.duration:
+                raise ValueError("Duration is missing (mute refresh)")
+
             # Mute refresh task
             guild = self.bot.get_guild(task.guild_id)
             if not guild:
@@ -113,6 +119,9 @@ class ScheduledTasksCog(commands.Cog):
                     exc=e,
                 )
         elif task.type == EventType.PERMA_MUTE_REFRESH:
+            if not task.guild_id or not task.user_id:
+                raise ValueError("Guild ID or user ID is missing (perma mute refresh)")
+
             # Perma mute refresh task
             guild = self.bot.get_guild(task.guild_id)
             if not guild:
@@ -138,7 +147,10 @@ class ScheduledTasksCog(commands.Cog):
                     error=f"Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})",
                     exc=e,
                 )
-        elif task.type == EventType.CLOSE_MUTE and task.case_id:
+        elif task.type == EventType.CLOSE_MUTE:
+            if not task.guild_id or not task.user_id or not task.case_id:
+                raise ValueError("Guild ID, user ID or case ID is missing (close mute)")
+
             # Close mute cases task
             guild = self.bot.get_guild(task.guild_id)
 
@@ -164,6 +176,9 @@ class ScheduledTasksCog(commands.Cog):
                     exc=e,
                 )
         elif task.type == EventType.UNBAN and task.case_id:
+            if not task.guild_id or not task.user_id:
+                raise ValueError("Guild ID or user ID is missing (unban)")
+
             # Auto unban task
             guild = self.bot.get_guild(task.guild_id)
             if not guild:
@@ -200,6 +215,9 @@ class ScheduledTasksCog(commands.Cog):
                         return
                     member = channel
                 else:
+                    if not task.guild_id or not reminder.channel_id:
+                        raise ValueError("Guild ID or channel ID is missing (reminder)")
+
                     guild = self.bot.get_guild(task.guild_id)
                     if not guild:
                         return

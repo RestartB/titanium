@@ -214,9 +214,9 @@ class ModCase(Base):
     time_created: Mapped[datetime] = MappedColumn(
         DateTime(timezone=True), server_default=text("NOW()")
     )
-    time_updated: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=True)
-    time_expires: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=True)
-    description: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+    time_updated: Mapped[datetime | None] = MappedColumn(DateTime(timezone=True), nullable=True)
+    time_expires: Mapped[datetime | None] = MappedColumn(DateTime(timezone=True), nullable=True)
+    description: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
     external: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     resolved: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     comments: Mapped[list["ModCaseComment"]] = relationship(
@@ -342,10 +342,10 @@ class AutomodRule(Base):
         BigInteger, ForeignKey("guild_automod_settings.guild_id", ondelete="CASCADE")
     )
     rule_type: Mapped[AutomodRuleType] = MappedColumn(Enum(AutomodRuleType))
-    antispam_type: Mapped[AutomodAntispamType] = MappedColumn(
+    antispam_type: Mapped[AutomodAntispamType | None] = MappedColumn(
         Enum(AutomodAntispamType), nullable=True
     )
-    rule_name: Mapped[str] = MappedColumn(String(length=100), nullable=True)
+    rule_name: Mapped[str | None] = MappedColumn(String(length=100), nullable=True)
     words: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
     )
@@ -379,16 +379,16 @@ class AutomodAction(Base):
     rule_type: Mapped[AutomodRuleType] = MappedColumn(Enum(AutomodRuleType))
     action_type: Mapped[AutomodActionType] = MappedColumn(Enum(AutomodActionType))
 
-    duration: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    reason: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+    duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+    reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
 
-    message_content: Mapped[str] = MappedColumn(String(length=2000), nullable=True)
+    message_content: Mapped[str | None] = MappedColumn(String(length=2000), nullable=True)
     message_reply: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     message_mention: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     message_embed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    embed_colour: Mapped[str] = MappedColumn(String(length=7), nullable=True)
+    embed_colour: Mapped[str | None] = MappedColumn(String(length=7), nullable=True)
 
-    role_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    role_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     rule: Mapped["AutomodRule"] = relationship(
         "AutomodRule", back_populates="actions", uselist=False
     )
@@ -416,7 +416,7 @@ class BouncerRule(Base):
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_bouncer_settings.guild_id", ondelete="CASCADE")
     )
-    rule_name: Mapped[str] = MappedColumn(String(length=100), nullable=True)
+    rule_name: Mapped[str | None] = MappedColumn(String(length=100), nullable=True)
     enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     evaluate_for_existing_members: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     criteria: Mapped[list["BouncerCriteria"]] = relationship(
@@ -445,7 +445,7 @@ class BouncerCriteria(Base):
         UUID(as_uuid=True), ForeignKey("bouncer_rules.id", ondelete="CASCADE")
     )
     criteria_type: Mapped[BouncerCriteriaType] = MappedColumn(Enum(BouncerCriteriaType))
-    account_age: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    account_age: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     words: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
     )
@@ -465,13 +465,13 @@ class BouncerAction(Base):
     action_type: Mapped[BouncerActionType] = MappedColumn(Enum(BouncerActionType))
 
     # Actions with duration
-    duration: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
 
     # Role actions
-    role_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    role_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
 
     # All actions
-    reason: Mapped[str] = MappedColumn(String(length=512), nullable=True)
+    reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
 
     rule: Mapped["BouncerRule"] = relationship(
         "BouncerRule", back_populates="actions", uselist=False
@@ -575,19 +575,19 @@ class GuildLeaderboardSettings(Base):
     stack_roles: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
 
     cooldown: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
-    base_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("10"))
-    min_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("15"))
-    max_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("25"))
-    xp_mult: Mapped[Optional[float]] = MappedColumn(Float, server_default=text("1.0"))
+    base_xp: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
+    min_xp: Mapped[int] = MappedColumn(Integer, server_default=text("15"))
+    max_xp: Mapped[int] = MappedColumn(Integer, server_default=text("25"))
+    xp_mult: Mapped[float] = MappedColumn(Float, server_default=text("1.0"))
 
     vc_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     vc_mode: Mapped[LeaderboardVcCalcType] = MappedColumn(
         Enum(LeaderboardVcCalcType), nullable=False, server_default=text("'FIXED'")
     )
     vc_delay: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
-    vc_base_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("10"))
-    vc_min_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("15"))
-    vc_max_xp: Mapped[Optional[int]] = MappedColumn(Integer, server_default=text("25"))
+    vc_base_xp: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
+    vc_min_xp: Mapped[int] = MappedColumn(Integer, server_default=text("15"))
+    vc_max_xp: Mapped[int] = MappedColumn(Integer, server_default=text("25"))
 
     ignored_roles: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
@@ -598,7 +598,7 @@ class GuildLeaderboardSettings(Base):
 
     levelup_notifications: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     notification_ping: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    notification_channel: Mapped[Optional[int]] = MappedColumn(BigInteger, nullable=True)
+    notification_channel: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
 
     web_leaderboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     web_login_required: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
@@ -744,8 +744,8 @@ class Reminder(Base):
     __tablename__ = "reminders"
     id: Mapped[str] = MappedColumn(String(length=8), primary_key=True, default=generate_short_uuid)
 
-    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    guild_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+    channel_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
     dm: Mapped[bool] = MappedColumn(Boolean, nullable=False)
     time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=False)
@@ -786,11 +786,11 @@ class ScheduledTask(Base):
     time_scheduled: Mapped[datetime] = MappedColumn(DateTime(timezone=True), index=True)
     type: Mapped[EventType] = MappedColumn(Enum(EventType), nullable=False)
 
-    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    role_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
-    message_id: Mapped[int] = MappedColumn(BigInteger, nullable=True)
+    guild_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+    user_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+    channel_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+    role_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+    message_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
 
     # moderation
     case_id: Mapped[str | None] = MappedColumn(
@@ -799,7 +799,7 @@ class ScheduledTask(Base):
     case: Mapped["ModCase"] = relationship(
         "ModCase", back_populates="scheduled_tasks", uselist=False
     )
-    duration: Mapped[int] = MappedColumn(
+    duration: Mapped[int | None] = MappedColumn(
         BigInteger, nullable=True
     )  # for refresh_mute - how long we need to extend mute by
 
@@ -830,7 +830,7 @@ class ErrorLog(Base):
     )
     module: Mapped[str] = MappedColumn(String(length=100))
     error: Mapped[str] = MappedColumn(String(length=512))
-    details: Mapped[str] = MappedColumn(String(length=1024), nullable=True)
+    details: Mapped[str | None] = MappedColumn(String(length=1024), nullable=True)
     time_occurred: Mapped[datetime] = MappedColumn(
         DateTime(timezone=True), server_default=text("NOW()")
     )
