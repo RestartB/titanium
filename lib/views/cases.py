@@ -34,7 +34,7 @@ class CommentModal(discord.ui.Modal, title="Enter Content"):
         component=discord.ui.TextInput(
             style=discord.TextStyle.long,
             min_length=1,
-            max_length=1000,
+            max_length=500,
             required=True,
         ),
     )

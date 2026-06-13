@@ -50,7 +50,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
         mode: Literal["dm", "server"],
         time: ConvertedDuration,
         *,
-        content: str,
+        content: commands.Range[str, 1, 1000],
     ) -> None:
         await ctx.defer()
 

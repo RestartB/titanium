@@ -35,7 +35,7 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
 
     duration_label = discord.ui.Label(
         text="Duration",
-        description="Enter the new duration of the reminder here if required.",
+        description="Enter the new duration of the reminder here. (optional)",
         component=discord.ui.TextInput(
             style=discord.TextStyle.short, required=False, placeholder="(example: 10h5m20s)"
         ),
