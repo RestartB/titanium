@@ -338,7 +338,9 @@ class GuildLogger:
         if not isinstance(self.guild, discord.Guild):
             return
 
-        app_user = self.guild.get_member(event.application_id)
+        app_user = await get_or_fetch_member(
+            bot=self.bot, guild=self.guild, user_id=event.application_id, user_fallback=True
+        )
 
         embed = discord.Embed(
             title="App Command Permission Updated",

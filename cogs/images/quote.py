@@ -14,6 +14,7 @@ from PIL import Image
 from playwright.async_api import async_playwright
 from wand.image import Image as WandImage
 
+from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.hybrid import defer
 
 if TYPE_CHECKING:
@@ -281,30 +282,29 @@ class QuoteView(View):
     async def theme(
         self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
     ):
-        user = None
+        # Try to get member if available
+        if interaction.guild is None:
+            user = await get_or_fetch_user(bot=interaction.client, user_id=self.user_id)
+        else:
+            user = await get_or_fetch_member(
+                bot=interaction.client,
+                guild=interaction.guild,
+                user_id=self.user_id,
+                user_fallback=True,
+            )
 
-        if interaction.guild is not None:
-            # Try to get member if available
-            user = interaction.guild.get_member(self.user_id)
+        if not user:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Error",
+                description="Couldn't find the user. Please try again later.",
+                colour=discord.Colour.red(),
+            )
 
-        if user is None:
-            user = interaction.client.get_user(self.user_id)
-
-        if user is None:
-            try:
-                user = await interaction.client.fetch_user(self.user_id)
-            except discord.NotFound:
-                embed = discord.Embed(
-                    title="Error",
-                    description="Couldn't find the user. Please try again later.",
-                    colour=discord.Colour.red(),
-                )
-
-                await interaction.followup.send(
-                    embed=embed,
-                    ephemeral=True,
-                )
-                return
+            await interaction.followup.send(
+                embed=embed,
+                ephemeral=True,
+            )
+            return
 
         if self.custom_quote and self.custom_quote_user_id:
             # Try to get member if available
@@ -401,30 +401,29 @@ class QuoteView(View):
 
     @discord.ui.button(label="", style=discord.ButtonStyle.gray, custom_id="bw")
     async def bw(self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button):
-        user = None
+        # Try to get member if available
+        if interaction.guild is None:
+            user = await get_or_fetch_user(bot=interaction.client, user_id=self.user_id)
+        else:
+            user = await get_or_fetch_member(
+                bot=interaction.client,
+                guild=interaction.guild,
+                user_id=self.user_id,
+                user_fallback=True,
+            )
 
-        if interaction.guild is not None:
-            # Try to get member if available
-            user = interaction.guild.get_member(self.user_id)
+        if not user:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Error",
+                description="Couldn't find the user. Please try again later.",
+                colour=discord.Colour.red(),
+            )
 
-        if user is None:
-            user = interaction.client.get_user(self.user_id)
-
-        if user is None:
-            try:
-                user = await interaction.client.fetch_user(self.user_id)
-            except discord.NotFound:
-                embed = discord.Embed(
-                    title="Error",
-                    description="Couldn't find the user. Please try again later.",
-                    colour=discord.Colour.red(),
-                )
-
-                await interaction.followup.send(
-                    embed=embed,
-                    ephemeral=True,
-                )
-                return
+            await interaction.followup.send(
+                embed=embed,
+                ephemeral=True,
+            )
+            return
 
         if self.custom_quote and self.custom_quote_user_id:
             # Try to get member if available
@@ -523,30 +522,29 @@ class QuoteView(View):
     async def reload(
         self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
     ):
-        user = None
+        # Try to get member if available
+        if interaction.guild is None:
+            user = await get_or_fetch_user(bot=interaction.client, user_id=self.user_id)
+        else:
+            user = await get_or_fetch_member(
+                bot=interaction.client,
+                guild=interaction.guild,
+                user_id=self.user_id,
+                user_fallback=True,
+            )
 
-        if interaction.guild is not None:
-            # Try to get member if available
-            user = interaction.guild.get_member(self.user_id)
+        if not user:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Error",
+                description="Couldn't find the user. Please try again later.",
+                colour=discord.Colour.red(),
+            )
 
-        if user is None:
-            user = interaction.client.get_user(self.user_id)
-
-        if user is None:
-            try:
-                user = await interaction.client.fetch_user(self.user_id)
-            except discord.NotFound:
-                embed = discord.Embed(
-                    title="Error",
-                    description="Couldn't find the user. Please try again later.",
-                    colour=discord.Colour.red(),
-                )
-
-                await interaction.followup.send(
-                    embed=embed,
-                    ephemeral=True,
-                )
-                return
+            await interaction.followup.send(
+                embed=embed,
+                ephemeral=True,
+            )
+            return
 
         if self.custom_quote and self.custom_quote_user_id:
             # Try to get member if available

@@ -98,7 +98,7 @@ class ScheduledTasksCog(commands.Cog):
             if not guild:
                 return
 
-            member = guild.get_member(task.user_id)
+            member = await get_or_fetch_member(bot=self.bot, guild=guild, user_id=task.user_id)
             if not member:
                 return
 
@@ -127,7 +127,7 @@ class ScheduledTasksCog(commands.Cog):
             if not guild:
                 return
 
-            member = guild.get_member(task.user_id)
+            member = await get_or_fetch_member(bot=self.bot, guild=guild, user_id=task.user_id)
             if not member:
                 return
 
@@ -157,7 +157,7 @@ class ScheduledTasksCog(commands.Cog):
             if not guild:
                 return
 
-            member = guild.get_member(task.user_id)
+            member = await get_or_fetch_member(bot=self.bot, guild=guild, user_id=task.user_id)
             if not member:
                 return
 
