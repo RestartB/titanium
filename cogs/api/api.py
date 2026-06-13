@@ -237,7 +237,7 @@ class APICog(commands.Cog):
     async def info(self, request: web.Request) -> web.Response:
         return web.json_response(
             {
-                "username": self.bot.user.name if self.bot.user else None,
+                "username": self.bot.user.name if self.bot.user else "Titanium",
                 "discriminator": self.bot.user.discriminator if self.bot.user else None,
                 "pfp": self.bot.user.display_avatar.url if self.bot.user else None,
             }

@@ -34,7 +34,7 @@ class CommentModal(discord.ui.Modal, title="Enter Content"):
         component=discord.ui.TextInput(
             style=discord.TextStyle.long,
             min_length=1,
-            max_length=1000,
+            max_length=500,
             required=True,
         ),
     )
@@ -108,14 +108,6 @@ class EditCommentButton(discord.ui.Button):
         await interaction.response.send_modal(modal)
 
 
-class OptionsRow(discord.ui.ActionRow):
-    def __init__(self, comment: ModCaseComment) -> None:
-        super().__init__()
-
-        self.add_item(EditCommentButton(comment))
-        self.add_item(DeleteCommentButton(comment))
-
-
 class MenuButton(discord.ui.Button):
     def __init__(self, bot: TitaniumBot, comment: ModCaseComment) -> None:
         super().__init__(emoji=bot.menu_emoji)
@@ -131,7 +123,9 @@ class MenuButton(discord.ui.Button):
             return
 
         view = discord.ui.LayoutView()
-        options_row = OptionsRow(self.comment)
+        options_row = discord.ui.ActionRow(
+            EditCommentButton(self.comment), DeleteCommentButton(self.comment)
+        )
 
         await interaction.followup.send(view=view.add_item(options_row), ephemeral=True)
 
