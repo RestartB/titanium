@@ -342,7 +342,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                     )
                 )
 
-                view = ConfirmView(self.bot)
+                view = ConfirmView(bot=self.bot, original_user=ctx.author)
                 msg = await ctx.reply(
                     embeds=embeds,
                     view=view,
@@ -380,7 +380,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             colour=Colour.orange(),
         )
 
-        view = ConfirmView(self.bot)
+        view = ConfirmView(bot=self.bot, original_user=ctx.author)
         msg = await ctx.reply(
             embed=embed,
             view=view,
@@ -427,7 +427,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             colour=Colour.orange(),
         )
 
-        view = ConfirmView(self.bot)
+        view = ConfirmView(bot=self.bot, original_user=ctx.author)
         msg = await ctx.reply(
             embed=embed,
             view=view,

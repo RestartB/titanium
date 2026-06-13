@@ -1004,7 +1004,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
             value="You cannot opt out of required operational data, including command analytics, error logs, server (guild) data, and moderation cases.",
         )
 
-        view = ConfirmView(self.bot, ephemeral=True)
+        view = ConfirmView(bot=self.bot, original_user=interaction.user, ephemeral=True)
         view.interaction = interaction
 
         await interaction.followup.send(embed=embed, view=view, ephemeral=True)
@@ -1078,7 +1078,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
             colour=Colour.orange(),
         )
 
-        view = ConfirmView(self.bot, ephemeral=True)
+        view = ConfirmView(bot=self.bot, original_user=interaction.user, ephemeral=True)
         view.interaction = interaction
 
         await interaction.followup.send(embed=embed, view=view, ephemeral=True)
