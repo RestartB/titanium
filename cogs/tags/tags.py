@@ -31,7 +31,9 @@ class TagOptionView(discord.ui.View):
         self.timed_out = True
 
     @discord.ui.button(label="Server Tag")
-    async def server(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def server(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ):
         await interaction.response.defer(ephemeral=self.ephemeral)
 
         self.value = True
@@ -39,7 +41,9 @@ class TagOptionView(discord.ui.View):
         self.stop()
 
     @discord.ui.button(label="User Tag")
-    async def user(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def user(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ):
         await interaction.response.defer(ephemeral=self.ephemeral)
 
         self.value = False

@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from discord import ButtonStyle, Colour, Embed, Interaction
 from discord.ui import ActionRow, Button, Container, LayoutView, View, button
@@ -7,6 +7,9 @@ from sqlalchemy.orm import InstrumentedAttribute
 
 from lib.embeds.leaderboard import generate_lb_embeds
 from lib.sql.sql import LeaderboardUserStats, get_session
+
+if TYPE_CHECKING:
+    from main import TitaniumBot
 
 
 class PaginationView(View):
@@ -50,7 +53,7 @@ class PaginationView(View):
 
     # First page
     @button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
-    async def first_button(self, interaction: Interaction, button: Button):
+    async def first_button(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer()
 
         self.current_page = 0
@@ -69,7 +72,7 @@ class PaginationView(View):
 
     # Prev Page
     @button(emoji="⏪", style=ButtonStyle.primary, custom_id="prev")
-    async def prev_button(self, interaction: Interaction, button: Button):
+    async def prev_button(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer()
 
         self.current_page = max(self.current_page - 1, 0)
@@ -90,12 +93,12 @@ class PaginationView(View):
 
     # Page count
     @button(style=ButtonStyle.gray, custom_id="count", disabled=True)
-    async def page_count(self, interaction: Interaction, button: Button):
+    async def page_count(self, interaction: Interaction["TitaniumBot"], button: Button):
         pass
 
     # Next page
     @button(emoji="⏩", style=ButtonStyle.primary, custom_id="next")
-    async def next_button(self, interaction: Interaction, button: Button):
+    async def next_button(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer()
 
         self.current_page = min(self.current_page + 1, len(self.embeds) - 1)
@@ -116,7 +119,7 @@ class PaginationView(View):
 
     # Last page
     @button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
-    async def last_button(self, interaction: Interaction, button: Button):
+    async def last_button(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer()
 
         self.current_page = len(self.embeds) - 1
@@ -163,7 +166,7 @@ class LeaderboardReloadPageView(PaginationView):
         custom_id="reload",
         row=1,
     )
-    async def reload_button(self, interaction: Interaction, button: Button):
+    async def reload_button(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer()
 
         if not interaction.guild:
@@ -221,29 +224,29 @@ class PageControls(ActionRow):
         self.layout = layout
 
     @button(emoji="⏮️", style=ButtonStyle.red, custom_id="first")
-    async def first_button(self, interaction: Interaction, button: Button):
+    async def first_button(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer()
         self.layout.current_page = 0
         await self.layout._update_page(interaction)
 
     @button(emoji="⏪", style=ButtonStyle.primary, custom_id="prev")
-    async def prev_button(self, interaction: Interaction, button: Button):
+    async def prev_button(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer()
         self.layout.current_page = max(self.layout.current_page - 1, 0)
         await self.layout._update_page(interaction)
 
     @button(label="1/1", style=ButtonStyle.gray, custom_id="count", disabled=True)
-    async def page_count_label(self, interaction: Interaction, button: Button):
+    async def page_count_label(self, interaction: Interaction["TitaniumBot"], button: Button):
         pass
 
     @button(emoji="⏩", style=ButtonStyle.primary, custom_id="next")
-    async def next_button(self, interaction: Interaction, button: Button):
+    async def next_button(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer()
         self.layout.current_page = min(self.layout.current_page + 1, len(self.layout.pages) - 1)
         await self.layout._update_page(interaction)
 
     @button(emoji="⏭️", style=ButtonStyle.green, custom_id="last")
-    async def last_button(self, interaction: Interaction, button: Button):
+    async def last_button(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer()
         self.layout.current_page = len(self.layout.pages) - 1
         await self.layout._update_page(interaction)

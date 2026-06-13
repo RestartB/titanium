@@ -43,7 +43,7 @@ class SongView(View):
         self.add_item(spotify_button)
 
     @button(label="Menu", style=ButtonStyle.gray)
-    async def menu(self, interaction: Interaction, button: Button):
+    async def menu(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer(ephemeral=True)
 
         view = SongMenuView(
@@ -102,7 +102,7 @@ class SongMenuView(View):
         await self.message.delete()
 
     @button(label="Album Art", style=ButtonStyle.gray)
-    async def art(self, interaction: Interaction, button: Button):
+    async def art(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer(ephemeral=True)
 
         if self.item.album.images is not None:
@@ -146,7 +146,7 @@ class SongMenuView(View):
         self.stop()
 
     @button(label="Lyrics", style=ButtonStyle.gray)
-    async def lyrics(self, interaction: Interaction, button: Button):
+    async def lyrics(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer(ephemeral=True)
 
         url = f"https://lrclib.net/api/search?track_name={quote(self.item.name)}&artist_name={quote(self.item.artists[0].name)}"
@@ -303,7 +303,7 @@ class ArtistView(View):
         self.add_item(spotify_button)
 
     @button(label="Menu", style=ButtonStyle.gray)
-    async def menu(self, interaction: Interaction, button: Button):
+    async def menu(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer(ephemeral=True)
 
         view = ArtistMenuView(
@@ -338,7 +338,7 @@ class ArtistMenuView(View):
         await self.message.delete()
 
     @button(label="Icon", style=ButtonStyle.gray)
-    async def art(self, interaction: Interaction, button: Button):
+    async def art(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer(ephemeral=True)
 
         if self.item.images is not None:

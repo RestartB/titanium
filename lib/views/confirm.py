@@ -38,7 +38,7 @@ class ConfirmView(View):
         return True
 
     @button(label="Confirm", style=ButtonStyle.green)
-    async def confirm(self, interaction: Interaction, button: Button):
+    async def confirm(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer(ephemeral=self.ephemeral)
 
         self.value = True
