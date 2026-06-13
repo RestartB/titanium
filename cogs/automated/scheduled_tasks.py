@@ -262,12 +262,12 @@ class ScheduledTasksCog(commands.Cog):
                 if task.message_id:
                     try:
                         reply_message = await channel.fetch_message(task.message_id)
-                        print("fetched")
+                        self.logger.debug("fetched message for reminder")
                     except Exception as e:
-                        print(e)
+                        self.logger.debug("can't get message for reminder", exc_info=e)
                         pass
                 else:
-                    print("no message id")
+                    self.logger.debug("no message id for reminder")
 
                 if reply_message:
                     await reply_message.reply(embed=embed)

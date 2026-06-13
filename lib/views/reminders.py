@@ -1,10 +1,12 @@
+from textwrap import shorten
 from typing import TYPE_CHECKING
 
 import discord
 
 from lib.embeds.general import guild_only
-from lib.embeds.reminders import reminder_deleted, reminder_edited
+from lib.embeds.reminders import invalid_duration, reminder_deleted, reminder_edited
 from lib.helpers.components import embed_to_v2
+from lib.helpers.duration import timestring_to_duration
 from lib.sql.sql import Reminder
 
 if TYPE_CHECKING:
@@ -17,8 +19,6 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
         self.reminder = reminder
 
         assert isinstance(self.content_label.component, discord.ui.TextInput)
-        assert isinstance(self.duration_label.component, discord.ui.TextInput)
-
         self.content_label.component.default = reminder.content
 
     content_label = discord.ui.Label(
@@ -33,11 +33,10 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
     )
 
     duration_label = discord.ui.Label(
-        text="Content",
-        description="Enter the duration of the reminder here.",
+        text="Duration",
+        description="Enter the new duration of the reminder here if required.",
         component=discord.ui.TextInput(
-            style=discord.TextStyle.short,
-            required=True,
+            style=discord.TextStyle.short, required=False, placeholder="(example: 10h5m20s)"
         ),
     )
 
@@ -53,7 +52,35 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
             )
             return
 
-        await self.reminder.edit(content=self.content_label.component.value)
+        time_scheduled = None
+        if self.duration_label.component.value:
+            try:
+                duration = timestring_to_duration(
+                    self.duration_label.component.value,
+                )
+            except OverflowError:
+                view = discord.ui.LayoutView()
+                await interaction.edit_original_response(
+                    view=view.add_item(
+                        discord.ui.Container(
+                            discord.ui.TextDisplay(
+                                f"## {interaction.client.error_emoji} Invalid Duration\nDurations cannot exceed 60 years."
+                            ),
+                            accent_colour=discord.Colour.red(),
+                        )
+                    )
+                )
+                return
+
+            if not duration:
+                await interaction.edit_original_response(
+                    view=embed_to_v2(invalid_duration(interaction.client))
+                )
+                return
+
+            time_scheduled = interaction.created_at + duration
+
+        await self.reminder.edit(content=self.content_label.component.value, time=time_scheduled)
         await interaction.edit_original_response(
             view=embed_to_v2(reminder_edited(interaction.client))
         )
@@ -108,9 +135,16 @@ class MenuButton(discord.ui.Button):
 class ReminderRow(discord.ui.Section):
     def __init__(self, bot: TitaniumBot, reminder: Reminder) -> None:
         super().__init__(accessory=MenuButton(bot, reminder))
+
+        guild = None
+        if not reminder.dm and reminder.guild_id:
+            guild = bot.get_guild(reminder.guild_id)
+
+        guild_name = shorten(guild.name, width=20) if guild else "Unknown Guild"
+
         self.add_item(
             discord.ui.TextDisplay(
-                content=f"-# <@{reminder.user_id}> - <t:{int(reminder.time_created.timestamp())}:d>\n{discord.utils.escape_markdown(discord.utils.escape_mentions(reminder.content))}"
+                content=f"-# <@{reminder.user_id}> - <t:{int(reminder.time.timestamp())}:d>, `{'DMs' if reminder.dm else guild_name}`\n{discord.utils.escape_markdown(discord.utils.escape_mentions(reminder.content))}"
             )
         )
 
@@ -121,7 +155,7 @@ class RemindersPageContainer(discord.ui.Container):
 
         self.add_item(
             discord.ui.TextDisplay(
-                content=f"## Your Reminders\n{bot.info_emoji} There are **{reminder_count} reminder{'s' if reminder_count > 1 else ''}** to show."
+                content=f"## Your Reminders\n{bot.info_emoji} There {'are' if reminder_count > 1 else 'is'} **{reminder_count} reminder{'s' if reminder_count > 1 else ''}** to show."
             )
         )
 

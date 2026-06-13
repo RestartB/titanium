@@ -796,7 +796,7 @@ class ScheduledTask(Base):
     case_id: Mapped[str | None] = MappedColumn(
         String(length=8), ForeignKey("mod_cases.id", ondelete="CASCADE"), nullable=True
     )
-    case: Mapped["ModCase"] = relationship(
+    case: Mapped["ModCase | None"] = relationship(
         "ModCase", back_populates="scheduled_tasks", uselist=False
     )
     duration: Mapped[int | None] = MappedColumn(
@@ -807,7 +807,7 @@ class ScheduledTask(Base):
     reminder_id: Mapped[str | None] = MappedColumn(
         String(length=8), ForeignKey("reminders.id", ondelete="CASCADE"), nullable=True
     )
-    reminder: Mapped["Reminder"] = relationship(
+    reminder: Mapped["Reminder | None"] = relationship(
         "Reminder", back_populates="scheduled_task", uselist=False
     )
 

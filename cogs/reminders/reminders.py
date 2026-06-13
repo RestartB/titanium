@@ -1,15 +1,20 @@
 import typing
 from datetime import timedelta
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
 from discord import Colour, app_commands
 from discord.ext import commands
+from discord.ui import LayoutView
 from discord.utils import format_dt
 
+from lib.embeds.reminders import invalid_duration
 from lib.helpers.duration import DurationConverter
+from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.helpers.shorten import shorten_preserve
-from lib.logic.reminders import create_reminder
+from lib.logic.reminders import create_reminder, get_all_reminders
+from lib.views.pagination import PaginationV2View
+from lib.views.reminders import RemindersPageContainer
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -23,9 +28,16 @@ class TemplateCog(commands.Cog, description="Create reminders."):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
-    ConvertedDuration = typing.Annotated[typing.Union[timedelta], DurationConverter]
+    async def cog_load(self) -> None:
+        add_global_aliases(self, self.bot)
+
+    async def cog_unload(self) -> None:
+        remove_global_aliases(self, self.bot)
+
+    ConvertedDuration = typing.Annotated[typing.Union[Optional[timedelta]], DurationConverter]
 
     @commands.hybrid_group(name="reminder", fallback="create", description="Create a new reminder.")
+    @commands.cooldown(1, 3)
     @app_commands.choices(
         mode=[
             app_commands.Choice(name="DM", value="dm"),
@@ -41,6 +53,11 @@ class TemplateCog(commands.Cog, description="Create reminders."):
         content: str,
     ) -> None:
         await ctx.defer()
+
+        if not time:
+            await ctx.reply(embed=invalid_duration(self.bot))
+            return
+
         time_scheduled = ctx.message.created_at + time
         dm = mode == "dm"
 
@@ -78,7 +95,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
             dm=dm,
             guild_id=ctx.guild.id if ctx.guild else None,
             channel_id=ctx.channel.id,
-            message_id=ctx.message.id if not ctx.interaction else None,
+            message_id=ctx.message.id if not dm and not ctx.interaction else None,
         )
 
         embed = discord.Embed(
@@ -90,6 +107,29 @@ class TemplateCog(commands.Cog, description="Create reminders."):
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
         await ctx.reply(embed=embed)
+
+    @reminder_group.command(name="list", description="Get a list of all of your reminders.")
+    @global_alias("reminders")
+    @commands.cooldown(1, 5)
+    async def reminder_list(self, ctx: commands.Context["TitaniumBot"]) -> None:
+        await ctx.defer()
+
+        reminders = await get_all_reminders(ctx.author)
+        reminder_chunks = discord.utils.as_chunks(reminders, 5)
+
+        reminder_pages: list[RemindersPageContainer] = []
+        for chunk in reminder_chunks:
+            reminder_pages.append(
+                RemindersPageContainer(bot=self.bot, reminders=chunk, reminder_count=len(reminders))
+            )
+
+        if len(reminder_pages) > 1:
+            view = PaginationV2View(pages=reminder_pages)
+        else:
+            view = LayoutView(timeout=300)
+            view.add_item(reminder_pages[0])
+
+        await ctx.reply(view=view)
 
 
 async def setup(bot: TitaniumBot) -> None:

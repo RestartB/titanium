@@ -20,27 +20,30 @@ class DurationConverter(commands.Converter):
         self, ctx: commands.Context["TitaniumBot"], argument: str
     ) -> timedelta | None:
         # Check for permanent keywords
-        if argument.lower().strip() in ("permanent", "perma", "0"):
-            return None
-
         try:
-            seconds = Duration(argument).to_seconds()
+            delta = timestring_to_duration(argument)
 
-            if seconds == 0:
+            if not delta or delta.total_seconds() == 0:
                 return None
 
-            if seconds > self.MAX_SECONDS:
+            if delta.total_seconds() > self.MAX_SECONDS:
                 raise commands.BadArgument(
                     f"Duration cannot exceed {self.MAX_YEARS} years. "
                     f"For permanent actions, use 'permanent', 'perma', '0', or don't provide a duration."
                 )
 
-            return timedelta(seconds=seconds)
+            return delta
         except OverflowError:
             raise commands.BadArgument(
                 f"Duration cannot exceed {self.MAX_YEARS} years. "
                 f"For permanent actions, use 'permanent', 'perma', '0', or don't provide a duration."
             )
+
+
+def timestring_to_duration(text: str) -> timedelta | None:
+    if text.lower().strip() in ("permanent", "perma", "0"):
+        return None
+    return timedelta(Duration(text).to_seconds())
 
 
 def duration_to_timestring(
