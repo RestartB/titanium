@@ -2,6 +2,7 @@ from textwrap import shorten
 from typing import TYPE_CHECKING
 
 import discord
+from discord.utils import format_dt
 
 from lib.embeds.general import guild_only
 from lib.embeds.reminders import invalid_duration, reminder_deleted, reminder_edited
@@ -110,14 +111,6 @@ class EditReminderButton(discord.ui.Button):
         await interaction.response.send_modal(modal)
 
 
-class OptionsRow(discord.ui.ActionRow):
-    def __init__(self, reminder: Reminder) -> None:
-        super().__init__()
-
-        self.add_item(EditReminderButton(reminder))
-        self.add_item(DeleteReminderButton(reminder))
-
-
 class MenuButton(discord.ui.Button):
     def __init__(self, bot: TitaniumBot, reminder: Reminder) -> None:
         super().__init__(emoji=bot.menu_emoji)
@@ -127,7 +120,9 @@ class MenuButton(discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
 
         view = discord.ui.LayoutView()
-        options_row = OptionsRow(self.reminder)
+        options_row = discord.ui.ActionRow(
+            EditReminderButton(self.reminder), DeleteReminderButton(self.reminder)
+        )
 
         await interaction.followup.send(view=view.add_item(options_row), ephemeral=True)
 
@@ -144,7 +139,7 @@ class ReminderRow(discord.ui.Section):
 
         self.add_item(
             discord.ui.TextDisplay(
-                content=f"-# <@{reminder.user_id}> - <t:{int(reminder.time.timestamp())}:d>, `{'DMs' if reminder.dm else guild_name}`\n{discord.utils.escape_markdown(discord.utils.escape_mentions(reminder.content))}"
+                content=f"-# <@{reminder.user_id}> - {format_dt(reminder.time, style='R')}, `{'DMs' if reminder.dm else guild_name}`\n{discord.utils.escape_markdown(discord.utils.escape_mentions(reminder.content))}"
             )
         )
 
