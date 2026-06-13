@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 import discord
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from lib.enums.scheduled_events import EventType
 from lib.sql.sql import Reminder, ScheduledTask, get_session
@@ -46,6 +46,14 @@ async def get_all_reminders(creator: discord.User | discord.Member) -> list[Remi
         result = await session.execute(stmt)
 
     return list(result.scalars().all())
+
+
+async def get_reminder_count(creator: discord.User | discord.Member) -> int:
+    async with get_session() as session:
+        stmt = select(func.count()).select_from(Reminder).where(Reminder.user_id == creator.id)
+        result = await session.execute(stmt)
+
+    return result.scalar() or 0
 
 
 async def get_reminder(

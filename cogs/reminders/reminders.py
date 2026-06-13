@@ -12,7 +12,7 @@ from lib.embeds.reminders import invalid_duration
 from lib.helpers.duration import DurationConverter
 from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.helpers.shorten import shorten_preserve
-from lib.logic.reminders import create_reminder, get_all_reminders
+from lib.logic.reminders import create_reminder, get_all_reminders, get_reminder_count
 from lib.views.pagination import PaginationV2View
 from lib.views.reminders import RemindersPageContainer
 
@@ -83,6 +83,18 @@ class TemplateCog(commands.Cog, description="Create reminders."):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Error",
                 description="You don't have permission to create server reminders in this channel.",
+                colour=Colour.red(),
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        if await get_reminder_count(ctx.author) >= 50:
+            command_str = (
+                "`/reminder list`" if ctx.interaction else f"`{ctx.clean_prefix}reminders`"
+            )
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Error",
+                description=f"You can only create up to 50 reminders. Delete some old reminders using the {command_str} command.",
                 colour=Colour.red(),
             )
             await ctx.reply(embed=embed)
