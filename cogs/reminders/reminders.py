@@ -140,7 +140,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
             view.add_item(
                 RemindersPageContainer(bot=self.bot, reminders=[], reminder_count=len(reminders))
             )
-        if len(reminder_pages) > 1:
+        elif len(reminder_pages) > 1:
             view = PaginationV2View(pages=reminder_pages)
         else:
             view.add_item(reminder_pages[0])
