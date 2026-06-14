@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING
+from datetime import timedelta
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord import Colour, Embed, app_commands
@@ -6,7 +7,11 @@ from discord.ext import commands
 from discord.ui import Button, View
 
 from lib.classes.guild_logger import GuildLogger
+from lib.embeds.general import guild_only, invalid_duration
+from lib.helpers.duration import DurationTransformer
 from lib.helpers.hybrid import SlashCommandOnly
+from lib.logic.polls import create_anonymous_poll
+from lib.views.polls import CloseNowButton, DeletePollButton, VoteButton
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -16,15 +21,29 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
 
+    async def cog_load(self) -> None:
+        self.bot.add_dynamic_items(VoteButton, CloseNowButton, DeletePollButton)
+
     @commands.command(
-        name="confession", description="Please use the slash command version instead."
+        name="anonymous",
+        aliases=["confession"],
+        description="Please use the slash command version instead.",
     )
     async def confession_prefix(self, ctx: commands.Context["TitaniumBot"]) -> None:
         raise SlashCommandOnly
 
-    @app_commands.command(name="confession", description="Send an anonymous confession.")
-    @app_commands.allowed_installs(guilds=True, users=False)
-    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    context = discord.app_commands.AppCommandContext(
+        guild=True, dm_channel=False, private_channel=False
+    )
+    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
+    confession_group = app_commands.Group(
+        name="anonymous",
+        description="Create anonymous confessions and polls.",
+        allowed_contexts=context,
+        allowed_installs=installs,
+    )
+
+    @confession_group.command(name="message", description="Send an anonymous confession.")
     @app_commands.guild_only()
     @app_commands.describe(
         message="Your message to include in the confession.",
@@ -125,8 +144,70 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             ),
             ephemeral=True,
         )
-    
-    
+
+    @confession_group.command(name="poll", description="Send an anonymous poll.")
+    @app_commands.guild_only()
+    @app_commands.checks.has_permissions(view_channel=True, send_messages=True, send_polls=True)
+    @app_commands.checks.bot_has_permissions(view_channel=True, send_messages=True)
+    @app_commands.checks.cooldown(1, 10)
+    async def anonymous_poll(
+        self,
+        interaction: discord.Interaction["TitaniumBot"],
+        title: str,
+        duration: app_commands.Transform[timedelta | None, DurationTransformer],
+        choice1: str,
+        choice2: Optional[str] = None,
+        choice3: Optional[str] = None,
+        choice4: Optional[str] = None,
+        choice5: Optional[str] = None,
+    ) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        if (
+            not interaction.channel_id
+            or not interaction.channel
+            or not interaction.guild_id
+            or not interaction.guild
+            or not isinstance(interaction.channel, discord.abc.GuildChannel)
+        ):
+            await interaction.followup.send(embed=guild_only(self.bot), ephemeral=True)
+            return
+
+        if not isinstance(interaction.channel, discord.abc.Messageable):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Error",
+                description="The current channel does not support messages.",
+                colour=Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        if not duration:
+            await interaction.followup.send(embed=invalid_duration(self.bot), ephemeral=True)
+            return
+
+        choices = [choice1, choice2, choice3, choice4, choice5]
+        choices = [choice for choice in choices if choice is not None]
+        closing_time = interaction.created_at + duration
+
+        await create_anonymous_poll(
+            bot=self.bot,
+            guild_id=interaction.guild_id,
+            channel=interaction.channel,
+            creator=interaction.user,
+            title=title,
+            choices=choices,
+            closing_time=closing_time,
+        )
+
+        await interaction.followup.send(
+            embed=Embed(
+                title=f"{self.bot.success_emoji} Created",
+                description="Your poll has been created.",
+                colour=Colour.green(),
+            ),
+            ephemeral=True,
+        )
 
 
 async def setup(bot: TitaniumBot) -> None:

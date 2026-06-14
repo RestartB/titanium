@@ -698,9 +698,10 @@ class AnonymousPoll(Base):
 
     channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     creator_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
 
     content: Mapped[str] = MappedColumn(String(length=1000), nullable=False)
-    answers: Mapped[list[str]] = MappedColumn(
+    choices: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)),
         server_default=text("ARRAY[]::varchar[]"),
     )
@@ -711,6 +712,9 @@ class AnonymousPoll(Base):
         back_populates="poll",
         cascade="all, delete-orphan",
         passive_deletes=True,
+    )
+    scheduled_task: Mapped[ScheduledTask] = relationship(
+        "ScheduledTask", back_populates="poll", cascade="all, delete-orphan", passive_deletes=True
     )
 
 
@@ -801,7 +805,10 @@ class Reminder(Base):
 
     content: Mapped[str] = MappedColumn(String(), nullable=False)
     scheduled_task: Mapped[ScheduledTask] = relationship(
-        "ScheduledTask", back_populates="reminder", cascade="all, delete-orphan"
+        "ScheduledTask",
+        back_populates="reminder",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     async def edit(self, content: Optional[str] = None, time: Optional[datetime] = None) -> Tag:
@@ -865,6 +872,14 @@ class ScheduledTask(Base):
     )
     reminder: Mapped["Reminder | None"] = relationship(
         "Reminder", back_populates="scheduled_task", uselist=False
+    )
+
+    # anonymous poll
+    poll_id: Mapped[uuid.UUID | None] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("anonymous_polls.id", ondelete="CASCADE"), nullable=True
+    )
+    poll: Mapped["AnonymousPoll | None"] = relationship(
+        "AnonymousPoll", back_populates="scheduled_task", uselist=False
     )
 
 
