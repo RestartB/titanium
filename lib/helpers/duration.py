@@ -43,7 +43,7 @@ class DurationConverter(commands.Converter):
 def timestring_to_duration(text: str) -> timedelta | None:
     if text.lower().strip() in ("permanent", "perma", "0"):
         return None
-    return timedelta(Duration(text).to_seconds())
+    return timedelta(seconds=Duration(text).to_seconds())
 
 
 def duration_to_timestring(
