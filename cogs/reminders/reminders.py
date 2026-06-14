@@ -132,13 +132,13 @@ class TemplateCog(commands.Cog, description="Create reminders."):
         reminder_pages: list[RemindersPageContainer] = []
         for chunk in reminder_chunks:
             reminder_pages.append(
-                RemindersPageContainer(bot=self.bot, reminders=chunk, reminder_count=len(reminders))
+                RemindersPageContainer(ctx=ctx, reminders=chunk, reminder_count=len(reminders))
             )
 
         view = LayoutView(timeout=300)
         if not reminder_pages:
             view.add_item(
-                RemindersPageContainer(bot=self.bot, reminders=[], reminder_count=len(reminders))
+                RemindersPageContainer(ctx=ctx, reminders=[], reminder_count=len(reminders))
             )
         elif len(reminder_pages) > 1:
             view = PaginationV2View(pages=reminder_pages)

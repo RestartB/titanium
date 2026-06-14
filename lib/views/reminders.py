@@ -2,6 +2,7 @@ from textwrap import shorten
 from typing import TYPE_CHECKING
 
 import discord
+from discord.ext import commands
 from discord.utils import format_dt
 
 from lib.embeds.general import guild_only
@@ -145,15 +146,22 @@ class ReminderRow(discord.ui.Section):
 
 
 class RemindersPageContainer(discord.ui.Container):
-    def __init__(self, bot: TitaniumBot, reminders: list[Reminder], reminder_count: int):
+    def __init__(
+        self, ctx: commands.Context["TitaniumBot"], reminders: list[Reminder], reminder_count: int
+    ):
         super().__init__(accent_colour=discord.Colour.light_grey())
 
-        self.add_item(
-            discord.ui.TextDisplay(
-                content=f"## Your Reminders\n{bot.info_emoji} There {'are' if reminder_count > 1 else 'is'} **{reminder_count} reminder{'s' if reminder_count > 1 else ''}** to show."
-            )
+        command_str = "/reminder create" if ctx.interaction else f"{ctx.clean_prefix}reminder"
+        content = "## Your Reminders\n"
+        content += (
+            f"{ctx.bot.info_emoji} There {'are' if reminder_count > 1 else 'is'} **{reminder_count} reminder{'s' if reminder_count > 1 else ''}** to show."
+            if reminder_count > 0
+            else f"There are no reminders to show. To create a new reminder, use the `{command_str}` command."
         )
 
-        self.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
-        for reminder in reminders:
-            self.add_item(ReminderRow(bot, reminder))
+        self.add_item(discord.ui.TextDisplay(content=content))
+
+        if reminder_count > 0:
+            self.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
+            for reminder in reminders:
+                self.add_item(ReminderRow(ctx.bot, reminder))
