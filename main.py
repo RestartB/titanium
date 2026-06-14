@@ -34,6 +34,7 @@ from sqlalchemy.orm import selectinload
 import lib.helpers.hybrid as adapters
 from lib.classes.automod_message import AutomodMessage
 from lib.embeds.general import guild_only
+from lib.helpers.hybrid import SlashCommandOnly
 from lib.helpers.log_error import log_error
 from lib.setup_logger import setup_logging
 from v1_to_v2.migrate import migrate_v1_to_v2
@@ -604,6 +605,13 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         embed = discord.Embed(
             title=f"{bot.error_emoji} Attachment Missing",
             description=f"You are missing a required attachment (`{error.param.name}`) for this command.",
+            colour=discord.Colour.red(),
+        )
+        await ctx.reply(embed=embed, ephemeral=True)
+    elif isinstance(error, SlashCommandOnly):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Slash Command Only",
+            description="This command is only available as a slash command.",
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed, ephemeral=True)
