@@ -686,6 +686,52 @@ class GuildConfessionsSettings(Base):
     )
     confessions_in_channel: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     confessions_channel_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+    polls_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+
+
+class AnonymousPoll(Base):
+    __tablename__ = "anonymous_polls"
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE")
+    )
+
+    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    creator_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+
+    content: Mapped[str] = MappedColumn(String(length=1000), nullable=False)
+    answers: Mapped[list[str]] = MappedColumn(
+        ARRAY(String(length=100)),
+        server_default=text("ARRAY[]::varchar[]"),
+    )
+    closing_time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=False)
+
+    responses: Mapped[list["AnonymousPollResponse"]] = relationship(
+        "AnonymousPollResponse",
+        back_populates="poll",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class AnonymousPollResponse(Base):
+    __tablename__ = "anonymous_poll_responses"
+    __table_args__ = (UniqueConstraint("user_id", "poll_id", name="uq_user_poll_id"),)
+
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    poll_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True),
+        ForeignKey("anonymous_polls.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    answer_index: Mapped[int] = MappedColumn(Integer, nullable=False)
+
+    poll: Mapped["AnonymousPoll"] = relationship(
+        "AnonymousPoll",
+        back_populates="responses",
+        uselist=False,
+    )
 
 
 class GuildTagSettings(Base):

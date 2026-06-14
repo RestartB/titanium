@@ -125,6 +125,8 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             ),
             ephemeral=True,
         )
+    
+    
 
 
 async def setup(bot: TitaniumBot) -> None:
