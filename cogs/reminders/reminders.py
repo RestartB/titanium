@@ -8,7 +8,7 @@ from discord.ext import commands
 from discord.ui import LayoutView
 from discord.utils import format_dt
 
-from lib.embeds.reminders import invalid_duration
+from lib.embeds.general import invalid_duration
 from lib.helpers.duration import DurationConverter
 from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.helpers.shorten import shorten_preserve
