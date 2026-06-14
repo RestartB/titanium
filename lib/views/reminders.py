@@ -5,8 +5,8 @@ import discord
 from discord.ext import commands
 from discord.utils import format_dt
 
-from lib.embeds.general import guild_only
-from lib.embeds.reminders import invalid_duration, reminder_deleted, reminder_edited
+from lib.embeds.general import guild_only, invalid_duration
+from lib.embeds.reminders import reminder_deleted, reminder_edited
 from lib.helpers.components import embed_to_v2
 from lib.helpers.duration import timestring_to_duration
 from lib.sql.sql import Reminder
