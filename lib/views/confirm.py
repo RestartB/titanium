@@ -13,7 +13,7 @@ class ConfirmView(View):
         self,
         bot: TitaniumBot,
         original_user: discord.User | discord.Member,
-        timeout: float = 5,
+        timeout: float = 120,
         ephemeral: bool = False,
     ):
         super().__init__(timeout=timeout)
