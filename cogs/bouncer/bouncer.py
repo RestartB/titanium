@@ -120,11 +120,14 @@ class BouncerMonitorCog(commands.Cog):
                 elif (
                     criteria.criteria_type == BouncerCriteriaType.AGE
                     and event_type == BouncerEventType.JOIN
+                    and member.joined_at
                 ):
                     if not criteria.account_age:
                         continue
 
-                    if (discord.utils.utcnow() - member.created_at).seconds <= criteria.account_age:
+                    if (
+                        member.joined_at - member.created_at
+                    ).total_seconds() <= criteria.account_age:
                         self.logger.debug("Account age match found")
                         spotted = True
                         break
