@@ -144,7 +144,7 @@ class Comment(discord.ui.Section):
         super().__init__(accessory=MenuButton(bot, comment))
         self.add_item(
             discord.ui.TextDisplay(
-                content=f"-# <@{comment.user_id}> - <t:{int(comment.time_created.timestamp())}:d>\n{discord.utils.escape_markdown(discord.utils.escape_mentions(comment.comment))}"
+                content=f"-# <@{comment.user_id}> - <t:{int(comment.time_created.timestamp())}:d>\n{discord.utils.escape_markdown(comment.comment)}"
             )
         )
 
