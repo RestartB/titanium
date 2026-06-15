@@ -123,7 +123,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
 
         await ctx.reply(embed=embed)
 
-    @reminder_group.command(name="list", description="Get a list of all of your reminders.")
+    @reminder_group.command(name="list", description="View and manage your created reminders.")
     @global_alias("reminders")
     @commands.cooldown(1, 5)
     async def reminder_list(self, ctx: commands.Context["TitaniumBot"]) -> None:
