@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord import (
+    AllowedMentions,
     ButtonStyle,
     Colour,
     Embed,
@@ -64,7 +65,9 @@ class OpenPageButton(Button["SettingsView"]):
 
     async def callback(self, interaction: Interaction["TitaniumBot"]) -> None:
         await interaction.response.defer(ephemeral=True)
-        await interaction.edit_original_response(view=self.target_view)
+        await interaction.edit_original_response(
+            view=self.target_view, allowed_mentions=AllowedMentions.none()
+        )
 
 
 class FeatureToggleButton(Button["SettingsView"]):
@@ -116,7 +119,7 @@ class FeatureToggleButton(Button["SettingsView"]):
         self.settings = guild_settings
         self.update_button()
 
-        await interaction.response.edit_message(view=self.view)
+        await interaction.response.edit_message(view=self.view, allowed_mentions=AllowedMentions.none())
 
 
 class BackButtonHomeReload(Button["SettingsView"]):
@@ -135,7 +138,8 @@ class BackButtonHomeReload(Button["SettingsView"]):
             guild_settings = await interaction.client.fetch_guild_config(interaction.guild.id)
 
         await interaction.edit_original_response(
-            view=SettingsView(interaction, interaction.client, guild_settings)
+            view=SettingsView(interaction, interaction.client, guild_settings),
+            allowed_mentions=AllowedMentions.none()
         )
 
 
@@ -226,7 +230,7 @@ class BackButtonTagReload(Button["SettingsView"]):
             if isinstance(self.previous_view.pages[0], SelectTagContainer)
             else None,
         )
-        await interaction.edit_original_response(view=view)
+        await interaction.edit_original_response(view=view, allowed_mentions=AllowedMentions.none())
 
 
 class TagActionsOptionRow(ActionRow):
@@ -247,7 +251,10 @@ class TagActionsOptionRow(ActionRow):
 
         if button.label == "Delete":
             button.label = "Press again to confirm"
-            await interaction.edit_original_response(view=self.my_view)
+            await interaction.edit_original_response(
+                view=self.my_view,
+                allowed_mentions=AllowedMentions.none()
+            )
             return
 
         config = (
@@ -296,7 +303,7 @@ class TagActionsOptionRow(ActionRow):
             if isinstance(self.previous_view.pages[0], SelectTagContainer)
             else None,
         )
-        await interaction.edit_original_response(view=view)
+        await interaction.edit_original_response(view=view, allowed_mentions=AllowedMentions.none())
 
         embed = discord.Embed(
             title=f"{interaction.client.success_emoji} Deleted",
@@ -410,7 +417,8 @@ class TagSelectDropdown(Select):
         await interaction.edit_original_response(
             view=TagsActionsView(
                 tag=self.values[0], user_tag=self.user_tag, previous_view=self.my_view
-            )
+            ),
+            allowed_mentions=AllowedMentions.none()
         )
 
 
@@ -500,7 +508,7 @@ class ServerTagsActionRow(ActionRow):
         view = await build_tags_pagination_view(
             interaction=interaction, user_tag=False, previous_view=self.previous_view
         )
-        await interaction.edit_original_response(view=view)
+        await interaction.edit_original_response(view=view, allowed_mentions=AllowedMentions.none())
 
 
 class UserTagsActionRow(ActionRow):
@@ -533,7 +541,7 @@ class UserTagsActionRow(ActionRow):
         view = await build_tags_pagination_view(
             interaction=interaction, user_tag=True, previous_view=self.previous_view
         )
-        await interaction.edit_original_response(view=view)
+        await interaction.edit_original_response(view=view, allowed_mentions=AllowedMentions.none())
 
 
 class ServerTagsView(LayoutView):
@@ -624,7 +632,8 @@ class PrefixModal(Modal, title="Add Prefix"):
 
         await interaction.client.refresh_guild_config_cache(interaction.guild_id)
         await interaction.edit_original_response(
-            view=PrefixView(interaction.client, guild_settings, self.previous_view)
+            view=PrefixView(interaction.client, guild_settings, self.previous_view),
+            allowed_mentions=AllowedMentions.none()
         )
 
 
@@ -691,7 +700,8 @@ class PrefixDropdown(Select):
 
         await interaction.client.refresh_guild_config_cache(interaction.guild_id)
         await interaction.edit_original_response(
-            view=PrefixView(interaction.client, guild_settings, self.previous_view)
+            view=PrefixView(interaction.client, guild_settings, self.previous_view),
+            allowed_mentions=AllowedMentions.none()
         )
 
         embed = discord.Embed(

@@ -50,7 +50,8 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
 
         if not isinstance(interaction.user, discord.Member) or not interaction.guild:
             await interaction.edit_original_response(
-                view=embed_to_v2(guild_only(interaction.client))
+                view=embed_to_v2(guild_only(interaction.client)),
+                allowed_mentions=discord.AllowedMentions.none()
             )
             return
 
@@ -76,7 +77,8 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
 
             if not duration:
                 await interaction.edit_original_response(
-                    view=embed_to_v2(invalid_duration(interaction.client))
+                    view=embed_to_v2(invalid_duration(interaction.client)),
+                    allowed_mentions=discord.AllowedMentions.none()
                 )
                 return
 
@@ -84,7 +86,8 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
 
         await self.reminder.edit(content=self.content_label.component.value, time=time_scheduled)
         await interaction.edit_original_response(
-            view=embed_to_v2(reminder_edited(interaction.client))
+            view=embed_to_v2(reminder_edited(interaction.client)),
+            allowed_mentions=discord.AllowedMentions.none()
         )
 
 
@@ -98,7 +101,8 @@ class DeleteReminderButton(discord.ui.Button):
 
         await self.reminder.delete()
         await interaction.edit_original_response(
-            view=embed_to_v2(reminder_deleted(interaction.client))
+            view=embed_to_v2(reminder_deleted(interaction.client)),
+            allowed_mentions=discord.AllowedMentions.none()
         )
 
 

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Sequence
 
-from discord import ButtonStyle, Colour, Embed, Interaction
+from discord import AllowedMentions, ButtonStyle, Colour, Embed, Interaction
 from discord.ui import ActionRow, Button, Container, LayoutView, View, button
 from sqlalchemy import select
 from sqlalchemy.orm import InstrumentedAttribute
@@ -290,4 +290,4 @@ class PaginationV2View(LayoutView):
         self.page_controls.next_button.disabled = self.current_page == len(self.pages) - 1
         self.page_controls.last_button.disabled = self.current_page == len(self.pages) - 1
 
-        await interaction.edit_original_response(view=self)
+        await interaction.edit_original_response(view=self, allowed_mentions=AllowedMentions.none())

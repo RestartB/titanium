@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
-from discord import Colour, app_commands
+from discord import AllowedMentions, Colour, app_commands
 from discord.ext import commands
 from discord.ui import LayoutView
 from discord.utils import format_dt
@@ -148,7 +148,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
         else:
             view.add_item(reminder_pages[0])
 
-        await ctx.reply(view=view)
+        await ctx.reply(view=view, allowed_mentions=AllowedMentions.none())
 
 
 async def setup(bot: TitaniumBot) -> None:
