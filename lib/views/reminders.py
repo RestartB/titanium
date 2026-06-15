@@ -144,7 +144,7 @@ class ReminderRow(discord.ui.Section):
 
         self.add_item(
             discord.ui.TextDisplay(
-                content=f"-# <@{reminder.user_id}> - {format_dt(reminder.time, style='R')}, `{'DMs' if reminder.dm else guild_name}`\n{discord.utils.escape_markdown(discord.utils.escape_mentions(reminder.content))}"
+                content=f"-# <@{reminder.user_id}> - {format_dt(reminder.time, style='R')}, `{'DMs' if reminder.dm else guild_name}`\n{discord.utils.escape_markdown(reminder.content)}"
             )
         )
 
