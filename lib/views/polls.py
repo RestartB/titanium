@@ -1,11 +1,13 @@
 import re
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import discord
 from discord import Colour
-from discord.utils import escape_markdown, format_dt
+from discord.utils import escape_markdown, format_dt, utcnow
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 
 from lib.sql.sql import AnonymousPoll, AnonymousPollResponse, get_session
 
@@ -21,6 +23,19 @@ def poll_not_found_embed(bot: "TitaniumBot") -> discord.Embed:
         description="Couldn't find the poll.",
         colour=Colour.red(),
     )
+
+
+def percentage_bar(votes: int, total_votes: int, width: int = 16) -> str:
+    if total_votes <= 0:
+        percent = 0
+    else:
+        percent = votes / total_votes
+
+    filled = round(percent * width)
+    empty = width - filled
+
+    bar = "█" * filled + "░" * empty
+    return f"`{bar}` {percent * 100:5.1f}% ({votes})"
 
 
 class VoteButton(
@@ -118,7 +133,11 @@ class CloseNowButton(
         await interaction.response.defer(ephemeral=True)
 
         async with get_session() as session:
-            poll = await session.get(AnonymousPoll, self.poll_id)
+            poll = await session.get(
+                AnonymousPoll,
+                self.poll_id,
+                options=(selectinload(AnonymousPoll.responses),),
+            )
 
         if not poll:
             await interaction.followup.send(
@@ -126,14 +145,20 @@ class CloseNowButton(
             )
             return
 
-        if poll.creator_id != interaction.user.id:
+        if poll.creator_id != interaction.user.id or not interaction.permissions.administrator:
             embed = discord.Embed(
                 title=f"{interaction.client.success_emoji} Not Allowed",
-                description="You didn't create this poll. Only the creator can close the poll.",
+                description="You didn't create this poll. Only the creator or administrators can close the poll.",
                 colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
+
+        view = ClosedPollView(bot=interaction.client, poll=poll, close_time=utcnow())
+        await interaction.edit_original_response(
+            view=view, allowed_mentions=discord.AllowedMentions.none()
+        )
+        await poll.delete()
 
         embed = discord.Embed(
             title=f"{interaction.client.success_emoji} Done",
@@ -155,6 +180,7 @@ class DeletePollButton(
                 emoji="🗑️",
                 label="Delete Poll",
                 custom_id=f"poll_delete:{poll_id}",
+                style=discord.ButtonStyle.red,
             )
         )
 
@@ -180,16 +206,17 @@ class DeletePollButton(
             )
             return
 
-        if poll.creator_id != interaction.user.id:
+        if poll.creator_id != interaction.user.id or not interaction.permissions.manage_messages:
             embed = discord.Embed(
                 title=f"{interaction.client.success_emoji} Not Allowed",
-                description="You didn't create this poll. Only the creator can delete the poll.",
+                description="You didn't create this poll. Only the creator or users with Manage Message permissions can delete the poll.",
                 colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         await interaction.delete_original_response()
+        await poll.delete()
 
         embed = discord.Embed(
             title=f"{interaction.client.success_emoji} Done",
@@ -205,6 +232,44 @@ class ChoiceRow(discord.ui.Section):
             discord.ui.TextDisplay(content=escape_markdown(choice)),
             accessory=VoteButton(poll.id, index),
         )
+
+
+class ClosedPollView(discord.ui.LayoutView):
+    def __init__(self, bot: TitaniumBot, poll: AnonymousPoll, close_time: datetime):
+        super().__init__(timeout=None)
+
+        container = discord.ui.Container(accent_colour=Colour.light_grey())
+
+        container.add_item(
+            discord.ui.TextDisplay(content=f"## Anonymous Poll - Results\n{poll.content}")
+        )
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
+
+        results = {}
+        for i in range(0, len(poll.choices)):
+            results[i] = sum(
+                [1 if response.answer_index == i else 0 for response in poll.responses]
+            )
+
+        for i, choice in enumerate(poll.choices):
+            container.add_item(
+                discord.ui.TextDisplay(
+                    escape_markdown(choice)
+                    + f"\n{percentage_bar(votes=results[i], total_votes=len(poll.responses))}"
+                )
+            )
+            if i + 1 != len(poll.choices):
+                container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
+        container.add_item(
+            discord.ui.TextDisplay(
+                "- This poll has closed.\n"
+                f"- The poll closed {format_dt(close_time, style='R')} ({format_dt(close_time)})."
+            )
+        )
+
+        self.add_item(container)
 
 
 class PollView(discord.ui.LayoutView):

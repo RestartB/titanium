@@ -717,6 +717,10 @@ class AnonymousPoll(Base):
         "ScheduledTask", back_populates="poll", cascade="all, delete-orphan", passive_deletes=True
     )
 
+    async def delete(self) -> None:
+        async with get_session() as session:
+            await session.delete(self)
+
 
 class AnonymousPollResponse(Base):
     __tablename__ = "anonymous_poll_responses"

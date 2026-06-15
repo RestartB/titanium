@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands, tasks
+from discord.utils import utcnow
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -14,6 +15,7 @@ from lib.enums.scheduled_events import EventType
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.sql.sql import ScheduledTask, get_session
+from lib.views.polls import ClosedPollView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -278,7 +280,25 @@ class ScheduledTasksCog(commands.Cog):
                     )
             finally:
                 await reminder.delete()
+        elif task.type == EventType.POLL_END:
+            poll = task.poll
+            if not poll:
+                return
 
+            try:
+                channel = self.bot.get_channel(poll.channel_id)
+                if not channel or not isinstance(channel, discord.abc.Messageable):
+                    return
+
+                try:
+                    message = await channel.fetch_message(poll.message_id)
+                except discord.NotFound, discord.Forbidden:
+                    return
+
+                view = ClosedPollView(bot=self.bot, poll=poll, close_time=utcnow())
+                await message.edit(view=view, allowed_mentions=discord.AllowedMentions.none())
+            finally:
+                await poll.delete()
         else:
             self.logger.warning(
                 f"Task {task.id} has unknown task type: {task.type} (guild: {task.guild_id})"
@@ -293,7 +313,7 @@ class ScheduledTasksCog(commands.Cog):
             # Fetch all tasks that are due
             stmt = (
                 select(ScheduledTask)
-                .options(selectinload(ScheduledTask.reminder))
+                .options(selectinload("*"))
                 .where(ScheduledTask.time_scheduled <= datetime.now(timezone.utc))
             )
             result = await session.execute(stmt)
