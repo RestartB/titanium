@@ -79,7 +79,10 @@ class TemplateCog(commands.Cog, description="Create reminders."):
             await ctx.reply(embed=embed)
             return
 
-        if not dm and (not ctx.permissions.view_channel or not ctx.permissions.send_messages):
+        if not dm and (
+            not ctx.permissions.view_channel or not ctx.permissions.send_messages
+            or (ctx.interaction and not ctx.permissions.use_application_commands)
+        ):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Error",
                 description="You don't have permission to create server reminders in this channel.",
