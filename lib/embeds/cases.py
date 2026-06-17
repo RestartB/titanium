@@ -116,7 +116,7 @@ def comment_edited(bot: TitaniumBot) -> Embed:
 
 def not_your_comment(bot: TitaniumBot) -> Embed:
     return Embed(
-        title=f"{bot.error_emoji} Not your comment",
-        description="This is not your comment. Only the comment creator can modify this comment.",
+        title=f"{bot.error_emoji} Not Allowed",
+        description="This is not your comment. Only the comment creator can modify it.",
         colour=Colour.red(),
     )

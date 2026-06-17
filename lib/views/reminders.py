@@ -51,7 +51,7 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
         if not isinstance(interaction.user, discord.Member) or not interaction.guild:
             await interaction.edit_original_response(
                 view=embed_to_v2(guild_only(interaction.client)),
-                allowed_mentions=discord.AllowedMentions.none()
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -78,7 +78,7 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
             if not duration:
                 await interaction.edit_original_response(
                     view=embed_to_v2(invalid_duration(interaction.client)),
-                    allowed_mentions=discord.AllowedMentions.none()
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 return
 
@@ -87,7 +87,7 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
         await self.reminder.edit(content=self.content_label.component.value, time=time_scheduled)
         await interaction.edit_original_response(
             view=embed_to_v2(reminder_edited(interaction.client)),
-            allowed_mentions=discord.AllowedMentions.none()
+            allowed_mentions=discord.AllowedMentions.none(),
         )
 
 
@@ -99,10 +99,22 @@ class DeleteReminderButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
         await interaction.response.defer(ephemeral=True)
 
+        if interaction.user.id != self.reminder.user_id:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Not Allowed",
+                description="This is not your reminder. Only the reminder creator can delete it.",
+                colour=discord.Colour.red(),
+            )
+            await interaction.edit_original_response(
+                view=embed_to_v2(embed),
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+            return
+
         await self.reminder.delete()
         await interaction.edit_original_response(
             view=embed_to_v2(reminder_deleted(interaction.client)),
-            allowed_mentions=discord.AllowedMentions.none()
+            allowed_mentions=discord.AllowedMentions.none(),
         )
 
 
@@ -112,6 +124,18 @@ class EditReminderButton(discord.ui.Button):
         self.reminder = reminder
 
     async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        if interaction.user.id != self.reminder.user_id:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Not Allowed",
+                description="This is not your reminder. Only the reminder creator can edit it.",
+                colour=discord.Colour.red(),
+            )
+            await interaction.response.edit_message(
+                view=embed_to_v2(embed),
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+            return
+
         modal = ReminderModal(reminder=self.reminder)
         await interaction.response.send_modal(modal)
 
@@ -123,6 +147,18 @@ class MenuButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
         await interaction.response.defer(ephemeral=True)
+
+        if interaction.user.id != self.reminder.user_id:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Not Allowed",
+                description="This is not your reminder. Only the reminder creator can manage it.",
+                colour=discord.Colour.red(),
+            )
+            await interaction.edit_original_response(
+                view=embed_to_v2(embed),
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+            return
 
         view = discord.ui.LayoutView()
         options_row = discord.ui.ActionRow(

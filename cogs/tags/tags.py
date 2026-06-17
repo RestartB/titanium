@@ -19,16 +19,34 @@ if TYPE_CHECKING:
 
 
 class TagOptionView(discord.ui.View):
-    def __init__(self, bot: TitaniumBot, timeout: float = 60.0, ephemeral: bool = False):
+    def __init__(
+        self,
+        original_user: discord.User | discord.Member,
+        timeout: float = 60.0,
+        ephemeral: bool = False,
+    ):
         super().__init__(timeout=timeout)
 
         self.value = None
         self.timed_out = False
+        self.original_user = original_user
         self.interaction: discord.Interaction | None = None
         self.ephemeral = ephemeral
 
     async def on_timeout(self) -> None:
         self.timed_out = True
+
+    async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
+        if interaction.user.id != self.original_user.id:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Not Allowed",
+                description="Only the user who sent the command can interact with this button.",
+                colour=discord.Colour.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return False
+
+        return True
 
     @discord.ui.button(label="Server Tag")
     async def server(
@@ -304,7 +322,7 @@ class TagCommandsCog(commands.Cog):
                 colour=discord.Colour.light_grey(),
             )
 
-            view = TagOptionView(self.bot)
+            view = TagOptionView(original_user=ctx.author)
             await ctx.reply(embed=embed, view=view)
             timed_out = await view.wait()
 

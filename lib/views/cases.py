@@ -254,7 +254,7 @@ class ViewCommentsButton(discord.ui.Button):
         ):
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Missing Permissions",
-                description="You do not have permission to view cases comments. Please ensure you have the Kick Members, Ban Members or Timeout Members permission.",
+                description="You do not have permission to view case comments. Please ensure you have the Kick Members, Ban Members or Timeout Members permission.",
                 colour=discord.Colour.red(),
             )
 
@@ -284,5 +284,5 @@ class ViewCommentsButton(discord.ui.Button):
 
         layout = PaginationV2View(pages)
         await interaction.followup.send(
-            view=layout, allowed_mentions=discord.discord.AllowedMentions.none(), ephemeral=True
+            view=layout, allowed_mentions=discord.AllowedMentions.none(), ephemeral=True
         )
