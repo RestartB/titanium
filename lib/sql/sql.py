@@ -763,7 +763,13 @@ class Reminder(Base):
             raise ValueError("Content or time must be specified")
 
         async with get_session() as session:
-            reminder = await session.get(Reminder, self.id)
+            result = await session.execute(
+                select(Reminder)
+                .where(Reminder.id == self.id)
+                .options(selectinload(Reminder.scheduled_task))
+            )
+            reminder = result.scalar_one_or_none()
+
             if not reminder:
                 raise RuntimeError("Failed to get reminder")
 
