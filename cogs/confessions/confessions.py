@@ -163,17 +163,22 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(view_channel=True, send_messages=True, send_polls=True)
     @app_commands.checks.bot_has_permissions(view_channel=True, send_messages=True)
+    @app_commands.describe(
+        title="The title of the poll.",
+        duration="The duration to wait before closing the poll.",
+        choice1="The first choice. Use the optional arguments to provide up to 4 more choices.",
+    )
     @app_commands.checks.cooldown(1, 10)
     async def anonymous_poll(
         self,
         interaction: discord.Interaction["TitaniumBot"],
         title: str,
         duration: app_commands.Transform[timedelta | None, DurationTransformer],
-        choice1: str,
-        choice2: Optional[str] = None,
-        choice3: Optional[str] = None,
-        choice4: Optional[str] = None,
-        choice5: Optional[str] = None,
+        choice1: app_commands.Range[str, 1, 100],
+        choice2: Optional[app_commands.Range[str, 1, 100]] = None,
+        choice3: Optional[app_commands.Range[str, 1, 100]] = None,
+        choice4: Optional[app_commands.Range[str, 1, 100]] = None,
+        choice5: Optional[app_commands.Range[str, 1, 100]] = None,
     ) -> None:
         await interaction.response.defer(ephemeral=True)
 
