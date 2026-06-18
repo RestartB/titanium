@@ -24,7 +24,7 @@ dependencies = [
     "rapidfuzz>=3.14.3",
     "shortuuid>=1.0.13",
     "spotipy>=2.25.1",
-    "sqlalchemy[asyncio]>=2.0.50",
+    "sqlalchemy[asyncio]>=2.0.51",
     "wand>=0.7.1",
 ]
 
