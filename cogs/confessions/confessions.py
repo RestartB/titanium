@@ -5,6 +5,7 @@ import discord
 from discord import Colour, Embed, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
+from discord.utils import format_dt
 
 from lib.classes.guild_logger import GuildLogger
 from lib.embeds.general import guild_only, invalid_duration
@@ -43,6 +44,24 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         allowed_installs=installs,
     )
 
+    async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
+        if not interaction.guild:
+            raise ValueError("Guild only command but no guild available")
+
+        guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
+        if not guild_settings or not guild_settings.confessions_enabled:
+            await interaction.response.send_message(
+                embed=Embed(
+                    colour=Colour.red(),
+                    title=f"{self.bot.error_emoji} Confessions Disabled",
+                    description="The confession module is disabled. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
+                ),
+                ephemeral=True,
+            )
+            return False
+
+        return True
+
     @confession_group.command(name="message", description="Send an anonymous confession.")
     @app_commands.guild_only()
     @app_commands.describe(
@@ -71,17 +90,8 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             return
 
         guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
-
-        if not guild_settings or not guild_settings.confessions_enabled:
-            await interaction.followup.send(
-                embed=Embed(
-                    colour=Colour.red(),
-                    title=f"{self.bot.error_emoji} Confessions Disabled",
-                    description="The confession module is disabled. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
-                ),
-                ephemeral=True,
-            )
-            return
+        if not guild_settings:
+            raise RuntimeError("No config returned")
 
         channel = interaction.channel
         if (
@@ -163,6 +173,15 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
     ) -> None:
         await interaction.response.defer(ephemeral=True)
 
+        if interaction.user.id in self.bot.opt_out:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Opted Out",
+                description="You have opted out of data collection and cannot use this feature.",
+                colour=discord.Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
         if (
             not interaction.channel_id
             or not interaction.channel
@@ -186,6 +205,19 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             await interaction.followup.send(embed=invalid_duration(self.bot), ephemeral=True)
             return
 
+        guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
+        if not guild_settings:
+            raise RuntimeError("No config returned")
+
+        if not guild_settings.confessions_settings.polls_enabled:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Polls Disabled",
+                description="Anonymous Polls are disabled in this server. Ask a server admin to enable them in the Titanium Dashboard.",
+                colour=Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
         choices = [choice1, choice2, choice3, choice4, choice5]
         choices = [choice for choice in choices if choice is not None]
         closing_time = interaction.created_at + duration
@@ -203,7 +235,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         await interaction.followup.send(
             embed=Embed(
                 title=f"{self.bot.success_emoji} Created",
-                description="Your poll has been created.",
+                description=f"Your poll has been created. It will close {format_dt(closing_time, style='R')} ({format_dt(closing_time)}), or when you press the close / delete button.",
                 colour=Colour.green(),
             ),
             ephemeral=True,

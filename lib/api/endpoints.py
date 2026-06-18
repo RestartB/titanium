@@ -13,10 +13,7 @@ def confessions_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
     config = bot.guild_configs[guild.id]
     if not config.confessions_settings:
         return web.json_response(
-            {
-                "confessions_in_channel": True,
-                "confessions_channel_id": None,
-            }
+            {"confessions_in_channel": True, "confessions_channel_id": None, "polls_enabled": True}
         )
     return web.json_response(
         {
@@ -24,6 +21,7 @@ def confessions_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
             "confessions_channel_id": str(config.confessions_settings.confessions_channel_id)
             if config.confessions_settings.confessions_channel_id
             else None,
+            "polls_enabled": config.confessions_settings.polls_enabled,
         }
     )
 

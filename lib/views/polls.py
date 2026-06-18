@@ -68,6 +68,15 @@ class VoteButton(
     async def callback(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
         await interaction.response.defer(ephemeral=True)
 
+        if interaction.user.id in interaction.client.opt_out:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Opted Out",
+                description="You have opted out of data collection and cannot use this feature.",
+                colour=discord.Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
         try:
             async with get_session() as session:
                 poll = await session.get(AnonymousPoll, self.poll_id)

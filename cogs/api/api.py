@@ -1520,6 +1520,7 @@ class APICog(commands.Cog):
                     if validated_config.confessions_channel_id
                     else None
                 )
+                db_config.polls_enabled = validated_config.polls_enabled
 
                 session.add(db_config)
         elif module_name == "moderation" and isinstance(validated_config, ModerationConfigModel):
