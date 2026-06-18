@@ -274,7 +274,8 @@ class ClosedPollView(discord.ui.LayoutView):
         container.add_item(
             discord.ui.TextDisplay(
                 "- This poll has closed.\n"
-                f"- The poll closed {format_dt(close_time, style='R')} ({format_dt(close_time)})."
+                f"- It closed {format_dt(close_time, style='R')} ({format_dt(close_time)}).\n"
+                f"- `{len(poll.responses):,}` members responded in total."
             )
         )
 

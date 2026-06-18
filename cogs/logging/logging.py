@@ -214,6 +214,7 @@ class EventLoggingCog(commands.Cog):
             payload.cached_message
             and not payload.cached_message.content
             and not payload.cached_message.attachments
+            and not payload.cached_message.poll
         ):
             return
 

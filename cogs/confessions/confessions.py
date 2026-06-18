@@ -37,11 +37,13 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         guild=True, dm_channel=False, private_channel=False
     )
     installs = discord.app_commands.AppInstallationType(guild=True, user=False)
+    default_permissions = discord.Permissions(view_channel=True, send_messages=True)
     confession_group = app_commands.Group(
         name="anonymous",
         description="Create anonymous confessions and polls.",
         allowed_contexts=context,
         allowed_installs=installs,
+        default_permissions=default_permissions,
     )
 
     async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
@@ -64,6 +66,8 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
 
     @confession_group.command(name="message", description="Send an anonymous confession.")
     @app_commands.guild_only()
+    @app_commands.checks.has_permissions(view_channel=True, send_messages=True)
+    @app_commands.checks.bot_has_permissions(view_channel=True, send_messages=True)
     @app_commands.describe(
         message="Your message to include in the confession.",
     )
@@ -224,7 +228,6 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
 
         await create_anonymous_poll(
             bot=self.bot,
-            guild_id=interaction.guild_id,
             channel=interaction.channel,
             creator=interaction.user,
             title=title,
