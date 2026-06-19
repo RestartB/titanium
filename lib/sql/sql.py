@@ -701,6 +701,7 @@ class AnonymousPoll(Base):
     message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
 
     content: Mapped[str] = MappedColumn(String(length=1000), nullable=False)
+    image_url: Mapped[str | None] = MappedColumn(String(), nullable=True)
     choices: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)),
         server_default=text("ARRAY[]::varchar[]"),

@@ -252,6 +252,8 @@ class ClosedPollView(discord.ui.LayoutView):
         container.add_item(
             discord.ui.TextDisplay(content=f"## Anonymous Poll - Results\n{poll.content}")
         )
+        if poll.image_url:
+            container.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem(poll.image_url)))
         container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
 
         results = {}
@@ -289,6 +291,8 @@ class PollView(discord.ui.LayoutView):
         container = discord.ui.Container(accent_colour=Colour.light_grey())
 
         container.add_item(discord.ui.TextDisplay(content=f"## Anonymous Poll\n{poll.content}"))
+        if poll.image_url:
+            container.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem(poll.image_url)))
         container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
 
         for i, choice in enumerate(poll.choices):

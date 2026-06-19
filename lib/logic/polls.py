@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import discord
 
@@ -20,6 +20,7 @@ async def create_anonymous_poll(
     title: str,
     choices: list[str],
     closing_time: datetime,
+    image_url: Optional[str] = None,
 ) -> AnonymousPoll:
     if not isinstance(channel, discord.abc.GuildChannel):
         raise ValueError("Channel provided is not a guild channel")
@@ -40,6 +41,9 @@ async def create_anonymous_poll(
             user_id=creator.id,
         ),
     )
+
+    if image_url:
+        poll.image_url = image_url
 
     view = PollView(bot=bot, poll=poll)
     msg = await channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())

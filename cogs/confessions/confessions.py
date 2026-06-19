@@ -159,7 +159,9 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             ephemeral=True,
         )
 
-    @confession_group.command(name="poll", description="Send an anonymous poll.")
+    @confession_group.command(
+        name="poll", description="Send an anonymous poll with up to 5 options, and an image."
+    )
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(view_channel=True, send_messages=True, send_polls=True)
     @app_commands.checks.bot_has_permissions(view_channel=True, send_messages=True)
@@ -167,6 +169,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         title="The title of the poll.",
         duration="The duration to wait before closing the poll.",
         choice1="The first choice. Use the optional arguments to provide up to 4 more choices.",
+        image="Optional: add an image to display alongside the title.",
     )
     @app_commands.checks.cooldown(1, 10)
     async def anonymous_poll(
@@ -179,6 +182,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         choice3: Optional[app_commands.Range[str, 1, 100]] = None,
         choice4: Optional[app_commands.Range[str, 1, 100]] = None,
         choice5: Optional[app_commands.Range[str, 1, 100]] = None,
+        image: Optional[discord.Attachment] = None,
     ) -> None:
         await interaction.response.defer(ephemeral=True)
 
@@ -238,6 +242,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             title=title,
             choices=choices,
             closing_time=closing_time,
+            image_url=image.url if image else None,
         )
 
         await interaction.followup.send(
