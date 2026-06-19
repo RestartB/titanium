@@ -3039,6 +3039,7 @@ class GuildLogger:
         interaction: discord.Interaction["TitaniumBot"],
         confession_channel: discord.abc.GuildChannel,
         message: str,
+        image: discord.Attachment | None,
     ) -> None:
         await self._ensure_config()
         if not self._exists_and_enabled("titanium_confession"):
@@ -3068,6 +3069,9 @@ class GuildLogger:
             inline=False,
         )
 
+        if image:
+            embed.set_image(url=image.url)
+
         view = discord.ui.View()
         view.add_item(
             discord.ui.Button(
@@ -3083,6 +3087,7 @@ class GuildLogger:
                 self.config.logging_settings.channels.get("titanium_confession")
             ),
             embed=embed,
+            view=view,
         )
 
     async def titanium_anon_poll(
@@ -3090,6 +3095,7 @@ class GuildLogger:
         poll: AnonymousPoll,
         poll_creator: discord.User | discord.Member,
         poll_message: discord.Message,
+        attachment: discord.Attachment | None,
     ) -> None:
         if not isinstance(poll_message.channel, discord.abc.GuildChannel):
             raise ValueError("Message channel is not a guild channel")
@@ -3128,10 +3134,24 @@ class GuildLogger:
             )
         )
 
+        if attachment and attachment.content_type and attachment.content_type.startswith("image/"):
+            embed.set_image(url=attachment.url)
+        elif attachment and (
+            not attachment.content_type or attachment.content_type.startswith("video/")
+        ):
+            view.add_item(
+                discord.ui.Button(
+                    label="View Attachment",
+                    url=poll.image_url,
+                    style=discord.ButtonStyle.url,
+                )
+            )
+
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(
                 self.config.logging_settings.channels.get("titanium_anon_poll")
             ),
             embed=embed,
+            view=view,
         )

@@ -1521,6 +1521,7 @@ class APICog(commands.Cog):
                     else None
                 )
                 db_config.polls_enabled = validated_config.polls_enabled
+                db_config.attachments_allowed = validated_config.attachments_allowed
 
                 session.add(db_config)
         elif module_name == "moderation" and isinstance(validated_config, ModerationConfigModel):

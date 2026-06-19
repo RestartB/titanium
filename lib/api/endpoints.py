@@ -22,6 +22,7 @@ def confessions_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
             if config.confessions_settings.confessions_channel_id
             else None,
             "polls_enabled": config.confessions_settings.polls_enabled,
+            "attachments_allowed": config.confessions_settings.attachments_allowed,
         }
     )
 

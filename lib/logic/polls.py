@@ -20,7 +20,7 @@ async def create_anonymous_poll(
     title: str,
     choices: list[str],
     closing_time: datetime,
-    image_url: Optional[str] = None,
+    attachment: Optional[discord.Attachment] = None,
 ) -> AnonymousPoll:
     if not isinstance(channel, discord.abc.GuildChannel):
         raise ValueError("Channel provided is not a guild channel")
@@ -42,8 +42,8 @@ async def create_anonymous_poll(
         ),
     )
 
-    if image_url:
-        poll.image_url = image_url
+    if attachment:
+        poll.image_url = attachment.url
 
     view = PollView(poll=poll)
     msg = await channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
@@ -55,6 +55,6 @@ async def create_anonymous_poll(
         session.add(poll)
 
     guild_logger = GuildLogger(bot=bot, guild=channel.guild)
-    await guild_logger.titanium_anon_poll(poll, creator, msg)
+    await guild_logger.titanium_anon_poll(poll, creator, msg, attachment)
 
     return poll

@@ -687,6 +687,7 @@ class GuildConfessionsSettings(Base):
     confessions_in_channel: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     confessions_channel_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     polls_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    attachments_allowed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
 
 
 class AnonymousPoll(Base):

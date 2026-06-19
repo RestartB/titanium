@@ -67,6 +67,7 @@ class ConfessionsConfigModel(BaseModel):
     confessions_in_channel: bool
     confessions_channel_id: Optional[str] = None
     polls_enabled: bool
+    attachments_allowed: bool
 
 
 class ModerationConfigModel(BaseModel):

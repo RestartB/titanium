@@ -70,16 +70,29 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
     @app_commands.checks.bot_has_permissions(view_channel=True, send_messages=True)
     @app_commands.describe(
         message="Your message to include in the confession.",
+        image="Optional: add an image to include with the confession.",
     )
     @app_commands.checks.cooldown(1, 10)
     async def confession(
         self,
         interaction: discord.Interaction["TitaniumBot"],
         message: str,
+        image: Optional[discord.Attachment] = None,
     ) -> None:
         await interaction.response.defer(ephemeral=True)
 
         if interaction.guild is None or not interaction.is_guild_integration():
+            return
+
+        if image and (not image.content_type or not image.content_type.startswith("image/")):
+            await interaction.followup.send(
+                embed=Embed(
+                    colour=Colour.red(),
+                    title=f"{self.bot.error_emoji} Invalid File",
+                    description="The attached file must be an image.",
+                ),
+                ephemeral=True,
+            )
             return
 
         if not isinstance(interaction.channel, discord.abc.Messageable):
@@ -130,25 +143,44 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             )
             return
 
-        conf_msg = await channel.send(
-            embed=Embed(
-                title="Anonymous Confession",
-                description=message,
-                colour=Colour.light_grey(),
-                timestamp=interaction.created_at,
-            )
+        embed = Embed(
+            title="Anonymous Confession",
+            description=message,
+            colour=Colour.light_grey(),
+            timestamp=interaction.created_at,
         )
+        if image and guild_settings.confessions_settings.attachments_allowed:
+            embed.set_image(url=image.url)
+
+        conf_msg = await channel.send(embed=embed)
 
         if isinstance(channel, discord.abc.GuildChannel):
             logger = GuildLogger(self.bot, interaction.guild)
-            await logger.titanium_confession(interaction, channel, message)
+            await logger.titanium_confession(
+                interaction=interaction,
+                confession_channel=channel,
+                message=message,
+                image=(
+                    image
+                    if image and guild_settings.confessions_settings.attachments_allowed
+                    else None
+                ),
+            )
+
+        embed = Embed(
+            title=f"{self.bot.success_emoji} Sent",
+            description="Your confession has been sent.",
+            colour=Colour.green(),
+        )
+
+        if image and not guild_settings.confessions_settings.attachments_allowed:
+            embed.add_field(
+                name="Note",
+                value=f"{interaction.client.info_emoji} Attachments in anonymous messages are disabled in this server. Ask a server admin to enable them in the Titanium Dashboard.",
+            )
 
         await interaction.followup.send(
-            embed=Embed(
-                title=f"{self.bot.success_emoji} Sent",
-                description="Your confession has been sent.",
-                colour=Colour.green(),
-            ),
+            embed=embed,
             view=View().add_item(
                 Button(
                     label="View Confession",
@@ -169,7 +201,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         title="The title of the poll.",
         duration="The duration to wait before ending the poll.",
         choice1="The first choice. Use the optional arguments to provide up to 4 more choices.",
-        image="Optional: add an image to display alongside the title.",
+        image_or_video="Optional: add an image or video to display alongside the title.",
     )
     @app_commands.checks.cooldown(1, 10)
     async def anonymous_poll(
@@ -182,7 +214,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         choice3: Optional[app_commands.Range[str, 1, 100]] = None,
         choice4: Optional[app_commands.Range[str, 1, 100]] = None,
         choice5: Optional[app_commands.Range[str, 1, 100]] = None,
-        image: Optional[discord.Attachment] = None,
+        image_or_video: Optional[discord.Attachment] = None,
     ) -> None:
         await interaction.response.defer(ephemeral=True)
 
@@ -193,6 +225,23 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
                 colour=discord.Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        if image_or_video and (
+            not image_or_video.content_type
+            or (
+                not image_or_video.content_type.startswith("image/")
+                and not image_or_video.content_type.startswith("video/")
+            )
+        ):
+            await interaction.followup.send(
+                embed=Embed(
+                    colour=Colour.red(),
+                    title=f"{self.bot.error_emoji} Invalid File",
+                    description="The attached file must be an image.",
+                ),
+                ephemeral=True,
+            )
             return
 
         if (
@@ -242,15 +291,27 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             title=title,
             choices=choices,
             closing_time=closing_time,
-            image_url=image.url if image else None,
+            attachment=(
+                image_or_video
+                if image_or_video and guild_settings.confessions_settings.attachments_allowed
+                else None
+            ),
         )
 
+        embed = Embed(
+            title=f"{self.bot.success_emoji} Created",
+            description=f"Your poll has been created. It will close {format_dt(closing_time, style='R')} ({format_dt(closing_time)}), or when you press the close / delete button.",
+            colour=Colour.green(),
+        )
+
+        if image_or_video and not guild_settings.confessions_settings.attachments_allowed:
+            embed.add_field(
+                name="Note",
+                value=f"{interaction.client.info_emoji} Attachments in anonymous messages are disabled in this server. Ask a server admin to enable them in the Titanium Dashboard.",
+            )
+
         await interaction.followup.send(
-            embed=Embed(
-                title=f"{self.bot.success_emoji} Created",
-                description=f"Your poll has been created. It will close {format_dt(closing_time, style='R')} ({format_dt(closing_time)}), or when you press the close / delete button.",
-                colour=Colour.green(),
-            ),
+            embed=embed,
             ephemeral=True,
         )
 
