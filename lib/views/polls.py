@@ -123,7 +123,7 @@ class CloseNowButton(
         super().__init__(
             discord.ui.Button(
                 emoji="⏰",
-                label="Close Poll Now",
+                label="End Poll Now",
                 custom_id=f"poll_close:{poll_id}",
             )
         )
@@ -156,8 +156,8 @@ class CloseNowButton(
 
         if poll.creator_id != interaction.user.id or not interaction.permissions.administrator:
             embed = discord.Embed(
-                title=f"{interaction.client.success_emoji} Not Allowed",
-                description="You didn't create this poll. Only the creator or administrators can close the poll.",
+                title=f"{interaction.client.error_emoji} Not Allowed",
+                description="You didn't create this poll. Only the creator can end the poll.",
                 colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
@@ -217,7 +217,7 @@ class DeletePollButton(
 
         if poll.creator_id != interaction.user.id or not interaction.permissions.manage_messages:
             embed = discord.Embed(
-                title=f"{interaction.client.success_emoji} Not Allowed",
+                title=f"{interaction.client.error_emoji} Not Allowed",
                 description="You didn't create this poll. Only the creator or users with Manage Message permissions can delete the poll.",
                 colour=Colour.red(),
             )
@@ -275,8 +275,8 @@ class ClosedPollView(discord.ui.LayoutView):
         container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
         container.add_item(
             discord.ui.TextDisplay(
-                "- This poll has closed.\n"
-                f"- It closed {format_dt(close_time, style='R')} ({format_dt(close_time)}).\n"
+                "- This poll has ended.\n"
+                f"- It ended {format_dt(close_time, style='R')} ({format_dt(close_time)}).\n"
                 f"- `{len(poll.responses):,}` members responded in total."
             )
         )
@@ -305,7 +305,7 @@ class PollView(discord.ui.LayoutView):
             discord.ui.TextDisplay(
                 "- Vote up to 1 time.\n"
                 "- Your answer is fully anonymous.\n"
-                f"- The poll will close {format_dt(poll.closing_time, style='R')} ({format_dt(poll.closing_time)})."
+                f"- The poll will end {format_dt(poll.closing_time, style='R')} ({format_dt(poll.closing_time)})."
             )
         )
 

@@ -64,7 +64,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
 
         return True
 
-    @confession_group.command(name="message", description="Send an anonymous confession.")
+    @confession_group.command(name="confession", description="Send an anonymous confession.")
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(view_channel=True, send_messages=True)
     @app_commands.checks.bot_has_permissions(view_channel=True, send_messages=True)
@@ -167,7 +167,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
     @app_commands.checks.bot_has_permissions(view_channel=True, send_messages=True)
     @app_commands.describe(
         title="The title of the poll.",
-        duration="The duration to wait before closing the poll.",
+        duration="The duration to wait before ending the poll.",
         choice1="The first choice. Use the optional arguments to provide up to 4 more choices.",
         image="Optional: add an image to display alongside the title.",
     )
