@@ -45,7 +45,7 @@ async def create_anonymous_poll(
     if image_url:
         poll.image_url = image_url
 
-    view = PollView(bot=bot, poll=poll)
+    view = PollView(poll=poll)
     msg = await channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
 
     poll.message_id = msg.id

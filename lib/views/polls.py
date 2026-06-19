@@ -1,7 +1,7 @@
 import re
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord import Colour
@@ -111,6 +111,25 @@ class VoteButton(
                     .values(answer_index=self.index)
                 )
 
+            # refresh poll to get latest votes
+            poll = await session.get(
+                AnonymousPoll,
+                self.poll_id,
+                options=(selectinload(AnonymousPoll.responses),),
+                populate_existing=True,
+            )
+
+            if not poll:
+                await interaction.followup.send(
+                    embed=poll_not_found_embed(interaction.client), ephemeral=True
+                )
+                return
+
+        view = PollView(poll=poll)
+        await interaction.edit_original_response(
+            view=view, allowed_mentions=discord.AllowedMentions.none()
+        )
+
         embed = discord.Embed(
             title=f"{interaction.client.success_emoji} {'Updated' if existing_vote else 'Recorded'}",
             description="Your vote has been updated."
@@ -171,7 +190,7 @@ class CloseNowButton(
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
-        view = ClosedPollView(bot=interaction.client, poll=poll, close_time=utcnow())
+        view = ClosedPollView(poll=poll, close_time=utcnow())
         await interaction.edit_original_response(
             view=view, allowed_mentions=discord.AllowedMentions.none()
         )
@@ -244,15 +263,28 @@ class DeletePollButton(
 
 
 class ChoiceRow(discord.ui.Section):
-    def __init__(self, bot: TitaniumBot, poll: AnonymousPoll, choice: str, index: int) -> None:
+    def __init__(
+        self,
+        poll: AnonymousPoll,
+        choice: str,
+        index: int,
+        votes: Optional[int],
+    ) -> None:
         super().__init__(
-            discord.ui.TextDisplay(content=escape_markdown(choice)),
+            discord.ui.TextDisplay(
+                content=escape_markdown(choice)
+                + (
+                    (f"\n{percentage_bar(votes=votes, total_votes=len(poll.responses))}")
+                    if votes is not None
+                    else ""
+                )
+            ),
             accessory=VoteButton(poll.id, index),
         )
 
 
 class ClosedPollView(discord.ui.LayoutView):
-    def __init__(self, bot: TitaniumBot, poll: AnonymousPoll, close_time: datetime):
+    def __init__(self, poll: AnonymousPoll, close_time: datetime):
         super().__init__(timeout=None)
 
         container = discord.ui.Container(accent_colour=Colour.light_grey())
@@ -293,7 +325,7 @@ class ClosedPollView(discord.ui.LayoutView):
 
 
 class PollView(discord.ui.LayoutView):
-    def __init__(self, bot: TitaniumBot, poll: AnonymousPoll):
+    def __init__(self, poll: AnonymousPoll):
         super().__init__(timeout=None)
 
         container = discord.ui.Container(accent_colour=Colour.light_grey())
@@ -303,8 +335,14 @@ class PollView(discord.ui.LayoutView):
             container.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem(poll.image_url)))
         container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
 
+        results: dict[int, int] = {}
+        for i in range(0, len(poll.choices)):
+            results[i] = sum(
+                [1 if response.answer_index == i else 0 for response in poll.responses]
+            )
+
         for i, choice in enumerate(poll.choices):
-            container.add_item(ChoiceRow(bot, poll, choice, i))
+            container.add_item(ChoiceRow(poll, choice, i, results[i] if poll.responses else None))
             if i + 1 != len(poll.choices):
                 container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
 

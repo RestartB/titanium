@@ -295,7 +295,7 @@ class ScheduledTasksCog(commands.Cog):
                 except discord.NotFound, discord.Forbidden:
                     return
 
-                view = ClosedPollView(bot=self.bot, poll=poll, close_time=utcnow())
+                view = ClosedPollView(poll=poll, close_time=utcnow())
                 await message.edit(view=view, allowed_mentions=discord.AllowedMentions.none())
             finally:
                 await poll.delete()
