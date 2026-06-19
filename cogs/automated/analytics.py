@@ -41,7 +41,7 @@ class Analytics(commands.Cog):
     ) -> None:
         if (
             interaction.command
-            and interaction.command.name == "confession"
+            and command.qualified_name.startswith("anonymous ")
             and interaction.guild
             and interaction.guild.id in self.bot.trusted_servers
         ):
@@ -75,7 +75,7 @@ class Analytics(commands.Cog):
             return
 
         if (
-            ctx.command.name == "confession"
+            ctx.command.qualified_name.startswith("anonymous ")
             and ctx.guild
             and ctx.guild.id in self.bot.trusted_servers
         ):
