@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 import discord
 from discord import Colour
 from discord.utils import escape_markdown, format_dt, utcnow
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from lib.sql.sql import AnonymousPoll, AnonymousPollResponse, get_session
@@ -77,37 +78,44 @@ class VoteButton(
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
-        try:
-            async with get_session() as session:
-                poll = await session.get(AnonymousPoll, self.poll_id)
+        async with get_session() as session:
+            poll = await session.get(AnonymousPoll, self.poll_id)
 
-                if not poll:
-                    await interaction.followup.send(
-                        embed=poll_not_found_embed(interaction.client), ephemeral=True
-                    )
-                    return
-
-                session.add(
-                    AnonymousPollResponse(
-                        user_id=interaction.user.id,
-                        poll_id=self.poll_id,
-                        answer_index=self.index,
-                    )
+            if not poll:
+                await interaction.followup.send(
+                    embed=poll_not_found_embed(interaction.client), ephemeral=True
                 )
-        except IntegrityError as e:
-            err_code = getattr(e.orig, "sqlstate", getattr(e.orig, "pgcode", None))
-            if err_code == "23505":  # 23505 = unique_violation
-                embed = discord.Embed(
-                    title=f"{interaction.client.error_emoji} Already Voted",
-                    description="You have already voted on this poll.",
-                    colour=Colour.red(),
-                )
-                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
+            stmt = (
+                insert(AnonymousPollResponse)
+                .values(
+                    user_id=interaction.user.id,
+                    poll_id=self.poll_id,
+                    answer_index=self.index,
+                )
+                .on_conflict_do_nothing(index_elements=["user_id", "poll_id"])
+                .returning(AnonymousPollResponse.id)
+            )
+
+            result = await session.execute(stmt)
+            existing_vote = result.scalar_one_or_none() is None
+
+            if existing_vote:
+                await session.execute(
+                    update(AnonymousPollResponse)
+                    .where(
+                        AnonymousPollResponse.user_id == interaction.user.id,
+                        AnonymousPollResponse.poll_id == self.poll_id,
+                    )
+                    .values(answer_index=self.index)
+                )
+
         embed = discord.Embed(
-            title=f"{interaction.client.success_emoji} Recorded",
-            description="Your vote has been recorded.",
+            title=f"{interaction.client.success_emoji} {'Updated' if existing_vote else 'Recorded'}",
+            description="Your vote has been updated."
+            if existing_vote
+            else "Your vote has been recorded.",
             colour=Colour.green(),
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
