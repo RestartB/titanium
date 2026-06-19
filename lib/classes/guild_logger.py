@@ -15,6 +15,7 @@ from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.helpers.shorten import shorten_preserve
 from lib.sql.sql import (
+    AnonymousPoll,
     AutomodAction,
     AutomodRule,
     AvailableWebhook,
@@ -113,7 +114,8 @@ LOGGING_EVENTS = [
     LoggingType(event="titanium_case_comment", name="Titanium Case Commented", description="When a moderator comments on a Titanium case.", category="Titanium"),
     LoggingType(event="titanium_automod_trigger", name="Titanium AutoMod Triggered", description="When a message triggers a Titanium AutoMod rule.", category="Titanium"),
     LoggingType(event="titanium_bouncer_trigger", name="Titanium Bouncer Triggered", description="When a user triggers a Titanium Bouncer action.", category="Titanium"),
-    LoggingType(event="titanium_confession", name="Titanium Confession Posted", description="When a confession is posted using the confessions feature.", category="Titanium")
+    LoggingType(event="titanium_confession", name="Titanium Confession Posted", description="When a confession is posted using the confessions feature.", category="Titanium"),
+    LoggingType(event="titanium_anon_poll", name="Titanium Anonymous Poll Created", description="When a user creates an anonymous poll using the confessions feature.", category="Titanium")
 ]
 # fmt: on
 LOGGING_EVENT_MAP = {event.event: event for event in LOGGING_EVENTS}
@@ -1672,6 +1674,16 @@ class GuildLogger:
             icon_url=message.author.display_avatar.url,
         )
 
+        choice_strs = []
+        for i, choice in enumerate(message.poll.answers, start=1):
+            choice_strs.append(f"{i}. {choice.emoji if choice.emoji else ''}`{choice.text}`")
+
+        embed.add_field(
+            name="Choices",
+            value="\n".join(choice_strs),
+            inline=False,
+        )
+
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(self.config.logging_settings.channels.get("poll_create")),
@@ -1705,6 +1717,18 @@ class GuildLogger:
         embed.set_author(
             name=f"@{event.cached_message.author.name}",
             icon_url=event.cached_message.author.display_avatar.url,
+        )
+
+        choice_strs = []
+        for i, choice in enumerate(event.cached_message.poll.answers, start=1):
+            choice_strs.append(
+                f"{i}. {choice.emoji if choice.emoji else ''}`{choice.text}`{'(👑)' if choice.victor else ''}"
+            )
+
+        embed.add_field(
+            name="Choices",
+            value="\n".join(choice_strs),
+            inline=False,
         )
 
         assert self.config is not None and self.config.logging_settings is not None
@@ -3057,6 +3081,57 @@ class GuildLogger:
         await self._send_to_webhook(
             await self._find_webhook(
                 self.config.logging_settings.channels.get("titanium_confession")
+            ),
+            embed=embed,
+        )
+
+    async def titanium_anon_poll(
+        self,
+        poll: AnonymousPoll,
+        poll_creator: discord.User | discord.Member,
+        poll_message: discord.Message,
+    ) -> None:
+        if not isinstance(poll_message.channel, discord.abc.GuildChannel):
+            raise ValueError("Message channel is not a guild channel")
+
+        await self._ensure_config()
+        if not self._exists_and_enabled("titanium_anon_poll"):
+            return
+
+        embed = discord.Embed(
+            title="Anonymous Poll Created",
+            description=f"**ID:** `{poll_message.id}`\n"
+            f"**Channel:** {poll_message.channel.mention} (`{poll_message.channel.id}`)\n"
+            f"**Author:** {poll_creator.mention} (`{poll_creator.id}`)\n"
+            f"**Question:** `{poll.content.replace('`', '\\`')}`",
+            colour=discord.Colour.green(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        choice_strs = []
+        for i, choice in enumerate(poll.choices, start=1):
+            # shorten is a hack fix to remove new lines, these already have a 100 char limit
+            choice_strs.append(f"{i}. `{shorten(choice, width=100)}`")
+
+        embed.add_field(
+            name="Choices",
+            value="\n".join(choice_strs),
+            inline=False,
+        )
+
+        view = discord.ui.View()
+        view.add_item(
+            discord.ui.Button(
+                label="Jump to Channel",
+                url=poll_message.channel.jump_url,
+                style=discord.ButtonStyle.url,
+            )
+        )
+
+        assert self.config is not None and self.config.logging_settings is not None
+        await self._send_to_webhook(
+            await self._find_webhook(
+                self.config.logging_settings.channels.get("titanium_anon_poll")
             ),
             embed=embed,
         )

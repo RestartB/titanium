@@ -66,6 +66,7 @@ class GuildPermissionsModel(BaseModel):
 class ConfessionsConfigModel(BaseModel):
     confessions_in_channel: bool
     confessions_channel_id: Optional[str] = None
+    polls_enabled: bool
 
 
 class ModerationConfigModel(BaseModel):

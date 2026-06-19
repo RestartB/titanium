@@ -660,6 +660,20 @@ async def on_app_command_error(
             colour=discord.Colour.red(),
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
+    elif isinstance(error, discord.app_commands.MissingPermissions):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Missing Permissions",
+            description=error,
+            colour=discord.Colour.red(),
+        )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+    elif isinstance(error, discord.app_commands.BotMissingPermissions):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Bot Missing Permissions",
+            description=error,
+            colour=discord.Colour.red(),
+        )
+        await interaction.followup.send(embed=embed, ephemeral=True)
     elif not isinstance(error, discord.app_commands.CommandNotFound):
         try:
             error_id = await log_error(

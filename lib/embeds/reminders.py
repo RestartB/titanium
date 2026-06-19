@@ -20,11 +20,3 @@ def reminder_edited(bot: TitaniumBot) -> Embed:
         description="The reminder has been successfully edited.",
         colour=Colour.green(),
     )
-
-
-def invalid_duration(bot: TitaniumBot) -> Embed:
-    return Embed(
-        title=f"{bot.error_emoji} Invalid Duration",
-        description="The provided duration is invalid. Examples of valid durations: `10m5s`, `30d5h`, `20w5d`.",
-        colour=Colour.red(),
-    )

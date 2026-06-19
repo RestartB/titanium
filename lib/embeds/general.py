@@ -34,3 +34,11 @@ def please_wait(bot: TitaniumBot) -> Embed:
         title=f"{bot.loading_emoji} Please wait...",
         colour=Colour.light_grey(),
     )
+
+
+def invalid_duration(bot: TitaniumBot) -> Embed:
+    return Embed(
+        title=f"{bot.error_emoji} Invalid Duration",
+        description="The provided duration is invalid. Examples of valid durations: `10m5s`, `30d5h`, `20w5d`.",
+        colour=Colour.red(),
+    )

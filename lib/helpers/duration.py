@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
+import discord
+from discord import app_commands
 from discord.ext import commands
 from durations import Duration
 from sqlalchemy import Column
@@ -22,6 +24,34 @@ class DurationConverter(commands.Converter):
         # Check for permanent keywords
         try:
             delta = timestring_to_duration(argument)
+
+            if not delta or delta.total_seconds() == 0:
+                return None
+
+            if delta.total_seconds() > self.MAX_SECONDS:
+                raise commands.BadArgument(
+                    f"Duration cannot exceed {self.MAX_YEARS} years. "
+                    f"For permanent actions, use 'permanent', 'perma', '0', or don't provide a duration."
+                )
+
+            return delta
+        except OverflowError:
+            raise commands.BadArgument(
+                f"Duration cannot exceed {self.MAX_YEARS} years. "
+                f"For permanent actions, use 'permanent', 'perma', '0', or don't provide a duration."
+            )
+
+
+class DurationTransformer(app_commands.Transformer):
+    MAX_YEARS = 60
+    MAX_SECONDS = MAX_YEARS * 31536000
+
+    async def transform(
+        self, interaction: discord.Interaction["TitaniumBot"], value: str
+    ) -> timedelta | None:
+        # Check for permanent keywords
+        try:
+            delta = timestring_to_duration(value)
 
             if not delta or delta.total_seconds() == 0:
                 return None

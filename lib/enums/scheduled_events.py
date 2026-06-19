@@ -7,3 +7,4 @@ class EventType(StrEnum):
     CLOSE_MUTE = "close_mute"
     UNBAN = "unban"
     REMINDER = "reminder"
+    POLL_END = "poll_end"
