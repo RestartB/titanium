@@ -25,6 +25,8 @@ if TYPE_CHECKING:
 class TemplateCog(commands.Cog, description="Create reminders."):
     """Create reminders"""
 
+    ConvertedDuration = typing.Annotated[typing.Union[Optional[timedelta]], DurationConverter]
+
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
@@ -34,7 +36,17 @@ class TemplateCog(commands.Cog, description="Create reminders."):
     async def cog_unload(self) -> None:
         remove_global_aliases(self, self.bot)
 
-    ConvertedDuration = typing.Annotated[typing.Union[Optional[timedelta]], DurationConverter]
+    async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
+        if ctx.author.id not in self.bot.opt_out:
+            return True
+
+        embed = discord.Embed(
+            title=f"{self.bot.error_emoji} Opted Out",
+            description="You have opted out of data collection and cannot use reminder features.",
+            colour=discord.Colour.red(),
+        )
+        await ctx.reply(embed=embed, ephemeral=True)
+        return False
 
     @commands.hybrid_group(name="reminder", fallback="create", description="Create a new reminder.")
     @commands.cooldown(1, 3)
@@ -80,7 +92,8 @@ class TemplateCog(commands.Cog, description="Create reminders."):
             return
 
         if not dm and (
-            not ctx.permissions.view_channel or not ctx.permissions.send_messages
+            not ctx.permissions.view_channel
+            or not ctx.permissions.send_messages
             or (ctx.interaction and not ctx.permissions.use_application_commands)
         ):
             embed = discord.Embed(

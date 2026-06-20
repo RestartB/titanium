@@ -36,6 +36,7 @@ from lib.sql.sql import (
     LeaderboardUserStats,
     ModCaseComment,
     OptOutIDs,
+    Reminder,
     Tag,
     get_session,
 )
@@ -119,7 +120,9 @@ class FeatureToggleButton(Button["SettingsView"]):
         self.settings = guild_settings
         self.update_button()
 
-        await interaction.response.edit_message(view=self.view, allowed_mentions=AllowedMentions.none())
+        await interaction.response.edit_message(
+            view=self.view, allowed_mentions=AllowedMentions.none()
+        )
 
 
 class BackButtonHomeReload(Button["SettingsView"]):
@@ -139,7 +142,7 @@ class BackButtonHomeReload(Button["SettingsView"]):
 
         await interaction.edit_original_response(
             view=SettingsView(interaction, interaction.client, guild_settings),
-            allowed_mentions=AllowedMentions.none()
+            allowed_mentions=AllowedMentions.none(),
         )
 
 
@@ -252,8 +255,7 @@ class TagActionsOptionRow(ActionRow):
         if button.label == "Delete":
             button.label = "Press again to confirm"
             await interaction.edit_original_response(
-                view=self.my_view,
-                allowed_mentions=AllowedMentions.none()
+                view=self.my_view, allowed_mentions=AllowedMentions.none()
             )
             return
 
@@ -418,7 +420,7 @@ class TagSelectDropdown(Select):
             view=TagsActionsView(
                 tag=self.values[0], user_tag=self.user_tag, previous_view=self.my_view
             ),
-            allowed_mentions=AllowedMentions.none()
+            allowed_mentions=AllowedMentions.none(),
         )
 
 
@@ -633,7 +635,7 @@ class PrefixModal(Modal, title="Add Prefix"):
         await interaction.client.refresh_guild_config_cache(interaction.guild_id)
         await interaction.edit_original_response(
             view=PrefixView(interaction.client, guild_settings, self.previous_view),
-            allowed_mentions=AllowedMentions.none()
+            allowed_mentions=AllowedMentions.none(),
         )
 
 
@@ -701,7 +703,7 @@ class PrefixDropdown(Select):
         await interaction.client.refresh_guild_config_cache(interaction.guild_id)
         await interaction.edit_original_response(
             view=PrefixView(interaction.client, guild_settings, self.previous_view),
-            allowed_mentions=AllowedMentions.none()
+            allowed_mentions=AllowedMentions.none(),
         )
 
         embed = discord.Embed(
@@ -1042,18 +1044,13 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
             await session.commit()
             await self.bot.refresh_opt_out()
 
-            await session.execute(
-                delete(LeaderboardUserStats).where(
-                    LeaderboardUserStats.user_id == interaction.user.id
-                )
-            )
-            await session.execute(
-                delete(Tag).where(Tag.is_user, Tag.owner_id == interaction.user.id)
-            )
-            await session.execute(
-                delete(ModCaseComment).where(ModCaseComment.user_id == interaction.user.id)
-            )
+            # fmt: off
+            await session.execute(delete(LeaderboardUserStats).where(LeaderboardUserStats.user_id == interaction.user.id))
+            await session.execute(delete(Tag).where(Tag.is_user, Tag.owner_id == interaction.user.id))
+            await session.execute(delete(Reminder).where(Reminder.user_id == interaction.user.id))
+            await session.execute(delete(ModCaseComment).where(ModCaseComment.user_id == interaction.user.id))
             await session.execute(delete(GameStat).where(GameStat.user_id == interaction.user.id))
+            # fmt: on
 
         await view.interaction.edit_original_response(
             embed=Embed(
