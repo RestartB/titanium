@@ -202,6 +202,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         duration="The duration to wait before ending the poll.",
         choice1="The first choice. Use the optional arguments to provide up to 4 more choices.",
         image_or_video="Optional: add an image or video to display alongside the title.",
+        show_live_results="Optional: show live results while the poll is open. Defaults to true.",
     )
     @app_commands.checks.cooldown(1, 10)
     async def anonymous_poll(
@@ -215,6 +216,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         choice4: Optional[app_commands.Range[str, 1, 100]] = None,
         choice5: Optional[app_commands.Range[str, 1, 100]] = None,
         image_or_video: Optional[discord.Attachment] = None,
+        show_live_results: bool = True,
     ) -> None:
         await interaction.response.defer(ephemeral=True)
 
@@ -296,6 +298,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
                 if image_or_video and guild_settings.confessions_settings.attachments_allowed
                 else None
             ),
+            show_live_results=show_live_results
         )
 
         embed = Embed(

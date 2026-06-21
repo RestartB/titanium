@@ -20,6 +20,7 @@ async def create_anonymous_poll(
     title: str,
     choices: list[str],
     closing_time: datetime,
+    show_live_results: bool,
     attachment: Optional[discord.Attachment] = None,
 ) -> AnonymousPoll:
     if not isinstance(channel, discord.abc.GuildChannel):
@@ -33,6 +34,7 @@ async def create_anonymous_poll(
         content=title,
         choices=choices,
         closing_time=closing_time,
+        show_live_results=show_live_results,
         scheduled_task=ScheduledTask(
             type=EventType.POLL_END,
             time_scheduled=closing_time,
@@ -45,7 +47,7 @@ async def create_anonymous_poll(
     if attachment:
         poll.image_url = attachment.url
 
-    view = PollView(poll=poll)
+    view = PollView(poll=poll, show_live_results=show_live_results)
     msg = await channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
 
     poll.message_id = msg.id

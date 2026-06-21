@@ -674,6 +674,8 @@ async def on_app_command_error(
             colour=discord.Colour.red(),
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
+    elif isinstance(error, discord.app_commands.CheckFailure):
+        return
     elif not isinstance(error, discord.app_commands.CommandNotFound):
         try:
             error_id = await log_error(

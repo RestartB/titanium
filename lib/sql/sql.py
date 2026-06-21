@@ -708,6 +708,7 @@ class AnonymousPoll(Base):
         server_default=text("ARRAY[]::varchar[]"),
     )
     closing_time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=False)
+    show_live_results: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"), nullable=False)
 
     responses: Mapped[list["AnonymousPollResponse"]] = relationship(
         "AnonymousPollResponse",
