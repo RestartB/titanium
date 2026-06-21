@@ -316,9 +316,10 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         async with defer(ctx, stop_only=True):
             async with get_session() as session:
                 case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
-                case = await case_manager.get_case_by_id(case_id)
-
-                if not case:
+                
+                try:
+                    case = await case_manager.get_case_by_id(case_id)
+                except CaseNotFoundException:
                     return await ctx.reply(embed=case_embeds.case_not_found(self.bot, str(case_id)))
 
                 # Get creator
@@ -354,7 +355,10 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 if timed_out or not view.value:
                     return await msg.edit(embed=cancelled(self.bot), view=None)
 
-                await case_manager.delete_case(case_id)
+                try:
+                    await case_manager.delete_case(case_id)
+                except CaseNotFoundException:
+                    return await ctx.reply(embed=case_embeds.case_not_found(self.bot, str(case_id)))
 
             await msg.edit(embed=case_embeds.case_deleted(self.bot, case_id), view=None)
 
