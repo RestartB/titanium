@@ -659,21 +659,21 @@ async def on_app_command_error(
             description=error,
             colour=discord.Colour.red(),
         )
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
     elif isinstance(error, discord.app_commands.MissingPermissions):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Missing Permissions",
             description=error,
             colour=discord.Colour.red(),
         )
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
     elif isinstance(error, discord.app_commands.BotMissingPermissions):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bot Missing Permissions",
             description=error,
             colour=discord.Colour.red(),
         )
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
     elif isinstance(error, discord.app_commands.CheckFailure):
         return
     elif not isinstance(error, discord.app_commands.CommandNotFound):
@@ -702,7 +702,10 @@ async def on_app_command_error(
             inline=False,
         )
 
-        await interaction.edit_original_response(embed=embed, view=None)
+        try:
+            await interaction.edit_original_response(embed=embed, view=None)
+        except discord.NotFound:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 if __name__ == "__main__":

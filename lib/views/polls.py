@@ -353,14 +353,17 @@ class PollView(discord.ui.LayoutView):
             if i + 1 != len(poll.choices):
                 container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
 
-        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
-        container.add_item(
-            discord.ui.TextDisplay(
-                "- Vote up to 1 time.\n"
-                "- Your answer is fully anonymous.\n"
-                f"- The poll will end {format_dt(poll.closing_time, style='R')} ({format_dt(poll.closing_time)})."
-            )
+        hints = (
+            "- Vote up to 1 time.\n"
+            "- Your answer is fully anonymous.\n"
+            f"- The poll will end {format_dt(poll.closing_time, style='R')} ({format_dt(poll.closing_time)})."
         )
+
+        if not show_live_results:
+            hints += "\n- Results will be shown when the poll ends."
+
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
+        container.add_item(discord.ui.TextDisplay(hints))
 
         container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
 
