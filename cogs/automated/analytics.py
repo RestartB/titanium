@@ -95,7 +95,7 @@ class Analytics(commands.Cog):
     async def on_guild_join(self, guild: discord.Guild):
         embed = discord.Embed(
             title="Joined Guild",
-            description=f"Titanium has joined the `{guild.name}` guild.",
+            description=f"Titanium has joined the `{guild.name}` (`{guild.id}`) guild.",
             timestamp=discord.utils.utcnow(),
             colour=Colour.green(),
         )
@@ -114,7 +114,7 @@ class Analytics(commands.Cog):
 
         embed = discord.Embed(
             title="Left Guild",
-            description=f"Titanium has left the `{guild.name}` guild.",
+            description=f"Titanium has left the `{guild.name}` (`{guild.id}`) guild.",
             timestamp=discord.utils.utcnow(),
             colour=Colour.red(),
         )
