@@ -623,7 +623,9 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
                 bot=ctx.bot,
                 module="Commands",
                 guild_id=ctx.guild.id if ctx.guild else None,
-                error=f"Unexpected error in prefix command /{ctx.command.qualified_name if ctx.command else 'unknown'}.",
+                user=ctx.author,
+                error=f"Unexpected error in prefix command {ctx.clean_prefix}{ctx.command.qualified_name if ctx.command else 'unknown'}.",
+                dev_info=f"Full command: `{ctx.message.content}`",
                 exc=error,
             )
         except Exception as log_exc:
@@ -677,12 +679,26 @@ async def on_app_command_error(
     elif isinstance(error, discord.app_commands.CheckFailure):
         return
     elif not isinstance(error, discord.app_commands.CommandNotFound):
+        params = []
+        if interaction.command and not isinstance(
+            interaction.command, discord.app_commands.ContextMenu
+        ):
+            try:
+                for param in interaction.command.parameters:
+                    if param.name not in interaction.namespace:
+                        continue
+                    params.append(f"{param.name}: {interaction.namespace[param.name]}")
+            except Exception:
+                pass
+
         try:
             error_id = await log_error(
                 bot=interaction.client,
                 module="Commands",
                 guild_id=interaction.guild.id if interaction.guild else None,
+                user=interaction.user,
                 error=f"Unexpected error in interaction /{interaction.command.qualified_name if interaction.command else 'unknown'}.",
+                dev_info=f"Full command: `/{interaction.command.qualified_name if interaction.command else 'unknown'} {' '.join(params)}`",
                 exc=error,
             )
         except Exception as log_exc:

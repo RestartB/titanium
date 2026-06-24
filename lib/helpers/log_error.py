@@ -19,6 +19,7 @@ async def log_error(
     guild_id: Optional[int],
     error: str,
     details: str = "",
+    dev_info: str = "",
     user: discord.User | discord.Member | None = None,
     exc: Optional[Exception] = None,
     store_err: bool = True,
@@ -73,6 +74,9 @@ async def log_error(
         embed.set_author(
             name=f"{bot.user.name}#{bot.user.discriminator}", icon_url=bot.user.display_avatar.url
         )
+
+    if dev_info:
+        embed.add_field(name="Dev Info", value=shorten_preserve(dev_info, 1024))
 
     webhook_url = os.getenv("ERROR_WEBHOOK")
     if webhook_url:
