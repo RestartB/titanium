@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+# TODO: commands here were ripped from v1 with little changes, could do with a rewrite
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 class WebSearchCommandsCog(
@@ -165,9 +166,8 @@ class WebSearchCommandsCog(
 
                     await ctx.reply(embed=embed, ephemeral=ephemeral)
                     return
-                else:
-                    request.raise_for_status()
 
+                request.raise_for_status()
                 page_data = await request.json()
 
         if not page_data.get("pages") or len(page_data["pages"]) == 0:
@@ -212,9 +212,8 @@ class WebSearchCommandsCog(
 
                     await ctx.reply(embed=embed, ephemeral=ephemeral)
                     return
-                else:
-                    request.raise_for_status()
 
+                request.raise_for_status()
                 page = await request.json()
 
         embed = discord.Embed(
