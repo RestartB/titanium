@@ -462,7 +462,7 @@ class AutomodAction(Base):
     message_embed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     embed_colour: Mapped[str | None] = MappedColumn(String(length=7), nullable=True)
 
-    role_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+    role_ids: Mapped[list[int]] = MappedColumn(ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False)
     rule: Mapped["OldAutomodRule"] = relationship(
         "OldAutomodRule", back_populates="actions", uselist=False
     )
