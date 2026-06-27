@@ -10,10 +10,10 @@ from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
 from lib.enums.server_counters import ServerCounterType
 from lib.sql.sql import (
     AutomodAction,
-    AutomodRule,
     BouncerAction,
     BouncerCriteria,
     BouncerRule,
+    OldAutomodRule,
 )
 
 
@@ -170,8 +170,8 @@ class AutomodRuleModel(BaseModel):
 
         return self
 
-    def to_sqlalchemy(self, guild_id: int) -> AutomodRule:
-        rule = AutomodRule(
+    def to_sqlalchemy(self, guild_id: int) -> OldAutomodRule:
+        rule = OldAutomodRule(
             id=uuid.UUID(self.id),
             guild_id=guild_id,
             rule_type=self.rule_type,

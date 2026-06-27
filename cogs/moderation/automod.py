@@ -11,10 +11,10 @@ import lib.embeds.mod_actions as mod_embeds
 from lib.classes.automod_message import AutomodMessage
 from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
-from lib.enums.automod import AutomodActionType, AutomodAntispamType
+from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodCriteriaType
 from lib.enums.moderation import CaseSource, CaseType
 from lib.helpers.log_error import log_error
-from lib.sql.sql import AutomodAction, AutomodRule, ModCase, get_session
+from lib.sql.sql import AutomodAction, AutomodRule, ModCase, OldAutomodRule, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -22,11 +22,6 @@ if TYPE_CHECKING:
 
 class AutomodMonitorCog(commands.Cog):
     """Monitors new messages for automod triggers and creates cases/punishments"""
-
-    # -------------------------
-    # New messages: new messages will be added to the queue for spam checks
-    # Edited messages: only the edited message will be checked for triggers
-    # -------------------------
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
@@ -57,55 +52,14 @@ class AutomodMonitorCog(commands.Cog):
                 self.logger.debug("Automod initial checks failed, skipping message")
                 return
 
-            triggers: list[AutomodRule] = []
+            triggered_rules: list[AutomodRule] = []
             punishments: list[AutomodAction] = []
 
             if not config.automod_enabled or not config.moderation_enabled:
                 self.logger.debug("Automod is disabled, skipping message")
                 return
 
-            autmod_config = config.automod_settings
-
-            triggered_word_rule_amount = {}
-            malicious_link_count = 0
-            phishing_link_count = 0
-
-            self.logger.debug(f"Starting badword detection check for message {message.id}")
-            for rule in autmod_config.badword_detection_rules:
-                triggered_word_rule_amount[rule.id] = 0
-                content_to_check = (
-                    content_to_check.lower() if not rule.case_sensitive else content_to_check
-                )
-
-                for word in rule.words:
-                    check_word = word.lower() if not rule.case_sensitive else word
-
-                    if rule.match_whole_word:
-                        pattern = r"\b" + re.escape(check_word) + r"\b"
-                        matches = re.findall(pattern, content_to_check)
-                    else:
-                        pattern = re.escape(check_word)
-                        matches = re.findall(pattern, content_to_check)
-
-                    triggered_word_rule_amount[rule.id] += len(matches)
-
-            self.logger.debug(
-                f"Badword detection complete. Triggered counts: {triggered_word_rule_amount}"
-            )
-
-            self.logger.debug(f"Starting malicious link check for message {message.id}")
-            for link in self.bot.malicious_links:
-                if link in content_to_check:
-                    malicious_link_count += 1
-
-            self.logger.debug(f"Malicious link check complete. Count: {malicious_link_count}")
-
-            self.logger.debug(f"Starting phishing link check for message {message.id}")
-            for link in self.bot.phishing_links:
-                if link in content_to_check:
-                    phishing_link_count += 1
-
-            self.logger.debug(f"Phishing link check complete. Count: {phishing_link_count}")
+            automod_config = config.automod_settings
 
             if event_type == "new":
                 self.logger.debug(
@@ -118,9 +72,6 @@ class AutomodMonitorCog(commands.Cog):
                         user_id=message.author.id,
                         message_id=message.id,
                         channel_id=message.channel.id,
-                        triggered_word_rule_amount=triggered_word_rule_amount,
-                        malicious_link_count=malicious_link_count,
-                        phishing_link_count=phishing_link_count,
                         mention_count=len(message.mentions)
                         + len(message.role_mentions)
                         + (1 if message.mention_everyone else 0),
@@ -148,165 +99,42 @@ class AutomodMonitorCog(commands.Cog):
                     message.author.id
                 ].copy()
                 current_state.reverse()
-                self.logger.debug(
-                    f"Checking spam rules against {len(current_state)} messages from user {message.author.id}"
-                )
-            else:
-                self.logger.debug(
-                    f"Processing edited message {message.id}, creating temporary state"
-                )
-                current_state = [
-                    AutomodMessage(
-                        user_id=message.author.id,
-                        message_id=message.id,
-                        channel_id=message.channel.id,
-                        triggered_word_rule_amount=triggered_word_rule_amount,
-                        malicious_link_count=malicious_link_count,
-                        phishing_link_count=phishing_link_count,
-                        mention_count=len(message.mentions)
-                        + len(message.role_mentions)
-                        + (1 if message.mention_everyone else 0),
-                        word_count=len(message.clean_content.split()),
-                        newline_count=len(message.clean_content.splitlines()),
-                        link_count=len(
-                            re.findall(
-                                r"(http|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
-                                content_to_check,
-                            )
-                        ),
-                        attachment_count=len(message.attachments),
-                        emoji_count=len(emoji.emoji_list(content_to_check))
-                        + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", content_to_check)),
-                        timestamp=message.edited_at if message.edited_at else message.created_at,
-                    )
-                ]
 
-            # Check for any spam detection
-            if len(autmod_config.spam_detection_rules) > 0:
-                self.logger.debug(
-                    f"Checking {len(autmod_config.spam_detection_rules)} spam detection rules"
-                )
-                for rule in autmod_config.spam_detection_rules:
-                    latest_timestamp = current_state[0].timestamp
-                    filtered_messages = [
-                        m
-                        for m in current_state
-                        if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                    ]
-
-                    if rule.antispam_type == AutomodAntispamType.MESSAGE:
-                        count = len(list(filtered_messages))
-                    elif rule.antispam_type == AutomodAntispamType.MENTION:
-                        count = sum(m.mention_count for m in filtered_messages)
-                    elif rule.antispam_type == AutomodAntispamType.WORD:
-                        count = sum(m.word_count for m in filtered_messages)
-                    elif rule.antispam_type == AutomodAntispamType.NEWLINE:
-                        count = sum(m.newline_count for m in filtered_messages)
-                    elif rule.antispam_type == AutomodAntispamType.LINK:
-                        count = sum(m.link_count for m in filtered_messages)
-                    elif rule.antispam_type == AutomodAntispamType.ATTACHMENT:
-                        count = sum(m.attachment_count for m in filtered_messages)
-                    elif rule.antispam_type == AutomodAntispamType.EMOJI:
-                        count = sum(m.emoji_count for m in filtered_messages)
-                    else:
-                        continue
-
-                    if count >= rule.threshold:
-                        self.logger.debug(
-                            f"Spam rule {rule.id} triggered: {count} >= {rule.threshold} (type: {rule.antispam_type})"
-                        )
-                        triggers.append(rule)
-                        for action in rule.actions:
-                            punishments.append(action)
-                    else:
-                        self.logger.debug(
-                            f"Spam rule {rule.id} not triggered: {count} < {rule.threshold} (type: {rule.antispam_type})"
-                        )
-
-            # Malicious link check
-            self.logger.debug(
-                f"Checking {len(autmod_config.malicious_link_rules)} malicious link rules"
-            )
-            for rule in autmod_config.malicious_link_rules:
-                latest_timestamp = current_state[0].timestamp
-                filtered_messages = [
-                    m
-                    for m in current_state
-                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                ]
-
-                malicious_count = sum(msg.malicious_link_count for msg in filtered_messages)
-                if malicious_count >= rule.threshold:
-                    self.logger.debug(
-                        f"Malicious link rule {rule.id} triggered: {malicious_count} >= {rule.threshold}"
-                    )
-                    triggers.append(rule)
-                    for action in rule.actions:
-                        punishments.append(action)
-                else:
-                    self.logger.debug(
-                        f"Malicious link rule {rule.id} not triggered: {malicious_count} < {rule.threshold}"
-                    )
-
-            # Phishing link check
-            self.logger.debug(
-                f"Checking {len(autmod_config.phishing_link_rules)} phishing link rules"
-            )
-            for rule in autmod_config.phishing_link_rules:
-                latest_timestamp = current_state[0].timestamp
-                filtered_messages = [
-                    m
-                    for m in current_state
-                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                ]
-
-                phishing_count = sum(msg.phishing_link_count for msg in filtered_messages)
-                if phishing_count >= rule.threshold:
-                    self.logger.debug(
-                        f"Phishing link rule {rule.id} triggered: {phishing_count} >= {rule.threshold}"
-                    )
-                    triggers.append(rule)
-                    for action in rule.actions:
-                        punishments.append(action)
-                else:
-                    self.logger.debug(
-                        f"Phishing link rule {rule.id} not triggered: {phishing_count} < {rule.threshold}"
-                    )
-
-            # Bad word detection
-            self.logger.debug(
-                f"Checking {len(autmod_config.badword_detection_rules)} badword detection rules"
-            )
-            for rule in autmod_config.badword_detection_rules:
-                if not rule.words:
+            for rule in automod_config.rules:
+                if not rule.evaluate_edits and event_type == "edit":
                     continue
 
-                latest_timestamp = current_state[0].timestamp
-                filtered_messages = [
-                    m
-                    for m in current_state
-                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                ]
+                criterion_matched = 0
+                for criteria in rule.criteria:
+                    if criteria.criteria_type == AutomodCriteriaType.WORD_LIST:
+                        words_matched = 0
+                        for word in criteria.words:
+                            pattern = r"\b" + re.escape(word) + r"\b"
+                            if not criteria.match_whole_word:
+                                pattern = pattern.replace(r"\b", "")
 
-                word_count = sum(
-                    msg.triggered_word_rule_amount.get(rule.id, 0) for msg in filtered_messages
-                )
-                if word_count >= rule.threshold:
-                    self.logger.debug(
-                        f"Badword rule {rule.id} triggered: {word_count} >= {rule.threshold}"
-                    )
-                    triggers.append(rule)
-                    for action in rule.actions:
-                        punishments.append(action)
-                else:
-                    self.logger.debug(
-                        f"Badword rule {rule.id} not triggered: {word_count} < {rule.threshold}"
-                    )
+                            matches = re.findall(
+                                pattern,
+                                content_to_check,
+                                flags=(0 if criteria.case_sensitive else re.IGNORECASE),
+                            )
+                            if matches:
+                                words_matched += 1
+
+                        if criteria.match_all_words and words_matched == len(criteria.words):
+                            criterion_matched += 1
+                        elif not criteria.match_all_words and words_matched > 0:
+                            criterion_matched += 1
+
+                if rule.match_all_criteria and criterion_matched == len(rule.criteria):
+                    triggered_rules.append(rule)
+                elif not rule.match_all_criteria and criterion_matched > 0:
+                    triggered_rules.append(rule)
 
             # Get list of punishment types
             punishment_types = list(set(action.action_type for action in punishments))
             self.logger.debug(
-                f"Total triggers: {len(triggers)}, Total punishments: {len(punishments)}, Punishment types: {punishment_types}"
+                f"Total triggers: {len(triggered_rules)}, Total punishments: {len(punishments)}, Punishment types: {punishment_types}"
             )
             embeds: list[discord.Embed] = []
 
@@ -613,11 +441,15 @@ class AutomodMonitorCog(commands.Cog):
                         )
                         await message.channel.send(embeds=embeds, **del_kwargs)
 
-            if triggers:
-                self.logger.debug(f"Logging {len(triggers)} automod triggers to guild logger")
+            if triggered_rules:
+                self.logger.debug(
+                    f"Logging {len(triggered_rules)} automod triggers to guild logger"
+                )
                 guild_logger = GuildLogger(self.bot, message.guild)
+
+                # TODO: show triggered rules
                 await guild_logger.titanium_automod_trigger(
-                    rules=triggers,
+                    rules=[],
                     actions=punishments,
                     message=message,
                 )

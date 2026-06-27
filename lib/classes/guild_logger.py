@@ -17,11 +17,11 @@ from lib.helpers.shorten import shorten_preserve
 from lib.sql.sql import (
     AnonymousPoll,
     AutomodAction,
-    AutomodRule,
     AvailableWebhook,
     BouncerAction,
     BouncerRule,
     ModCase,
+    OldAutomodRule,
     get_session,
 )
 
@@ -2923,7 +2923,7 @@ class GuildLogger:
 
     async def titanium_automod_trigger(
         self,
-        rules: list[AutomodRule],
+        rules: list[OldAutomodRule],
         actions: list[AutomodAction],
         message: discord.Message,
     ) -> None:

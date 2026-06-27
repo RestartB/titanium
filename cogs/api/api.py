@@ -47,7 +47,6 @@ from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
 from lib.sql.sql import (
     AutomodAction,
-    AutomodRule,
     BouncerRule,
     ErrorLog,
     FireboardBoard,
@@ -65,6 +64,7 @@ from lib.sql.sql import (
     LeaderboardUserStats,
     ModCase,
     ModCaseComment,
+    OldAutomodRule,
     ServerCounterChannel,
     Tag,
     get_session,
@@ -1573,7 +1573,7 @@ class APICog(commands.Cog):
                             if rule_model.id is None:
                                 rule_model.id = str(uuid.uuid4())
 
-                            existing_rule = await session.get(AutomodRule, rule_model.id)
+                            existing_rule = await session.get(OldAutomodRule, rule_model.id)
                             if existing_rule and existing_rule.guild_id != guild_id:
                                 rule_model.id = str(uuid.uuid4())
                             else:
@@ -1582,7 +1582,7 @@ class APICog(commands.Cog):
                 await session.execute(
                     delete(AutomodAction).where(AutomodAction.guild_id == guild_id)
                 )
-                await session.execute(delete(AutomodRule).where(AutomodRule.guild_id == guild_id))
+                await session.execute(delete(OldAutomodRule).where(OldAutomodRule.guild_id == guild_id))
 
                 for detection_config in [
                     validated_config.badword_detection,
