@@ -157,6 +157,7 @@ class AutomodMonitorCog(commands.Cog):
                 or not config.automod_settings
                 or not message.author
                 or not isinstance(message.author, discord.Member)
+                or not isinstance(message.channel, discord.abc.GuildChannel)
                 or not self.bot.user
                 or message.author.id == self.bot.user.id
             ):
@@ -243,7 +244,9 @@ class AutomodMonitorCog(commands.Cog):
 
                         # check required values for spam filters are present
                         if not current_state or duration is None or threshold is None:
-                            self.logger.warning(f"({criteria.id}) Required values for spam filtering missing")
+                            self.logger.warning(
+                                f"({criteria.id}) Required values for spam filtering missing"
+                            )
                             continue
 
                         if event_type == "new":
@@ -476,9 +479,11 @@ class AutomodMonitorCog(commands.Cog):
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to mute this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="time out"))
                                 continue
                             elif not message.channel.permissions_for(message.guild.me).moderate_members:
                                 failed_actions[action] = "No mute permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="time out members"))
                                 continue
                             # fmt: on
 
@@ -514,9 +519,11 @@ class AutomodMonitorCog(commands.Cog):
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to kick this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="kick"))
                                 continue
                             elif not message.channel.permissions_for(message.guild.me).kick_members:
                                 failed_actions[action] = "No kick permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="kick members"))
                                 continue
                             # fmt: on
 
@@ -544,9 +551,11 @@ class AutomodMonitorCog(commands.Cog):
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to ban this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="ban"))
                                 continue
                             elif not message.channel.permissions_for(message.guild.me).ban_members:
                                 failed_actions[action] = "No ban permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="ban members"))
                                 continue
                             # fmt: on
 
@@ -577,7 +586,8 @@ class AutomodMonitorCog(commands.Cog):
                         elif action.action_type == AutomodActionType.DELETE:
                             # fmt: off
                             if not message.channel.permissions_for(message.guild.me).manage_messages:
-                                failed_actions[action] = "No delete message permissions"
+                                failed_actions[action] = "No delete message permissions in the message channel"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="delete messages in this channel"))
                                 continue
                             # fmt: on
 
@@ -602,11 +612,15 @@ class AutomodMonitorCog(commands.Cog):
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="manage roles for"))
                                 continue
                             elif not message.channel.permissions_for(message.guild.me).manage_roles:
                                 failed_actions[action] = "No manage role permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="manage roles"))
                                 continue
                             # fmt: on
+
+                            # FIXME: check each role individually
 
                             await message.author.add_roles(
                                 *(discord.Object(id=role_id) for role_id in set(action.role_ids)),
@@ -617,11 +631,15 @@ class AutomodMonitorCog(commands.Cog):
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="manage roles for"))
                                 continue
                             elif not message.channel.permissions_for(message.guild.me).manage_roles:
                                 failed_actions[action] = "No manage role permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="manage roles"))
                                 continue
                             # fmt: on
+
+                            # FIXME: check each role individually
 
                             await message.author.remove_roles(
                                 *(discord.Object(id=role_id) for role_id in set(action.role_ids)),
@@ -632,9 +650,11 @@ class AutomodMonitorCog(commands.Cog):
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="manage roles for"))
                                 continue
                             elif not message.channel.permissions_for(message.guild.me).manage_roles:
                                 failed_actions[action] = "No manage role permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="manage roles"))
                                 continue
                             # fmt: on
 
@@ -648,6 +668,8 @@ class AutomodMonitorCog(commands.Cog):
                                     roles_to_remove.append(discord.Object(id=role))
                                 else:
                                     roles_to_add.append(discord.Object(id=role))
+
+                            # FIXME: check each role individually
 
                             await message.author.add_roles(
                                 *roles_to_add,
@@ -668,6 +690,7 @@ class AutomodMonitorCog(commands.Cog):
                                 ).send_messages
                             ):
                                 failed_actions[action] = "No send message permissions in the message channel"
+                                embeds.append(mod_embeds.forbidden(self.bot, action=f"send messages in {message.channel.mention} (`#{message.channel.name}`, `{message.channel.id}`)"))
                                 continue
                             # fmt: on
 
@@ -734,12 +757,48 @@ class AutomodMonitorCog(commands.Cog):
                             exc=e,
                         )
 
-            if embeds:
-                embed_chunks = discord.utils.as_chunks(embeds, 10)
-                for chunk in embed_chunks:
-                    await message.channel.send(
-                        embeds=chunk, allowed_mentions=discord.AllowedMentions.none(), *del_kwargs
+                if embeds and not message.channel.permissions_for(message.guild.me).send_messages:
+                    await log_error(
+                        bot=self.bot,
+                        module="Automod",
+                        guild_id=message.guild.id,
+                        error=f"Titanium did not have permissions to send automod outcome message in #{message.channel.name}` (`{message.channel.id}`)",
                     )
+                elif embeds:
+                    try:
+                        embed_chunks = discord.utils.as_chunks(embeds, 10)
+                        for chunk in embed_chunks:
+                            await message.channel.send(
+                                embeds=chunk,
+                                allowed_mentions=discord.AllowedMentions.none(),
+                                *del_kwargs,
+                            )
+                    except discord.Forbidden as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Titanium was not allowed to send automod outcome message in #{message.channel.name}` (`{message.channel.id}`)",
+                            details=e.text,
+                            exc=e,
+                        )
+                    except discord.HTTPException as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unknown Discord error occurred while sending automod outcome message in #{message.channel.name}` (`{message.channel.id}`)",
+                            details=e.text,
+                            exc=e,
+                        )
+                    except Exception as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unexpected error occurred while sending automod outcome message in #{message.channel.name}` (`{message.channel.id}`)",
+                            exc=e,
+                        )
 
             if triggered_rules:
                 self.logger.debug(
@@ -749,7 +808,8 @@ class AutomodMonitorCog(commands.Cog):
 
                 await guild_logger.titanium_automod_trigger(
                     rules=triggered_rules,
-                    actions=processed_actions,
+                    actions=successful_actions,
+                    failed_actions=failed_actions,
                     message=message,
                 )
 

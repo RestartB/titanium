@@ -2923,10 +2923,32 @@ class GuildLogger:
             embed=embed,
         )
 
+    def __generate_action_str(self, action: AutomodAction) -> str:
+        action_str = f"- **{action.action_type.capitalize()}**"
+
+        if action.action_type in [
+            AutomodActionType.ADD_ROLE,
+            AutomodActionType.REMOVE_ROLE,
+            AutomodActionType.TOGGLE_ROLE,
+        ]:
+            action_str += f" - `{len(action.role_ids)}` roles"
+        elif action.action_type in [
+            AutomodActionType.MUTE,
+            AutomodActionType.KICK,
+            AutomodActionType.BAN,
+        ]:
+            duration_str = naturaldelta(action.duration) if action.duration else "Permenant"
+            action_str += f" - `{duration_str}`: `{shorten(escape_markdown(action.reason), 50) if action.reason else 'No reason provided'}`"
+        elif action.action_type == AutomodActionType.WARN:
+            action_str += f" - `{shorten(escape_markdown(action.reason), 50) if action.reason else 'No reason provided'}`"
+
+        return action_str
+
     async def titanium_automod_trigger(
         self,
         rules: list[AutomodRule],
         actions: list[AutomodAction],
+        failed_actions: dict[AutomodAction, str],
         message: discord.Message,
     ) -> None:
         await self._ensure_config()
@@ -2952,29 +2974,18 @@ class GuildLogger:
             ),
         )
 
-        action_strs: list[str] = []
-        for action in actions:
-            action_str = f"- **{action.action_type.capitalize()}**"
-            if action.action_type in [
-                AutomodActionType.ADD_ROLE,
-                AutomodActionType.REMOVE_ROLE,
-                AutomodActionType.TOGGLE_ROLE,
-            ]:
-                action_str += f" - `{len(action.role_ids)}` roles"
-            elif action.action_type in [
-                AutomodActionType.MUTE,
-                AutomodActionType.KICK,
-                AutomodActionType.BAN,
-            ]:
-                duration_str = naturaldelta(action.duration) if action.duration else "Permenant"
-                action_str += f" - `{duration_str}`: `{shorten(escape_markdown(action.reason), 50) if action.reason else 'No reason provided'}`"
-            elif action.action_type == AutomodActionType.WARN:
-                action_str += f" - `{shorten(escape_markdown(action.reason), 50) if action.reason else 'No reason provided'}`"
-            action_strs.append(action_str)
-
         embed.add_field(
-            name="Actions Taken",
-            value="\n".join(action_strs),
+            name="Successful Actions",
+            value="\n".join([self.__generate_action_str(action) for action in actions]),
+        )
+        embed.add_field(
+            name="Failed Actions",
+            value="\n".join(
+                [
+                    f"{self.__generate_action_str(action)} - {reason}"
+                    for action, reason in failed_actions
+                ]
+            ),
         )
 
         assert self.config is not None and self.config.logging_settings is not None
