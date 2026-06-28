@@ -346,6 +346,7 @@ class GuildAutomodSettings(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    show_outcome_message: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
 
 
 class OldAutomodRule(Base):
@@ -386,7 +387,7 @@ class AutomodRule(Base):
         BigInteger, ForeignKey("guild_automod_settings.guild_id", ondelete="CASCADE")
     )
 
-    rule_name: Mapped[str | None] = MappedColumn(String(length=100), nullable=True)
+    rule_name: Mapped[str] = MappedColumn(String(length=100))
     enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"), nullable=False)
     evaluate_edits: Mapped[bool] = MappedColumn(
         Boolean, server_default=text("true"), nullable=False
@@ -434,10 +435,10 @@ class AutomodCriteria(Base):
     match_whole_word: Mapped[bool] = MappedColumn(
         Boolean, server_default=text("false"), nullable=False
     )
-    case_sensitive: Mapped[bool] = MappedColumn(
+    match_all_words: Mapped[bool] = MappedColumn(
         Boolean, server_default=text("false"), nullable=False
     )
-    match_all_words: Mapped[bool] = MappedColumn(
+    case_sensitive: Mapped[bool] = MappedColumn(
         Boolean, server_default=text("false"), nullable=False
     )
 
@@ -486,7 +487,7 @@ class AutomodAction(Base):
     duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
 
-    message_content: Mapped[str | None] = MappedColumn(String(length=2000), nullable=True)
+    message_content: Mapped[str | None] = MappedColumn(String(length=1024), nullable=True)
     message_reply: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     message_mention: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     message_embed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
