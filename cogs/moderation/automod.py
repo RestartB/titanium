@@ -6,15 +6,24 @@ from typing import TYPE_CHECKING, Any, Literal
 import discord
 import emoji
 from discord.ext import commands
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 import lib.embeds.mod_actions as mod_embeds
 from lib.classes.automod_message import AutomodMessage
 from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
-from lib.enums.automod import AutomodActionType, AutomodCriteriaType
+from lib.enums.automod import AutomodActionType, AutomodCriteriaType, AutomodRuleType
 from lib.enums.moderation import CaseSource, CaseType
 from lib.helpers.log_error import log_error
-from lib.sql.sql import AutomodAction, AutomodRule, get_session
+from lib.sql.sql import (
+    AutomodAction,
+    AutomodCriteria,
+    AutomodRule,
+    GuildAutomodSettings,
+    OldAutomodRule,
+    get_session,
+)
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -26,6 +35,108 @@ class AutomodMonitorCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("automod")
+
+    async def cog_load(self) -> None:
+        self.logger.info("Checking for old rules...")
+
+        migrated = 0
+        async with get_session() as session:
+            stmt = select(GuildAutomodSettings).options(
+                selectinload(GuildAutomodSettings.badword_detection_rules).selectinload(
+                    OldAutomodRule.actions
+                ),
+                selectinload(GuildAutomodSettings.malicious_link_rules).selectinload(
+                    OldAutomodRule.actions
+                ),
+                selectinload(GuildAutomodSettings.phishing_link_rules).selectinload(
+                    OldAutomodRule.actions
+                ),
+                selectinload(GuildAutomodSettings.spam_detection_rules).selectinload(
+                    OldAutomodRule.actions
+                ),
+            )
+            old_settings = (await session.execute(stmt)).scalars().all()
+
+            if len(old_settings) == 0:
+                self.logger.info("No servers to migrate")
+                return
+
+            for server in old_settings:
+                old_rules = (
+                    server.badword_detection_rules
+                    + server.malicious_link_rules
+                    + server.phishing_link_rules
+                    + server.spam_detection_rules
+                )
+
+                if len(old_rules) == 0:
+                    continue
+
+                for i, old_rule in enumerate(old_rules):
+                    new_rule = AutomodRule(
+                        guild_id=old_rule.guild_id,
+                        order=i,
+                    )
+
+                    if old_rule.rule_type == AutomodRuleType.BADWORD_DETECTION:
+                        new_rule.criteria.append(
+                            AutomodCriteria(
+                                criteria_type=AutomodCriteriaType.WORD_LIST,
+                                words=old_rule.words,
+                                match_whole_word=old_rule.match_whole_word,
+                                case_sensitive=old_rule.case_sensitive,
+                            )
+                        )
+                    elif old_rule.rule_type == AutomodRuleType.MALICIOUS_LINK:
+                        new_rule.criteria.append(
+                            AutomodCriteria(criteria_type=AutomodCriteriaType.MALICIOUS_LINK)
+                        )
+                    elif old_rule.rule_type == AutomodRuleType.PHISHING_LINK:
+                        new_rule.criteria.append(
+                            AutomodCriteria(criteria_type=AutomodCriteriaType.PHISHING_LINK)
+                        )
+                    elif (
+                        old_rule.rule_type == AutomodRuleType.SPAM_DETECTION
+                        and old_rule.antispam_type
+                    ):
+                        new_rule.criteria.append(
+                            AutomodCriteria(
+                                criteria_type=AutomodCriteriaType(old_rule.antispam_type + "_spam"),
+                                threshold=old_rule.threshold,
+                                duration=old_rule.duration,
+                            )
+                        )
+                    else:
+                        self.logger.warning(f"Unknown old rule type: {old_rule.rule_type.value}")
+                        continue
+
+                    new_rule.rule_name = (
+                        new_rule.criteria[0].criteria_type.value.replace("_", " ").capitalize()
+                    )
+
+                    for old_action in old_rule.actions:
+                        new_rule.actions.append(
+                            AutomodAction(
+                                action_type=old_action.action_type,
+                                duration=old_action.duration,
+                                reason=old_action.reason,
+                                message_content=old_action.message_content,
+                                message_reply=old_action.message_reply,
+                                message_mention=old_action.message_mention,
+                                message_embed=old_action.message_embed,
+                                embed_colour=old_action.embed_colour,
+                                role_ids=[old_action.role_id] if old_action.role_id else [],
+                            )
+                        )
+
+                    session.add(new_rule)
+                    await session.delete(old_rule)
+
+                    migrated += 1
+
+                await self.bot.refresh_guild_config_cache(server.guild_id)
+
+        self.logger.info(f"Migrated {migrated} rules")
 
     async def handle_message(
         self, message: discord.Message, event_type: Literal["new", "edit"] = "new"
@@ -109,23 +220,30 @@ class AutomodMonitorCog(commands.Cog):
             rules = automod_config.rules.copy()
             rules.sort(key=lambda r: r.order)
 
+            self.logger.debug(f"Will evaluate {len(rules)} rules")
             for rule in rules:
+                self.logger.debug(f"({rule.id}) Evaluating...")
+
                 if not rule.enabled:
-                    self.logger.warning(f"({rule.id}) Rule disabled")
+                    self.logger.debug(f"({rule.id}) Rule disabled")
                     continue
 
                 if not rule.evaluate_edits and event_type == "edit":
-                    self.logger.warning(f"({rule.id}) Not evaluating edit")
+                    self.logger.debug(f"({rule.id}) Not evaluating edit")
                     continue
 
                 criterion_matched = 0
                 for criteria in rule.criteria:
-                    if criteria.criteria_type.value.endswith("_spam"):
+                    criteria_type = AutomodCriteriaType(criteria.criteria_type)
+                    self.logger.debug(criteria_type)
+
+                    if criteria_type.value.endswith("_spam"):
                         duration = criteria.duration
                         threshold = criteria.threshold
 
                         # check required values for spam filters are present
                         if not current_state or duration is None or threshold is None:
+                            self.logger.warning(f"({criteria.id}) Required values for spam filtering missing")
                             continue
 
                         if event_type == "new":
@@ -138,7 +256,10 @@ class AutomodMonitorCog(commands.Cog):
                         else:
                             filtered_messages = current_state.copy()
 
-                        if criteria.criteria_type == AutomodCriteriaType.MESSAGE_SPAM:
+                        if criteria_type == AutomodCriteriaType.MESSAGE_SPAM:
+                            self.logger.debug(len(filtered_messages))
+                            self.logger.debug(threshold)
+
                             if len(filtered_messages) >= threshold:
                                 criterion_matched += 1
 
@@ -148,42 +269,42 @@ class AutomodMonitorCog(commands.Cog):
                                     ).append(past_message.message_id)
                         else:
                             # fmt: off
-                            if criteria.criteria_type == AutomodCriteriaType.MENTION_SPAM:
+                            if criteria_type == AutomodCriteriaType.MENTION_SPAM:
                                 count = sum(
                                     [
                                         past_message.mention_count
                                         for past_message in filtered_messages
                                     ]
                                 )
-                            elif criteria.criteria_type == AutomodCriteriaType.WORD_SPAM:
+                            elif criteria_type == AutomodCriteriaType.WORD_SPAM:
                                 count = sum(
                                     [
                                         past_message.word_count
                                         for past_message in filtered_messages
                                     ]
                                 )
-                            elif criteria.criteria_type == AutomodCriteriaType.NEWLINE_SPAM:
+                            elif criteria_type == AutomodCriteriaType.NEWLINE_SPAM:
                                 count = sum(
                                     [
                                         past_message.newline_count
                                         for past_message in filtered_messages
                                     ]
                                 )
-                            elif criteria.criteria_type == AutomodCriteriaType.LINK_SPAM:
+                            elif criteria_type == AutomodCriteriaType.LINK_SPAM:
                                 count = sum(
                                     [
                                         past_message.link_count
                                         for past_message in filtered_messages
                                         ]
                                 )
-                            elif criteria.criteria_type == AutomodCriteriaType.ATTACHMENT_SPAM:
+                            elif criteria_type == AutomodCriteriaType.ATTACHMENT_SPAM:
                                 count = sum(
                                     [
                                         past_message.attachment_count
                                         for past_message in filtered_messages
                                     ]
                                 )
-                            elif criteria.criteria_type == AutomodCriteriaType.EMOJI_SPAM:
+                            elif criteria_type == AutomodCriteriaType.EMOJI_SPAM:
                                 count = sum(
                                     [
                                         past_message.emoji_count
@@ -192,8 +313,9 @@ class AutomodMonitorCog(commands.Cog):
                                 )
                             else:
                                 self.logger.warning(
-                                    f"({rule.id}) Unknown rule type: {criteria.criteria_type}"
+                                    f"({criteria.id}) Unknown spam rule type: {criteria_type}"
                                 )
+                                continue
                             # fmt: on
 
                             if count >= threshold:
@@ -204,9 +326,11 @@ class AutomodMonitorCog(commands.Cog):
                                         past_message.channel_id, []
                                     ).append(past_message.message_id)
 
+                        continue
+
                     criteria_met = False
 
-                    if criteria.criteria_type == AutomodCriteriaType.WORD_LIST:
+                    if criteria_type == AutomodCriteriaType.WORD_LIST:
                         words_matched = 0
                         for word in criteria.words:
                             pattern = r"\b" + re.escape(word) + r"\b"
@@ -225,20 +349,18 @@ class AutomodMonitorCog(commands.Cog):
                             criteria_met = True
                         elif not criteria.match_all_words and words_matched > 0:
                             criteria_met = True
-                    elif criteria.criteria_type == AutomodCriteriaType.MALICIOUS_LINK:
+                    elif criteria_type == AutomodCriteriaType.MALICIOUS_LINK:
                         for link in self.bot.malicious_links:
                             if link in content_to_check:
                                 criteria_met = True
                                 break
-                    elif criteria.criteria_type == AutomodCriteriaType.PHISHING_LINK:
+                    elif criteria_type == AutomodCriteriaType.PHISHING_LINK:
                         for link in self.bot.phishing_links:
                             if link in content_to_check:
                                 criteria_met = True
                                 break
                     else:
-                        self.logger.warning(
-                            f"({rule.id}) Unknown rule type: {criteria.criteria_type}"
-                        )
+                        self.logger.warning(f"({criteria.id}) Unknown rule type: {criteria_type}")
                         continue
 
                     if criteria_met:
@@ -246,21 +368,21 @@ class AutomodMonitorCog(commands.Cog):
                         messages_to_delete.setdefault(message.channel.id, []).append(message.id)
 
                 if rule.match_all_criteria and criterion_matched == len(rule.criteria):
-                    self.logger.warning(f"({rule.id}) Rule met")
+                    self.logger.debug(f"({rule.id}) Rule met")
                     triggered_rules.append(rule)
                     triggered_actions.extend(rule.actions)
 
                     if rule.stop_if_triggered:
                         break
                 elif not rule.match_all_criteria and criterion_matched > 0:
-                    self.logger.warning(f"({rule.id}) Rule met")
+                    self.logger.debug(f"({rule.id}) Rule met")
                     triggered_rules.append(rule)
                     triggered_actions.extend(rule.actions)
 
                     if rule.stop_if_triggered:
                         break
                 else:
-                    self.logger.warning(f"({rule.id}) Rule not met")
+                    self.logger.debug(f"({rule.id}) Rule not met")
 
             del_kwargs: dict[str, Any] = (
                 {"delete_after": 5.0}
@@ -326,9 +448,11 @@ class AutomodMonitorCog(commands.Cog):
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, message.guild, session)
 
-                self.logger.debug(f"Processing {len(processed_actions)} actions")
+                self.logger.debug(f"Will process {len(processed_actions)} actions")
 
                 for action in processed_actions:
+                    self.logger.debug(f"({action.id}) Processing {action.action_type} action...")
+
                     try:
                         if action.action_type == AutomodActionType.WARN:
                             case, dm_success, dm_error = await manager.create_case(
@@ -579,6 +703,7 @@ class AutomodMonitorCog(commands.Cog):
                             continue
 
                         successful_actions.append(action)
+                        self.logger.debug(f"({action.id}) Processed.")
                     except discord.Forbidden as e:
                         failed_actions[action] = e.text
                         await log_error(

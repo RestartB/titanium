@@ -9,10 +9,10 @@ from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
 from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
 from lib.enums.server_counters import ServerCounterType
 from lib.sql.sql import (
-    AutomodAction,
     BouncerAction,
     BouncerCriteria,
     BouncerRule,
+    OldAutomodAction,
     OldAutomodRule,
 )
 
@@ -123,8 +123,8 @@ class AutomodActionModel(BaseModel):
                 raise ValueError("Message content must be provided for send message action")
         return self
 
-    def to_sqlalchemy(self, rule_type: AutomodRuleType, guild_id: int) -> AutomodAction:
-        return AutomodAction(
+    def to_sqlalchemy(self, rule_type: AutomodRuleType, guild_id: int) -> OldAutomodAction:
+        return OldAutomodAction(
             guild_id=guild_id,
             rule_type=rule_type,
             action_type=self.type,

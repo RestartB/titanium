@@ -366,8 +366,8 @@ class OldAutomodRule(Base):
     case_sensitive: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     threshold: Mapped[int] = MappedColumn(Integer)  # number of occurrences to trigger
     duration: Mapped[int] = MappedColumn(Integer)  # duration to look for occurrences
-    actions: Mapped[list["AutomodAction"]] = relationship(
-        "AutomodAction",
+    actions: Mapped[list["OldAutomodAction"]] = relationship(
+        "OldAutomodAction",
         back_populates="rule",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -422,10 +422,7 @@ class AutomodRule(Base):
 
 class AutomodCriteria(Base):
     __tablename__ = "automod_criteria"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
-    rule_id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), ForeignKey("automod_rules.id", ondelete="CASCADE")
-    )
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     criteria_type: Mapped[AutomodCriteriaType] = MappedColumn(Enum(AutomodCriteriaType))
 
     threshold: Mapped[int | None] = MappedColumn(Integer, nullable=True)
@@ -444,19 +441,19 @@ class AutomodCriteria(Base):
         Boolean, server_default=text("false"), nullable=False
     )
 
-    rule: Mapped["BouncerRule"] = relationship(
-        "BouncerRule", back_populates="criteria", uselist=False
+    rule_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("automod_rules.id", ondelete="CASCADE")
+    )
+    rule: Mapped["AutomodRule"] = relationship(
+        "AutomodRule", back_populates="criteria", uselist=False
     )
 
 
-class AutomodAction(Base):
-    __tablename__ = "automod_actions"
+class OldAutomodAction(Base):
+    __tablename__ = "old_automod_actions"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE")
-    )
-    rule_id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), ForeignKey("old_automod_rules.id", ondelete="CASCADE")
     )
 
     rule_type: Mapped[AutomodRuleType] = MappedColumn(Enum(AutomodRuleType))
@@ -471,11 +468,39 @@ class AutomodAction(Base):
     message_embed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     embed_colour: Mapped[str | None] = MappedColumn(String(length=7), nullable=True)
 
-    role_ids: Mapped[list[int]] = MappedColumn(
-        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False
+    role_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+
+    rule_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("old_automod_rules.id", ondelete="CASCADE")
     )
     rule: Mapped["OldAutomodRule"] = relationship(
         "OldAutomodRule", back_populates="actions", uselist=False
+    )
+
+
+class AutomodAction(Base):
+    __tablename__ = "automod_actions"
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    action_type: Mapped[AutomodActionType] = MappedColumn(Enum(AutomodActionType))
+
+    duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+    reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
+
+    message_content: Mapped[str | None] = MappedColumn(String(length=2000), nullable=True)
+    message_reply: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    message_mention: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    message_embed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    embed_colour: Mapped[str | None] = MappedColumn(String(length=7), nullable=True)
+
+    role_ids: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False
+    )
+
+    rule_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("automod_rules.id", ondelete="CASCADE")
+    )
+    rule: Mapped["AutomodRule"] = relationship(
+        "AutomodRule", back_populates="actions", uselist=False
     )
 
 

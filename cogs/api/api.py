@@ -46,7 +46,6 @@ from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
 from lib.sql.sql import (
-    AutomodAction,
     BouncerRule,
     ErrorLog,
     FireboardBoard,
@@ -64,6 +63,7 @@ from lib.sql.sql import (
     LeaderboardUserStats,
     ModCase,
     ModCaseComment,
+    OldAutomodAction,
     OldAutomodRule,
     ServerCounterChannel,
     Tag,
@@ -1580,7 +1580,7 @@ class APICog(commands.Cog):
                                 in_use = False
 
                 await session.execute(
-                    delete(AutomodAction).where(AutomodAction.guild_id == guild_id)
+                    delete(OldAutomodAction).where(OldAutomodAction.guild_id == guild_id)
                 )
                 await session.execute(delete(OldAutomodRule).where(OldAutomodRule.guild_id == guild_id))
 
