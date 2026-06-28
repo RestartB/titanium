@@ -52,9 +52,6 @@ class AutomodMonitorCog(commands.Cog):
                 self.logger.debug("Automod initial checks failed, skipping message")
                 return
 
-            triggered_rules: list[AutomodRule] = []
-            actions: list[AutomodAction] = []
-
             if not config.automod_enabled or not config.moderation_enabled:
                 self.logger.debug("Automod is disabled, skipping message")
                 return
@@ -105,7 +102,10 @@ class AutomodMonitorCog(commands.Cog):
             else:
                 current_state = [automod_message]
 
+            triggered_rules: list[AutomodRule] = []
+            triggered_actions: list[AutomodAction] = []
             messages_to_delete: dict[int, list[int]] = {}
+
             for rule in automod_config.rules:
                 if not rule.enabled:
                     self.logger.warning(f"({rule.id}) Rule disabled")
@@ -245,11 +245,11 @@ class AutomodMonitorCog(commands.Cog):
                 if rule.match_all_criteria and criterion_matched == len(rule.criteria):
                     self.logger.warning(f"({rule.id}) Rule met")
                     triggered_rules.append(rule)
-                    actions.extend(rule.actions)
+                    triggered_actions.extend(rule.actions)
                 elif not rule.match_all_criteria and criterion_matched > 0:
                     self.logger.warning(f"({rule.id}) Rule met")
                     triggered_rules.append(rule)
-                    actions.extend(rule.actions)
+                    triggered_actions.extend(rule.actions)
                 else:
                     self.logger.warning(f"({rule.id}) Rule not met")
 
@@ -261,16 +261,24 @@ class AutomodMonitorCog(commands.Cog):
 
             processed_actions = [
                 action
-                for action in actions
+                for action in triggered_actions
                 if action.action_type
                 not in [AutomodActionType.MUTE, AutomodActionType.KICK, AutomodActionType.BAN]
             ]
 
-            kicks = [action for action in actions if action.action_type == AutomodActionType.KICK]
+            kicks = [
+                action
+                for action in triggered_actions
+                if action.action_type == AutomodActionType.KICK
+            ]
             if kicks:
                 processed_actions.append(kicks[0])
 
-            mutes = [action for action in actions if action.action_type == AutomodActionType.MUTE]
+            mutes = [
+                action
+                for action in triggered_actions
+                if action.action_type == AutomodActionType.MUTE
+            ]
             if mutes:
                 mute_added = False
 
@@ -284,7 +292,11 @@ class AutomodMonitorCog(commands.Cog):
                     mutes.sort(key=lambda m: m.duration if m.duration else 0, reverse=True)
                     processed_actions.append(mutes[0])
 
-            bans = [action for action in actions if action.action_type == AutomodActionType.BAN]
+            bans = [
+                action
+                for action in triggered_actions
+                if action.action_type == AutomodActionType.BAN
+            ]
             if bans:
                 ban_added = False
 
@@ -302,8 +314,8 @@ class AutomodMonitorCog(commands.Cog):
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, message.guild, session)
 
-                self.logger.debug(f"Processing {len(actions)} actions")
-                for action in actions:
+                self.logger.debug(f"Processing {len(processed_actions)} actions")
+                for action in processed_actions:
                     if action.action_type == AutomodActionType.WARN:
                         case, dm_success, dm_error = await manager.create_case(
                             action=CaseType.WARN,
@@ -382,22 +394,29 @@ class AutomodMonitorCog(commands.Cog):
                             if not channel or not isinstance(channel, discord.abc.Messageable):
                                 continue
 
-                            await channel.delete_messages(
-                                messages=[
-                                    discord.Object(id=delete_msg)
-                                    for delete_msg in set(messages_to_delete[channel_id])
-                                ],
-                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                            )
+                            # FIXME: 14 day limit
+                            messages = [
+                                discord.Object(id=delete_msg)
+                                for delete_msg in set(messages_to_delete[channel_id])
+                            ]
+                            message_chunks = discord.utils.as_chunks(messages, 100)
+
+                            for chunk in message_chunks:
+                                await channel.delete_messages(
+                                    messages=chunk,
+                                    reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                )
                     elif action.action_type == AutomodActionType.ADD_ROLE:
                         await message.author.add_roles(
                             *(discord.Object(id=role_id) for role_id in set(action.role_ids)),
                             reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            atomic=False,
                         )
                     elif action.action_type == AutomodActionType.REMOVE_ROLE:
                         await message.author.remove_roles(
                             *(discord.Object(id=role_id) for role_id in set(action.role_ids)),
                             reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            atomic=False,
                         )
                     elif action.action_type == AutomodActionType.TOGGLE_ROLE:
                         roles_to_add: list[discord.Object] = []
@@ -414,6 +433,12 @@ class AutomodMonitorCog(commands.Cog):
                         await message.author.add_roles(
                             *roles_to_add,
                             reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            atomic=False,
+                        )
+                        await message.author.remove_roles(
+                            *roles_to_remove,
+                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            atomic=False,
                         )
                     elif action.action_type == AutomodActionType.SEND_MESSAGE:
                         embed = None
@@ -448,18 +473,17 @@ class AutomodMonitorCog(commands.Cog):
                         embeds=chunk, allowed_mentions=discord.AllowedMentions.none(), *del_kwargs
                     )
 
-            # if triggered_rules:
-            #     self.logger.debug(
-            #         f"Logging {len(triggered_rules)} automod triggers to guild logger"
-            #     )
-            #     guild_logger = GuildLogger(self.bot, message.guild)
+            if triggered_rules:
+                self.logger.debug(
+                    f"Logging {len(triggered_rules)} automod triggers to guild logger"
+                )
+                guild_logger = GuildLogger(self.bot, message.guild)
 
-            #     # TODO: show triggered rules
-            #     await guild_logger.titanium_automod_trigger(
-            #         rules=[],
-            #         actions=punishments,
-            #         message=message,
-            #     )
+                await guild_logger.titanium_automod_trigger(
+                    rules=triggered_rules,
+                    actions=processed_actions,
+                    message=message,
+                )
 
             self.logger.debug(f"Processed message from {message.author}: {message.id}")
         except Exception as e:

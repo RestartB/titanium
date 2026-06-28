@@ -7,21 +7,23 @@ from textwrap import shorten
 from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 import discord
+from discord.utils import escape_markdown
 from humanize.time import naturaldelta
 from sqlalchemy import delete
 
 from lib.embeds.mod_actions import banned, kicked, muted, unbanned, unmuted, warned
+from lib.enums.automod import AutomodActionType
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.helpers.shorten import shorten_preserve
 from lib.sql.sql import (
     AnonymousPoll,
     AutomodAction,
+    AutomodRule,
     AvailableWebhook,
     BouncerAction,
     BouncerRule,
     ModCase,
-    OldAutomodRule,
     get_session,
 )
 
@@ -2923,7 +2925,7 @@ class GuildLogger:
 
     async def titanium_automod_trigger(
         self,
-        rules: list[OldAutomodRule],
+        rules: list[AutomodRule],
         actions: list[AutomodAction],
         message: discord.Message,
     ) -> None:
@@ -2945,30 +2947,34 @@ class GuildLogger:
         embed.add_field(
             name="Triggered Rules",
             value="\n".join(
-                f"**{rule.rule_type.value.replace('_', ' ').capitalize()}**{f' ({rule.antispam_type.value.replace("_", " ").lower()})' if rule.antispam_type else ''} - **{rule.threshold} occurrences** in **{rule.duration} seconds**"
-                for rule in rules
+                f"- `{escape_markdown(rule.rule_name or f'Rule {i}')}` (`{len(rule.criteria)}` criteria, `{len(rule.actions)}` actions)"
+                for i, rule in enumerate(rules, start=1)
             ),
-            inline=False,
         )
+
+        action_strs: list[str] = []
+        for action in actions:
+            action_str = f"- **{action.action_type.capitalize()}**"
+            if action.action_type in [
+                AutomodActionType.ADD_ROLE,
+                AutomodActionType.REMOVE_ROLE,
+                AutomodActionType.TOGGLE_ROLE,
+            ]:
+                action_str += f" - `{len(action.role_ids)}` roles"
+            elif action.action_type in [
+                AutomodActionType.MUTE,
+                AutomodActionType.KICK,
+                AutomodActionType.BAN,
+            ]:
+                duration_str = naturaldelta(action.duration) if action.duration else "Permenant"
+                action_str += f" - `{duration_str}`: `{shorten(escape_markdown(action.reason), 50) if action.reason else 'No reason provided'}`"
+            elif action.action_type == AutomodActionType.WARN:
+                action_str += f" - `{shorten(escape_markdown(action.reason), 50) if action.reason else 'No reason provided'}`"
+            action_strs.append(action_str)
 
         embed.add_field(
             name="Actions Taken",
-            value="\n".join(
-                "".join(
-                    [
-                        f"**{action.action_type.value.replace('_', ' ').capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`)",
-                        (
-                            f": <@{action.role_id}> (`{action.role_id}`)"
-                            if "role" in action.action_type.value
-                            else f": {shorten(action.reason, width=100, placeholder='...')}"
-                            if action.reason
-                            else ""
-                        ),
-                    ]
-                )
-                for action in actions
-            ),
-            inline=False,
+            value="\n".join(action_strs),
         )
 
         assert self.config is not None and self.config.logging_settings is not None
