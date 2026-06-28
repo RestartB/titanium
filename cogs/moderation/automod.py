@@ -106,7 +106,10 @@ class AutomodMonitorCog(commands.Cog):
             triggered_actions: list[AutomodAction] = []
             messages_to_delete: dict[int, list[int]] = {}
 
-            for rule in automod_config.rules:
+            rules = automod_config.rules.copy()
+            rules.sort(key=lambda r: r.order)
+
+            for rule in rules:
                 if not rule.enabled:
                     self.logger.warning(f"({rule.id}) Rule disabled")
                     continue
@@ -246,10 +249,16 @@ class AutomodMonitorCog(commands.Cog):
                     self.logger.warning(f"({rule.id}) Rule met")
                     triggered_rules.append(rule)
                     triggered_actions.extend(rule.actions)
+
+                    if rule.stop_if_triggered:
+                        break
                 elif not rule.match_all_criteria and criterion_matched > 0:
                     self.logger.warning(f"({rule.id}) Rule met")
                     triggered_rules.append(rule)
                     triggered_actions.extend(rule.actions)
+
+                    if rule.stop_if_triggered:
+                        break
                 else:
                     self.logger.warning(f"({rule.id}) Rule not met")
 
@@ -311,160 +320,294 @@ class AutomodMonitorCog(commands.Cog):
                     processed_actions.append(bans[0])
 
             embeds: list[discord.Embed] = []
+            successful_actions: list[AutomodAction] = []
+            failed_actions: dict[AutomodAction, str] = {}
+
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, message.guild, session)
 
                 self.logger.debug(f"Processing {len(processed_actions)} actions")
+
                 for action in processed_actions:
-                    if action.action_type == AutomodActionType.WARN:
-                        case, dm_success, dm_error = await manager.create_case(
-                            action=CaseType.WARN,
-                            user=message.author,
-                            creator_user=self.bot.user,
-                            reason=action.reason,
-                            source=CaseSource.AUTOMOD,
-                        )
-                        embeds.append(
-                            mod_embeds.warned(
-                                bot=self.bot,
+                    try:
+                        if action.action_type == AutomodActionType.WARN:
+                            case, dm_success, dm_error = await manager.create_case(
+                                action=CaseType.WARN,
                                 user=message.author,
-                                creator=self.bot.user,
-                                case=case,
-                                dm_success=dm_success,
-                                dm_error=dm_error,
+                                creator_user=self.bot.user,
+                                reason=action.reason,
+                                source=CaseSource.AUTOMOD,
                             )
-                        )
-                    elif action.action_type == AutomodActionType.MUTE:
-                        await message.author.timeout(
-                            (
-                                timedelta(seconds=action.duration)
-                                if action.duration and action.duration <= 2419200
-                                else timedelta(seconds=2419200)
-                            ),
-                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                        )
-                        await manager.create_case(
-                            action=CaseType.MUTE,
-                            user=message.author,
-                            creator_user=self.bot.user,
-                            reason=action.reason,
-                            duration=timedelta(seconds=action.duration)
-                            if action.duration
-                            else None,
-                            source=CaseSource.AUTOMOD,
-                        )
-                        embeds.append(
-                            mod_embeds.muted(
-                                bot=self.bot,
-                                user=message.author,
-                                creator=self.bot.user,
-                                case=case,
-                                dm_success=dm_success,
-                                dm_error=dm_error,
-                            )
-                        )
-                    elif action.action_type == AutomodActionType.BAN:
-                        await message.author.ban(
-                            delete_message_seconds=config.moderation_settings.ban_days * 86400,
-                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                        )
-                        await manager.create_case(
-                            action=CaseType.BAN,
-                            user=message.author,
-                            creator_user=self.bot.user,
-                            reason=action.reason,
-                            duration=timedelta(seconds=action.duration)
-                            if action.duration
-                            else None,
-                            source=CaseSource.AUTOMOD,
-                        )
-                        embeds.append(
-                            mod_embeds.banned(
-                                bot=self.bot,
-                                user=message.author,
-                                creator=self.bot.user,
-                                case=case,
-                                dm_success=dm_success,
-                                dm_error=dm_error,
-                            )
-                        )
-                    elif action.action_type == AutomodActionType.DELETE:
-                        for channel_id in messages_to_delete:
-                            channel = message.guild.get_channel(channel_id)
-                            if not channel or not isinstance(channel, discord.abc.Messageable):
-                                continue
-
-                            # FIXME: 14 day limit
-                            messages = [
-                                discord.Object(id=delete_msg)
-                                for delete_msg in set(messages_to_delete[channel_id])
-                            ]
-                            message_chunks = discord.utils.as_chunks(messages, 100)
-
-                            for chunk in message_chunks:
-                                await channel.delete_messages(
-                                    messages=chunk,
-                                    reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            embeds.append(
+                                mod_embeds.warned(
+                                    bot=self.bot,
+                                    user=message.author,
+                                    creator=self.bot.user,
+                                    case=case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
                                 )
-                    elif action.action_type == AutomodActionType.ADD_ROLE:
-                        await message.author.add_roles(
-                            *(discord.Object(id=role_id) for role_id in set(action.role_ids)),
-                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                            atomic=False,
-                        )
-                    elif action.action_type == AutomodActionType.REMOVE_ROLE:
-                        await message.author.remove_roles(
-                            *(discord.Object(id=role_id) for role_id in set(action.role_ids)),
-                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                            atomic=False,
-                        )
-                    elif action.action_type == AutomodActionType.TOGGLE_ROLE:
-                        roles_to_add: list[discord.Object] = []
-                        roles_to_remove: list[discord.Object] = []
-                        roles_to_process = set(action.role_ids)
-                        user_roles = [role.id for role in message.author.roles[:1]]
+                            )
+                        elif action.action_type == AutomodActionType.MUTE:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to mute this user (Titanium's role below user's top role)"
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).moderate_members:
+                                failed_actions[action] = "No mute permissions"
+                                continue
+                            # fmt: on
 
-                        for role in roles_to_process:
-                            if role in user_roles:
-                                roles_to_remove.append(discord.Object(id=role))
-                            else:
-                                roles_to_add.append(discord.Object(id=role))
+                            await message.author.timeout(
+                                (
+                                    timedelta(seconds=action.duration)
+                                    if action.duration and action.duration <= 2419200
+                                    else timedelta(seconds=2419200)
+                                ),
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            )
+                            await manager.create_case(
+                                action=CaseType.MUTE,
+                                user=message.author,
+                                creator_user=self.bot.user,
+                                reason=action.reason,
+                                duration=timedelta(seconds=action.duration)
+                                if action.duration
+                                else None,
+                                source=CaseSource.AUTOMOD,
+                            )
+                            embeds.append(
+                                mod_embeds.muted(
+                                    bot=self.bot,
+                                    user=message.author,
+                                    creator=self.bot.user,
+                                    case=case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
+                                )
+                            )
+                        elif action.action_type == AutomodActionType.KICK:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to kick this user (Titanium's role below user's top role)"
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).kick_members:
+                                failed_actions[action] = "No kick permissions"
+                                continue
+                            # fmt: on
 
-                        await message.author.add_roles(
-                            *roles_to_add,
-                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                            atomic=False,
-                        )
-                        await message.author.remove_roles(
-                            *roles_to_remove,
-                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                            atomic=False,
-                        )
-                    elif action.action_type == AutomodActionType.SEND_MESSAGE:
-                        embed = None
-                        if action.message_embed:
-                            embed = discord.Embed(
-                                description=action.message_content,
-                                colour=discord.Colour.from_str(action.embed_colour)
-                                if action.embed_colour
-                                else discord.Colour.light_grey(),
-                            ).set_author(
-                                name="Titanium Automod", icon_url=self.bot.user.display_avatar.url
+                            await message.author.kick(
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            )
+                            await manager.create_case(
+                                action=CaseType.KICK,
+                                user=message.author,
+                                creator_user=self.bot.user,
+                                reason=action.reason,
+                                source=CaseSource.AUTOMOD,
+                            )
+                            embeds.append(
+                                mod_embeds.kicked(
+                                    bot=self.bot,
+                                    user=message.author,
+                                    creator=self.bot.user,
+                                    case=case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
+                                )
+                            )
+                        elif action.action_type == AutomodActionType.BAN:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to ban this user (Titanium's role below user's top role)"
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).ban_members:
+                                failed_actions[action] = "No ban permissions"
+                                continue
+                            # fmt: on
+
+                            await message.author.ban(
+                                delete_message_seconds=config.moderation_settings.ban_days * 86400,
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            )
+                            await manager.create_case(
+                                action=CaseType.BAN,
+                                user=message.author,
+                                creator_user=self.bot.user,
+                                reason=action.reason,
+                                duration=timedelta(seconds=action.duration)
+                                if action.duration
+                                else None,
+                                source=CaseSource.AUTOMOD,
+                            )
+                            embeds.append(
+                                mod_embeds.banned(
+                                    bot=self.bot,
+                                    user=message.author,
+                                    creator=self.bot.user,
+                                    case=case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
+                                )
+                            )
+                        elif action.action_type == AutomodActionType.DELETE:
+                            # fmt: off
+                            if not message.channel.permissions_for(message.guild.me).manage_messages:
+                                failed_actions[action] = "No delete message permissions"
+                                continue
+                            # fmt: on
+
+                            for channel_id in messages_to_delete:
+                                channel = message.guild.get_channel(channel_id)
+                                if not channel or not isinstance(channel, discord.abc.Messageable):
+                                    continue
+
+                                # FIXME: 14 day limit
+                                messages = [
+                                    discord.Object(id=delete_msg)
+                                    for delete_msg in set(messages_to_delete[channel_id])
+                                ]
+                                message_chunks = discord.utils.as_chunks(messages, 100)
+
+                                for chunk in message_chunks:
+                                    await channel.delete_messages(
+                                        messages=chunk,
+                                        reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                    )
+                        elif action.action_type == AutomodActionType.ADD_ROLE:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).manage_roles:
+                                failed_actions[action] = "No manage role permissions"
+                                continue
+                            # fmt: on
+
+                            await message.author.add_roles(
+                                *(discord.Object(id=role_id) for role_id in set(action.role_ids)),
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                atomic=False,
+                            )
+                        elif action.action_type == AutomodActionType.REMOVE_ROLE:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).manage_roles:
+                                failed_actions[action] = "No manage role permissions"
+                                continue
+                            # fmt: on
+
+                            await message.author.remove_roles(
+                                *(discord.Object(id=role_id) for role_id in set(action.role_ids)),
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                atomic=False,
+                            )
+                        elif action.action_type == AutomodActionType.TOGGLE_ROLE:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).manage_roles:
+                                failed_actions[action] = "No manage role permissions"
+                                continue
+                            # fmt: on
+
+                            roles_to_add: list[discord.Object] = []
+                            roles_to_remove: list[discord.Object] = []
+                            roles_to_process = set(action.role_ids)
+                            user_roles = [role.id for role in message.author.roles[:1]]
+
+                            for role in roles_to_process:
+                                if role in user_roles:
+                                    roles_to_remove.append(discord.Object(id=role))
+                                else:
+                                    roles_to_add.append(discord.Object(id=role))
+
+                            await message.author.add_roles(
+                                *roles_to_add,
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                atomic=False,
+                            )
+                            await message.author.remove_roles(
+                                *roles_to_remove,
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                atomic=False,
+                            )
+                        elif action.action_type == AutomodActionType.SEND_MESSAGE:
+                            # fmt: off
+                            if (
+                                not message.channel.permissions_for(message.guild.me).view_channel
+                                or not message.channel.permissions_for(
+                                    message.guild.me
+                                ).send_messages
+                            ):
+                                failed_actions[action] = "No send message permissions in the message channel"
+                                continue
+                            # fmt: on
+
+                            embed = None
+                            if action.message_embed:
+                                embed = discord.Embed(
+                                    description=action.message_content,
+                                    colour=discord.Colour.from_str(action.embed_colour)
+                                    if action.embed_colour
+                                    else discord.Colour.light_grey(),
+                                ).set_author(
+                                    name="Titanium Automod",
+                                    icon_url=self.bot.user.display_avatar.url,
+                                )
+
+                            send_kwargs: dict[str, Any] = (
+                                {"embed": embed}
+                                if action.message_embed and embed
+                                else {
+                                    "content": action.message_content,
+                                    "allowed_mentions": discord.AllowedMentions.none(),
+                                }
                             )
 
-                        send_kwargs: dict[str, Any] = (
-                            {"embed": embed}
-                            if action.message_embed and embed
-                            else {
-                                "content": action.message_content,
-                                "allowed_mentions": discord.AllowedMentions.none(),
-                            }
-                        )
-
-                        if action.message_reply:
-                            await message.reply(**send_kwargs)
+                            if action.message_reply:
+                                await message.reply(**send_kwargs)
+                            else:
+                                await message.channel.send(**send_kwargs)
                         else:
-                            await message.channel.send(**send_kwargs)
+                            self.logger.warning(
+                                f"({action.id}) Unknown action type: {action.action_type.value}"
+                            )
+                            continue
+
+                        successful_actions.append(action)
+                    except discord.Forbidden as e:
+                        failed_actions[action] = e.text
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Titanium was not allowed to perform the {action.action_type.value} action against @{message.author.name} ({message.author.id})",
+                            details=e.text,
+                            exc=e,
+                        )
+                    except discord.HTTPException as e:
+                        failed_actions[action] = "Unknown Discord error occurred"
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unknown Discord error occurred while processing {action.action_type.value} against @{message.author.name} ({message.author.id})",
+                            details=e.text,
+                            exc=e,
+                        )
+                    except Exception as e:
+                        failed_actions[action] = "Unexpected error occurred"
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unexpected error occurred while processing {action.action_type.value} against @{message.author.name} ({message.author.id})",
+                            exc=e,
+                        )
 
             if embeds:
                 embed_chunks = discord.utils.as_chunks(embeds, 10)

@@ -387,9 +387,18 @@ class AutomodRule(Base):
     )
 
     rule_name: Mapped[str | None] = MappedColumn(String(length=100), nullable=True)
-    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    evaluate_edits: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    match_all_criteria: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"), nullable=False)
+    evaluate_edits: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("true"), nullable=False
+    )
+    match_all_criteria: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("true"), nullable=False
+    )
+
+    order: Mapped[int] = MappedColumn(Integer, nullable=False)
+    stop_if_triggered: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("false"), nullable=False
+    )
 
     criteria: Mapped[list["AutomodCriteria"]] = relationship(
         "AutomodCriteria",
@@ -462,7 +471,9 @@ class AutomodAction(Base):
     message_embed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     embed_colour: Mapped[str | None] = MappedColumn(String(length=7), nullable=True)
 
-    role_ids: Mapped[list[int]] = MappedColumn(ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False)
+    role_ids: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False
+    )
     rule: Mapped["OldAutomodRule"] = relationship(
         "OldAutomodRule", back_populates="actions", uselist=False
     )
