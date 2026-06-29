@@ -424,7 +424,7 @@ class AutomodRule(Base):
 class AutomodCriteria(Base):
     __tablename__ = "automod_criteria"
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    criteria_type: Mapped[AutomodCriteriaType] = MappedColumn(Enum(AutomodCriteriaType))
+    type: Mapped[AutomodCriteriaType] = MappedColumn(Enum(AutomodCriteriaType))
 
     threshold: Mapped[int | None] = MappedColumn(Integer, nullable=True)
     duration: Mapped[int | None] = MappedColumn(Integer, nullable=True)
@@ -458,14 +458,14 @@ class OldAutomodAction(Base):
     )
 
     rule_type: Mapped[AutomodRuleType] = MappedColumn(Enum(AutomodRuleType))
-    action_type: Mapped[AutomodActionType] = MappedColumn(Enum(AutomodActionType))
+    type: Mapped[AutomodActionType] = MappedColumn(Enum(AutomodActionType))
 
     duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
 
     message_content: Mapped[str | None] = MappedColumn(String(length=2000), nullable=True)
-    message_reply: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    message_mention: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    message_reply: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    message_mention: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     message_embed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     embed_colour: Mapped[str | None] = MappedColumn(String(length=7), nullable=True)
 
@@ -482,7 +482,7 @@ class OldAutomodAction(Base):
 class AutomodAction(Base):
     __tablename__ = "automod_actions"
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    action_type: Mapped[AutomodActionType] = MappedColumn(Enum(AutomodActionType))
+    type: Mapped[AutomodActionType] = MappedColumn(Enum(AutomodActionType))
 
     duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
@@ -558,7 +558,7 @@ class BouncerCriteria(Base):
     rule_id: Mapped[uuid.UUID] = MappedColumn(
         UUID(as_uuid=True), ForeignKey("bouncer_rules.id", ondelete="CASCADE")
     )
-    criteria_type: Mapped[BouncerCriteriaType] = MappedColumn(Enum(BouncerCriteriaType))
+    type: Mapped[BouncerCriteriaType] = MappedColumn(Enum(BouncerCriteriaType))
 
     account_age: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
 
@@ -579,7 +579,7 @@ class BouncerAction(Base):
     rule_id: Mapped[uuid.UUID] = MappedColumn(
         UUID(as_uuid=True), ForeignKey("bouncer_rules.id", ondelete="CASCADE")
     )
-    action_type: Mapped[BouncerActionType] = MappedColumn(Enum(BouncerActionType))
+    type: Mapped[BouncerActionType] = MappedColumn(Enum(BouncerActionType))
 
     # Actions with duration
     duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)

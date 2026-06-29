@@ -580,7 +580,7 @@ class ModerationBasicCog(
                 )
             elif result == PunishmentResult.FORBIDDEN:
                 return await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.forbidden(self.bot, member), **del_kwargs
+                    ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs
                 )
             elif result == PunishmentResult.UNKNOWN:
                 return await ctx.reply(
@@ -680,7 +680,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, member), **del_kwargs
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs
                     )
                 except discord.HTTPException as e:
                     await log_error(
@@ -809,9 +809,7 @@ class ModerationBasicCog(
                     **del_kwargs,
                 )
             elif result == PunishmentResult.FORBIDDEN:
-                await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.forbidden(self.bot, member), **del_kwargs
-                )
+                await ctx.reply(ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs)
             elif result == PunishmentResult.UNKNOWN:
                 await ctx.reply(
                     ephemeral=True,
@@ -896,7 +894,7 @@ class ModerationBasicCog(
                 )
             elif result == PunishmentResult.FORBIDDEN:
                 return await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.forbidden(self.bot, user), **del_kwargs
+                    ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs
                 )
             elif result == PunishmentResult.UNKNOWN:
                 return await ctx.reply(
@@ -972,7 +970,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.forbidden(self.bot, user), **del_kwargs
+                        ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs
                     )
                 except discord.HTTPException as e:
                     await log_error(

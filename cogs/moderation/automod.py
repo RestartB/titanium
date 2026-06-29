@@ -81,7 +81,7 @@ class AutomodMonitorCog(commands.Cog):
                     if old_rule.rule_type == AutomodRuleType.BADWORD_DETECTION:
                         new_rule.criteria.append(
                             AutomodCriteria(
-                                criteria_type=AutomodCriteriaType.WORD_LIST,
+                                type=AutomodCriteriaType.WORD_LIST,
                                 words=old_rule.words,
                                 match_whole_word=old_rule.match_whole_word,
                                 case_sensitive=old_rule.case_sensitive,
@@ -89,11 +89,11 @@ class AutomodMonitorCog(commands.Cog):
                         )
                     elif old_rule.rule_type == AutomodRuleType.MALICIOUS_LINK:
                         new_rule.criteria.append(
-                            AutomodCriteria(criteria_type=AutomodCriteriaType.MALICIOUS_LINK)
+                            AutomodCriteria(type=AutomodCriteriaType.MALICIOUS_LINK)
                         )
                     elif old_rule.rule_type == AutomodRuleType.PHISHING_LINK:
                         new_rule.criteria.append(
-                            AutomodCriteria(criteria_type=AutomodCriteriaType.PHISHING_LINK)
+                            AutomodCriteria(type=AutomodCriteriaType.PHISHING_LINK)
                         )
                     elif (
                         old_rule.rule_type == AutomodRuleType.SPAM_DETECTION
@@ -101,7 +101,7 @@ class AutomodMonitorCog(commands.Cog):
                     ):
                         new_rule.criteria.append(
                             AutomodCriteria(
-                                criteria_type=AutomodCriteriaType(old_rule.antispam_type + "_spam"),
+                                type=AutomodCriteriaType(old_rule.antispam_type + "_spam"),
                                 threshold=old_rule.threshold,
                                 duration=old_rule.duration,
                             )
@@ -111,13 +111,13 @@ class AutomodMonitorCog(commands.Cog):
                         continue
 
                     new_rule.rule_name = (
-                        new_rule.criteria[0].criteria_type.value.replace("_", " ").capitalize()
+                        new_rule.criteria[0].type.value.replace("_", " ").capitalize()
                     )
 
                     for old_action in old_rule.actions:
                         new_rule.actions.append(
                             AutomodAction(
-                                action_type=old_action.action_type,
+                                type=old_action.type,
                                 duration=old_action.duration,
                                 reason=old_action.reason,
                                 message_content=old_action.message_content,
@@ -235,10 +235,10 @@ class AutomodMonitorCog(commands.Cog):
 
                 criterion_matched = 0
                 for criteria in rule.criteria:
-                    criteria_type = AutomodCriteriaType(criteria.criteria_type)
-                    self.logger.debug(criteria_type)
+                    type = AutomodCriteriaType(criteria.type)
+                    self.logger.debug(type)
 
-                    if criteria_type.value.endswith("_spam"):
+                    if type.value.endswith("_spam"):
                         duration = criteria.duration
                         threshold = criteria.threshold
 
@@ -259,7 +259,7 @@ class AutomodMonitorCog(commands.Cog):
                         else:
                             filtered_messages = current_state.copy()
 
-                        if criteria_type == AutomodCriteriaType.MESSAGE_SPAM:
+                        if type == AutomodCriteriaType.MESSAGE_SPAM:
                             self.logger.debug(len(filtered_messages))
                             self.logger.debug(threshold)
 
@@ -272,42 +272,42 @@ class AutomodMonitorCog(commands.Cog):
                                     ).append(past_message.message_id)
                         else:
                             # fmt: off
-                            if criteria_type == AutomodCriteriaType.MENTION_SPAM:
+                            if type == AutomodCriteriaType.MENTION_SPAM:
                                 count = sum(
                                     [
                                         past_message.mention_count
                                         for past_message in filtered_messages
                                     ]
                                 )
-                            elif criteria_type == AutomodCriteriaType.WORD_SPAM:
+                            elif type == AutomodCriteriaType.WORD_SPAM:
                                 count = sum(
                                     [
                                         past_message.word_count
                                         for past_message in filtered_messages
                                     ]
                                 )
-                            elif criteria_type == AutomodCriteriaType.NEWLINE_SPAM:
+                            elif type == AutomodCriteriaType.NEWLINE_SPAM:
                                 count = sum(
                                     [
                                         past_message.newline_count
                                         for past_message in filtered_messages
                                     ]
                                 )
-                            elif criteria_type == AutomodCriteriaType.LINK_SPAM:
+                            elif type == AutomodCriteriaType.LINK_SPAM:
                                 count = sum(
                                     [
                                         past_message.link_count
                                         for past_message in filtered_messages
                                         ]
                                 )
-                            elif criteria_type == AutomodCriteriaType.ATTACHMENT_SPAM:
+                            elif type == AutomodCriteriaType.ATTACHMENT_SPAM:
                                 count = sum(
                                     [
                                         past_message.attachment_count
                                         for past_message in filtered_messages
                                     ]
                                 )
-                            elif criteria_type == AutomodCriteriaType.EMOJI_SPAM:
+                            elif type == AutomodCriteriaType.EMOJI_SPAM:
                                 count = sum(
                                     [
                                         past_message.emoji_count
@@ -316,7 +316,7 @@ class AutomodMonitorCog(commands.Cog):
                                 )
                             else:
                                 self.logger.warning(
-                                    f"({criteria.id}) Unknown spam rule type: {criteria_type}"
+                                    f"({criteria.id}) Unknown spam rule type: {type}"
                                 )
                                 continue
                             # fmt: on
@@ -333,7 +333,7 @@ class AutomodMonitorCog(commands.Cog):
 
                     criteria_met = False
 
-                    if criteria_type == AutomodCriteriaType.WORD_LIST:
+                    if type == AutomodCriteriaType.WORD_LIST:
                         words_matched = 0
                         for word in criteria.words:
                             pattern = r"\b" + re.escape(word) + r"\b"
@@ -352,18 +352,18 @@ class AutomodMonitorCog(commands.Cog):
                             criteria_met = True
                         elif not criteria.match_all_words and words_matched > 0:
                             criteria_met = True
-                    elif criteria_type == AutomodCriteriaType.MALICIOUS_LINK:
+                    elif type == AutomodCriteriaType.MALICIOUS_LINK:
                         for link in self.bot.malicious_links:
                             if link in content_to_check:
                                 criteria_met = True
                                 break
-                    elif criteria_type == AutomodCriteriaType.PHISHING_LINK:
+                    elif type == AutomodCriteriaType.PHISHING_LINK:
                         for link in self.bot.phishing_links:
                             if link in content_to_check:
                                 criteria_met = True
                                 break
                     else:
-                        self.logger.warning(f"({criteria.id}) Unknown rule type: {criteria_type}")
+                        self.logger.warning(f"({criteria.id}) Unknown rule type: {type}")
                         continue
 
                     if criteria_met:
@@ -396,22 +396,18 @@ class AutomodMonitorCog(commands.Cog):
             processed_actions = [
                 action
                 for action in triggered_actions
-                if action.action_type
+                if action.type
                 not in [AutomodActionType.MUTE, AutomodActionType.KICK, AutomodActionType.BAN]
             ]
 
             kicks = [
-                action
-                for action in triggered_actions
-                if action.action_type == AutomodActionType.KICK
+                action for action in triggered_actions if action.type == AutomodActionType.KICK
             ]
             if kicks:
                 processed_actions.append(kicks[0])
 
             mutes = [
-                action
-                for action in triggered_actions
-                if action.action_type == AutomodActionType.MUTE
+                action for action in triggered_actions if action.type == AutomodActionType.MUTE
             ]
             if mutes:
                 mute_added = False
@@ -426,11 +422,7 @@ class AutomodMonitorCog(commands.Cog):
                     mutes.sort(key=lambda m: m.duration if m.duration else 0, reverse=True)
                     processed_actions.append(mutes[0])
 
-            bans = [
-                action
-                for action in triggered_actions
-                if action.action_type == AutomodActionType.BAN
-            ]
+            bans = [action for action in triggered_actions if action.type == AutomodActionType.BAN]
             if bans:
                 ban_added = False
 
@@ -454,10 +446,10 @@ class AutomodMonitorCog(commands.Cog):
                 self.logger.debug(f"Will process {len(processed_actions)} actions")
 
                 for action in processed_actions:
-                    self.logger.debug(f"({action.id}) Processing {action.action_type} action...")
+                    self.logger.debug(f"({action.id}) Processing {action.type} action...")
 
                     try:
-                        if action.action_type == AutomodActionType.WARN:
+                        if action.type == AutomodActionType.WARN:
                             case, dm_success, dm_error = await manager.create_case(
                                 action=CaseType.WARN,
                                 user=message.author,
@@ -475,7 +467,7 @@ class AutomodMonitorCog(commands.Cog):
                                     dm_error=dm_error,
                                 )
                             )
-                        elif action.action_type == AutomodActionType.MUTE:
+                        elif action.type == AutomodActionType.MUTE:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to mute this user (Titanium's role below user's top role)"
@@ -515,7 +507,7 @@ class AutomodMonitorCog(commands.Cog):
                                     dm_error=dm_error,
                                 )
                             )
-                        elif action.action_type == AutomodActionType.KICK:
+                        elif action.type == AutomodActionType.KICK:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to kick this user (Titanium's role below user's top role)"
@@ -547,7 +539,7 @@ class AutomodMonitorCog(commands.Cog):
                                     dm_error=dm_error,
                                 )
                             )
-                        elif action.action_type == AutomodActionType.BAN:
+                        elif action.type == AutomodActionType.BAN:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to ban this user (Titanium's role below user's top role)"
@@ -583,7 +575,7 @@ class AutomodMonitorCog(commands.Cog):
                                     dm_error=dm_error,
                                 )
                             )
-                        elif action.action_type == AutomodActionType.DELETE:
+                        elif action.type == AutomodActionType.DELETE:
                             # fmt: off
                             if not message.channel.permissions_for(message.guild.me).manage_messages:
                                 failed_actions[action] = "No delete message permissions in the message channel"
@@ -608,7 +600,7 @@ class AutomodMonitorCog(commands.Cog):
                                         messages=chunk,
                                         reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                                     )
-                        elif action.action_type == AutomodActionType.ADD_ROLE:
+                        elif action.type == AutomodActionType.ADD_ROLE:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
@@ -627,7 +619,7 @@ class AutomodMonitorCog(commands.Cog):
                                 reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                                 atomic=False,
                             )
-                        elif action.action_type == AutomodActionType.REMOVE_ROLE:
+                        elif action.type == AutomodActionType.REMOVE_ROLE:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
@@ -646,7 +638,7 @@ class AutomodMonitorCog(commands.Cog):
                                 reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                                 atomic=False,
                             )
-                        elif action.action_type == AutomodActionType.TOGGLE_ROLE:
+                        elif action.type == AutomodActionType.TOGGLE_ROLE:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
                                 failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
@@ -681,7 +673,9 @@ class AutomodMonitorCog(commands.Cog):
                                 reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                                 atomic=False,
                             )
-                        elif action.action_type == AutomodActionType.SEND_MESSAGE:
+                        elif (
+                            action.type == AutomodActionType.SEND_MESSAGE and action.message_content
+                        ):
                             # fmt: off
                             if (
                                 not message.channel.permissions_for(message.guild.me).view_channel
@@ -721,7 +715,7 @@ class AutomodMonitorCog(commands.Cog):
                                 await message.channel.send(**send_kwargs)
                         else:
                             self.logger.warning(
-                                f"({action.id}) Unknown action type: {action.action_type.value}"
+                                f"({action.id}) Unknown action type: {action.type.value}"
                             )
                             continue
 
@@ -733,7 +727,7 @@ class AutomodMonitorCog(commands.Cog):
                             bot=self.bot,
                             module="Automod",
                             guild_id=message.guild.id,
-                            error=f"Titanium was not allowed to perform the {action.action_type.value} action against @{message.author.name} ({message.author.id})",
+                            error=f"Titanium was not allowed to perform the {action.type.value} action against @{message.author.name} ({message.author.id})",
                             details=e.text,
                             exc=e,
                         )
@@ -743,7 +737,7 @@ class AutomodMonitorCog(commands.Cog):
                             bot=self.bot,
                             module="Automod",
                             guild_id=message.guild.id,
-                            error=f"Unknown Discord error occurred while processing {action.action_type.value} against @{message.author.name} ({message.author.id})",
+                            error=f"Unknown Discord error occurred while processing {action.type.value} against @{message.author.name} ({message.author.id})",
                             details=e.text,
                             exc=e,
                         )
@@ -753,7 +747,7 @@ class AutomodMonitorCog(commands.Cog):
                             bot=self.bot,
                             module="Automod",
                             guild_id=message.guild.id,
-                            error=f"Unexpected error occurred while processing {action.action_type.value} against @{message.author.name} ({message.author.id})",
+                            error=f"Unexpected error occurred while processing {action.type.value} against @{message.author.name} ({message.author.id})",
                             exc=e,
                         )
 

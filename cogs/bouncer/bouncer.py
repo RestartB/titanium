@@ -72,7 +72,7 @@ class BouncerMonitorCog(commands.Cog):
                 continue
 
             for criteria in rule.criteria:
-                if criteria.criteria_type == BouncerCriteriaType.USERNAME:
+                if criteria.type == BouncerCriteriaType.USERNAME:
                     for word in criteria.words:
                         check_word = word.lower() if not criteria.case_sensitive else word
                         matches = []
@@ -99,7 +99,7 @@ class BouncerMonitorCog(commands.Cog):
                             self.logger.debug("Username match found")
                             spotted = True
                             break
-                elif criteria.criteria_type == BouncerCriteriaType.TAG and member.primary_guild:
+                elif criteria.type == BouncerCriteriaType.TAG and member.primary_guild:
                     if not member.primary_guild.tag:
                         continue
 
@@ -118,7 +118,7 @@ class BouncerMonitorCog(commands.Cog):
                             spotted = True
                             break
                 elif (
-                    criteria.criteria_type == BouncerCriteriaType.AGE
+                    criteria.type == BouncerCriteriaType.AGE
                     and event_type == BouncerEventType.JOIN
                     and member.joined_at
                 ):
@@ -131,7 +131,7 @@ class BouncerMonitorCog(commands.Cog):
                         self.logger.debug("Account age match found")
                         spotted = True
                         break
-                elif criteria.criteria_type == BouncerCriteriaType.AVATAR:
+                elif criteria.type == BouncerCriteriaType.AVATAR:
                     if not member.avatar:
                         self.logger.debug("No avatar match found")
                         spotted = True
@@ -144,13 +144,13 @@ class BouncerMonitorCog(commands.Cog):
                     punishments.append(action)
 
         # Get list of punishment types
-        punishment_types = list(set(action.action_type for action in punishments))
+        punishment_types = list(set(action.type for action in punishments))
 
         async with get_session() as session:
             manager = GuildModCaseManager(self.bot, member.guild, session)
 
             for punishment in punishments:
-                if punishment.action_type == BouncerActionType.RESET_NICK:
+                if punishment.type == BouncerActionType.RESET_NICK:
                     if not member.nick:
                         continue
 
@@ -172,7 +172,7 @@ class BouncerMonitorCog(commands.Cog):
                             error=f"Unknown Discord error while resetting nickname of {member.name} ({member.id})",
                             details=e.text,
                         )
-                elif punishment.action_type == BouncerActionType.ADD_ROLE:
+                elif punishment.type == BouncerActionType.ADD_ROLE:
                     if not punishment.role_id:
                         continue
 
@@ -198,7 +198,7 @@ class BouncerMonitorCog(commands.Cog):
                             error=f"Unknown Discord error while adding role {role.name} ({role.id}) to {member.name} ({member.id})",
                             details=e.text,
                         )
-                elif punishment.action_type == BouncerActionType.REMOVE_ROLE:
+                elif punishment.type == BouncerActionType.REMOVE_ROLE:
                     if not punishment.role_id:
                         continue
 
@@ -224,7 +224,7 @@ class BouncerMonitorCog(commands.Cog):
                             error=f"Unknown Discord error while removing role {role.name} ({role.id}) from {member.name} ({member.id})",
                             details=e.text,
                         )
-                elif punishment.action_type == BouncerActionType.TOGGLE_ROLE:
+                elif punishment.type == BouncerActionType.TOGGLE_ROLE:
                     if not punishment.role_id:
                         continue
 
@@ -253,7 +253,7 @@ class BouncerMonitorCog(commands.Cog):
                             error=f"Unknown Discord error while toggling role {role.name} ({role.id}) for {member.name} ({member.id})",
                             details=e.text,
                         )
-                elif punishment.action_type == BouncerActionType.WARN:
+                elif punishment.type == BouncerActionType.WARN:
                     await manager.create_case(
                         action=CaseType.WARN,
                         user=member,
@@ -261,7 +261,7 @@ class BouncerMonitorCog(commands.Cog):
                         reason=f"Bouncer: {punishment.reason}",
                         source=CaseSource.BOUNCER,
                     )
-                elif punishment.action_type == BouncerActionType.MUTE:
+                elif punishment.type == BouncerActionType.MUTE:
                     # Check if user is already timed out
                     if member.is_timed_out():
                         continue
@@ -309,7 +309,7 @@ class BouncerMonitorCog(commands.Cog):
                             details=e.text,
                         )
                 elif (
-                    punishment.action_type == BouncerActionType.KICK
+                    punishment.type == BouncerActionType.KICK
                     and BouncerActionType.BAN not in punishment_types
                 ):
                     # Kick user
@@ -351,7 +351,7 @@ class BouncerMonitorCog(commands.Cog):
                         if case:
                             await manager.delete_case(case.id)
                         raise e
-                elif punishment.action_type == BouncerActionType.BAN:
+                elif punishment.type == BouncerActionType.BAN:
                     # Ban user
                     case: ModCase
                     try:
@@ -403,7 +403,7 @@ class BouncerMonitorCog(commands.Cog):
                         module="Bouncer",
                         guild_id=member.guild.id,
                         error=f"An internal error occurred while processing bouncer punishments for @{member.name} ({member.id})",
-                        details=f"Punishment action type does not exist: {punishment.action_type}",
+                        details=f"Punishment action type does not exist: {punishment.type}",
                     )
 
         if triggers:

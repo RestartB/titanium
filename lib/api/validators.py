@@ -87,7 +87,7 @@ class CaseComment(BaseModel):
 
 
 class AutomodCriteriaModel(BaseModel):
-    criteria_type: AutomodCriteriaType
+    type: AutomodCriteriaType
 
     threshold: Optional[int] = None
     duration: Optional[int] = None
@@ -98,21 +98,19 @@ class AutomodCriteriaModel(BaseModel):
             StringConstraints(min_length=1, max_length=100),
         ]
     ] = Field(default_factory=list)
-    match_whole_word: bool = False
-    match_all_words: bool = False
-    case_sensitive: bool = False
+    match_whole_word: bool
+    match_all_words: bool
+    case_sensitive: bool
 
     @model_validator(mode="after")
     def validate_spam(self):
-        if self.criteria_type.value.endswith("_spam") and (
-            self.threshold is None or self.duration is None
-        ):
+        if self.type.value.endswith("_spam") and (self.threshold is None or self.duration is None):
             raise ValueError("Threshold and duration must be provided for spam filters")
         return self
 
     def to_sqlalchemy(self) -> AutomodCriteria:
         return AutomodCriteria(
-            criteria_type=self.criteria_type,
+            type=self.type,
             threshold=self.threshold,
             duration=self.duration,
             words=self.words,
@@ -123,32 +121,33 @@ class AutomodCriteriaModel(BaseModel):
 
 
 class AutomodActionModel(BaseModel):
-    action_type: AutomodActionType
+    type: AutomodActionType
 
     # TODO: check if this is a problem as an int, this may need to be str
     duration: Optional[int] = None
     reason: Optional[
         Annotated[
             str,
-            StringConstraints(min_length=1, max_length=512, strip_whitespace=True),
+            StringConstraints(max_length=512, strip_whitespace=True),
         ]
     ] = None
 
-    role_ids: list[str] = Field(default_factory=list)
+    role_ids: list[str] = Field(default_factory=list, max_length=10)
 
     message_content: Optional[
         Annotated[
             str,
-            StringConstraints(min_length=1, max_length=1024, strip_whitespace=True),
+            StringConstraints(max_length=1024, strip_whitespace=True),
         ]
     ] = None
-    message_reply: bool = False
-    message_mention: bool = False
-    message_embed: bool = False
+    message_reply: bool
+    message_mention: bool
+    message_embed: bool
+    # TODO: validate hex code
     embed_colour: Optional[
         Annotated[
             str,
-            StringConstraints(min_length=7, max_length=7, strip_whitespace=True),
+            StringConstraints(max_length=7, strip_whitespace=True),
         ]
     ] = None
 
@@ -164,7 +163,7 @@ class AutomodActionModel(BaseModel):
 
     @model_validator(mode="after")
     def validate_role_id(self):
-        if self.action_type in {
+        if self.type in {
             AutomodActionType.ADD_ROLE,
             AutomodActionType.REMOVE_ROLE,
             AutomodActionType.TOGGLE_ROLE,
@@ -175,7 +174,7 @@ class AutomodActionModel(BaseModel):
 
     @model_validator(mode="after")
     def validate_message_content(self):
-        if self.action_type == AutomodActionType.SEND_MESSAGE:
+        if self.type == AutomodActionType.SEND_MESSAGE:
             if not self.message_content or self.message_content.strip() == "":
                 raise ValueError("Message content must be provided for send message action")
         return self
@@ -201,7 +200,7 @@ class AutomodActionModel(BaseModel):
 
     def to_sqlalchemy(self) -> AutomodAction:
         return AutomodAction(
-            action_type=self.action_type,
+            type=self.type,
             duration=self.duration,
             reason=self.reason,
             message_content=self.message_content,
@@ -228,7 +227,7 @@ class AutomodRuleModel(BaseModel):
 
     @model_validator(mode="after")
     def validate_unique_criteria_types(self):
-        criteria_types = [criterion.criteria_type for criterion in self.criteria]
+        criteria_types = [criterion.type for criterion in self.criteria]
 
         if len(criteria_types) != len(set(criteria_types)):
             raise ValueError("Each criterion type in a rule must be unique")
@@ -237,7 +236,7 @@ class AutomodRuleModel(BaseModel):
 
     @model_validator(mode="after")
     def validate_unique_action_types(self):
-        action_types = [action.action_type for action in self.actions]
+        action_types = [action.type for action in self.actions]
 
         if len(action_types) != len(set(action_types)):
             raise ValueError("Each action type in a rule must be unique")
@@ -277,7 +276,7 @@ class BouncerCriterionModel(BaseModel):
     def to_sqlalchemy(self, rule_id: uuid.UUID) -> BouncerCriteria:
         return BouncerCriteria(
             rule_id=rule_id,
-            criteria_type=self.type,
+            type=self.type,
             account_age=self.account_age,
             words=self.words or [],
             match_whole_word=self.match_whole_word,
@@ -307,7 +306,7 @@ class BouncerActionModel(BaseModel):
     def to_sqlalchemy(self, rule_id: uuid.UUID) -> BouncerAction:
         return BouncerAction(
             rule_id=rule_id,
-            action_type=self.type,
+            type=self.type,
             duration=self.duration,
             role_id=int(self.role_id) if self.role_id else None,
             reason=self.reason,

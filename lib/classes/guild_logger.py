@@ -2924,22 +2924,22 @@ class GuildLogger:
         )
 
     def __generate_action_str(self, action: AutomodAction) -> str:
-        action_str = f"- **{action.action_type.capitalize()}**"
+        action_str = f"- **{action.type.capitalize()}**"
 
-        if action.action_type in [
+        if action.type in [
             AutomodActionType.ADD_ROLE,
             AutomodActionType.REMOVE_ROLE,
             AutomodActionType.TOGGLE_ROLE,
         ]:
             action_str += f" - `{len(action.role_ids)}` roles"
-        elif action.action_type in [
+        elif action.type in [
             AutomodActionType.MUTE,
             AutomodActionType.KICK,
             AutomodActionType.BAN,
         ]:
             duration_str = naturaldelta(action.duration) if action.duration else "Permenant"
             action_str += f" - `{duration_str}`: `{shorten(escape_markdown(action.reason), 50) if action.reason else 'No reason provided'}`"
-        elif action.action_type == AutomodActionType.WARN:
+        elif action.type == AutomodActionType.WARN:
             action_str += f" - `{shorten(escape_markdown(action.reason), 50) if action.reason else 'No reason provided'}`"
 
         return action_str
@@ -3016,7 +3016,7 @@ class GuildLogger:
         embed.add_field(
             name="Triggered Criteria",
             value="\n".join(
-                f"**{criteria.criteria_type.value.capitalize()}**"
+                f"**{criteria.type.value.capitalize()}**"
                 for rule in rules
                 for criteria in rule.criteria
             ),
@@ -3028,10 +3028,10 @@ class GuildLogger:
             value="\n".join(
                 "".join(
                     [
-                        f"**{action.action_type.value.replace('_', ' ').capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`)",
+                        f"**{action.type.value.replace('_', ' ').capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`)",
                         (
                             f": <@{action.role_id}> (`{action.role_id}`)"
-                            if "role" in action.action_type.value
+                            if "role" in action.type.value
                             else f": {shorten(action.reason, width=100, placeholder='...')}"
                             if action.reason
                             else ""
