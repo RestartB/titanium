@@ -226,7 +226,9 @@ class AdminCog(commands.Cog):
                     ephemeral=True,
                 )
 
-    @admin_group.command(name="reloadserver", aliases=["reload-server"], hidden=True)
+    @admin_group.command(
+        name="reloadserver", aliases=["refreshserver", "refreshguild", "reloadguild"], hidden=True
+    )
     @commands.is_owner()
     async def reload_server(self, ctx: commands.Context["TitaniumBot"], guild_id: int) -> None:
         """Reload a guild's configuration from the database."""
@@ -417,7 +419,7 @@ class AdminCog(commands.Cog):
             if message is None:
                 await ctx.reply(
                     embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Message Not Found",
+                        title=f"{self.bot.error_emoji} Not Found",
                         description=f"Message with ID `{msg_id}` not found in cache.",
                         colour=discord.Colour.red(),
                     ),

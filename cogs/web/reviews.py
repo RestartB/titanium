@@ -55,7 +55,7 @@ class ReviewsCommandsCog(commands.Cog):
             if not review_response["success"]:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Error",
-                    description="ReviewDB has encountered an error. Titanium will not continue. Please try again later.",
+                    description="ReviewDB has encountered an error. Please try again later.",
                     colour=Colour.red(),
                 )
                 await ctx.reply(embed=embed)
@@ -149,7 +149,7 @@ class ReviewsCommandsCog(commands.Cog):
             if not review_response["success"]:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Error",
-                    description="ReviewDB has encountered an error. Titanium will not continue. Please try again later.",
+                    description="ReviewDB has encountered an error. Please try again later.",
                     colour=Colour.red(),
                 )
 

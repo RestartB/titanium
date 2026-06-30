@@ -267,7 +267,7 @@ class QuoteView(View):
             return True
         else:
             embed = discord.Embed(
-                title="Error",
+                title=f"{interaction.client.error_emoji} No Permissions",
                 description="You can't modify this quote, as you did not run the command or get quoted.",
                 colour=discord.Colour.red(),
             )
@@ -295,7 +295,7 @@ class QuoteView(View):
 
         if not user:
             embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Error",
+                title=f"{interaction.client.error_emoji} Not Found",
                 description="Couldn't find the user. Please try again later.",
                 colour=discord.Colour.red(),
             )
@@ -311,7 +311,7 @@ class QuoteView(View):
             custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
             if custom_quote_user is None:
                 embed = discord.Embed(
-                    title="Error",
+                    title=f"{interaction.client.error_emoji} Not Found",
                     description="Couldn't find the custom quote creator. Please try again later.",
                     colour=discord.Colour.red(),
                 )
@@ -414,7 +414,7 @@ class QuoteView(View):
 
         if not user:
             embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Error",
+                title=f"{interaction.client.error_emoji} Not Found",
                 description="Couldn't find the user. Please try again later.",
                 colour=discord.Colour.red(),
             )
@@ -430,7 +430,7 @@ class QuoteView(View):
             custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
             if custom_quote_user is None:
                 embed = discord.Embed(
-                    title="Error",
+                    title=f"{interaction.client.error_emoji} Not Found",
                     description="Couldn't find the custom quote creator. Please try again later.",
                     colour=discord.Colour.red(),
                 )
@@ -535,7 +535,7 @@ class QuoteView(View):
 
         if not user:
             embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Error",
+                title=f"{interaction.client.error_emoji} Not Found",
                 description="Couldn't find the user. Please try again later.",
                 colour=discord.Colour.red(),
             )
@@ -551,7 +551,7 @@ class QuoteView(View):
             custom_quote_user = interaction.client.get_user(self.custom_quote_user_id)
             if custom_quote_user is None:
                 embed = discord.Embed(
-                    title="Error",
+                    title=f"{interaction.client.error_emoji} Not Found",
                     description="Couldn't find the custom quote creator. Please try again later.",
                     colour=discord.Colour.red(),
                 )
@@ -657,7 +657,7 @@ class QuoteView(View):
             )
         else:
             embed = discord.Embed(
-                title="Error",
+                title=f"{interaction.client.error_emoji} Not Allowed",
                 description="You cannot delete this quote, as you are not the original author.",
                 colour=discord.Colour.red(),
             )
@@ -694,8 +694,8 @@ class QuoteCommandsCog(
 
         if message.clean_content == "":
             embed = discord.Embed(
-                title="Error",
-                description="Nothing to quote, this message is empty.",
+                title=f"{interaction.client.error_emoji} Nothing to quote",
+                description="Nothing to quote, there is no content in this message.",
                 colour=discord.Colour.red(),
             )
 
@@ -706,7 +706,7 @@ class QuoteCommandsCog(
             return
         elif message.is_system():
             embed = discord.Embed(
-                title="Error",
+                title=f"{interaction.client.error_emoji} Nothing to quote",
                 description="You cannot quote this message, as it is a system message.",
                 colour=discord.Colour.red(),
             )

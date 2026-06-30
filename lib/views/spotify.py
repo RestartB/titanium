@@ -175,14 +175,14 @@ class SongMenuView(View):
                         view.message = await interaction.original_response()
                     else:
                         embed = Embed(
-                            title="No Lyrics Found",
+                            title=f"{interaction.client.error_emoji} No Lyrics Found",
                             description="No lyrics were found for this song.",
                             colour=Colour.red(),
                         )
                         await interaction.edit_original_response(embed=embed)
                 else:
                     embed = Embed(
-                        title="Error",
+                        title=f"{interaction.client.error_emoji} Error",
                         description="Failed to fetch lyrics. Please try again later.",
                         colour=Colour.red(),
                     )
@@ -213,7 +213,7 @@ class SongLyricSelection(Select):
                     selected_song_data = await response.json()
                 else:
                     embed = Embed(
-                        title="Error",
+                        title=f"{interaction.client.error_emoji} Error",
                         description="Failed to fetch lyrics. Please try again later.",
                         colour=Colour.red(),
                     )

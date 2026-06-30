@@ -406,8 +406,8 @@ class TagSelectDropdown(Select):
 
         if not self.values[0]:
             embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Error",
-                description="Please select a tag.",
+                title=f"{interaction.client.error_emoji} Select a Tag",
+                description="Please select a tag to continue.",
                 colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
@@ -622,7 +622,7 @@ class PrefixModal(Modal, title="Add Prefix"):
 
             if len(guild_settings.prefixes) >= 5:
                 embed = discord.Embed(
-                    title=f"{interaction.client.error_emoji} Error",
+                    title=f"{interaction.client.error_emoji} Limit Reached",
                     description="You can only have up to 5 custom prefixes.",
                     colour=Colour.red(),
                 )
