@@ -417,7 +417,7 @@ class AdminCog(commands.Cog):
             if message is None:
                 await ctx.reply(
                     embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Message Not Found",
+                        title=f"{self.bot.error_emoji} Not Found",
                         description=f"Message with ID `{msg_id}` not found in cache.",
                         colour=discord.Colour.red(),
                     ),

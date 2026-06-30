@@ -84,7 +84,7 @@ def case_embed(
 
 def case_not_found(bot: TitaniumBot, case: str) -> Embed:
     return Embed(
-        title=f"{bot.error_emoji} Case Not Found",
+        title=f"{bot.error_emoji} Not Found",
         description=f"Couldn't find a case with the ID `{case}` in this server.",
         colour=Colour.red(),
     )

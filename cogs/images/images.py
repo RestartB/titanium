@@ -446,7 +446,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         async with defer(ctx):
             if len(word) > 50:
                 embed = discord.Embed(
-                    title=f"{ctx.bot.error_emoji} Error",
+                    title=f"{ctx.bot.error_emoji} Too Long",
                     description="The word is too long. It can only be 50 letters long.",
                     colour=discord.Colour.red(),
                 )
@@ -455,7 +455,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
 
             if not (word.isascii() and word.isalpha()):
                 embed = discord.Embed(
-                    title=f"{ctx.bot.error_emoji} Error",
+                    title=f"{ctx.bot.error_emoji} Invalid Input",
                     description="The word can only contain letters.",
                     colour=discord.Colour.red(),
                 )
