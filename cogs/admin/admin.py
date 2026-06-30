@@ -226,7 +226,9 @@ class AdminCog(commands.Cog):
                     ephemeral=True,
                 )
 
-    @admin_group.command(name="reloadserver", aliases=["reload-server"], hidden=True)
+    @admin_group.command(
+        name="reloadserver", aliases=["refreshserver", "refreshguild", "reloadguild"], hidden=True
+    )
     @commands.is_owner()
     async def reload_server(self, ctx: commands.Context["TitaniumBot"], guild_id: int) -> None:
         """Reload a guild's configuration from the database."""
