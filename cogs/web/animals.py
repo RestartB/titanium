@@ -56,7 +56,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
             ) as request:
                 if request.status == 429:
                     embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} Error",
+                        title=f"{self.bot.error_emoji} Rate Limited",
                         description="The service has been rate limited. Try again later.",
                         colour=Colour.red(),
                     )
@@ -90,7 +90,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
             ) as request:
                 if request.status == 429:
                     embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} Error",
+                        title=f"{self.bot.error_emoji} Timed Out",
                         description="The service has been rate limited. Try again later.",
                         colour=Colour.red(),
                     )
@@ -131,7 +131,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
                 ) as request:
                     if request.status == 429:
                         embed = discord.Embed(
-                            title=f"{self.bot.error_emoji} Error",
+                            title=f"{self.bot.error_emoji} Rate Limited",
                             description="The service has been rate limited. Try again later.",
                             colour=Colour.red(),
                         )
@@ -139,7 +139,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
                         return
                     elif request.status == 522:
                         embed = discord.Embed(
-                            title=f"{self.bot.error_emoji} Error",
+                            title=f"{self.bot.error_emoji} Timed Out",
                             description="The service timed out. Try again later.",
                             colour=Colour.red(),
                         )

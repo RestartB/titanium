@@ -97,7 +97,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
             or (ctx.interaction and not ctx.permissions.use_application_commands)
         ):
             embed = discord.Embed(
-                title=f"{self.bot.error_emoji} Error",
+                title=f"{self.bot.error_emoji} No Permissions",
                 description="You don't have permission to create server reminders in this channel.",
                 colour=Colour.red(),
             )

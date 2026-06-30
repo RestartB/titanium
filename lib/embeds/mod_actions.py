@@ -410,7 +410,7 @@ def already_unbanned(
 
 def already_punishing(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
-        title=f"{bot.error_emoji} Error",
+        title=f"{bot.error_emoji} Already Being Punished",
         description=f"{user.mention} is already being punished. Please wait.",
         colour=Colour.red(),
     )
@@ -419,7 +419,7 @@ def already_punishing(bot: TitaniumBot, user: Member | User | ClientUser) -> Emb
 
 def cannot_purge(bot: TitaniumBot) -> Embed:
     embed = Embed(
-        title=f"{bot.error_emoji} Error",
+        title=f"{bot.error_emoji} Can't Purge",
         description="Messages in this channel cannot be purged.",
         colour=Colour.red(),
     )
@@ -437,7 +437,7 @@ def cant_mod_self(bot: TitaniumBot) -> Embed:
 
 def not_allowed(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     embed = Embed(
-        title=f"{bot.error_emoji} Error",
+        title=f"{bot.error_emoji} No Permissions",
         description=f"You do not have permission to perform this action on {user.mention}.",
         colour=Colour.red(),
     )
@@ -448,7 +448,7 @@ def titanium_not_allowed(
     bot: TitaniumBot, user: Member | User | ClientUser, action: str = ""
 ) -> Embed:
     embed = Embed(
-        title=f"{bot.error_emoji} Error",
+        title=f"{bot.error_emoji} No Permissions",
         description=f"Titanium does not have permission to {action if action else 'perform this action on'} {user.mention}. Please ensure that Titanium has a higher role than the user, then try again.",
         colour=Colour.red(),
     )
@@ -457,7 +457,7 @@ def titanium_not_allowed(
 
 def forbidden(bot: TitaniumBot, action: str = "") -> Embed:
     embed = Embed(
-        title=f"{bot.error_emoji} Error",
+        title=f"{bot.error_emoji} No Permissions",
         description=f"Titanium does not have permission to {action if action else 'perform this action'}. Please ensure that Titanium has the correct permissions, then try again.",
         colour=Colour.red(),
     )

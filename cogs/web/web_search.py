@@ -86,7 +86,7 @@ class WebSearchCommandsCog(
                     embeds_list.append(self._create_urban_embed(item))
             except IndexError:
                 embed = discord.Embed(
-                    title=f"{self.bot.error_emoji} Error",
+                    title=f"{self.bot.error_emoji} Not Found",
                     description=f"**Page {page}** does not exist. Please try a different search term.",
                     colour=Colour.red(),
                 )
