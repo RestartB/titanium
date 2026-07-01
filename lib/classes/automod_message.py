@@ -14,3 +14,4 @@ class AutomodMessage:
     attachment_count: int
     emoji_count: int
     timestamp: datetime
+    deleted: bool = False

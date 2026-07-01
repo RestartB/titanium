@@ -603,7 +603,8 @@ class AutomodMonitorCog(commands.Cog):
                                 messages = [
                                     discord.Object(id=delete_msg.message_id)
                                     for delete_msg in set(messages_to_delete[channel_id])
-                                    if discord.utils.utcnow() - delete_msg.timestamp
+                                    if not delete_msg.deleted
+                                    and discord.utils.utcnow() - delete_msg.timestamp
                                     > timedelta(days=14)
                                 ]
                                 message_chunks = discord.utils.as_chunks(messages, 100)
@@ -879,6 +880,29 @@ class AutomodMonitorCog(commands.Cog):
 
         self.logger.debug(f"Processing edited message {payload.message_id}")
         await self.handle_message(message, event_type="edit")
+
+    # Listen for message delete
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        self.logger.debug(f"Received raw message delete event: {payload.message_id}")
+        if not payload.cached_message:
+            return
+
+        if payload.guild_id not in self.bot.automod_messages:
+            return
+
+        if payload.cached_message.author.id not in self.bot.automod_messages[payload.guild_id]:
+            return
+
+        for i, message in enumerate(
+            self.bot.automod_messages[payload.guild_id][payload.cached_message.author.id]
+        ):
+            if message.message_id != payload.message_id:
+                continue
+
+            self.bot.automod_messages[payload.guild_id][payload.cached_message.author.id][
+                i
+            ].deleted = True
 
 
 async def setup(bot: TitaniumBot) -> None:
