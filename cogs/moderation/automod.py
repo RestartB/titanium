@@ -600,12 +600,16 @@ class AutomodMonitorCog(commands.Cog):
                                 if not channel or not isinstance(channel, discord.abc.Messageable):
                                     continue
 
+                                unique_messages = {
+                                    delete_msg.message_id: delete_msg
+                                    for delete_msg in messages_to_delete[channel_id]
+                                }
                                 messages = [
                                     discord.Object(id=delete_msg.message_id)
-                                    for delete_msg in set(messages_to_delete[channel_id])
+                                    for delete_msg in unique_messages.values()
                                     if not delete_msg.deleted
                                     and discord.utils.utcnow() - delete_msg.timestamp
-                                    > timedelta(days=14)
+                                    <= timedelta(days=14)
                                 ]
                                 message_chunks = discord.utils.as_chunks(messages, 100)
 
