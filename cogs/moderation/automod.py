@@ -224,7 +224,7 @@ class AutomodMonitorCog(commands.Cog):
 
             triggered_rules: list[AutomodRule] = []
             triggered_actions: list[AutomodAction] = []
-            messages_to_delete: dict[int, list[int]] = {}
+            messages_to_delete: dict[int, list[AutomodMessage]] = {}
 
             rules = automod_config.rules.copy()
             rules.sort(key=lambda r: r.order)
@@ -277,7 +277,7 @@ class AutomodMonitorCog(commands.Cog):
                                 for past_message in filtered_messages:
                                     messages_to_delete.setdefault(
                                         past_message.channel_id, []
-                                    ).append(past_message.message_id)
+                                    ).append(past_message)
                         else:
                             # fmt: off
                             if type == AutomodCriteriaType.MENTION_SPAM:
@@ -335,7 +335,7 @@ class AutomodMonitorCog(commands.Cog):
                                 for past_message in filtered_messages:
                                     messages_to_delete.setdefault(
                                         past_message.channel_id, []
-                                    ).append(past_message.message_id)
+                                    ).append(past_message)
 
                         continue
 
@@ -378,7 +378,9 @@ class AutomodMonitorCog(commands.Cog):
 
                     if criteria_met:
                         criterion_matched += 1
-                        messages_to_delete.setdefault(message.channel.id, []).append(message.id)
+                        messages_to_delete.setdefault(message.channel.id, []).append(
+                            current_state[0]
+                        )
 
                 if rule.match_all_criteria and criterion_matched == len(rule.criteria):
                     self.logger.debug(f"({rule.id}) Rule met")
@@ -598,10 +600,11 @@ class AutomodMonitorCog(commands.Cog):
                                 if not channel or not isinstance(channel, discord.abc.Messageable):
                                     continue
 
-                                # FIXME: 14 day limit
                                 messages = [
-                                    discord.Object(id=delete_msg)
+                                    discord.Object(id=delete_msg.message_id)
                                     for delete_msg in set(messages_to_delete[channel_id])
+                                    if discord.utils.utcnow() - delete_msg.timestamp
+                                    > timedelta(days=14)
                                 ]
                                 message_chunks = discord.utils.as_chunks(messages, 100)
 
