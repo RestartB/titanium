@@ -4,12 +4,13 @@ from typing import Annotated, Optional
 from emoji import is_emoji
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 
-from lib.enums.automod import AutomodActionType, AutomodAntispamType, AutomodRuleType
+from lib.enums.automod import AutomodActionType, AutomodCriteriaType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
 from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
 from lib.enums.server_counters import ServerCounterType
 from lib.sql.sql import (
     AutomodAction,
+    AutomodCriteria,
     AutomodRule,
     BouncerAction,
     BouncerCriteria,
@@ -41,13 +42,10 @@ class SettingsModel(BaseModel):
 class GuildSettingsModel(BaseModel):
     modules: ModuleModel
     settings: SettingsModel
-    prefixes: list[str]
+    prefixes: list[str] = Field(default_factory=list, max_length=5)
 
     @field_validator("prefixes")
     def validate_prefixes(cls, v):
-        if len(v) > 5:
-            raise ValueError("A maximum of 5 prefixes are allowed")
-
         for prefix in v:
             if not (1 <= len(prefix) <= 5):
                 raise ValueError("Each prefix must be between 1 and 5 characters long")
@@ -85,35 +83,82 @@ class CaseComment(BaseModel):
     ]
 
 
+class AutomodCriteriaModel(BaseModel):
+    type: AutomodCriteriaType
+
+    threshold: Optional[int] = Field(None, ge=1, le=1_892_160_000)
+    duration: Optional[int] = Field(None, ge=1, le=1_892_160_000)
+
+    words: list[
+        Annotated[
+            str,
+            StringConstraints(min_length=1, max_length=100),
+        ]
+    ] = Field(default_factory=list)
+    match_whole_word: bool
+    match_all_words: bool
+    case_sensitive: bool
+
+    @model_validator(mode="after")
+    def validate_spam(self):
+        if self.type.value.endswith("_spam") and (self.threshold is None or self.duration is None):
+            raise ValueError("Threshold and duration must be provided for spam filters")
+        return self
+
+    def to_sqlalchemy(self) -> AutomodCriteria:
+        return AutomodCriteria(
+            type=self.type,
+            threshold=self.threshold,
+            duration=self.duration,
+            words=self.words,
+            match_whole_word=self.match_whole_word,
+            match_all_words=self.match_all_words,
+            case_sensitive=self.case_sensitive,
+        )
+
+
 class AutomodActionModel(BaseModel):
     type: AutomodActionType
 
-    duration: Optional[int] = None
-    reason: Optional[str] = None
+    duration: Optional[int] = Field(None, ge=1, le=1_892_160_000)
+    reason: Optional[
+        Annotated[
+            str,
+            StringConstraints(max_length=512, strip_whitespace=True),
+        ]
+    ] = None
 
-    role_id: Optional[str] = None
+    role_ids: list[str] = Field(default_factory=list, max_length=10)
 
-    message_content: Optional[str] = None
-    message_reply: Optional[bool] = None
-    message_mention: Optional[bool] = None
-    message_embed: Optional[bool] = None
-    embed_colour: Optional[str] = None
+    message_content: Optional[
+        Annotated[
+            str,
+            StringConstraints(max_length=1024, strip_whitespace=True),
+        ]
+    ] = None
+    message_reply: bool
+    message_mention: bool
+    message_embed: bool
+    # TODO: validate hex code
+    embed_colour: Optional[
+        Annotated[
+            str,
+            StringConstraints(max_length=7, strip_whitespace=True),
+        ]
+    ] = None
 
     @model_validator(mode="after")
-    def validate_mute_duration(self):
-        if self.type == "mute" and (self.duration is None or self.duration <= 0):
-            raise ValueError("Mute actions must have a positive duration")
-        return self
-
-    @model_validator(mode="after")
-    def validate_role_id(self):
-        if self.type in {
-            AutomodActionType.ADD_ROLE,
-            AutomodActionType.REMOVE_ROLE,
-            AutomodActionType.TOGGLE_ROLE,
-        }:
-            if not self.role_id:
-                raise ValueError("Role ID must be provided for role action")
+    def validate_role_present(self):
+        if (
+            self.type
+            in {
+                AutomodActionType.ADD_ROLE,
+                AutomodActionType.REMOVE_ROLE,
+                AutomodActionType.TOGGLE_ROLE,
+            }
+            and not self.role_ids
+        ):
+            raise ValueError("Role IDs must be provided for role actions")
         return self
 
     @model_validator(mode="after")
@@ -123,11 +168,28 @@ class AutomodActionModel(BaseModel):
                 raise ValueError("Message content must be provided for send message action")
         return self
 
-    def to_sqlalchemy(self, rule_type: AutomodRuleType, guild_id: int) -> AutomodAction:
+    @model_validator(mode="after")
+    def validate_role_ids(self):
+        if not self.role_ids:
+            return self
+
+        valid_role_ids: list[str] = []
+        for role_id in self.role_ids:
+            if not role_id:
+                raise ValueError(f"Invalid role id: {role_id}")
+
+            try:
+                int(role_id)
+                valid_role_ids.append(role_id)
+            except Exception:
+                raise ValueError(f"Invalid role id: {role_id}")
+
+        self.role_ids = valid_role_ids
+        return self
+
+    def to_sqlalchemy(self) -> AutomodAction:
         return AutomodAction(
-            guild_id=guild_id,
-            rule_type=rule_type,
-            action_type=self.type,
+            type=self.type,
             duration=self.duration,
             reason=self.reason,
             message_content=self.message_content,
@@ -135,31 +197,31 @@ class AutomodActionModel(BaseModel):
             message_mention=self.message_mention,
             message_embed=self.message_embed,
             embed_colour=self.embed_colour,
-            role_id=int(self.role_id) if self.role_id else None,
+            role_ids=[int(role_id) for role_id in (self.role_ids or [])],
         )
 
 
 class AutomodRuleModel(BaseModel):
-    id: Optional[str] = None
+    rule_name: Annotated[str, StringConstraints(max_length=100, strip_whitespace=True)] = ""
 
-    rule_type: AutomodRuleType
-    rule_name: str = ""
+    enabled: bool
+    evaluate_edits: bool
+    match_all_criteria: bool
 
-    words: Optional[list[str]] = Field(default_factory=list)
-    match_whole_word: bool = False
-    case_sensitive: bool = False
+    order: int
+    stop_if_triggered: bool
 
-    antispam_type: Optional[AutomodAntispamType] = None
-    threshold: int
-    duration: int
-
+    criteria: list[AutomodCriteriaModel]
     actions: list[AutomodActionModel]
 
-    @field_validator("id")
-    def validate_id(cls, v):
-        if v == "":
-            return None
-        return v
+    @model_validator(mode="after")
+    def validate_unique_criteria_types(self):
+        criteria_types = [criterion.type for criterion in self.criteria]
+
+        if len(criteria_types) != len(set(criteria_types)):
+            raise ValueError("Each criterion type in a rule must be unique")
+
+        return self
 
     @model_validator(mode="after")
     def validate_unique_action_types(self):
@@ -172,36 +234,29 @@ class AutomodRuleModel(BaseModel):
 
     def to_sqlalchemy(self, guild_id: int) -> AutomodRule:
         rule = AutomodRule(
-            id=uuid.UUID(self.id),
             guild_id=guild_id,
-            rule_type=self.rule_type,
             rule_name=self.rule_name,
-            words=self.words or [],
-            match_whole_word=self.match_whole_word,
-            case_sensitive=self.case_sensitive,
-            antispam_type=self.antispam_type,
-            threshold=self.threshold,
-            duration=self.duration,
+            enabled=self.enabled,
+            evaluate_edits=self.evaluate_edits,
+            match_all_criteria=self.match_all_criteria,
+            order=self.order,
+            stop_if_triggered=self.stop_if_triggered,
+            criteria=[criteria.to_sqlalchemy() for criteria in self.criteria],
+            actions=[action.to_sqlalchemy() for action in self.actions],
         )
-
-        # Convert actions
-        for action_model in self.actions:
-            rule.actions.append(action_model.to_sqlalchemy(self.rule_type, guild_id))
 
         return rule
 
 
 class AutomodConfigModel(BaseModel):
-    badword_detection: list["AutomodRuleModel"]
-    spam_detection: list["AutomodRuleModel"]
-    malicious_link: list["AutomodRuleModel"]
-    phishing_link: list["AutomodRuleModel"]
+    rules: list[AutomodRuleModel]
+    show_outcome_message: bool
 
 
 class BouncerCriterionModel(BaseModel):
     type: BouncerCriteriaType
 
-    account_age: Optional[int] = None
+    account_age: Optional[int] = Field(None, ge=1, le=1_892_160_000)
 
     words: Optional[list[str]] = None
     match_whole_word: bool = False
@@ -210,7 +265,7 @@ class BouncerCriterionModel(BaseModel):
     def to_sqlalchemy(self, rule_id: uuid.UUID) -> BouncerCriteria:
         return BouncerCriteria(
             rule_id=rule_id,
-            criteria_type=self.type,
+            type=self.type,
             account_age=self.account_age,
             words=self.words or [],
             match_whole_word=self.match_whole_word,
@@ -221,26 +276,41 @@ class BouncerCriterionModel(BaseModel):
 class BouncerActionModel(BaseModel):
     type: BouncerActionType
 
-    duration: Optional[int] = None
+    duration: Optional[int] = Field(None, ge=1, le=1_892_160_000)
     reason: Optional[str] = None
 
     role_id: Optional[str] = None
 
     @model_validator(mode="after")
+    def validate_role_present(self):
+        if (
+            self.type
+            in {
+                BouncerActionType.ADD_ROLE,
+                BouncerActionType.REMOVE_ROLE,
+                BouncerActionType.TOGGLE_ROLE,
+            }
+            and not self.role_id
+        ):
+            raise ValueError("Role ID must be provided for role action")
+        return self
+
+    @model_validator(mode="after")
     def validate_role_id(self):
-        if self.type in {
-            BouncerActionType.ADD_ROLE,
-            BouncerActionType.REMOVE_ROLE,
-            BouncerActionType.TOGGLE_ROLE,
-        }:
-            if not self.role_id:
-                raise ValueError("Role ID must be provided for role action")
+        if not self.role_id:
+            return self
+
+        try:
+            int(self.role_id)
+        except Exception:
+            raise ValueError("Invalid role ID")
+
         return self
 
     def to_sqlalchemy(self, rule_id: uuid.UUID) -> BouncerAction:
         return BouncerAction(
             rule_id=rule_id,
-            action_type=self.type,
+            type=self.type,
             duration=self.duration,
             role_id=int(self.role_id) if self.role_id else None,
             reason=self.reason,
@@ -250,6 +320,7 @@ class BouncerActionModel(BaseModel):
 class BouncerRuleModel(BaseModel):
     enabled: bool
     evaluate_for_existing_members: bool
+
     criteria: list[BouncerCriterionModel]
     actions: list[BouncerActionModel]
 
@@ -299,7 +370,6 @@ class LoggingConfigModel(BaseModel):
         for key in self.channels.keys():
             if key in seen_keys:
                 raise ValueError(f"Duplicate event type: {key}")
-
             seen_keys.append(key)
 
         return self

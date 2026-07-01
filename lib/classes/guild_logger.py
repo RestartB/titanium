@@ -7,10 +7,12 @@ from textwrap import shorten
 from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 import discord
+from discord.utils import escape_markdown
 from humanize.time import naturaldelta
 from sqlalchemy import delete
 
 from lib.embeds.mod_actions import banned, kicked, muted, unbanned, unmuted, warned
+from lib.enums.automod import AutomodActionType
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.helpers.shorten import shorten_preserve
@@ -2921,10 +2923,32 @@ class GuildLogger:
             embed=embed,
         )
 
+    def __generate_action_str(self, action: AutomodAction) -> str:
+        action_str = f"- **{action.type.capitalize()}**"
+
+        if action.type in [
+            AutomodActionType.ADD_ROLE,
+            AutomodActionType.REMOVE_ROLE,
+            AutomodActionType.TOGGLE_ROLE,
+        ]:
+            action_str += f" - `{len(action.role_ids)}` roles"
+        elif action.type in [
+            AutomodActionType.MUTE,
+            AutomodActionType.KICK,
+            AutomodActionType.BAN,
+        ]:
+            duration_str = naturaldelta(action.duration) if action.duration else "Permenant"
+            action_str += f" - `{duration_str}`: `{shorten(escape_markdown(action.reason), 50) if action.reason else 'No reason provided'}`"
+        elif action.type == AutomodActionType.WARN:
+            action_str += f" - `{shorten(escape_markdown(action.reason), 50) if action.reason else 'No reason provided'}`"
+
+        return action_str
+
     async def titanium_automod_trigger(
         self,
         rules: list[AutomodRule],
         actions: list[AutomodAction],
+        failed_actions: dict[AutomodAction, str],
         message: discord.Message,
     ) -> None:
         await self._ensure_config()
@@ -2945,30 +2969,23 @@ class GuildLogger:
         embed.add_field(
             name="Triggered Rules",
             value="\n".join(
-                f"**{rule.rule_type.value.replace('_', ' ').capitalize()}**{f' ({rule.antispam_type.value.replace("_", " ").lower()})' if rule.antispam_type else ''} - **{rule.threshold} occurrences** in **{rule.duration} seconds**"
-                for rule in rules
+                f"- `{escape_markdown(rule.rule_name or f'Rule {i}')}` (`{len(rule.criteria)}` criteria, `{len(rule.actions)}` actions)"
+                for i, rule in enumerate(rules, start=1)
             ),
-            inline=False,
         )
 
         embed.add_field(
-            name="Actions Taken",
+            name="Successful Actions",
+            value="\n".join([self.__generate_action_str(action) for action in actions]),
+        )
+        embed.add_field(
+            name="Failed Actions",
             value="\n".join(
-                "".join(
-                    [
-                        f"**{action.action_type.value.replace('_', ' ').capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`)",
-                        (
-                            f": <@{action.role_id}> (`{action.role_id}`)"
-                            if "role" in action.action_type.value
-                            else f": {shorten(action.reason, width=100, placeholder='...')}"
-                            if action.reason
-                            else ""
-                        ),
-                    ]
-                )
-                for action in actions
+                [
+                    f"{self.__generate_action_str(action)} - {reason}"
+                    for action, reason in failed_actions
+                ]
             ),
-            inline=False,
         )
 
         assert self.config is not None and self.config.logging_settings is not None
@@ -2999,7 +3016,7 @@ class GuildLogger:
         embed.add_field(
             name="Triggered Criteria",
             value="\n".join(
-                f"**{criteria.criteria_type.value.capitalize()}**"
+                f"**{criteria.type.value.capitalize()}**"
                 for rule in rules
                 for criteria in rule.criteria
             ),
@@ -3011,10 +3028,10 @@ class GuildLogger:
             value="\n".join(
                 "".join(
                     [
-                        f"**{action.action_type.value.replace('_', ' ').capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`)",
+                        f"**{action.type.value.replace('_', ' ').capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`)",
                         (
                             f": <@{action.role_id}> (`{action.role_id}`)"
-                            if "role" in action.action_type.value
+                            if "role" in action.type.value
                             else f": {shorten(action.reason, width=100, placeholder='...')}"
                             if action.reason
                             else ""

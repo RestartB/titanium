@@ -18,6 +18,19 @@ class AutomodAntispamType(StrEnum):
     EMOJI = "emoji"
 
 
+class AutomodCriteriaType(StrEnum):
+    WORD_LIST = "word_list"
+    MALICIOUS_LINK = "malicious_link"
+    PHISHING_LINK = "phishing_link"
+    MESSAGE_SPAM = "message_spam"
+    MENTION_SPAM = "mention_spam"
+    WORD_SPAM = "word_spam"
+    NEWLINE_SPAM = "newline_spam"
+    LINK_SPAM = "link_spam"
+    ATTACHMENT_SPAM = "attachment_spam"
+    EMOJI_SPAM = "emoji_spam"
+
+
 class AutomodActionType(StrEnum):
     WARN = "warn"
     MUTE = "mute"

@@ -444,28 +444,32 @@ def not_allowed(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
     return embed
 
 
-def titanium_not_allowed(bot: TitaniumBot, user: Member | User | ClientUser) -> Embed:
+def titanium_not_allowed(
+    bot: TitaniumBot, user: Member | User | ClientUser, action: str = ""
+) -> Embed:
     embed = Embed(
         title=f"{bot.error_emoji} No Permissions",
-        description=f"Titanium does not have permission to perform this action on {user.mention}. Please ensure that Titanium has a higher role than the user, then try again.",
+        description=f"Titanium does not have permission to {action if action else 'perform this action on'} {user.mention}. Please ensure that Titanium has a higher role than the user, then try again.",
         colour=Colour.red(),
     )
     return embed
 
 
-def forbidden(bot: TitaniumBot, user: Optional[Member | User | ClientUser] = None) -> Embed:
+def forbidden(bot: TitaniumBot, action: str = "") -> Embed:
     embed = Embed(
         title=f"{bot.error_emoji} No Permissions",
-        description=f"Titanium does not have permission to perform this action{f' on {user.mention}.' if user else '.'}",
+        description=f"Titanium does not have permission to {action if action else 'perform this action'}. Please ensure that Titanium has the correct permissions, then try again.",
         colour=Colour.red(),
     )
     return embed
 
 
-def http_exception(bot: TitaniumBot, user: Optional[Member | User | ClientUser] = None) -> Embed:
+def http_exception(
+    bot: TitaniumBot, user: Optional[Member | User | ClientUser] = None, action: str = ""
+) -> Embed:
     embed = Embed(
         title=f"{bot.error_emoji} Error",
-        description=f"An error occurred while trying to perform this action{f' on {user.mention}.' if user else '.'}",
+        description=f"A Discord error occurred while trying to {action if action else 'perform this action'}{f' on {user.mention}.' if user else '.'}",
         colour=Colour.red(),
     )
     return embed

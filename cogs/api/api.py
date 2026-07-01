@@ -25,7 +25,6 @@ from lib.api.endpoints import (
 )
 from lib.api.validators import (
     AutomodConfigModel,
-    AutomodRuleModel,
     BouncerConfigModel,
     CaseComment,
     ConfessionsConfigModel,
@@ -46,7 +45,6 @@ from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
 from lib.sql.sql import (
-    AutomodAction,
     AutomodRule,
     BouncerRule,
     ErrorLog,
@@ -1536,13 +1534,7 @@ class APICog(commands.Cog):
 
                 session.add(db_config)
         elif module_name == "automod" and isinstance(validated_config, AutomodConfigModel):
-            if (
-                len(validated_config.badword_detection)
-                + len(validated_config.spam_detection)
-                + len(validated_config.malicious_link)
-                + len(validated_config.phishing_link)
-                > config.limits.automod_rules
-            ):
+            if len(validated_config.rules) > config.limits.automod_rules:
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
@@ -1552,59 +1544,30 @@ class APICog(commands.Cog):
                 )
 
             async with get_session() as session:
-                automod_settings = await session.get(GuildAutomodSettings, int(guild_id))
+                db_config = await session.get(GuildAutomodSettings, guild.id)
+                if not db_config:
+                    db_config = GuildAutomodSettings(guild_id=guild.id)
 
-                if not automod_settings:
-                    return web.json_response(
-                        {"error": "Failed to retrieve server configuration from DB"},
-                        status=500,
-                    )
-
-                for detection_config in [
-                    validated_config.badword_detection,
-                    validated_config.spam_detection,
-                    validated_config.malicious_link,
-                    validated_config.phishing_link,
-                ]:
-                    detection_config: list[AutomodRuleModel]
-                    for rule_model in detection_config:
-                        in_use = True
-                        while in_use:
-                            if rule_model.id is None:
-                                rule_model.id = str(uuid.uuid4())
-
-                            existing_rule = await session.get(AutomodRule, rule_model.id)
-                            if existing_rule and existing_rule.guild_id != guild_id:
-                                rule_model.id = str(uuid.uuid4())
-                            else:
-                                in_use = False
-
-                await session.execute(
-                    delete(AutomodAction).where(AutomodAction.guild_id == guild_id)
-                )
                 await session.execute(delete(AutomodRule).where(AutomodRule.guild_id == guild_id))
 
-                for detection_config in [
-                    validated_config.badword_detection,
-                    validated_config.spam_detection,
-                    validated_config.malicious_link,
-                    validated_config.phishing_link,
-                ]:
-                    for rule_model in detection_config:
+                for rule in validated_config.rules:
+                    for criterion in rule.criteria:
                         if (
-                            rule_model.words
-                            and len(rule_model.words) > config.limits.bad_word_list_size
+                            criterion.words
+                            and len(criterion.words) > config.limits.bad_word_list_size
                         ):
                             return web.json_response(
                                 {
                                     "error": "Limit exceeded",
-                                    "message": "One of your automod rules has too many words.",
+                                    "message": "One of your automod criterion has too many words.",
                                 },
                                 status=403,
                             )
 
-                        automod_rule = rule_model.to_sqlalchemy(guild_id)
-                        session.add(automod_rule)
+                    automod_rule = rule.to_sqlalchemy(guild_id)
+                    session.add(automod_rule)
+
+                session.add(db_config)
 
             await self.bot.refresh_guild_config_cache(guild_id)
             config = self.bot.guild_configs.get(guild_id)

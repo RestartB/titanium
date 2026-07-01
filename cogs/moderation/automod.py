@@ -1,20 +1,30 @@
 import logging
 import re
+import unicodedata
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Literal
 
 import discord
 import emoji
 from discord.ext import commands
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 import lib.embeds.mod_actions as mod_embeds
 from lib.classes.automod_message import AutomodMessage
 from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
-from lib.enums.automod import AutomodActionType, AutomodAntispamType
+from lib.enums.automod import AutomodActionType, AutomodCriteriaType, AutomodRuleType
 from lib.enums.moderation import CaseSource, CaseType
 from lib.helpers.log_error import log_error
-from lib.sql.sql import AutomodAction, AutomodRule, ModCase, get_session
+from lib.sql.sql import (
+    AutomodAction,
+    AutomodCriteria,
+    AutomodRule,
+    GuildAutomodSettings,
+    OldAutomodRule,
+    get_session,
+)
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -23,14 +33,115 @@ if TYPE_CHECKING:
 class AutomodMonitorCog(commands.Cog):
     """Monitors new messages for automod triggers and creates cases/punishments"""
 
-    # -------------------------
-    # New messages: new messages will be added to the queue for spam checks
-    # Edited messages: only the edited message will be checked for triggers
-    # -------------------------
-
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("automod")
+
+    def normalise_automod_text(self, text: str) -> str:
+        text = unicodedata.normalize("NFKC", text)
+        return "".join(char for char in text if unicodedata.category(char) != "Cf")
+
+    async def cog_load(self) -> None:
+        self.logger.info("Checking for old rules...")
+
+        migrated = 0
+        async with get_session() as session:
+            stmt = select(GuildAutomodSettings).options(
+                selectinload(GuildAutomodSettings.badword_detection_rules).selectinload(
+                    OldAutomodRule.actions
+                ),
+                selectinload(GuildAutomodSettings.malicious_link_rules).selectinload(
+                    OldAutomodRule.actions
+                ),
+                selectinload(GuildAutomodSettings.phishing_link_rules).selectinload(
+                    OldAutomodRule.actions
+                ),
+                selectinload(GuildAutomodSettings.spam_detection_rules).selectinload(
+                    OldAutomodRule.actions
+                ),
+            )
+            old_settings = (await session.execute(stmt)).scalars().all()
+
+            if len(old_settings) == 0:
+                self.logger.info("No servers to migrate")
+                return
+
+            for server in old_settings:
+                old_rules = (
+                    server.badword_detection_rules
+                    + server.malicious_link_rules
+                    + server.phishing_link_rules
+                    + server.spam_detection_rules
+                )
+
+                if len(old_rules) == 0:
+                    continue
+
+                for i, old_rule in enumerate(old_rules):
+                    new_rule = AutomodRule(
+                        guild_id=old_rule.guild_id,
+                        order=i,
+                    )
+
+                    if old_rule.rule_type == AutomodRuleType.BADWORD_DETECTION:
+                        new_rule.criteria.append(
+                            AutomodCriteria(
+                                type=AutomodCriteriaType.WORD_LIST,
+                                words=old_rule.words,
+                                match_whole_word=old_rule.match_whole_word,
+                                case_sensitive=old_rule.case_sensitive,
+                            )
+                        )
+                    elif old_rule.rule_type == AutomodRuleType.MALICIOUS_LINK:
+                        new_rule.criteria.append(
+                            AutomodCriteria(type=AutomodCriteriaType.MALICIOUS_LINK)
+                        )
+                    elif old_rule.rule_type == AutomodRuleType.PHISHING_LINK:
+                        new_rule.criteria.append(
+                            AutomodCriteria(type=AutomodCriteriaType.PHISHING_LINK)
+                        )
+                    elif (
+                        old_rule.rule_type == AutomodRuleType.SPAM_DETECTION
+                        and old_rule.antispam_type
+                    ):
+                        new_rule.criteria.append(
+                            AutomodCriteria(
+                                type=AutomodCriteriaType(old_rule.antispam_type + "_spam"),
+                                threshold=old_rule.threshold,
+                                duration=old_rule.duration,
+                            )
+                        )
+                    else:
+                        self.logger.warning(f"Unknown old rule type: {old_rule.rule_type.value}")
+                        continue
+
+                    new_rule.rule_name = (
+                        new_rule.criteria[0].type.value.replace("_", " ").capitalize()
+                    )
+
+                    for old_action in old_rule.actions:
+                        new_rule.actions.append(
+                            AutomodAction(
+                                type=old_action.type,
+                                duration=old_action.duration,
+                                reason=old_action.reason,
+                                message_content=old_action.message_content,
+                                message_reply=old_action.message_reply,
+                                message_mention=old_action.message_mention,
+                                message_embed=old_action.message_embed,
+                                embed_colour=old_action.embed_colour,
+                                role_ids=[old_action.role_id] if old_action.role_id else [],
+                            )
+                        )
+
+                    session.add(new_rule)
+                    await session.delete(old_rule)
+
+                    migrated += 1
+
+                await self.bot.refresh_guild_config_cache(server.guild_id)
+
+        self.logger.info(f"Migrated {migrated} rules")
 
     async def handle_message(
         self, message: discord.Message, event_type: Literal["new", "edit"] = "new"
@@ -43,6 +154,9 @@ class AutomodMonitorCog(commands.Cog):
         if message.message_snapshots:
             content_to_check = message.message_snapshots[0].content
 
+        # normalise to remove unicode bypasses
+        normalised_content_to_check = self.normalise_automod_text(content_to_check)
+
         try:
             # Check for server ID in config list
             if (
@@ -51,61 +165,42 @@ class AutomodMonitorCog(commands.Cog):
                 or not config.automod_settings
                 or not message.author
                 or not isinstance(message.author, discord.Member)
+                or not isinstance(message.channel, discord.abc.GuildChannel)
                 or not self.bot.user
                 or message.author.id == self.bot.user.id
             ):
                 self.logger.debug("Automod initial checks failed, skipping message")
                 return
 
-            triggers: list[AutomodRule] = []
-            punishments: list[AutomodAction] = []
-
             if not config.automod_enabled or not config.moderation_enabled:
                 self.logger.debug("Automod is disabled, skipping message")
                 return
 
-            autmod_config = config.automod_settings
+            automod_config = config.automod_settings
+            current_state: list[AutomodMessage] = []
 
-            triggered_word_rule_amount = {}
-            malicious_link_count = 0
-            phishing_link_count = 0
-
-            self.logger.debug(f"Starting badword detection check for message {message.id}")
-            for rule in autmod_config.badword_detection_rules:
-                triggered_word_rule_amount[rule.id] = 0
-                content_to_check = (
-                    content_to_check.lower() if not rule.case_sensitive else content_to_check
-                )
-
-                for word in rule.words:
-                    check_word = word.lower() if not rule.case_sensitive else word
-
-                    if rule.match_whole_word:
-                        pattern = r"\b" + re.escape(check_word) + r"\b"
-                        matches = re.findall(pattern, content_to_check)
-                    else:
-                        pattern = re.escape(check_word)
-                        matches = re.findall(pattern, content_to_check)
-
-                    triggered_word_rule_amount[rule.id] += len(matches)
-
-            self.logger.debug(
-                f"Badword detection complete. Triggered counts: {triggered_word_rule_amount}"
+            automod_message = AutomodMessage(
+                user_id=message.author.id,
+                message_id=message.id,
+                channel_id=message.channel.id,
+                mention_count=len(message.mentions)
+                + len(message.role_mentions)
+                + (1 if message.mention_everyone else 0),
+                word_count=len(message.clean_content.split()),
+                newline_count=len(message.clean_content.splitlines()),
+                link_count=len(
+                    re.findall(
+                        r"(http|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
+                        content_to_check,
+                    )
+                ),
+                attachment_count=len(message.attachments),
+                emoji_count=len(emoji.emoji_list(content_to_check))
+                + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", content_to_check)),
+                timestamp=message.edited_at
+                if event_type == "edit" and message.edited_at
+                else message.created_at,
             )
-
-            self.logger.debug(f"Starting malicious link check for message {message.id}")
-            for link in self.bot.malicious_links:
-                if link in content_to_check:
-                    malicious_link_count += 1
-
-            self.logger.debug(f"Malicious link check complete. Count: {malicious_link_count}")
-
-            self.logger.debug(f"Starting phishing link check for message {message.id}")
-            for link in self.bot.phishing_links:
-                if link in content_to_check:
-                    phishing_link_count += 1
-
-            self.logger.debug(f"Phishing link check complete. Count: {phishing_link_count}")
 
             if event_type == "new":
                 self.logger.debug(
@@ -113,31 +208,7 @@ class AutomodMonitorCog(commands.Cog):
                 )
                 self.bot.automod_messages.setdefault(message.guild.id, {}).setdefault(
                     message.author.id, []
-                ).append(
-                    AutomodMessage(
-                        user_id=message.author.id,
-                        message_id=message.id,
-                        channel_id=message.channel.id,
-                        triggered_word_rule_amount=triggered_word_rule_amount,
-                        malicious_link_count=malicious_link_count,
-                        phishing_link_count=phishing_link_count,
-                        mention_count=len(message.mentions)
-                        + len(message.role_mentions)
-                        + (1 if message.mention_everyone else 0),
-                        word_count=len(message.clean_content.split()),
-                        newline_count=len(message.clean_content.splitlines()),
-                        link_count=len(
-                            re.findall(
-                                r"(http|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
-                                content_to_check,
-                            )
-                        ),
-                        attachment_count=len(message.attachments),
-                        emoji_count=len(emoji.emoji_list(content_to_check))
-                        + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", content_to_check)),
-                        timestamp=message.created_at,
-                    )
-                )
+                ).append(automod_message)
 
                 # Limit to 100 messages
                 self.bot.automod_messages[message.guild.id][message.author.id] = (
@@ -148,167 +219,185 @@ class AutomodMonitorCog(commands.Cog):
                     message.author.id
                 ].copy()
                 current_state.reverse()
-                self.logger.debug(
-                    f"Checking spam rules against {len(current_state)} messages from user {message.author.id}"
-                )
             else:
-                self.logger.debug(
-                    f"Processing edited message {message.id}, creating temporary state"
-                )
-                current_state = [
-                    AutomodMessage(
-                        user_id=message.author.id,
-                        message_id=message.id,
-                        channel_id=message.channel.id,
-                        triggered_word_rule_amount=triggered_word_rule_amount,
-                        malicious_link_count=malicious_link_count,
-                        phishing_link_count=phishing_link_count,
-                        mention_count=len(message.mentions)
-                        + len(message.role_mentions)
-                        + (1 if message.mention_everyone else 0),
-                        word_count=len(message.clean_content.split()),
-                        newline_count=len(message.clean_content.splitlines()),
-                        link_count=len(
-                            re.findall(
-                                r"(http|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
-                                content_to_check,
-                            )
-                        ),
-                        attachment_count=len(message.attachments),
-                        emoji_count=len(emoji.emoji_list(content_to_check))
-                        + len(re.findall(r"(<a?)?:\w+:(\d{18}>)?", content_to_check)),
-                        timestamp=message.edited_at if message.edited_at else message.created_at,
-                    )
-                ]
+                current_state = [automod_message]
 
-            # Check for any spam detection
-            if len(autmod_config.spam_detection_rules) > 0:
-                self.logger.debug(
-                    f"Checking {len(autmod_config.spam_detection_rules)} spam detection rules"
-                )
-                for rule in autmod_config.spam_detection_rules:
-                    latest_timestamp = current_state[0].timestamp
-                    filtered_messages = [
-                        m
-                        for m in current_state
-                        if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                    ]
+            triggered_rules: list[AutomodRule] = []
+            triggered_actions: list[AutomodAction] = []
+            messages_to_delete: dict[int, list[AutomodMessage]] = {}
 
-                    if rule.antispam_type == AutomodAntispamType.MESSAGE:
-                        count = len(list(filtered_messages))
-                    elif rule.antispam_type == AutomodAntispamType.MENTION:
-                        count = sum(m.mention_count for m in filtered_messages)
-                    elif rule.antispam_type == AutomodAntispamType.WORD:
-                        count = sum(m.word_count for m in filtered_messages)
-                    elif rule.antispam_type == AutomodAntispamType.NEWLINE:
-                        count = sum(m.newline_count for m in filtered_messages)
-                    elif rule.antispam_type == AutomodAntispamType.LINK:
-                        count = sum(m.link_count for m in filtered_messages)
-                    elif rule.antispam_type == AutomodAntispamType.ATTACHMENT:
-                        count = sum(m.attachment_count for m in filtered_messages)
-                    elif rule.antispam_type == AutomodAntispamType.EMOJI:
-                        count = sum(m.emoji_count for m in filtered_messages)
-                    else:
-                        continue
+            rules = automod_config.rules.copy()
+            rules.sort(key=lambda r: r.order)
 
-                    if count >= rule.threshold:
-                        self.logger.debug(
-                            f"Spam rule {rule.id} triggered: {count} >= {rule.threshold} (type: {rule.antispam_type})"
-                        )
-                        triggers.append(rule)
-                        for action in rule.actions:
-                            punishments.append(action)
-                    else:
-                        self.logger.debug(
-                            f"Spam rule {rule.id} not triggered: {count} < {rule.threshold} (type: {rule.antispam_type})"
-                        )
+            self.logger.debug(f"Will evaluate {len(rules)} rules")
+            for rule in rules:
+                self.logger.debug(f"({rule.id}) Evaluating...")
 
-            # Malicious link check
-            self.logger.debug(
-                f"Checking {len(autmod_config.malicious_link_rules)} malicious link rules"
-            )
-            for rule in autmod_config.malicious_link_rules:
-                latest_timestamp = current_state[0].timestamp
-                filtered_messages = [
-                    m
-                    for m in current_state
-                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                ]
-
-                malicious_count = sum(msg.malicious_link_count for msg in filtered_messages)
-                if malicious_count >= rule.threshold:
-                    self.logger.debug(
-                        f"Malicious link rule {rule.id} triggered: {malicious_count} >= {rule.threshold}"
-                    )
-                    triggers.append(rule)
-                    for action in rule.actions:
-                        punishments.append(action)
-                else:
-                    self.logger.debug(
-                        f"Malicious link rule {rule.id} not triggered: {malicious_count} < {rule.threshold}"
-                    )
-
-            # Phishing link check
-            self.logger.debug(
-                f"Checking {len(autmod_config.phishing_link_rules)} phishing link rules"
-            )
-            for rule in autmod_config.phishing_link_rules:
-                latest_timestamp = current_state[0].timestamp
-                filtered_messages = [
-                    m
-                    for m in current_state
-                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                ]
-
-                phishing_count = sum(msg.phishing_link_count for msg in filtered_messages)
-                if phishing_count >= rule.threshold:
-                    self.logger.debug(
-                        f"Phishing link rule {rule.id} triggered: {phishing_count} >= {rule.threshold}"
-                    )
-                    triggers.append(rule)
-                    for action in rule.actions:
-                        punishments.append(action)
-                else:
-                    self.logger.debug(
-                        f"Phishing link rule {rule.id} not triggered: {phishing_count} < {rule.threshold}"
-                    )
-
-            # Bad word detection
-            self.logger.debug(
-                f"Checking {len(autmod_config.badword_detection_rules)} badword detection rules"
-            )
-            for rule in autmod_config.badword_detection_rules:
-                if not rule.words:
+                if not rule.enabled:
+                    self.logger.debug(f"({rule.id}) Rule disabled")
                     continue
 
-                latest_timestamp = current_state[0].timestamp
-                filtered_messages = [
-                    m
-                    for m in current_state
-                    if (latest_timestamp - m.timestamp).total_seconds() < rule.duration
-                ]
+                if not rule.evaluate_edits and event_type == "edit":
+                    self.logger.debug(f"({rule.id}) Not evaluating edit")
+                    continue
 
-                word_count = sum(
-                    msg.triggered_word_rule_amount.get(rule.id, 0) for msg in filtered_messages
-                )
-                if word_count >= rule.threshold:
-                    self.logger.debug(
-                        f"Badword rule {rule.id} triggered: {word_count} >= {rule.threshold}"
-                    )
-                    triggers.append(rule)
-                    for action in rule.actions:
-                        punishments.append(action)
+                criterion_matched = 0
+                for criteria in rule.criteria:
+                    type = AutomodCriteriaType(criteria.type)
+                    self.logger.debug(type)
+
+                    if type.value.endswith("_spam"):
+                        duration = criteria.duration
+                        threshold = criteria.threshold
+
+                        # check required values for spam filters are present
+                        if not current_state or duration is None or threshold is None:
+                            self.logger.warning(
+                                f"({criteria.id}) Required values for spam filtering missing"
+                            )
+                            continue
+
+                        if event_type == "new":
+                            filtered_messages = [
+                                past_message
+                                for past_message in current_state
+                                if (message.created_at - past_message.timestamp).total_seconds()
+                                <= duration
+                            ]
+                        else:
+                            filtered_messages = current_state.copy()
+
+                        if type == AutomodCriteriaType.MESSAGE_SPAM:
+                            self.logger.debug(len(filtered_messages))
+                            self.logger.debug(threshold)
+
+                            if len(filtered_messages) >= threshold:
+                                criterion_matched += 1
+
+                                for past_message in filtered_messages:
+                                    messages_to_delete.setdefault(
+                                        past_message.channel_id, []
+                                    ).append(past_message)
+                        else:
+                            # fmt: off
+                            if type == AutomodCriteriaType.MENTION_SPAM:
+                                count = sum(
+                                    [
+                                        past_message.mention_count
+                                        for past_message in filtered_messages
+                                    ]
+                                )
+                            elif type == AutomodCriteriaType.WORD_SPAM:
+                                count = sum(
+                                    [
+                                        past_message.word_count
+                                        for past_message in filtered_messages
+                                    ]
+                                )
+                            elif type == AutomodCriteriaType.NEWLINE_SPAM:
+                                count = sum(
+                                    [
+                                        past_message.newline_count
+                                        for past_message in filtered_messages
+                                    ]
+                                )
+                            elif type == AutomodCriteriaType.LINK_SPAM:
+                                count = sum(
+                                    [
+                                        past_message.link_count
+                                        for past_message in filtered_messages
+                                        ]
+                                )
+                            elif type == AutomodCriteriaType.ATTACHMENT_SPAM:
+                                count = sum(
+                                    [
+                                        past_message.attachment_count
+                                        for past_message in filtered_messages
+                                    ]
+                                )
+                            elif type == AutomodCriteriaType.EMOJI_SPAM:
+                                count = sum(
+                                    [
+                                        past_message.emoji_count
+                                        for past_message in filtered_messages
+                                    ]
+                                )
+                            else:
+                                self.logger.warning(
+                                    f"({criteria.id}) Unknown spam rule type: {type}"
+                                )
+                                continue
+                            # fmt: on
+
+                            if count >= threshold:
+                                criterion_matched += 1
+
+                                for past_message in filtered_messages:
+                                    messages_to_delete.setdefault(
+                                        past_message.channel_id, []
+                                    ).append(past_message)
+
+                        continue
+
+                    criteria_met = False
+
+                    if type == AutomodCriteriaType.WORD_LIST:
+                        words_matched = 0
+                        for word in criteria.words:
+                            normalised_word = self.normalise_automod_text(word)
+
+                            pattern = r"\b" + re.escape(normalised_word) + r"\b"
+                            if not criteria.match_whole_word:
+                                pattern = pattern.lstrip(r"\b").rstrip(r"\b")
+
+                            matches = re.findall(
+                                pattern,
+                                normalised_content_to_check,
+                                flags=(0 if criteria.case_sensitive else re.IGNORECASE),
+                            )
+                            if matches:
+                                words_matched += 1
+
+                        if criteria.match_all_words and words_matched == len(criteria.words):
+                            criteria_met = True
+                        elif not criteria.match_all_words and words_matched > 0:
+                            criteria_met = True
+                    elif type == AutomodCriteriaType.MALICIOUS_LINK:
+                        for link in self.bot.malicious_links:
+                            if link in content_to_check:
+                                criteria_met = True
+                                break
+                    elif type == AutomodCriteriaType.PHISHING_LINK:
+                        for link in self.bot.phishing_links:
+                            if link in content_to_check:
+                                criteria_met = True
+                                break
+                    else:
+                        self.logger.warning(f"({criteria.id}) Unknown rule type: {type}")
+                        continue
+
+                    if criteria_met:
+                        criterion_matched += 1
+                        messages_to_delete.setdefault(message.channel.id, []).append(
+                            current_state[0]
+                        )
+
+                if rule.match_all_criteria and criterion_matched == len(rule.criteria):
+                    self.logger.debug(f"({rule.id}) Rule met")
+                    triggered_rules.append(rule)
+                    triggered_actions.extend(rule.actions)
+
+                    if rule.stop_if_triggered:
+                        break
+                elif not rule.match_all_criteria and criterion_matched > 0:
+                    self.logger.debug(f"({rule.id}) Rule met")
+                    triggered_rules.append(rule)
+                    triggered_actions.extend(rule.actions)
+
+                    if rule.stop_if_triggered:
+                        break
                 else:
-                    self.logger.debug(
-                        f"Badword rule {rule.id} not triggered: {word_count} < {rule.threshold}"
-                    )
-
-            # Get list of punishment types
-            punishment_types = list(set(action.action_type for action in punishments))
-            self.logger.debug(
-                f"Total triggers: {len(triggers)}, Total punishments: {len(punishments)}, Punishment types: {punishment_types}"
-            )
-            embeds: list[discord.Embed] = []
+                    self.logger.debug(f"({rule.id}) Rule not met")
 
             del_kwargs: dict[str, Any] = (
                 {"delete_after": 5.0}
@@ -316,309 +405,430 @@ class AutomodMonitorCog(commands.Cog):
                 else {}
             )
 
+            processed_actions = [
+                action
+                for action in triggered_actions
+                if action.type
+                not in [AutomodActionType.MUTE, AutomodActionType.KICK, AutomodActionType.BAN]
+            ]
+
+            kicks = [
+                action for action in triggered_actions if action.type == AutomodActionType.KICK
+            ]
+            if kicks:
+                processed_actions.append(kicks[0])
+
+            mutes = [
+                action for action in triggered_actions if action.type == AutomodActionType.MUTE
+            ]
+            if mutes:
+                mute_added = False
+
+                for mute in mutes:
+                    if not mute.duration:
+                        processed_actions.append(mute)
+                        mute_added = True
+                        break
+
+                if not mute_added:
+                    mutes.sort(key=lambda m: m.duration if m.duration else 0, reverse=True)
+                    processed_actions.append(mutes[0])
+
+            bans = [action for action in triggered_actions if action.type == AutomodActionType.BAN]
+            if bans:
+                ban_added = False
+
+                for ban in bans:
+                    if not ban.duration:
+                        processed_actions.append(ban)
+                        ban_added = True
+                        break
+
+                if not ban_added:
+                    bans.sort(key=lambda b: b.duration if b.duration else 0, reverse=True)
+                    processed_actions.append(bans[0])
+
+            embeds: list[discord.Embed] = []
+            successful_actions: list[AutomodAction] = []
+            failed_actions: dict[AutomodAction, str] = {}
+
             async with get_session() as session:
                 manager = GuildModCaseManager(self.bot, message.guild, session)
 
-                self.logger.debug(f"Processing {len(punishments)} punishments")
-                for punishment in punishments:
-                    if punishment.action_type == AutomodActionType.SEND_MESSAGE and not isinstance(
-                        message.channel, (discord.DMChannel, discord.PartialMessageable)
-                    ):
-                        self.logger.debug(f"Sending automod message to user {message.author.id}")
-                        try:
-                            if punishment.message_embed:
-                                embed = discord.Embed(description=punishment.message_content)
-                                embed.set_author(
+                self.logger.debug(f"Will process {len(processed_actions)} actions")
+
+                for action in processed_actions:
+                    self.logger.debug(f"({action.id}) Processing {action.type} action...")
+
+                    try:
+                        if action.type == AutomodActionType.WARN:
+                            case, dm_success, dm_error = await manager.create_case(
+                                action=CaseType.WARN,
+                                user=message.author,
+                                creator_user=self.bot.user,
+                                reason=action.reason,
+                                source=CaseSource.AUTOMOD,
+                            )
+                            embeds.append(
+                                mod_embeds.warned(
+                                    bot=self.bot,
+                                    user=message.author,
+                                    creator=self.bot.user,
+                                    case=case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
+                                )
+                            )
+                        elif action.type == AutomodActionType.MUTE:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to mute this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="time out"))
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).moderate_members:
+                                failed_actions[action] = "No mute permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="time out members"))
+                                continue
+                            # fmt: on
+
+                            await message.author.timeout(
+                                (
+                                    timedelta(seconds=action.duration)
+                                    if action.duration and action.duration <= 2419200
+                                    else timedelta(seconds=2419200)
+                                ),
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            )
+                            await manager.create_case(
+                                action=CaseType.MUTE,
+                                user=message.author,
+                                creator_user=self.bot.user,
+                                reason=action.reason,
+                                duration=timedelta(seconds=action.duration)
+                                if action.duration
+                                else None,
+                                source=CaseSource.AUTOMOD,
+                            )
+                            embeds.append(
+                                mod_embeds.muted(
+                                    bot=self.bot,
+                                    user=message.author,
+                                    creator=self.bot.user,
+                                    case=case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
+                                )
+                            )
+                        elif action.type == AutomodActionType.KICK:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to kick this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="kick"))
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).kick_members:
+                                failed_actions[action] = "No kick permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="kick members"))
+                                continue
+                            # fmt: on
+
+                            await message.author.kick(
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            )
+                            await manager.create_case(
+                                action=CaseType.KICK,
+                                user=message.author,
+                                creator_user=self.bot.user,
+                                reason=action.reason,
+                                source=CaseSource.AUTOMOD,
+                            )
+                            embeds.append(
+                                mod_embeds.kicked(
+                                    bot=self.bot,
+                                    user=message.author,
+                                    creator=self.bot.user,
+                                    case=case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
+                                )
+                            )
+                        elif action.type == AutomodActionType.BAN:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to ban this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="ban"))
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).ban_members:
+                                failed_actions[action] = "No ban permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="ban members"))
+                                continue
+                            # fmt: on
+
+                            await message.author.ban(
+                                delete_message_seconds=config.moderation_settings.ban_days * 86400,
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            )
+                            await manager.create_case(
+                                action=CaseType.BAN,
+                                user=message.author,
+                                creator_user=self.bot.user,
+                                reason=action.reason,
+                                duration=timedelta(seconds=action.duration)
+                                if action.duration
+                                else None,
+                                source=CaseSource.AUTOMOD,
+                            )
+                            embeds.append(
+                                mod_embeds.banned(
+                                    bot=self.bot,
+                                    user=message.author,
+                                    creator=self.bot.user,
+                                    case=case,
+                                    dm_success=dm_success,
+                                    dm_error=dm_error,
+                                )
+                            )
+                        elif action.type == AutomodActionType.DELETE:
+                            # fmt: off
+                            if not message.channel.permissions_for(message.guild.me).manage_messages:
+                                failed_actions[action] = "No delete message permissions in the message channel"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="delete messages in this channel"))
+                                continue
+                            # fmt: on
+
+                            for channel_id in messages_to_delete:
+                                channel = message.guild.get_channel(channel_id)
+                                if not channel or not isinstance(channel, discord.abc.Messageable):
+                                    continue
+
+                                messages = [
+                                    discord.Object(id=delete_msg.message_id)
+                                    for delete_msg in set(messages_to_delete[channel_id])
+                                    if not delete_msg.deleted
+                                    and discord.utils.utcnow() - delete_msg.timestamp
+                                    > timedelta(days=14)
+                                ]
+                                message_chunks = discord.utils.as_chunks(messages, 100)
+
+                                for chunk in message_chunks:
+                                    await channel.delete_messages(
+                                        messages=chunk,
+                                        reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                    )
+                        elif action.type == AutomodActionType.ADD_ROLE:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="manage roles for"))
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).manage_roles:
+                                failed_actions[action] = "No manage role permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="manage roles"))
+                                continue
+                            # fmt: on
+
+                            roles: list[discord.Role] = []
+                            for role_id in set(action.role_ids):
+                                role = message.guild.get_role(role_id)
+                                if role and message.guild.me.top_role > role:
+                                    roles.append(role)
+
+                            await message.author.add_roles(
+                                *roles,
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                atomic=False,
+                            )
+                        elif action.type == AutomodActionType.REMOVE_ROLE:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="manage roles for"))
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).manage_roles:
+                                failed_actions[action] = "No manage role permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="manage roles"))
+                                continue
+                            # fmt: on
+
+                            roles: list[discord.Role] = []
+                            for role_id in set(action.role_ids):
+                                role = message.guild.get_role(role_id)
+                                if role and message.guild.me.top_role > role:
+                                    roles.append(role)
+
+                            await message.author.remove_roles(
+                                *roles,
+                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                atomic=False,
+                            )
+                        elif action.type == AutomodActionType.TOGGLE_ROLE:
+                            # fmt: off
+                            if message.author.top_role >= message.guild.me.top_role:
+                                failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                                embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="manage roles for"))
+                                continue
+                            elif not message.channel.permissions_for(message.guild.me).manage_roles:
+                                failed_actions[action] = "No manage role permissions"
+                                embeds.append(mod_embeds.forbidden(self.bot, action="manage roles"))
+                                continue
+                            # fmt: on
+
+                            roles_to_add: list[discord.Role] = []
+                            roles_to_remove: list[discord.Role] = []
+
+                            for role_id in set(action.role_ids):
+                                role = message.guild.get_role(role_id)
+                                if not role or message.guild.me.top_role <= role:
+                                    continue
+
+                                if role in message.author.roles:
+                                    roles_to_remove.append(role)
+                                else:
+                                    roles_to_add.append(role)
+
+                            if roles_to_add:
+                                await message.author.add_roles(
+                                    *roles_to_add,
+                                    reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                    atomic=False,
+                                )
+
+                            if roles_to_remove:
+                                await message.author.remove_roles(
+                                    *roles_to_remove,
+                                    reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                    atomic=False,
+                                )
+                        elif (
+                            action.type == AutomodActionType.SEND_MESSAGE and action.message_content
+                        ):
+                            # fmt: off
+                            if (
+                                not message.channel.permissions_for(message.guild.me).view_channel
+                                or not message.channel.permissions_for(
+                                    message.guild.me
+                                ).send_messages
+                            ):
+                                failed_actions[action] = "No send message permissions in the message channel"
+                                embeds.append(mod_embeds.forbidden(self.bot, action=f"send messages in {message.channel.mention} (`#{message.channel.name}`, `{message.channel.id}`)"))
+                                continue
+                            # fmt: on
+
+                            embed = None
+                            if action.message_embed:
+                                embed = discord.Embed(
+                                    description=action.message_content,
+                                    colour=discord.Colour.from_str(action.embed_colour)
+                                    if action.embed_colour
+                                    else discord.Colour.light_grey(),
+                                ).set_author(
                                     name="Titanium Automod",
                                     icon_url=self.bot.user.display_avatar.url,
                                 )
 
-                                if punishment.embed_colour:
-                                    try:
-                                        embed.colour = discord.Colour.from_str(
-                                            punishment.embed_colour
-                                        )
-                                    except ValueError:
-                                        embed.colour = discord.Colour.light_grey()
-                                else:
-                                    embed.colour = discord.Colour.light_grey()
+                            send_kwargs: dict[str, Any] = (
+                                {"embed": embed}
+                                if action.message_embed and embed
+                                else {
+                                    "content": action.message_content,
+                                    "allowed_mentions": discord.AllowedMentions.none(),
+                                }
+                            )
 
-                                if punishment.message_reply:
-                                    await message.reply(
-                                        embed=embed,
-                                        mention_author=punishment.message_mention,
-                                        allowed_mentions=discord.AllowedMentions.none(),
-                                    )
-                                else:
-                                    await message.channel.send(
-                                        embed=embed,
-                                        allowed_mentions=discord.AllowedMentions.none(),
-                                    )
+                            if action.message_reply:
+                                await message.reply(**send_kwargs)
                             else:
-                                content = f"-# Titanium Automod\n{punishment.message_content}"
-                                if punishment.message_reply:
-                                    await message.reply(
-                                        content=content,
-                                        mention_author=punishment.message_mention,
-                                        allowed_mentions=discord.AllowedMentions.none(),
-                                    )
-                                else:
-                                    await message.channel.send(
-                                        content=content,
-                                        allowed_mentions=discord.AllowedMentions.none(),
-                                    )
-
-                        except discord.Forbidden as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Automod",
-                                guild_id=message.guild.id,
-                                error=f"Titanium was not allowed to send a message to @{message.author.name} ({message.author.id}) in #{message.channel.name} ({message.channel.id})",
-                                details=e.text,
-                            )
-                        except discord.HTTPException as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Automod",
-                                guild_id=message.guild.id,
-                                error=f"Unknown Discord error while sending automod message to @{message.author.name} ({message.author.id})",
-                                details=e.text,
-                            )
-                    elif punishment.action_type == AutomodActionType.DELETE:
-                        self.logger.debug(f"Deleting message {message.id}")
-                        await message.delete()
-                    elif punishment.action_type == AutomodActionType.WARN:
-                        self.logger.debug(f"Creating warn case for user {message.author.id}")
-                        case, dm_success, dm_error = await manager.create_case(
-                            action=CaseType.WARN,
-                            user=message.author,
-                            creator_user=self.bot.user,
-                            reason=f"Automod: {punishment.reason if punishment.reason else 'No reason provided'}",
-                            source=CaseSource.AUTOMOD,
-                        )
-
-                        embeds.append(
-                            mod_embeds.warned(
-                                self.bot,
-                                message.author,
-                                self.bot.user,
-                                case,
-                                dm_success=dm_success,
-                                dm_error=dm_error,
-                            )
-                        )
-                    elif punishment.action_type == AutomodActionType.MUTE:
-                        self.logger.debug(f"Processing mute action for user {message.author.id}")
-                        # Check if user is already timed out
-                        if message.author.is_timed_out():
-                            self.logger.debug(
-                                f"User {message.author.id} is already timed out, skipping mute"
+                                await message.channel.send(**send_kwargs)
+                        else:
+                            self.logger.warning(
+                                f"({action.id}) Unknown action type: {action.type.value}"
                             )
                             continue
 
-                        # Time out user
-                        try:
-                            self.logger.debug(
-                                f"Timing out user {message.author.id} for {punishment.duration} seconds"
-                            )
-                            await message.author.timeout(
-                                (
-                                    timedelta(seconds=punishment.duration)
-                                    if punishment.duration
-                                    and punishment.duration > 0
-                                    and timedelta(seconds=punishment.duration).total_seconds()
-                                    <= 2419200
-                                    else timedelta(seconds=2419200)
-                                ),
-                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
-                            )
-
-                            case, dm_success, dm_error = await manager.create_case(
-                                action=CaseType.MUTE,
-                                user=message.author,
-                                creator_user=self.bot.user,
-                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
-                                duration=(
-                                    timedelta(seconds=punishment.duration)
-                                    if punishment.duration and punishment.duration > 0
-                                    else None
-                                ),
-                                source=CaseSource.AUTOMOD,
-                            )
-
-                            embeds.append(
-                                mod_embeds.muted(
-                                    self.bot,
-                                    message.author,
-                                    self.bot.user,
-                                    case,
-                                    dm_success=dm_success,
-                                    dm_error=dm_error,
-                                )
-                            )
-                        except discord.Forbidden as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Automod",
-                                guild_id=message.guild.id,
-                                error=f"Titanium was not allowed to mute @{message.author.name} ({message.author.id})",
-                                details=e.text,
-                            )
-                            embeds.append(mod_embeds.forbidden(self.bot, message.author))
-                        except discord.HTTPException as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Automod",
-                                guild_id=message.guild.id,
-                                error=f"Unknown Discord error while muting @{message.author.name} ({message.author.id})",
-                                details=e.text,
-                            )
-                            embeds.append(mod_embeds.http_exception(self.bot, message.author))
-
-                    elif (
-                        punishment.action_type == AutomodActionType.KICK
-                        and AutomodActionType.BAN not in punishment_types
-                    ):
-                        self.logger.debug(f"Processing kick action for user {message.author.id}")
-
-                        # Kick user
-                        case: ModCase
-                        try:
-                            self.logger.debug(f"Kicking user {message.author.id}")
-
-                            case, dm_success, dm_error = await manager.create_case(
-                                action=CaseType.KICK,
-                                user=message.author,
-                                creator_user=self.bot.user,
-                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
-                                source=CaseSource.AUTOMOD,
-                            )
-                            await message.author.kick(
-                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
-                            )
-
-                            embeds.append(
-                                mod_embeds.kicked(
-                                    self.bot,
-                                    message.author,
-                                    self.bot.user,
-                                    case,
-                                    dm_success=dm_success,
-                                    dm_error=dm_error,
-                                )
-                            )
-                        except discord.Forbidden as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Automod",
-                                guild_id=message.guild.id,
-                                error=f"Titanium was not allowed to kick @{message.author.name} ({message.author.id})",
-                                details=e.text,
-                            )
-                            embeds.append(mod_embeds.forbidden(self.bot, message.author))
-
-                            if case:
-                                await manager.delete_case(case.id)
-                        except discord.HTTPException as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Automod",
-                                guild_id=message.guild.id,
-                                error=f"Unknown Discord error while kicking @{message.author.name} ({message.author.id})",
-                                details=e.text,
-                            )
-                            embeds.append(mod_embeds.http_exception(self.bot, message.author))
-
-                            if case:
-                                await manager.delete_case(case.id)
-                        except Exception as e:
-                            if case:
-                                await manager.delete_case(case.id)
-                            raise e
-                    elif punishment.action_type == AutomodActionType.BAN:
-                        self.logger.debug(f"Processing ban action for user {message.author.id}")
-
-                        # Ban user
-                        case: ModCase
-                        try:
-                            self.logger.debug(f"Banning user {message.author.id}")
-
-                            case, dm_success, dm_error = await manager.create_case(
-                                action=CaseType.BAN,
-                                user=message.author,
-                                creator_user=self.bot.user,
-                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
-                                duration=(
-                                    timedelta(seconds=punishment.duration)
-                                    if punishment.duration and punishment.duration > 0
-                                    else None
-                                ),
-                                source=CaseSource.AUTOMOD,
-                            )
-                            await message.author.ban(
-                                reason=f"{punishment.reason if punishment.reason else 'No reason provided'}",
-                                delete_message_seconds=config.moderation_settings.ban_days * 86400,
-                            )
-
-                            embeds.append(
-                                mod_embeds.banned(
-                                    self.bot,
-                                    message.author,
-                                    self.bot.user,
-                                    case,
-                                    dm_success=dm_success,
-                                    dm_error=dm_error,
-                                )
-                            )
-                        except discord.Forbidden as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Automod",
-                                guild_id=message.guild.id,
-                                error=f"Titanium was not allowed to ban @{message.author.name} ({message.author.id})",
-                                details=e.text,
-                            )
-                            embeds.append(mod_embeds.forbidden(self.bot, message.author))
-
-                            if case:
-                                await manager.delete_case(case.id)
-                        except discord.HTTPException as e:
-                            await log_error(
-                                bot=self.bot,
-                                module="Automod",
-                                guild_id=message.guild.id,
-                                error=f"Unknown Discord error while banning @{message.author.name} ({message.author.id})",
-                                details=e.text,
-                            )
-                            embeds.append(mod_embeds.http_exception(self.bot, message.author))
-
-                            if case:
-                                await manager.delete_case(case.id)
-                        except Exception as e:
-                            if case:
-                                await manager.delete_case(case.id)
-                            raise e
-                    else:
+                        successful_actions.append(action)
+                        self.logger.debug(f"({action.id}) Processed.")
+                    except discord.Forbidden as e:
+                        failed_actions[action] = e.text
                         await log_error(
                             bot=self.bot,
                             module="Automod",
                             guild_id=message.guild.id,
-                            error=f"An internal error occurred while processing automod punishments for @{message.author.name} ({message.author.id})",
-                            details=f"Punishment action type does not exist: {punishment.action_type}",
+                            error=f"Titanium was not allowed to perform the {action.type.value} action against @{message.author.name} ({message.author.id})",
+                            details=e.text,
+                            exc=e,
+                        )
+                    except discord.HTTPException as e:
+                        failed_actions[action] = "Unknown Discord error occurred"
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unknown Discord error occurred while processing {action.type.value} against @{message.author.name} ({message.author.id})",
+                            details=e.text,
+                            exc=e,
+                        )
+                    except Exception as e:
+                        failed_actions[action] = "Unexpected error occurred"
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unexpected error occurred while processing {action.type.value} against @{message.author.name} ({message.author.id})",
+                            exc=e,
                         )
 
-                    if embeds:
-                        self.logger.debug(
-                            f"Sending {len(embeds)} embeds to channel {message.channel.id}"
+                if embeds and not message.channel.permissions_for(message.guild.me).send_messages:
+                    await log_error(
+                        bot=self.bot,
+                        module="Automod",
+                        guild_id=message.guild.id,
+                        error=f"Titanium did not have permissions to send automod outcome message in #{message.channel.name}` (`{message.channel.id}`)",
+                    )
+                elif embeds:
+                    try:
+                        embed_chunks = discord.utils.as_chunks(embeds, 10)
+                        for chunk in embed_chunks:
+                            await message.channel.send(
+                                embeds=chunk,
+                                allowed_mentions=discord.AllowedMentions.none(),
+                                *del_kwargs,
+                            )
+                    except discord.Forbidden as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Titanium was not allowed to send automod outcome message in #{message.channel.name}` (`{message.channel.id}`)",
+                            details=e.text,
+                            exc=e,
                         )
-                        await message.channel.send(embeds=embeds, **del_kwargs)
+                    except discord.HTTPException as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unknown Discord error occurred while sending automod outcome message in #{message.channel.name}` (`{message.channel.id}`)",
+                            details=e.text,
+                            exc=e,
+                        )
+                    except Exception as e:
+                        await log_error(
+                            bot=self.bot,
+                            module="Automod",
+                            guild_id=message.guild.id,
+                            error=f"Unexpected error occurred while sending automod outcome message in #{message.channel.name}` (`{message.channel.id}`)",
+                            exc=e,
+                        )
 
-            if triggers:
-                self.logger.debug(f"Logging {len(triggers)} automod triggers to guild logger")
+            if triggered_rules:
+                self.logger.debug(
+                    f"Logging {len(triggered_rules)} automod triggers to guild logger"
+                )
                 guild_logger = GuildLogger(self.bot, message.guild)
+
                 await guild_logger.titanium_automod_trigger(
-                    rules=triggers,
-                    actions=punishments,
+                    rules=triggered_rules,
+                    actions=successful_actions,
+                    failed_actions=failed_actions,
                     message=message,
                 )
 
@@ -647,7 +857,7 @@ class AutomodMonitorCog(commands.Cog):
             self.logger.debug(f"Message edit event {payload.message_id} has no guild_id, skipping")
             return
 
-        if not hasattr(payload.data, "content") or payload.data.get("content") is None:
+        if "content" not in payload.data or payload.data.get("content") is None:
             self.logger.debug(f"{payload.message_id} edit has no content in payload data")
             return
 
@@ -670,6 +880,29 @@ class AutomodMonitorCog(commands.Cog):
 
         self.logger.debug(f"Processing edited message {payload.message_id}")
         await self.handle_message(message, event_type="edit")
+
+    # Listen for message delete
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        self.logger.debug(f"Received raw message delete event: {payload.message_id}")
+        if not payload.cached_message:
+            return
+
+        if payload.guild_id not in self.bot.automod_messages:
+            return
+
+        if payload.cached_message.author.id not in self.bot.automod_messages[payload.guild_id]:
+            return
+
+        for i, message in enumerate(
+            self.bot.automod_messages[payload.guild_id][payload.cached_message.author.id]
+        ):
+            if message.message_id != payload.message_id:
+                continue
+
+            self.bot.automod_messages[payload.guild_id][payload.cached_message.author.id][
+                i
+            ].deleted = True
 
 
 async def setup(bot: TitaniumBot) -> None:

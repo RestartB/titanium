@@ -55,50 +55,54 @@ def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
     config = bot.guild_configs[guild.id]
 
     if not config.automod_settings:
-        return web.json_response(
-            {
-                "badword_detection": [],
-                "spam_detection": [],
-                "malicious_link": [],
-                "phishing_link": [],
-            }
-        )
+        return web.json_response({"rules": [], "show_outcome_message": True})
+
+    rules = config.automod_settings.rules.copy()
+    rules.sort(key=lambda r: r.order)
 
     return web.json_response(
         {
-            detection_type: [
+            "rules": [
                 {
                     "id": str(rule.id),
-                    "rule_type": rule.rule_type.value,
-                    "antispam_type": rule.antispam_type.value if rule.antispam_type else None,
-                    "words": rule.words,
-                    "match_whole_word": rule.match_whole_word,
-                    "case_sensitive": rule.case_sensitive,
-                    "threshold": rule.threshold,
-                    "duration": rule.duration,
+                    "rule_name": rule.rule_name,
+                    "enabled": rule.enabled,
+                    "evaluate_edits": rule.evaluate_edits,
+                    "match_all_criteria": rule.match_all_criteria,
+                    "order": rule.order,
+                    "stop_if_triggered": rule.stop_if_triggered,
+                    "criteria": [
+                        {
+                            "id": str(criteria.id),
+                            "type": criteria.type,
+                            "threshold": criteria.threshold,
+                            "duration": criteria.duration,
+                            "words": criteria.words,
+                            "match_whole_word": criteria.match_whole_word,
+                            "match_all_words": criteria.match_all_words,
+                            "case_sensitive": criteria.case_sensitive,
+                        }
+                        for criteria in rule.criteria
+                    ],
                     "actions": [
                         {
-                            "type": action.action_type.value,
+                            "id": str(action.id),
+                            "type": action.type,
                             "duration": action.duration,
-                            "role_id": str(action.role_id) if action.role_id else None,
                             "reason": action.reason,
+                            "role_ids": action.role_ids,
                             "message_content": action.message_content,
                             "message_reply": action.message_reply,
                             "message_mention": action.message_mention,
                             "message_embed": action.message_embed,
                             "embed_colour": action.embed_colour,
                         }
-                        for action in (rule.actions or [])
+                        for action in rule.actions
                     ],
                 }
-                for rule in getattr(config.automod_settings, f"{detection_type}_rules", [])
-            ]
-            for detection_type in [
-                "badword_detection",
-                "spam_detection",
-                "malicious_link",
-                "phishing_link",
-            ]
+                for rule in rules
+            ],
+            "show_outcome_message": config.automod_settings.show_outcome_message,
         }
     )
 
@@ -119,7 +123,7 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                     "evaluate_for_existing_members": rule.evaluate_for_existing_members,
                     "criteria": [
                         {
-                            "type": criterion.criteria_type.value,
+                            "type": criterion.type.value,
                             "account_age": criterion.account_age,
                             "words": criterion.words,
                             "match_whole_word": criterion.match_whole_word,
@@ -129,7 +133,7 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                     ],
                     "actions": [
                         {
-                            "type": action.action_type.value,
+                            "type": action.type.value,
                             "duration": action.duration,
                             "role_id": str(action.role_id) if action.role_id else None,
                             "reason": action.reason,
