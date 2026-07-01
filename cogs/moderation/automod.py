@@ -1,5 +1,6 @@
 import logging
 import re
+import unicodedata
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -35,6 +36,10 @@ class AutomodMonitorCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("automod")
+
+    def normalise_automod_text(self, text: str) -> str:
+        text = unicodedata.normalize("NFKC", text)
+        return "".join(char for char in text if unicodedata.category(char) != "Cf")
 
     async def cog_load(self) -> None:
         self.logger.info("Checking for old rules...")
@@ -148,6 +153,9 @@ class AutomodMonitorCog(commands.Cog):
         content_to_check = message.content
         if message.message_snapshots:
             content_to_check = message.message_snapshots[0].content
+
+        # normalise to remove unicode bypasses
+        normalised_content_to_check = self.normalise_automod_text(content_to_check)
 
         try:
             # Check for server ID in config list
@@ -336,13 +344,15 @@ class AutomodMonitorCog(commands.Cog):
                     if type == AutomodCriteriaType.WORD_LIST:
                         words_matched = 0
                         for word in criteria.words:
-                            pattern = r"\b" + re.escape(word) + r"\b"
+                            normalised_word = self.normalise_automod_text(word)
+
+                            pattern = r"\b" + re.escape(normalised_word) + r"\b"
                             if not criteria.match_whole_word:
                                 pattern = pattern.lstrip(r"\b").rstrip(r"\b")
 
                             matches = re.findall(
                                 pattern,
-                                content_to_check,
+                                normalised_content_to_check,
                                 flags=(0 if criteria.case_sensitive else re.IGNORECASE),
                             )
                             if matches:
@@ -832,7 +842,7 @@ class AutomodMonitorCog(commands.Cog):
             self.logger.debug(f"Message edit event {payload.message_id} has no guild_id, skipping")
             return
 
-        if not hasattr(payload.data, "content") or payload.data.get("content") is None:
+        if "content" not in payload.data or payload.data.get("content") is None:
             self.logger.debug(f"{payload.message_id} edit has no content in payload data")
             return
 
