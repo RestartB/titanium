@@ -625,10 +625,14 @@ class AutomodMonitorCog(commands.Cog):
                                 continue
                             # fmt: on
 
-                            # FIXME: check each role individually
+                            roles: list[discord.Role] = []
+                            for role_id in set(action.role_ids):
+                                role = message.guild.get_role(role_id)
+                                if role and message.guild.me.top_role > role:
+                                    roles.append(role)
 
                             await message.author.add_roles(
-                                *(discord.Object(id=role_id) for role_id in set(action.role_ids)),
+                                *roles,
                                 reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                                 atomic=False,
                             )
@@ -644,10 +648,14 @@ class AutomodMonitorCog(commands.Cog):
                                 continue
                             # fmt: on
 
-                            # FIXME: check each role individually
+                            roles: list[discord.Role] = []
+                            for role_id in set(action.role_ids):
+                                role = message.guild.get_role(role_id)
+                                if role and message.guild.me.top_role > role:
+                                    roles.append(role)
 
                             await message.author.remove_roles(
-                                *(discord.Object(id=role_id) for role_id in set(action.role_ids)),
+                                *roles,
                                 reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                                 atomic=False,
                             )
@@ -663,29 +671,32 @@ class AutomodMonitorCog(commands.Cog):
                                 continue
                             # fmt: on
 
-                            roles_to_add: list[discord.Object] = []
-                            roles_to_remove: list[discord.Object] = []
-                            roles_to_process = set(action.role_ids)
-                            user_roles = [role.id for role in message.author.roles[:1]]
+                            roles_to_add: list[discord.Role] = []
+                            roles_to_remove: list[discord.Role] = []
 
-                            for role in roles_to_process:
-                                if role in user_roles:
-                                    roles_to_remove.append(discord.Object(id=role))
+                            for role_id in set(action.role_ids):
+                                role = message.guild.get_role(role_id)
+                                if not role or message.guild.me.top_role <= role:
+                                    continue
+
+                                if role in message.author.roles:
+                                    roles_to_remove.append(role)
                                 else:
-                                    roles_to_add.append(discord.Object(id=role))
+                                    roles_to_add.append(role)
 
-                            # FIXME: check each role individually
+                            if roles_to_add:
+                                await message.author.add_roles(
+                                    *roles_to_add,
+                                    reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                    atomic=False,
+                                )
 
-                            await message.author.add_roles(
-                                *roles_to_add,
-                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                                atomic=False,
-                            )
-                            await message.author.remove_roles(
-                                *roles_to_remove,
-                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                                atomic=False,
-                            )
+                            if roles_to_remove:
+                                await message.author.remove_roles(
+                                    *roles_to_remove,
+                                    reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                    atomic=False,
+                                )
                         elif (
                             action.type == AutomodActionType.SEND_MESSAGE and action.message_content
                         ):
