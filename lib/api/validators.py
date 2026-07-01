@@ -42,13 +42,10 @@ class SettingsModel(BaseModel):
 class GuildSettingsModel(BaseModel):
     modules: ModuleModel
     settings: SettingsModel
-    prefixes: list[str]
+    prefixes: list[str] = Field(default_factory=list, max_length=5)
 
     @field_validator("prefixes")
     def validate_prefixes(cls, v):
-        if len(v) > 5:
-            raise ValueError("A maximum of 5 prefixes are allowed")
-
         for prefix in v:
             if not (1 <= len(prefix) <= 5):
                 raise ValueError("Each prefix must be between 1 and 5 characters long")
@@ -89,8 +86,8 @@ class CaseComment(BaseModel):
 class AutomodCriteriaModel(BaseModel):
     type: AutomodCriteriaType
 
-    threshold: Optional[int] = None
-    duration: Optional[int] = None
+    threshold: Optional[int] = Field(None, ge=1, le=1_892_160_000)
+    duration: Optional[int] = Field(None, ge=1, le=1_892_160_000)
 
     words: list[
         Annotated[
@@ -123,8 +120,7 @@ class AutomodCriteriaModel(BaseModel):
 class AutomodActionModel(BaseModel):
     type: AutomodActionType
 
-    # TODO: check if this is a problem as an int, this may need to be str
-    duration: Optional[int] = None
+    duration: Optional[int] = Field(None, ge=1, le=1_892_160_000)
     reason: Optional[
         Annotated[
             str,
@@ -152,24 +148,17 @@ class AutomodActionModel(BaseModel):
     ] = None
 
     @model_validator(mode="after")
-    def validate_duration(self):
-        if not self.duration:
-            return self
-
-        if self.duration <= 1:
-            raise ValueError("Duration must be positive or null")
-
-        return self
-
-    @model_validator(mode="after")
-    def validate_role_id(self):
-        if self.type in {
-            AutomodActionType.ADD_ROLE,
-            AutomodActionType.REMOVE_ROLE,
-            AutomodActionType.TOGGLE_ROLE,
-        }:
-            if not self.role_ids:
-                raise ValueError("Role IDs must be provided for role actions")
+    def validate_role_present(self):
+        if (
+            self.type
+            in {
+                AutomodActionType.ADD_ROLE,
+                AutomodActionType.REMOVE_ROLE,
+                AutomodActionType.TOGGLE_ROLE,
+            }
+            and not self.role_ids
+        ):
+            raise ValueError("Role IDs must be provided for role actions")
         return self
 
     @model_validator(mode="after")
@@ -267,7 +256,7 @@ class AutomodConfigModel(BaseModel):
 class BouncerCriterionModel(BaseModel):
     type: BouncerCriteriaType
 
-    account_age: Optional[int] = None
+    account_age: Optional[int] = Field(None, ge=1, le=1_892_160_000)
 
     words: Optional[list[str]] = None
     match_whole_word: bool = False
@@ -287,20 +276,35 @@ class BouncerCriterionModel(BaseModel):
 class BouncerActionModel(BaseModel):
     type: BouncerActionType
 
-    duration: Optional[int] = None
+    duration: Optional[int] = Field(None, ge=1, le=1_892_160_000)
     reason: Optional[str] = None
 
     role_id: Optional[str] = None
 
     @model_validator(mode="after")
+    def validate_role_present(self):
+        if (
+            self.type
+            in {
+                BouncerActionType.ADD_ROLE,
+                BouncerActionType.REMOVE_ROLE,
+                BouncerActionType.TOGGLE_ROLE,
+            }
+            and not self.role_id
+        ):
+            raise ValueError("Role ID must be provided for role action")
+        return self
+
+    @model_validator(mode="after")
     def validate_role_id(self):
-        if self.type in {
-            BouncerActionType.ADD_ROLE,
-            BouncerActionType.REMOVE_ROLE,
-            BouncerActionType.TOGGLE_ROLE,
-        }:
-            if not self.role_id:
-                raise ValueError("Role ID must be provided for role action")
+        if not self.role_id:
+            return self
+
+        try:
+            int(self.role_id)
+        except Exception:
+            raise ValueError("Invalid role ID")
+
         return self
 
     def to_sqlalchemy(self, rule_id: uuid.UUID) -> BouncerAction:
@@ -366,7 +370,6 @@ class LoggingConfigModel(BaseModel):
         for key in self.channels.keys():
             if key in seen_keys:
                 raise ValueError(f"Duplicate event type: {key}")
-
             seen_keys.append(key)
 
         return self

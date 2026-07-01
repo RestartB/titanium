@@ -106,8 +106,6 @@ def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
         }
     )
 
-    # TODO: implement
-
 
 def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
