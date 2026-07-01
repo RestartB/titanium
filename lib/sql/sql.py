@@ -184,7 +184,7 @@ class GuildLimits(Base):
     )
 
     enforcing: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    automod_rules: Mapped[int] = MappedColumn(Integer, server_default=text("50"))
+    automod_rules: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
     bad_word_list_size: Mapped[int] = MappedColumn(Integer, server_default=text("1000"))
     bouncer_rules: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
     fireboards: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
