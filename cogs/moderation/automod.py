@@ -33,6 +33,12 @@ if TYPE_CHECKING:
 class AutomodMonitorCog(commands.Cog):
     """Monitors new messages for automod triggers and creates cases/punishments"""
 
+    DISCORD_DICE_ROLL_RE = re.compile(
+        r"https?://(?:www\.|canary\.|ptb\.)?discord(?:app)?\.com/channels/"
+        r"\d+/\d+(?:/\d+)?/roll-dice/[^\s<>()]+",
+        flags=re.IGNORECASE,
+    )
+
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("automod")
@@ -41,6 +47,7 @@ class AutomodMonitorCog(commands.Cog):
         text = unicodedata.normalize("NFKC", text)
         return "".join(char for char in text if unicodedata.category(char) != "Cf")
 
+    # TODO: remove this soon
     async def cog_load(self) -> None:
         self.logger.info("Checking for old rules...")
 
@@ -372,6 +379,10 @@ class AutomodMonitorCog(commands.Cog):
                             if link in content_to_check:
                                 criteria_met = True
                                 break
+                    elif type == AutomodCriteriaType.DISCORD_DICE_ROLL:
+                        criteria_met = bool(
+                            self.DISCORD_DICE_ROLL_RE.search(normalised_content_to_check)
+                        )
                     else:
                         self.logger.warning(f"({criteria.id}) Unknown rule type: {type}")
                         continue

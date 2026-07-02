@@ -22,6 +22,7 @@ class AutomodCriteriaType(StrEnum):
     WORD_LIST = "word_list"
     MALICIOUS_LINK = "malicious_link"
     PHISHING_LINK = "phishing_link"
+    DISCORD_DICE_ROLL = "discord_dice_roll"
     MESSAGE_SPAM = "message_spam"
     MENTION_SPAM = "mention_spam"
     WORD_SPAM = "word_spam"
