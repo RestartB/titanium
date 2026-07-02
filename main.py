@@ -676,6 +676,13 @@ async def on_app_command_error(
             colour=discord.Colour.red(),
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
+    elif isinstance(error, discord.app_commands.TransformerError):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Bad Argument",
+            description=str(error),
+            colour=discord.Colour.red(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
     elif isinstance(error, discord.app_commands.CheckFailure):
         return
     elif not isinstance(error, discord.app_commands.CommandNotFound):
