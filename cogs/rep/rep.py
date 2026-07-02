@@ -5,6 +5,9 @@ import discord
 from discord import ButtonStyle, Interaction
 from discord.ext import commands
 from discord.ui import Button, View, button
+from sqlalchemy.dialects.postgresql import insert
+
+from lib.sql.sql import RepAddHistory, UserRep, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -23,13 +26,37 @@ class RepView(View):
 
     @button(label="Give Rep", emoji="➕", style=ButtonStyle.green)
     async def give_rep(self, interaction: Interaction["TitaniumBot"], button: Button):
-        if not interaction.message:
+        if not interaction.message or not interaction.guild_id:
             return
 
         await interaction.response.defer()
+
+        async with get_session() as session:
+            session.add(
+                RepAddHistory(
+                    user_id=interaction.user.id,
+                    target_id=self.target_member.id,
+                    guild_id=interaction.guild_id,
+                )
+            )
+
+            stmt = insert(UserRep).values(
+                guild_id=interaction.guild_id,
+                user_id=self.target_member.id,
+                rep=1,
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["guild_id", "user_id"],
+                set_={
+                    "rep": UserRep.rep + 1,
+                },
+            ).returning(UserRep)
+
+            rep = (await session.execute(stmt)).scalar_one()
+
         await interaction.message.edit(
             embed=discord.Embed(
-                description=f"{self.bot.success_emoji} **1 rep** given to {self.target_member.mention}",
+                description=f"{self.bot.success_emoji} **1 rep** given to {self.target_member.mention} (`{rep.rep}` rep total)",
                 colour=discord.Colour.green(),
             ),
             view=None,
@@ -52,15 +79,25 @@ class RepTestCog(commands.Cog):
     async def on_message(self, message: discord.Message) -> None:
         # no reply / invalid reference - ignore
         if (
-            not message.reference
+            not message.guild
+            or not message.reference
             or not message.reference.resolved
             or isinstance(message.reference.resolved, discord.DeletedReferencedMessage)
             or message.reference.type != discord.MessageReferenceType.reply
         ):
             return
 
+        # base settings
+        guild_config = await self.bot.fetch_guild_config(message.guild.id)
+        if (
+            not guild_config
+            or not guild_config.rep_enabled
+            or not guild_config.rep_settings.rep_hint
+        ):
+            return
+
         matches = []
-        for check_word in ["thank you", "thx", "thanks", "i love you"]:
+        for check_word in ["thank you", "thx", "thanks"]:
             pattern = r"\b" + re.escape(check_word) + r"\b"
             matches.extend(re.findall(pattern, message.reference.resolved.content.lower()))
 

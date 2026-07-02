@@ -173,6 +173,15 @@ class GuildSettings(Base):
         uselist=False,
     )
 
+    rep_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    rep_settings: Mapped["GuildRepSettings"] = relationship(
+        "GuildRepSettings",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        back_populates="guild_settings",
+        uselist=False,
+    )
+
 
 class GuildLimits(Base):
     __tablename__ = "guild_limits"
@@ -906,6 +915,49 @@ class Tag(Base):
     name: Mapped[str] = MappedColumn(String(length=80), nullable=False)
     content: Mapped[str] = MappedColumn(String(length=2000), nullable=False)
     amount_used: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
+
+
+class GuildRepSettings(Base):
+    __tablename__ = "guild_tag_settings"
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE"), primary_key=True
+    )
+    guild_settings: Mapped["GuildSettings"] = relationship(
+        "GuildSettings", back_populates="tag_settings", uselist=False
+    )
+
+    rep_hint: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    allow_rep_remove: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+
+    web_leaderboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    web_login_required: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+
+    ignored_roles: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    ignored_channels: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+
+
+class UserRep(Base):
+    __table_args__ = (UniqueConstraint("user_id", "guild_id", name="uq_user_guild_id"),)
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+
+    rep: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"), nullable=False)
+
+
+class RepAddHistory(Base):
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    target_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+
+    time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=False)
 
 
 class GameStat(Base):
