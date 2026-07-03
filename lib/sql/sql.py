@@ -21,6 +21,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    desc,
     select,
     text,
 )
@@ -751,7 +752,10 @@ class LeaderboardLevels(Base):
 
 class LeaderboardUserStats(Base):
     __tablename__ = "leaderboard_user_stats"
-    __table_args__ = (UniqueConstraint("guild_id", "user_id", name="uq_leaderboard_guild_user"),)
+    __table_args__ = (
+        UniqueConstraint("guild_id", "user_id", name="uq_leaderboard_guild_user"),
+        Index("ix_leaderboard_user_stats_guild_xp", "guild_id", desc("xp")),
+    )
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(
@@ -918,7 +922,8 @@ class Tag(Base):
 
 
 class GuildRepSettings(Base):
-    __tablename__ = "guild_tag_settings"
+    __tablename__ = "guild_rep_settings"
+
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE"), primary_key=True
     )
@@ -941,7 +946,12 @@ class GuildRepSettings(Base):
 
 
 class UserRep(Base):
-    __table_args__ = (UniqueConstraint("user_id", "guild_id", name="uq_user_guild_id"),)
+    __tablename__ = "user_rep"
+    __table_args__ = (
+        UniqueConstraint("user_id", "guild_id", name="uq_user_guild_id"),
+        Index("ix_user_rep_guild_rep", "guild_id", desc("rep")),
+    )
+
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
@@ -951,6 +961,11 @@ class UserRep(Base):
 
 
 class RepAddHistory(Base):
+    __tablename__ = "rep_add_history"
+    __table_args__ = (
+        Index("ix_rep_add_history_guild_user_target", "guild_id", "user_id", "target_id"),
+    )
+
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
