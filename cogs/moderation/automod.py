@@ -510,7 +510,8 @@ class AutomodMonitorCog(commands.Cog):
                                 ),
                                 reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                             )
-                            await manager.create_case(
+                            
+                            case, dm_success, dm_error = await manager.create_case(
                                 action=CaseType.MUTE,
                                 user=message.author,
                                 creator_user=self.bot.user,
@@ -542,26 +543,31 @@ class AutomodMonitorCog(commands.Cog):
                                 continue
                             # fmt: on
 
-                            await message.author.kick(
-                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                            )
-                            await manager.create_case(
+                            case, dm_success, dm_error = await manager.create_case(
                                 action=CaseType.KICK,
                                 user=message.author,
                                 creator_user=self.bot.user,
                                 reason=action.reason,
                                 source=CaseSource.AUTOMOD,
                             )
-                            embeds.append(
-                                mod_embeds.kicked(
-                                    bot=self.bot,
-                                    user=message.author,
-                                    creator=self.bot.user,
-                                    case=case,
-                                    dm_success=dm_success,
-                                    dm_error=dm_error,
+
+                            try:
+                                await message.author.kick(
+                                    reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                                 )
-                            )
+                                embeds.append(
+                                    mod_embeds.kicked(
+                                        bot=self.bot,
+                                        user=message.author,
+                                        creator=self.bot.user,
+                                        case=case,
+                                        dm_success=dm_success,
+                                        dm_error=dm_error,
+                                    )
+                                )
+                            except Exception as e:
+                                await manager.delete_case(case.id, raise_not_found=False)
+                                raise e
                         elif action.type == AutomodActionType.BAN:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
@@ -574,11 +580,7 @@ class AutomodMonitorCog(commands.Cog):
                                 continue
                             # fmt: on
 
-                            await message.author.ban(
-                                delete_message_seconds=config.moderation_settings.ban_days * 86400,
-                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                            )
-                            await manager.create_case(
+                            case, dm_success, dm_error = await manager.create_case(
                                 action=CaseType.BAN,
                                 user=message.author,
                                 creator_user=self.bot.user,
@@ -588,16 +590,25 @@ class AutomodMonitorCog(commands.Cog):
                                 else None,
                                 source=CaseSource.AUTOMOD,
                             )
-                            embeds.append(
-                                mod_embeds.banned(
-                                    bot=self.bot,
-                                    user=message.author,
-                                    creator=self.bot.user,
-                                    case=case,
-                                    dm_success=dm_success,
-                                    dm_error=dm_error,
+
+                            try:
+                                await message.author.ban(
+                                    delete_message_seconds=config.moderation_settings.ban_days * 86400,
+                                    reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                                 )
-                            )
+                                embeds.append(
+                                    mod_embeds.banned(
+                                        bot=self.bot,
+                                        user=message.author,
+                                        creator=self.bot.user,
+                                        case=case,
+                                        dm_success=dm_success,
+                                        dm_error=dm_error,
+                                    )
+                                )
+                            except Exception as e:
+                                await manager.delete_case(case.id, raise_not_found=False)
+                                raise e
                         elif action.type == AutomodActionType.DELETE:
                             # fmt: off
                             if not message.channel.permissions_for(message.guild.me).manage_messages:
