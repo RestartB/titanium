@@ -186,7 +186,7 @@ class CloseNowButton(
         if poll.creator_id != interaction.user.id or not interaction.permissions.administrator:
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Not Allowed",
-                description="You didn't create this poll. Only the creator can end the poll.",
+                description="You didn't create this poll. Only the creator or server administrators can end the poll.",
                 colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)

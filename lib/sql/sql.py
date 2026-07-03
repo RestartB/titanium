@@ -219,6 +219,11 @@ class GuildModerationSettings(Base):
 
 class ModCase(Base):
     __tablename__ = "mod_cases"
+    __table_args__ = (
+        Index("ix_mod_cases_guild_id", "guild_id", desc("time_created")),
+        Index("ix_mod_cases_guild_id_user_id", "guild_id", "user_id", desc("time_created")),
+    )
+
     id: Mapped[str] = MappedColumn(String(length=8), primary_key=True, default=generate_short_uuid)
     type: Mapped[CaseType] = MappedColumn(Enum(CaseType), nullable=False)
     guild_id: Mapped[int] = MappedColumn(
@@ -283,6 +288,8 @@ class ModCase(Base):
 
 class ModCaseComment(Base):
     __tablename__ = "mod_case_comments"
+    __table_args__ = (Index("ix_mod_case_comments_case_id_guild_id", "case_id", "guild_id"),)
+
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE")
@@ -640,6 +647,7 @@ class GuildFireboardSettings(Base):
 
 class FireboardBoard(Base):
     __tablename__ = "fireboard_boards"
+
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_fireboard_settings.guild_id", ondelete="CASCADE")
@@ -670,16 +678,18 @@ class FireboardBoard(Base):
 
 class FireboardMessage(Base):
     __tablename__ = "fireboard_messages"
+
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(
         BigInteger,
         ForeignKey("guild_fireboard_settings.guild_id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     fireboard_message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     fireboard_id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), ForeignKey("fireboard_boards.id", ondelete="CASCADE")
+        UUID(as_uuid=True), ForeignKey("fireboard_boards.id", ondelete="CASCADE"), index=True
     )
     fireboard: Mapped["FireboardBoard"] = relationship(
         "FireboardBoard", back_populates="messages", uselist=False
@@ -762,7 +772,6 @@ class LeaderboardUserStats(Base):
         BigInteger,
         ForeignKey("guild_leaderboard_settings.guild_id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
 
@@ -859,7 +868,7 @@ class AnonymousPoll(Base):
 
 class AnonymousPollResponse(Base):
     __tablename__ = "anonymous_poll_responses"
-    __table_args__ = (UniqueConstraint("user_id", "poll_id", name="uq_user_poll_id"),)
+    __table_args__ = (UniqueConstraint("poll_id", "user_id", name="uq_poll_user_id"),)
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
@@ -928,7 +937,7 @@ class GuildRepSettings(Base):
         BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE"), primary_key=True
     )
     guild_settings: Mapped["GuildSettings"] = relationship(
-        "GuildSettings", back_populates="tag_settings", uselist=False
+        "GuildSettings", back_populates="rep_settings", uselist=False
     )
 
     rep_hint: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
@@ -978,7 +987,7 @@ class RepAddHistory(Base):
 class GameStat(Base):
     __tablename__ = "game_stats"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
     game: Mapped[GameTypes] = MappedColumn(Enum(GameTypes), nullable=False)
     won: Mapped[bool] = MappedColumn(Boolean, nullable=False)
 
@@ -1037,6 +1046,8 @@ class Reminder(Base):
 
 class ScheduledTask(Base):
     __tablename__ = "scheduled_tasks"
+    __table_args__ = (Index("ix_scheduled_tasks_guild_user_type", "guild_id", "user_id", "type"),)
+
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     time_scheduled: Mapped[datetime] = MappedColumn(DateTime(timezone=True), index=True)
@@ -1078,9 +1089,13 @@ class ScheduledTask(Base):
 
 class AvailableWebhook(Base):
     __tablename__ = "available_webhooks"
+
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE"), nullable=False
+        BigInteger,
+        ForeignKey("guild_settings.guild_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     webhook_url: Mapped[str] = MappedColumn(String, nullable=False)
@@ -1088,6 +1103,8 @@ class AvailableWebhook(Base):
 
 class ErrorLog(Base):
     __tablename__ = "error_logs"
+    __table_args__ = (Index("ix_error_logs_guild_id", "guild_id", desc("time_occurred")),)
+
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE")
