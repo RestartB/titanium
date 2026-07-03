@@ -510,7 +510,7 @@ class AutomodMonitorCog(commands.Cog):
                                 ),
                                 reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                             )
-                            
+
                             case, dm_success, dm_error = await manager.create_case(
                                 action=CaseType.MUTE,
                                 user=message.author,
@@ -593,7 +593,8 @@ class AutomodMonitorCog(commands.Cog):
 
                             try:
                                 await message.author.ban(
-                                    delete_message_seconds=config.moderation_settings.ban_days * 86400,
+                                    delete_message_seconds=config.moderation_settings.ban_days
+                                    * 86400,
                                     reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
                                 )
                                 embeds.append(
@@ -761,7 +762,10 @@ class AutomodMonitorCog(commands.Cog):
                             )
 
                             if action.message_reply:
-                                await message.reply(**send_kwargs)
+                                await message.channel.send(
+                                    reference=message.to_reference(fail_if_not_exists=False),
+                                    **send_kwargs,
+                                )
                             else:
                                 await message.channel.send(**send_kwargs)
                         else:
