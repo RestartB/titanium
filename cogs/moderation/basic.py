@@ -53,7 +53,7 @@ class ModerationBasicCog(
             return False
 
         config = await self.bot.fetch_guild_config(ctx.guild.id)
-        if not config or not config.moderation_enabled:
+        if not config or not config.moderation_enabled or not config.moderation_settings:
             await ctx.reply(
                 embed=discord.Embed(
                     colour=discord.Colour.red(),
@@ -225,7 +225,7 @@ class ModerationBasicCog(
                     guild_id=member.guild.id,
                     error=f"Titanium was not allowed to mute @{member.name} ({member.id})",
                     details=e.text,
-                    exc=e
+                    exc=e,
                 )
                 return PunishmentResult.FORBIDDEN, None, None, None
             except discord.HTTPException as e:
@@ -235,7 +235,7 @@ class ModerationBasicCog(
                     guild_id=member.guild.id,
                     error=f"Unknown Discord error while muting @{member.name} ({member.id})",
                     details=e.text,
-                    exc=e
+                    exc=e,
                 )
                 return PunishmentResult.UNKNOWN, None, None, None
 
@@ -307,7 +307,7 @@ class ModerationBasicCog(
                         guild_id=member.guild.id,
                         error=f"Titanium was not allowed to kick @{member.name} ({member.id})",
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.FORBIDDEN, None, None, None
@@ -318,7 +318,7 @@ class ModerationBasicCog(
                         guild_id=member.guild.id,
                         error=f"Unknown Discord error while kicking @{member.name} ({member.id})",
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.UNKNOWN, None, None, None
@@ -385,6 +385,8 @@ class ModerationBasicCog(
 
             # Get config
             config = await self.bot.fetch_guild_config(ctx.guild.id)
+            if not config or not config.moderation_settings:
+                raise ValueError("Config not returned")
 
             # Create case
             async with get_session() as session:
@@ -414,7 +416,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Titanium was not allowed to ban @{user.name} ({user.id})",
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.FORBIDDEN, None, None, None
@@ -425,7 +427,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Unknown Discord error while banning @{user.name} ({user.id})",
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.UNKNOWN, None, None, None
@@ -460,6 +462,9 @@ class ModerationBasicCog(
             return
 
         config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or not config.moderation_settings:
+            raise ValueError("Config not returned")
+
         del_kwargs: dict[str, Any] = (
             {"delete_after": 5.0}
             if config and config.moderation_settings.delete_confirmation
@@ -528,6 +533,9 @@ class ModerationBasicCog(
             return
 
         config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or not config.moderation_settings:
+            raise ValueError("Config not returned")
+
         del_kwargs: dict[str, Any] = (
             {"delete_after": 5.0}
             if config and config.moderation_settings.delete_confirmation
@@ -613,6 +621,9 @@ class ModerationBasicCog(
             return
 
         config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or not config.moderation_settings:
+            raise ValueError("Config not returned")
+
         del_kwargs: dict[str, Any] = (
             {"delete_after": 5.0}
             if config and config.moderation_settings.delete_confirmation
@@ -683,7 +694,7 @@ class ModerationBasicCog(
                         guild_id=member.guild.id,
                         error=f"Titanium was not allowed to unmute @{member.name} ({member.id})",
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
 
                     return await ctx.reply(
@@ -696,7 +707,7 @@ class ModerationBasicCog(
                         guild_id=member.guild.id,
                         error=f"Unknown Discord error while unmuting @{member.name} ({member.id})",
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
 
                     return await ctx.reply(
@@ -768,6 +779,9 @@ class ModerationBasicCog(
             return
 
         config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or not config.moderation_settings:
+            raise ValueError("Config not returned")
+
         del_kwargs: dict[str, Any] = (
             {"delete_after": 5.0}
             if config and config.moderation_settings.delete_confirmation
@@ -846,6 +860,9 @@ class ModerationBasicCog(
             return
 
         config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or not config.moderation_settings:
+            raise ValueError("Config not returned")
+
         del_kwargs: dict[str, Any] = (
             {"delete_after": 5.0}
             if config and config.moderation_settings.delete_confirmation
@@ -925,6 +942,9 @@ class ModerationBasicCog(
             return
 
         config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or not config.moderation_settings:
+            raise ValueError("Config not returned")
+
         del_kwargs: dict[str, Any] = (
             {"delete_after": 5.0}
             if config and config.moderation_settings.delete_confirmation
@@ -975,7 +995,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Titanium was not allowed to unban @{user.name} ({user.id})",
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
 
                     return await ctx.reply(
@@ -988,7 +1008,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Unknown Discord error while unbanning @{user.name} ({user.id})",
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
 
                     return await ctx.reply(
@@ -1050,6 +1070,9 @@ class ModerationBasicCog(
             return
 
         config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or not config.moderation_settings:
+            raise ValueError("Config not returned")
+
         del_kwargs: dict[str, Any] = (
             {"delete_after": 5.0}
             if config and config.moderation_settings.delete_confirmation
@@ -1099,7 +1122,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Titanium was not allowed to purge messages in #{ctx.channel.name} ({ctx.channel.id})",
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
 
                 return await ctx.reply(
@@ -1116,7 +1139,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Unknown Discord error while purging messages in #{ctx.channel.name} ({ctx.channel.id})",
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
 
                 return await ctx.reply(
@@ -1167,6 +1190,9 @@ class ModerationBasicCog(
             valid_users: set[discord.Member] = set([user for user in raw_users if user is not None])
 
             config = await self.bot.fetch_guild_config(ctx.guild.id)
+            if not config or not config.moderation_settings:
+                raise ValueError("Config not returned")
+
             del_kwargs: dict[str, Any] = (
                 {"delete_after": 5.0}
                 if config and config.moderation_settings.delete_confirmation
@@ -1255,6 +1281,9 @@ class ModerationBasicCog(
             valid_users: set[discord.Member] = set([user for user in raw_users if user is not None])
 
             config = await self.bot.fetch_guild_config(ctx.guild.id)
+            if not config or not config.moderation_settings:
+                raise ValueError("Config not returned")
+
             del_kwargs: dict[str, Any] = (
                 {"delete_after": 5.0}
                 if config and config.moderation_settings.delete_confirmation
@@ -1353,6 +1382,9 @@ class ModerationBasicCog(
             valid_users: set[discord.Member] = set([user for user in raw_users if user is not None])
 
             config = await self.bot.fetch_guild_config(ctx.guild.id)
+            if not config or not config.moderation_settings:
+                raise ValueError("Config not returned")
+
             del_kwargs: dict[str, Any] = (
                 {"delete_after": 5.0}
                 if config and config.moderation_settings.delete_confirmation
@@ -1474,6 +1506,9 @@ class ModerationBasicCog(
                 valid_users.add(user)
 
             config = await self.bot.fetch_guild_config(ctx.guild.id)
+            if not config or not config.moderation_settings:
+                raise ValueError("Config not returned")
+
             del_kwargs: dict[str, Any] = (
                 {"delete_after": 5.0}
                 if config and config.moderation_settings.delete_confirmation
@@ -1566,7 +1601,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=error_msg,
                         details=e.text,
-                        exc=e
+                        exc=e,
                     )
 
                     for case, _, _ in cases.values():

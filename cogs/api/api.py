@@ -926,7 +926,7 @@ class APICog(commands.Cog):
             return web.json_response({"error": "guild not found"}, status=404)
 
         config = await self.bot.fetch_guild_config(guild.id)
-        if not config:
+        if not config or not config.tag_settings:
             return web.json_response({"error": "failed to get guild config"}, status=500)
 
         if not config.tags_enabled:
@@ -1405,6 +1405,7 @@ class APICog(commands.Cog):
                     "confessions": config.confessions_enabled,
                     "leaderboard": config.leaderboard_enabled,
                     "tags": config.tags_enabled,
+                    "rep": config.rep_enabled,
                 },
                 "settings": {
                     "allow_prefix": config.allow_prefix,

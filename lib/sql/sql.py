@@ -94,7 +94,7 @@ class GuildSettings(Base):
     )
 
     moderation_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    moderation_settings: Mapped["GuildModerationSettings"] = relationship(
+    moderation_settings: Mapped["GuildModerationSettings | None"] = relationship(
         "GuildModerationSettings",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -103,7 +103,7 @@ class GuildSettings(Base):
     )
 
     automod_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    automod_settings: Mapped["GuildAutomodSettings"] = relationship(
+    automod_settings: Mapped["GuildAutomodSettings | None"] = relationship(
         "GuildAutomodSettings",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -112,7 +112,7 @@ class GuildSettings(Base):
     )
 
     bouncer_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    bouncer_settings: Mapped["GuildBouncerSettings"] = relationship(
+    bouncer_settings: Mapped["GuildBouncerSettings | None"] = relationship(
         "GuildBouncerSettings",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -121,7 +121,7 @@ class GuildSettings(Base):
     )
 
     logging_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    logging_settings: Mapped["GuildLoggingSettings"] = relationship(
+    logging_settings: Mapped["GuildLoggingSettings | None"] = relationship(
         "GuildLoggingSettings",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -130,7 +130,7 @@ class GuildSettings(Base):
     )
 
     fireboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    fireboard_settings: Mapped["GuildFireboardSettings"] = relationship(
+    fireboard_settings: Mapped["GuildFireboardSettings | None"] = relationship(
         "GuildFireboardSettings",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -139,7 +139,7 @@ class GuildSettings(Base):
     )
 
     server_counters_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    server_counters_settings: Mapped["GuildServerCounterSettings"] = relationship(
+    server_counters_settings: Mapped["GuildServerCounterSettings | None"] = relationship(
         "GuildServerCounterSettings",
         back_populates="guild",
         cascade="all, delete-orphan",
@@ -148,7 +148,7 @@ class GuildSettings(Base):
     )
 
     leaderboard_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    leaderboard_settings: Mapped["GuildLeaderboardSettings"] = relationship(
+    leaderboard_settings: Mapped["GuildLeaderboardSettings | None"] = relationship(
         "GuildLeaderboardSettings",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -157,7 +157,7 @@ class GuildSettings(Base):
     )
 
     confessions_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    confessions_settings: Mapped["GuildConfessionsSettings"] = relationship(
+    confessions_settings: Mapped["GuildConfessionsSettings | None"] = relationship(
         "GuildConfessionsSettings",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -166,7 +166,7 @@ class GuildSettings(Base):
     )
 
     tags_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    tag_settings: Mapped["GuildTagSettings"] = relationship(
+    tag_settings: Mapped["GuildTagSettings | None"] = relationship(
         "GuildTagSettings",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -175,7 +175,7 @@ class GuildSettings(Base):
     )
 
     rep_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    rep_settings: Mapped["GuildRepSettings"] = relationship(
+    rep_settings: Mapped["GuildRepSettings | None"] = relationship(
         "GuildRepSettings",
         cascade="all, delete-orphan",
         passive_deletes=True,

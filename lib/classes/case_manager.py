@@ -101,6 +101,7 @@ class GuildModCaseManager:
             if (
                 not guild_settings
                 or not guild_settings.moderation_enabled
+                or not guild_settings.moderation_settings
                 or not guild_settings.moderation_settings.external_cases
             ):
                 raise ExternalCasesDisabledException

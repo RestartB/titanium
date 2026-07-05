@@ -149,6 +149,10 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
 
 def logging_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
+
+    if not config.logging_settings:
+        return web.json_response({"channels": []})
+
     return web.json_response(
         {"channels": {key: str(value) for key, value in config.logging_settings.channels.items()}}
     )

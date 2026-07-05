@@ -216,6 +216,7 @@ class FireboardCog(commands.Cog):
             self.bot.user is None
             or not config
             or not config.fireboard_enabled
+            or not config.fireboard_settings
             or len(config.fireboard_settings.fireboard_boards) == 0
             or event.user_id == self.bot.user.id
             or not msg_channel
@@ -560,6 +561,7 @@ class FireboardCog(commands.Cog):
         if (
             not config
             or not config.fireboard_enabled
+            or not config.fireboard_settings
             or len(config.fireboard_settings.fireboard_boards) == 0
         ):
             self.logger.debug("No fireboard boards found")
@@ -657,6 +659,7 @@ class FireboardCog(commands.Cog):
         if (
             not config
             or not config.fireboard_enabled
+            or not config.fireboard_settings
             or len(config.fireboard_settings.fireboard_boards) == 0
         ):
             self.logger.debug("No fireboard boards found")
@@ -747,6 +750,7 @@ class FireboardCog(commands.Cog):
         if (
             not config
             or not config.fireboard_enabled
+            or not config.fireboard_settings
             or len(config.fireboard_settings.fireboard_boards) == 0
         ):
             self.logger.debug("No fireboard boards found")
@@ -822,6 +826,7 @@ class FireboardCog(commands.Cog):
         if (
             not config
             or not config.fireboard_enabled
+            or not config.fireboard_settings
             or len(config.fireboard_settings.fireboard_boards) == 0
         ):
             self.logger.debug("No fireboard boards found")

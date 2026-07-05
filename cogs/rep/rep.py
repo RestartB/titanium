@@ -147,6 +147,7 @@ class RepCog(commands.Cog):
         if (
             not guild_config
             or not guild_config.rep_enabled
+            or not guild_config.rep_settings
             or not guild_config.rep_settings.rep_hint
         ):
             return
@@ -350,7 +351,7 @@ class RepCog(commands.Cog):
             return
 
         guild_config = await self.bot.fetch_guild_config(ctx.guild.id)
-        if not guild_config:
+        if not guild_config or not guild_config.rep_settings:
             raise ValueError("No guild config returned")
 
         rep_config = guild_config.rep_settings
