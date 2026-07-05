@@ -225,6 +225,7 @@ class ModerationBasicCog(
                     guild_id=member.guild.id,
                     error=f"Titanium was not allowed to mute @{member.name} ({member.id})",
                     details=e.text,
+                    exc=e
                 )
                 return PunishmentResult.FORBIDDEN, None, None, None
             except discord.HTTPException as e:
@@ -234,6 +235,7 @@ class ModerationBasicCog(
                     guild_id=member.guild.id,
                     error=f"Unknown Discord error while muting @{member.name} ({member.id})",
                     details=e.text,
+                    exc=e
                 )
                 return PunishmentResult.UNKNOWN, None, None, None
 
@@ -305,6 +307,7 @@ class ModerationBasicCog(
                         guild_id=member.guild.id,
                         error=f"Titanium was not allowed to kick @{member.name} ({member.id})",
                         details=e.text,
+                        exc=e
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.FORBIDDEN, None, None, None
@@ -315,6 +318,7 @@ class ModerationBasicCog(
                         guild_id=member.guild.id,
                         error=f"Unknown Discord error while kicking @{member.name} ({member.id})",
                         details=e.text,
+                        exc=e
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.UNKNOWN, None, None, None
@@ -410,6 +414,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Titanium was not allowed to ban @{user.name} ({user.id})",
                         details=e.text,
+                        exc=e
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.FORBIDDEN, None, None, None
@@ -420,6 +425,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Unknown Discord error while banning @{user.name} ({user.id})",
                         details=e.text,
+                        exc=e
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.UNKNOWN, None, None, None
@@ -677,6 +683,7 @@ class ModerationBasicCog(
                         guild_id=member.guild.id,
                         error=f"Titanium was not allowed to unmute @{member.name} ({member.id})",
                         details=e.text,
+                        exc=e
                     )
 
                     return await ctx.reply(
@@ -689,6 +696,7 @@ class ModerationBasicCog(
                         guild_id=member.guild.id,
                         error=f"Unknown Discord error while unmuting @{member.name} ({member.id})",
                         details=e.text,
+                        exc=e
                     )
 
                     return await ctx.reply(
@@ -967,6 +975,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Titanium was not allowed to unban @{user.name} ({user.id})",
                         details=e.text,
+                        exc=e
                     )
 
                     return await ctx.reply(
@@ -979,6 +988,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Unknown Discord error while unbanning @{user.name} ({user.id})",
                         details=e.text,
+                        exc=e
                     )
 
                     return await ctx.reply(
@@ -1089,6 +1099,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Titanium was not allowed to purge messages in #{ctx.channel.name} ({ctx.channel.id})",
                         details=e.text,
+                        exc=e
                     )
 
                 return await ctx.reply(
@@ -1105,6 +1116,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=f"Unknown Discord error while purging messages in #{ctx.channel.name} ({ctx.channel.id})",
                         details=e.text,
+                        exc=e
                     )
 
                 return await ctx.reply(
@@ -1554,6 +1566,7 @@ class ModerationBasicCog(
                         guild_id=ctx.guild.id,
                         error=error_msg,
                         details=e.text,
+                        exc=e
                     )
 
                     for case, _, _ in cases.values():

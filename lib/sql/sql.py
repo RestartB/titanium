@@ -29,6 +29,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Mapped, MappedColumn, declarative_base, relationship, selectinload
 
+from lib.classes.guild_logger import GuildLogger
 from lib.enums.automod import (
     AutomodActionType,
     AutomodAntispamType,
@@ -41,6 +42,7 @@ from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
 from lib.enums.moderation import CaseType
 from lib.enums.scheduled_events import EventType
 from lib.enums.server_counters import ServerCounterType
+from lib.helpers.log_error import log_error
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -249,9 +251,6 @@ class ModCase(Base):
     async def add_comment(
         self, member: Member, content: str, bot: TitaniumBot, guild: Guild | PartialInviteGuild
     ) -> ModCaseComment:
-        from lib.classes.guild_logger import GuildLogger
-        from lib.helpers.log_error import log_error
-
         comment = ModCaseComment(
             guild_id=self.guild_id, case_id=self.id, user_id=member.id, comment=content
         )

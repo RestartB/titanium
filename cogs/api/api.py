@@ -1800,12 +1800,13 @@ class APICog(commands.Cog):
                                 count_type=new_channel.type,
                             )
                             session.add(channel)
-                        except discord.Forbidden:
+                        except discord.Forbidden as e:
                             await log_error(
                                 bot=self.bot,
                                 module="Server Counters",
                                 guild_id=guild.id,
                                 error="Missing permissions to create server counter channel",
+                                exc=e,
                             )
                         except discord.HTTPException as e:
                             await log_error(
@@ -1851,12 +1852,13 @@ class APICog(commands.Cog):
                                     reason="Creating server counter channel",
                                 )
                                 channel_ids.append(discord_channel.id)
-                            except discord.Forbidden:
+                            except discord.Forbidden as e:
                                 await log_error(
                                     bot=self.bot,
                                     module="Server Counters",
                                     guild_id=guild.id,
                                     error="Missing permissions to create server counter channel",
+                                    exc=e,
                                 )
                                 continue
                             except discord.HTTPException as e:
@@ -1899,12 +1901,13 @@ class APICog(commands.Cog):
                                 await discord_channel.delete(
                                     reason="Removing server counter channel"
                                 )
-                            except discord.Forbidden:
+                            except discord.Forbidden as e:
                                 await log_error(
                                     bot=self.bot,
                                     module="Server Counters",
                                     guild_id=guild.id,
                                     error=f"Missing permissions to delete channel #{discord_channel.name} ({discord_channel.id})",
+                                    exc=e
                                 )
                             except discord.HTTPException as e:
                                 await log_error(

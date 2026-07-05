@@ -163,6 +163,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to reset the nickname of {member.name} ({member.id})",
                             details=e.text,
+                            exc=e,
                         )
                     except discord.HTTPException as e:
                         await log_error(
@@ -171,6 +172,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while resetting nickname of {member.name} ({member.id})",
                             details=e.text,
+                            exc=e,
                         )
                 elif punishment.type == BouncerActionType.ADD_ROLE:
                     if not punishment.role_id:
@@ -189,6 +191,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to add the {role.name} ({role.id}) role to {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
                     except discord.HTTPException as e:
                         await log_error(
@@ -197,6 +200,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while adding role {role.name} ({role.id}) to {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
                 elif punishment.type == BouncerActionType.REMOVE_ROLE:
                     if not punishment.role_id:
@@ -215,6 +219,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to remove the {role.name} ({role.id}) role from {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
                     except discord.HTTPException as e:
                         await log_error(
@@ -223,6 +228,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while removing role {role.name} ({role.id}) from {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
                 elif punishment.type == BouncerActionType.TOGGLE_ROLE:
                     if not punishment.role_id:
@@ -244,6 +250,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to toggle the {role.name} ({role.id}) role for {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
                     except discord.HTTPException as e:
                         await log_error(
@@ -252,6 +259,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while toggling role {role.name} ({role.id}) for {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
                 elif punishment.type == BouncerActionType.WARN:
                     await manager.create_case(
@@ -299,6 +307,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to mute {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
                     except discord.HTTPException as e:
                         await log_error(
@@ -307,6 +316,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while muting {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
                 elif (
                     punishment.type == BouncerActionType.KICK
@@ -332,6 +342,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to kick {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
 
                         if case:
@@ -343,6 +354,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while kicking {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
 
                         if case:
@@ -378,6 +390,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Titanium was not allowed to ban {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
 
                         if case:
@@ -389,6 +402,7 @@ class BouncerMonitorCog(commands.Cog):
                             guild_id=member.guild.id,
                             error=f"Unknown Discord error while banning {member.name} ({member.id})",
                             details=e.text,
+                            exc=e
                         )
 
                         if case:
