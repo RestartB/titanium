@@ -11,7 +11,7 @@ CREATE INDEX "ix_fireboard_messages_guild_id" ON "fireboard_messages" ("guild_id
 -- Create index "ix_game_stats_user_id" to table: "game_stats"
 CREATE INDEX "ix_game_stats_user_id" ON "game_stats" ("user_id");
 -- Modify "guild_settings" table
-ALTER TABLE "guild_settings" ADD COLUMN "rep_enabled" boolean NOT NULL DEFAULT true;
+ALTER TABLE "guild_settings" ADD COLUMN "rep_enabled" boolean NOT NULL DEFAULT false;
 -- Drop index "ix_leaderboard_user_stats_guild_id" from table: "leaderboard_user_stats"
 DROP INDEX "ix_leaderboard_user_stats_guild_id";
 -- Create index "ix_leaderboard_user_stats_guild_xp" to table: "leaderboard_user_stats"

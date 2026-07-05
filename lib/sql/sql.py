@@ -176,7 +176,7 @@ class GuildSettings(Base):
         uselist=False,
     )
 
-    rep_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    rep_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     rep_settings: Mapped["GuildRepSettings"] = relationship(
         "GuildRepSettings",
         cascade="all, delete-orphan",
