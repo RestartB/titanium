@@ -5,8 +5,8 @@ permissions:
 on:
   push:
     paths:
-      - '**.py'
-      - 'uv.lock'
+      - "**.py"
+      - "uv.lock"
   pull_request:
   workflow_dispatch:
 
@@ -35,3 +35,5 @@ jobs:
 
       - name: Run Pyright
         uses: jakebailey/pyright-action@v3
+        with:
+          python-path: .venv/bin/python
