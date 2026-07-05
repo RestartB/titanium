@@ -1,9 +1,10 @@
 import re
+from datetime import datetime, time, timezone
 from typing import TYPE_CHECKING
 
 import discord
 from discord import ButtonStyle, Interaction, app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ui import Button, View, button
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
@@ -98,9 +99,35 @@ class RepView(View):
         await interaction.delete_original_response()
 
 
-class RepTestCog(commands.Cog):
+class RepCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
+
+    # Snapshot task
+    @tasks.loop(time=time(hour=0, minute=0, tzinfo=timezone.utc))
+    async def take_daily_snapshots(self) -> None:
+        await self.bot.wait_until_ready()
+
+        guild_ids = []
+        for guild in self.bot.guilds:
+            config = await self.bot.fetch_guild_config(guild.id, create_config=False)
+            if not config or not config.rep_enabled:
+                continue
+            guild_ids.append(guild.id)
+
+        for guild_id in guild_ids:
+            async with get_session() as session:
+                stmt = (
+                    select(UserRep).where(UserRep.guild_id == guild_id).order_by(UserRep.rep.desc())
+                )
+                result = await session.execute(stmt)
+                all_stats = result.scalars().all()
+
+                for i, user_stat in enumerate(all_stats, start=1):
+                    snapshots = user_stat.daily_snapshots or []
+                    snapshots.append(i)
+
+                    user_stat.daily_snapshots = snapshots[-30:]
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -137,6 +164,38 @@ class RepTestCog(commands.Cog):
 
         view = RepView(bot=self.bot, target_member=message.reference.resolved.author)
         await message.reply(view=view, mention_author=False, delete_after=60)
+
+    # Member leave event
+    @commands.Cog.listener()
+    async def on_raw_member_remove(self, payload: discord.RawMemberRemoveEvent) -> None:
+        guild_settings = await self.bot.fetch_guild_config(payload.guild_id)
+        if (
+            not guild_settings
+            or not guild_settings.rep_settings
+            or not guild_settings.rep_settings.delete_leavers
+        ):
+            return
+
+        async with get_session() as session:
+            stmt = (
+                select(UserRep)
+                .where(
+                    UserRep.guild_id == payload.guild_id,
+                    UserRep.user_id == payload.user.id,
+                )
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            user_stats = result.scalar_one_or_none()
+
+            if user_stats:
+                await session.delete(user_stats)
+
+            stmt = select(RepAddHistory).where(
+                RepAddHistory.guild_id == payload.guild_id,
+                RepAddHistory.target_id == payload.user.id,
+            )
+            await session.execute(stmt)
 
     @commands.hybrid_group(
         name="rep", fallback="view", description="Set, add, remove, and view rep for users."
@@ -274,6 +333,7 @@ class RepTestCog(commands.Cog):
             await ctx.reply(embed=pages[0], view=view)
 
     @rep_group.command(name="add", aliases=["plus"])
+    @commands.cooldown(1, 3)
     async def add_rep(self, ctx: commands.Context["TitaniumBot"], user: discord.Member) -> None:
         if not ctx.guild:
             raise ValueError("Guild only command but no guild available")
@@ -284,6 +344,20 @@ class RepTestCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="This user has opted out of optional data collection and cannot use rep features.",
+                colour=discord.Colour.red(),
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        guild_config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not guild_config:
+            raise ValueError("No guild config returned")
+
+        rep_config = guild_config.rep_settings
+        if not rep_config.allow_rep_remove:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Disabled",
+                description="Removing user rep is disabled in this server.",
                 colour=discord.Colour.red(),
             )
             await ctx.reply(embed=embed)
@@ -438,4 +512,4 @@ class RepTestCog(commands.Cog):
 
 
 async def setup(bot: TitaniumBot) -> None:
-    await bot.add_cog(RepTestCog(bot))
+    await bot.add_cog(RepCog(bot))
