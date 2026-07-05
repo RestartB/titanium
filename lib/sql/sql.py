@@ -4,7 +4,7 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import shortuuid
 from discord import Guild, Member, PartialInviteGuild
@@ -27,7 +27,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import Mapped, MappedColumn, declarative_base, relationship, selectinload
+from sqlalchemy.orm import (
+    Mapped,
+    MappedColumn,
+    configure_mappers,
+    declarative_base,
+    relationship,
+    selectinload,
+)
 
 from lib.enums.automod import (
     AutomodActionType,
@@ -1133,6 +1140,28 @@ class SpotifyToken(Base):
         DateTime(timezone=True), server_default=text("NOW()")
     )
     expires_in: Mapped[int] = MappedColumn(Integer)
+
+
+def get_guild_settings_child_tables() -> tuple[tuple[type[Any], str], ...]:
+    configure_mappers()
+
+    child_tables: list[tuple[type[Any], str]] = []
+    guild_settings_table = GuildSettings.__table__
+
+    for mapper in Base.registry.mappers:
+        model = mapper.class_
+
+        if model is GuildSettings or len(mapper.primary_key) != 1:
+            continue
+
+        primary_key = mapper.primary_key[0]
+        if any(
+            foreign_key.column.table is guild_settings_table
+            for foreign_key in primary_key.foreign_keys
+        ):
+            child_tables.append((model, primary_key.key))
+
+    return tuple(sorted(child_tables, key=lambda table: table[0].__tablename__))
 
 
 load_dotenv()
