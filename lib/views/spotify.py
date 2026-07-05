@@ -199,7 +199,7 @@ class SongLyricSelection(Select):
             max_values=1,
         )
 
-    async def callback(self, interaction: Interaction):
+    async def callback(self, interaction: Interaction["TitaniumBot"]):
         await interaction.response.defer(ephemeral=True)
 
         if self.view:

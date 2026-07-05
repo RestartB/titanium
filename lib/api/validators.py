@@ -28,6 +28,7 @@ class ModuleModel(BaseModel):
     confessions: bool
     leaderboard: bool
     tags: bool
+    rep: bool
 
 
 class SettingsModel(BaseModel):
@@ -484,3 +485,15 @@ class TagModel(BaseModel):
             raise ValueError("User must be a numeric string ID")
 
         return v
+
+
+class RepConfigModel(BaseModel):
+    rep_hint: bool
+    allow_rep_remove: bool
+    delete_leavers: bool
+
+    web_leaderboard_enabled: bool
+    web_login_required: bool
+
+    ignored_roles: list[str] = Field(default_factory=list, max_length=100)
+    ignored_channels: list[str] = Field(default_factory=list, max_length=100)

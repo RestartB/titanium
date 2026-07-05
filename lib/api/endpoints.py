@@ -300,3 +300,34 @@ def tags_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Respo
             "prefix_fallback": config.tag_settings.prefix_fallback,
         }
     )
+
+
+def rep_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
+    config = bot.guild_configs[guild.id]
+
+    if not config.rep_settings:
+        return web.json_response(
+            {
+                "rep_hint": True,
+                "allow_rep_remove": True,
+                "delete_leavers": False,
+                "web_leaderboard_enabled": True,
+                "web_login_required": True,
+                "ignored_roles": [],
+                "ignored_channels": [],
+            }
+        )
+
+    rep_settings = config.rep_settings
+
+    return web.json_response(
+        {
+            "rep_hint": rep_settings.rep_hint,
+            "allow_rep_remove": rep_settings.allow_rep_remove,
+            "delete_leavers": rep_settings.delete_leavers,
+            "web_leaderboard_enabled": rep_settings.web_leaderboard_enabled,
+            "web_login_required": rep_settings.web_login_required,
+            "ignored_roles": [str(role_id) for role_id in rep_settings.ignored_roles],
+            "ignored_channels": [str(channel_id) for channel_id in rep_settings.ignored_channels],
+        }
+    )
