@@ -1647,6 +1647,14 @@ class APICog(commands.Cog):
                 if not db_config:
                     db_config = GuildAutomodSettings(guild_id=guild.id)
 
+                db_config.show_outcome_message = validated_config.show_outcome_message
+                db_config.global_ignored_channels = [
+                    int(channel) for channel in validated_config.global_ignored_channels
+                ]
+                db_config.global_ignored_roles = [
+                    int(role) for role in validated_config.global_ignored_roles
+                ]
+
                 await session.execute(delete(AutomodRule).where(AutomodRule.guild_id == guild_id))
 
                 for rule in validated_config.rules:

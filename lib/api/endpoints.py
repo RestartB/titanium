@@ -55,7 +55,14 @@ def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
     config = bot.guild_configs[guild.id]
 
     if not config.automod_settings:
-        return web.json_response({"rules": [], "show_outcome_message": True})
+        return web.json_response(
+            {
+                "rules": [],
+                "show_outcome_message": True,
+                "global_ignored_roles": [],
+                "global_ignored_channels": [],
+            }
+        )
 
     rules = config.automod_settings.rules.copy()
     rules.sort(key=lambda r: r.order)
@@ -103,6 +110,8 @@ def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                 for rule in rules
             ],
             "show_outcome_message": config.automod_settings.show_outcome_message,
+            "global_ignored_roles": config.automod_settings.global_ignored_roles,
+            "global_ignored_channels": config.automod_settings.global_ignored_channels,
         }
     )
 

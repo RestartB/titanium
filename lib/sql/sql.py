@@ -335,6 +335,13 @@ class GuildAutomodSettings(Base):
     )
     show_outcome_message: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
 
+    global_ignored_channels: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    global_ignored_roles: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+
 
 class AutomodRule(Base):
     __tablename__ = "automod_rules"

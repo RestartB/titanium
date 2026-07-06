@@ -254,6 +254,10 @@ class AutomodConfigModel(BaseModel):
     show_outcome_message: bool
 
 
+    global_ignored_roles: list[str] = Field(default_factory=list, max_length=100)
+    global_ignored_channels: list[str] = Field(default_factory=list, max_length=100)
+
+
 class BouncerCriterionModel(BaseModel):
     type: BouncerCriteriaType
 
@@ -387,8 +391,8 @@ class FireboardBoardModel(BaseModel):
     ignore_self_reactions: bool
     send_notifications: bool
 
-    ignored_roles: list[str] = Field(default_factory=list)
-    ignored_channels: list[str] = Field(default_factory=list)
+    ignored_roles: list[str] = Field(default_factory=list, max_length=100)
+    ignored_channels: list[str] = Field(default_factory=list, max_length=100)
 
     @model_validator(mode="after")
     def validate_reaction(self):
@@ -407,8 +411,8 @@ class FireboardBoardModel(BaseModel):
 
 
 class FireboardConfigModel(BaseModel):
-    global_ignored_roles: list[str] = Field(default_factory=list)
-    global_ignored_channels: list[str] = Field(default_factory=list)
+    global_ignored_roles: list[str] = Field(default_factory=list, max_length=100)
+    global_ignored_channels: list[str] = Field(default_factory=list, max_length=100)
     boards: list[FireboardBoardModel] = Field(default_factory=list)
 
 

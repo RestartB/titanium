@@ -64,6 +64,7 @@ class AutomodMonitorCog(commands.Cog):
                 or not isinstance(message.channel, discord.abc.GuildChannel)
                 or not self.bot.user
                 or message.author.id == self.bot.user.id
+                or message.author.guild_permissions.administrator
             ):
                 self.logger.debug("Automod initial checks failed, skipping message")
                 return
@@ -73,8 +74,16 @@ class AutomodMonitorCog(commands.Cog):
                 return
 
             automod_config = config.automod_settings
-            current_state: list[AutomodMessage] = []
 
+            if message.channel.id in automod_config.global_ignored_channels:
+                self.logger.debug("Message in ignored channel, skipping message")
+                return
+
+            if any(role.id in automod_config.global_ignored_roles for role in message.author.roles):
+                self.logger.debug("Message sent by ignored role, skipping message")
+                return
+
+            current_state: list[AutomodMessage] = []
             automod_message = AutomodMessage(
                 user_id=message.author.id,
                 message_id=message.id,
@@ -702,7 +711,7 @@ class AutomodMonitorCog(commands.Cog):
                         guild_id=message.guild.id,
                         error=f"Titanium did not have permissions to send automod outcome message in #{message.channel.name}` (`{message.channel.id}`)",
                     )
-                elif embeds:
+                elif embeds and automod_config.show_outcome_message:
                     try:
                         embed_chunks = discord.utils.as_chunks(embeds, 10)
                         for chunk in embed_chunks:
