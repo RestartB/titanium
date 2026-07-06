@@ -1,3 +1,4 @@
+import logging
 import re
 from datetime import time, timezone
 from typing import TYPE_CHECKING
@@ -9,6 +10,7 @@ from discord.ui import Button, View, button
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
+from lib.helpers.cache import get_or_fetch_member
 from lib.sql.sql import RepAddHistory, UserRep, get_session
 from lib.views.pagination import RepReloadPageView
 
@@ -51,6 +53,7 @@ class RepView(View):
                     user_id=interaction.user.id,
                     target_id=self.target_member.id,
                     guild_id=interaction.guild_id,
+                    time=interaction.created_at,
                 )
             )
 
@@ -102,6 +105,7 @@ class RepView(View):
 class RepCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
+        self.logger = logging.getLogger("rep")
 
     # Snapshot task
     @tasks.loop(time=time(hour=0, minute=0, tzinfo=timezone.utc))
@@ -140,6 +144,7 @@ class RepCog(commands.Cog):
             or message.reference.type != discord.MessageReferenceType.reply
             or message.author.id in self.bot.opt_out
         ):
+            self.logger.debug("ignoring message")
             return
 
         # base settings
@@ -150,20 +155,33 @@ class RepCog(commands.Cog):
             or not guild_config.rep_settings
             or not guild_config.rep_settings.rep_hint
         ):
+            self.logger.debug(f"rep disabled in {message.guild.id}")
             return
 
         matches = []
         for check_word in ["thank you", "thx", "thanks"]:
             pattern = r"\b" + re.escape(check_word) + r"\b"
-            matches.extend(re.findall(pattern, message.reference.resolved.content.lower()))
+            matches.extend(re.findall(pattern, message.content, flags=re.IGNORECASE))
 
         if not matches:
+            self.logger.debug(f"no matches ({message.content})")
             return
 
-        if isinstance(message.reference.resolved.author, discord.User):
+        referenced_message = message.reference.resolved
+        referenced_author = referenced_message.author
+        if isinstance(referenced_author, discord.User):
+            target_member = await get_or_fetch_member(self.bot, message.guild, referenced_author.id)
+            if not target_member:
+                self.logger.debug(f"couldn't get user: {referenced_author.id}")
+                return
+        else:
+            target_member = referenced_author
+
+        if target_member.id in self.bot.opt_out:
+            self.logger.debug(f"target has opted out: {target_member.id}")
             return
 
-        view = RepView(bot=self.bot, target_member=message.reference.resolved.author)
+        view = RepView(bot=self.bot, target_member=target_member)
         await message.reply(view=view, mention_author=False, delete_after=60)
 
     # Member leave event
@@ -279,7 +297,11 @@ class RepCog(commands.Cog):
             await ctx.reply(embed=embed)
 
     # Leaderboard command
-    @rep_group.command(name="leaderboard", aliases=["lb", "top"])
+    @rep_group.command(
+        name="leaderboard",
+        aliases=["lb", "top"],
+        description="View the rep leaderboard for this server.",
+    )
     @commands.cooldown(1, 5)
     async def rep_leaderboard(self, ctx: commands.Context["TitaniumBot"]):
         if not ctx.guild:
@@ -300,7 +322,7 @@ class RepCog(commands.Cog):
             if not top_users:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No Data",
-                    description="No users have recorded XP or levels yet.",
+                    description="No users have any rep yet.",
                     colour=discord.Colour.red(),
                 )
                 await ctx.reply(embed=embed)
@@ -311,7 +333,7 @@ class RepCog(commands.Cog):
                     title="Rep Leaderboard",
                     description="\n".join(
                         [
-                            f"{x * 15 + i}. <@{entry.user_id}> - `{entry.rep:,}`"
+                            f"{i * 15 + x}. <@{entry.user_id}> - `{entry.rep:,}`"
                             for x, entry in enumerate(chunk, start=1)
                         ]
                     ),
@@ -320,7 +342,7 @@ class RepCog(commands.Cog):
                     name=ctx.guild.name,
                     icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
                 )
-                for i, chunk in enumerate(discord.utils.as_chunks(top_users, 15), start=0)
+                for i, chunk in enumerate(discord.utils.as_chunks(top_users, 15))
             ]
 
             pages[0].set_footer(
@@ -333,7 +355,7 @@ class RepCog(commands.Cog):
             view = RepReloadPageView(embeds=pages, timeout=240, title="Rep Leaderboard")
             await ctx.reply(embed=pages[0], view=view)
 
-    @rep_group.command(name="add", aliases=["plus"])
+    @rep_group.command(name="add", aliases=["plus"], description="Give a rep point to a user.")
     @commands.cooldown(1, 3)
     async def add_rep(self, ctx: commands.Context["TitaniumBot"], user: discord.Member) -> None:
         if not ctx.guild:
@@ -354,11 +376,10 @@ class RepCog(commands.Cog):
         if not guild_config or not guild_config.rep_settings:
             raise ValueError("No guild config returned")
 
-        rep_config = guild_config.rep_settings
-        if not rep_config.allow_rep_remove:
+        if not guild_config.rep_enabled:
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Disabled",
-                description="Removing user rep is disabled in this server.",
+                description="The rep system is disabled in this server.",
                 colour=discord.Colour.red(),
             )
             await ctx.reply(embed=embed)
@@ -390,12 +411,16 @@ class RepCog(commands.Cog):
         await ctx.reply(
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
-                description=f"**1 rep** given to {user.mention} (`{rep.rep}` rep total)",
+                description=f"**1 rep** given to {user.mention} (`{rep.rep:,}` rep total)",
                 colour=discord.Colour.green(),
             ),
         )
 
-    @rep_group.command(name="remove", aliases=["minus"])
+    @rep_group.command(
+        name="remove",
+        aliases=["minus"],
+        description="Take away rep points that you gave to a user.",
+    )
     @commands.cooldown(1, 3)
     async def remove_rep(
         self, ctx: commands.Context["TitaniumBot"], user: discord.Member, amount: int
@@ -409,6 +434,19 @@ class RepCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="This user has opted out of optional data collection and cannot use rep features.",
+                colour=discord.Colour.red(),
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        guild_config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not guild_config or not guild_config.rep_settings:
+            raise ValueError("No guild config returned")
+
+        if not guild_config.rep_settings.allow_rep_remove:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Disabled",
+                description="Removing user rep is disabled in this server.",
                 colour=discord.Colour.red(),
             )
             await ctx.reply(embed=embed)
@@ -440,13 +478,14 @@ class RepCog(commands.Cog):
                 await ctx.reply(
                     embed=discord.Embed(
                         title=f"{self.bot.error_emoji} Too Much Rep",
-                        description=f"You have only given this user `{len(history)}` rep, so you can't remove `{amount - len(history):,}` extra rep.",
+                        description=f"You have only given this user `{len(history):,}` rep, so you can't remove `{amount - len(history):,}` extra rep.",
                         colour=discord.Colour.red(),
                     ),
                 )
                 return
 
-            await session.delete(history[0])
+            for history_item in history:
+                await session.delete(history_item)
 
             stmt = insert(UserRep).values(
                 guild_id=ctx.guild.id,
@@ -465,12 +504,12 @@ class RepCog(commands.Cog):
         await ctx.reply(
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
-                description=f"**1 rep** removed from {user.mention} (`{rep.rep}` rep total)",
+                description=f"**{amount:,} rep** removed from {user.mention} (`{rep.rep:,}` rep total)",
                 colour=discord.Colour.green(),
             ),
         )
 
-    @rep_group.command(name="set")
+    @rep_group.command(name="set", description="Manually set the rep of a user.")
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3)
     async def set_rep(

@@ -270,7 +270,7 @@ class RepReloadPageView(PaginationView):
                         title="Rep Leaderboard",
                         description="\n".join(
                             [
-                                f"{x * 15 + i}. <@{entry.user_id}> - `{entry.rep:,}`"
+                                f"{i * 15 + x}. <@{entry.user_id}> - `{entry.rep:,}`"
                                 for x, entry in enumerate(chunk, start=1)
                             ]
                         ),
@@ -280,7 +280,7 @@ class RepReloadPageView(PaginationView):
                         icon_url=interaction.guild.icon.url if interaction.guild.icon else None,
                     )
                 ]
-                for i, chunk in enumerate(discord.utils.as_chunks(top_users, 15), start=0)
+                for i, chunk in enumerate(discord.utils.as_chunks(top_users, 15))
             ]
 
         self.current_page = 0

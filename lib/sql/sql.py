@@ -992,7 +992,9 @@ class RepAddHistory(Base):
     target_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
 
-    time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=False)
+    time: Mapped[datetime] = MappedColumn(
+        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+    )
 
 
 class GameStat(Base):
