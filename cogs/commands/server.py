@@ -251,10 +251,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            if len(pages) > 1:
-                await ctx.reply(embed=pages[0], view=view)
-            else:
-                await ctx.reply(embed=pages[0])
+            await ctx.reply(embed=pages[0], view=view)
 
     # Word leaderboard command
     @server_group.command(
@@ -331,10 +328,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            if len(pages) > 1:
-                await ctx.reply(embed=pages[0], view=view)
-            else:
-                await ctx.reply(embed=pages[0])
+            await ctx.reply(embed=pages[0], view=view)
 
     # Attachment leaderboard command
     @server_group.command(
@@ -412,10 +406,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            if len(pages) > 1:
-                await ctx.reply(embed=pages[0], view=view)
-            else:
-                await ctx.reply(embed=pages[0])
+            await ctx.reply(embed=pages[0], view=view)
 
     # VC leaderboard command
     @server_group.command(
@@ -494,10 +485,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            if len(pages) > 1:
-                await ctx.reply(embed=pages[0], view=view)
-            else:
-                await ctx.reply(embed=pages[0])
+            await ctx.reply(embed=pages[0], view=view)
 
     # Attachment leaderboard command
     @server_group.command(
@@ -575,10 +563,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            if len(pages) > 1:
-                await ctx.reply(embed=pages[0], view=view)
-            else:
-                await ctx.reply(embed=pages[0])
+            await ctx.reply(embed=pages[0], view=view)
 
     # First Message command
     @server_group.command(

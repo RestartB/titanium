@@ -196,6 +196,7 @@ class GuildLogger:
                     guild_id=self.guild.id,
                     error=f"Missing permissions to create webhook in channel #{channel.name} ({channel.id})",
                     details=e.text,
+                    exc=e
                 )
 
                 return None
@@ -206,6 +207,7 @@ class GuildLogger:
                     guild_id=self.guild.id,
                     error=f"Unknown Discord error while creating webhook in channel #{channel.name} ({channel.id})",
                     details=e.text,
+                    exc=e
                 )
 
                 return None
@@ -262,7 +264,7 @@ class GuildLogger:
                     )
 
             return
-        except discord.NotFound:
+        except discord.NotFound as e:
             async with get_session() as session:
                 await session.execute(
                     delete(AvailableWebhook).where(
@@ -278,6 +280,7 @@ class GuildLogger:
                 module="Logging",
                 guild_id=self.guild.id if self.guild else None,
                 error="Failed to find logging webhook.",
+                exc=e
             )
         except discord.HTTPException as e:
             await log_error(
@@ -286,6 +289,7 @@ class GuildLogger:
                 guild_id=self.guild.id if self.guild else None,
                 error="Failed to send logging message.",
                 details=e.text,
+                exc=e
             )
         except Exception as e:
             await log_error(

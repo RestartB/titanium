@@ -22,7 +22,6 @@ class AutomodCriteriaType(StrEnum):
     WORD_LIST = "word_list"
     MALICIOUS_LINK = "malicious_link"
     PHISHING_LINK = "phishing_link"
-    DISCORD_DICE_ROLL = "discord_dice_roll"
     MESSAGE_SPAM = "message_spam"
     MENTION_SPAM = "mention_spam"
     WORD_SPAM = "word_spam"
@@ -30,6 +29,7 @@ class AutomodCriteriaType(StrEnum):
     LINK_SPAM = "link_spam"
     ATTACHMENT_SPAM = "attachment_spam"
     EMOJI_SPAM = "emoji_spam"
+    DISCORD_DICE_ROLL = "discord_dice_roll"
 
 
 class AutomodActionType(StrEnum):

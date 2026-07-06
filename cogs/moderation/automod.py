@@ -169,6 +169,7 @@ class AutomodMonitorCog(commands.Cog):
             if (
                 not message.guild
                 or not config
+                or not config.moderation_settings
                 or not config.automod_settings
                 or not message.author
                 or not isinstance(message.author, discord.Member)

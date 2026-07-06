@@ -96,6 +96,7 @@ class ServerCountersCog(commands.Cog):
                     guild_id=guild.id,
                     error=f"Titanium was not allowed to update counter channel {discord_channel.name} ({discord_channel.id})",
                     details=e.text,
+                    exc=e
                 )
             except discord.HTTPException as e:
                 await log_error(
@@ -104,6 +105,7 @@ class ServerCountersCog(commands.Cog):
                     guild_id=guild.id,
                     error=f"Unknown Discord error while updating counter channel {discord_channel.name} ({discord_channel.id})",
                     details=e.text,
+                    exc=e
                 )
 
 

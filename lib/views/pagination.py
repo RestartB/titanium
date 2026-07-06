@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING, Sequence
 
+import discord
 from discord import AllowedMentions, ButtonStyle, Colour, Embed, Interaction
 from discord.ui import ActionRow, Button, Container, LayoutView, View, button
 from sqlalchemy import select
 from sqlalchemy.orm import InstrumentedAttribute
 
 from lib.embeds.leaderboard import generate_lb_embeds
-from lib.sql.sql import LeaderboardUserStats, get_session
+from lib.sql.sql import LeaderboardUserStats, UserRep, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -201,6 +202,85 @@ class LeaderboardReloadPageView(PaginationView):
                     attr=self.reload_type,
                     show_xp_label=self.reload_type == "xp",
                 )
+            ]
+
+        self.current_page = 0
+        self.page_count.label = f"1/{len(self.embeds)}"
+
+        self.first_button.disabled = True
+        self.prev_button.disabled = True
+        self.next_button.disabled = False
+        self.last_button.disabled = False
+
+        await self._set_footer(interaction)
+        await interaction.edit_original_response(
+            embeds=self.embeds[self.current_page],
+            view=self,
+        )
+
+
+class RepReloadPageView(PaginationView):
+    def __init__(
+        self,
+        embeds: list[Embed] | list[list[Embed]],
+        timeout: float,
+        title: str,
+        page_offset: int = 0,
+        footer_embed: int = -1,
+    ):
+        super().__init__(embeds, timeout, [], page_offset, footer_embed)
+        self.title = title
+
+    # Reload
+    @button(
+        label="Reload Data",
+        emoji="🔃",
+        style=ButtonStyle.secondary,
+        custom_id="reload",
+        row=1,
+    )
+    async def reload_button(self, interaction: Interaction["TitaniumBot"], button: Button):
+        await interaction.response.defer()
+
+        if not interaction.guild:
+            return
+
+        async with get_session() as session:
+            stmt = (
+                select(UserRep)
+                .where(UserRep.guild_id == interaction.guild.id)
+                .order_by(UserRep.rep.desc())
+                .limit(1000)
+            )
+            result = await session.execute(stmt)
+            top_users = result.scalars().all()
+
+            if not top_users:
+                embed = Embed(
+                    title=f"{interaction.client.error_emoji} No Data",
+                    description="No users have any rep yet.",
+                    colour=Colour.red(),
+                )
+                await interaction.edit_original_response(embed=embed, view=self)
+                return
+
+            self.embeds = [
+                [
+                    discord.Embed(
+                        title="Rep Leaderboard",
+                        description="\n".join(
+                            [
+                                f"{i * 15 + x}. <@{entry.user_id}> - `{entry.rep:,}`"
+                                for x, entry in enumerate(chunk, start=1)
+                            ]
+                        ),
+                        colour=discord.Colour.light_grey(),
+                    ).set_author(
+                        name=interaction.guild.name,
+                        icon_url=interaction.guild.icon.url if interaction.guild.icon else None,
+                    )
+                ]
+                for i, chunk in enumerate(discord.utils.as_chunks(top_users, 15))
             ]
 
         self.current_page = 0

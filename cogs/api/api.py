@@ -20,6 +20,7 @@ from lib.api.endpoints import (
     leaderboard_info,
     logging_info,
     moderation_info,
+    rep_info,
     server_counters_info,
     tags_info,
 )
@@ -34,6 +35,7 @@ from lib.api.validators import (
     LeaderboardConfigModel,
     LoggingConfigModel,
     ModerationConfigModel,
+    RepConfigModel,
     ServerCountersConfigModel,
     TagModel,
     TagsConfigModel,
@@ -56,6 +58,7 @@ from lib.sql.sql import (
     GuildLeaderboardSettings,
     GuildLoggingSettings,
     GuildModerationSettings,
+    GuildRepSettings,
     GuildServerCounterSettings,
     GuildSettings,
     GuildTagSettings,
@@ -65,6 +68,7 @@ from lib.sql.sql import (
     ModCaseComment,
     ServerCounterChannel,
     Tag,
+    UserRep,
     get_session,
 )
 
@@ -159,6 +163,7 @@ class APICog(commands.Cog):
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
         self.app.router.add_get("/guild/{guild_id}/errors", self.guild_errors)
         self.app.router.add_get("/guild/{guild_id}/leaderboard", self.guild_leaderboard)
+        self.app.router.add_get("/guild/{guild_id}/rep", self.guild_rep_leaderboard)
 
         self.app.router.add_get("/guild/{guild_id}/cases", self.guild_cases)
         self.app.router.add_get("/guild/{guild_id}/cases/{case_id}", self.guild_case)
@@ -921,7 +926,7 @@ class APICog(commands.Cog):
             return web.json_response({"error": "guild not found"}, status=404)
 
         config = await self.bot.fetch_guild_config(guild.id)
-        if not config:
+        if not config or not config.tag_settings:
             return web.json_response({"error": "failed to get guild config"}, status=500)
 
         if not config.tags_enabled:
@@ -1143,6 +1148,95 @@ class APICog(commands.Cog):
             }
         )
 
+    async def guild_rep_leaderboard(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        # Get permissions
+        config = await self.bot.fetch_guild_config(guild.id)
+        if not config:
+            return web.json_response(
+                {"error": "Failed to retrieve server configuration"},
+                status=500,
+            )
+
+        rep_config = config.rep_settings
+
+        if not rep_config or not config.rep_enabled:
+            return web.json_response({"error": "rep module disabled"}, status=403)
+
+        limit = max(min(int(request.query.get("limit", 25)), 100), 1)
+        offset = max(int(request.query.get("offset", 0)), 0)
+
+        async with get_session() as session:
+            # Get total count
+            total_result = await session.execute(
+                select(func.count()).select_from(UserRep).where(UserRep.guild_id == guild.id)
+            )
+            total_count = total_result.scalar() or 0
+
+            # no need to get leaderboard entries if we know there will be none
+            if offset >= total_count or total_count == 0:
+                return web.json_response(
+                    {
+                        "total_count": total_count,
+                        "leaderboard": [],
+                    }
+                )
+
+            result = await session.execute(
+                select(UserRep)
+                .where(UserRep.guild_id == guild.id)
+                .order_by(UserRep.rep.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+            leaderboard = result.scalars().all()
+
+        member_cache: dict[int, discord.Member | discord.User | None] = {}
+        missing_ids: list[int] = []
+
+        for entry in leaderboard:
+            uid = entry.user_id
+            user = guild.get_member(uid) or self.bot.get_user(uid)
+            if user:
+                member_cache[uid] = user
+            else:
+                missing_ids.append(uid)
+
+        if missing_ids:
+            queried = await guild.query_members(limit=100, user_ids=missing_ids)
+            for member in queried:
+                member_cache[member.id] = member
+
+        return web.json_response(
+            {
+                "total_count": total_count,
+                "leaderboard": [
+                    {
+                        "user_id": str(user_stat.user_id),
+                        "user_name": mem.name
+                        if (mem := member_cache.get(user_stat.user_id))
+                        else None,
+                        "user_display": mem.display_name
+                        if (mem := member_cache.get(user_stat.user_id))
+                        else None,
+                        "user_pfp": mem.display_avatar.url
+                        if (mem := member_cache.get(user_stat.user_id))
+                        else None,
+                        "rep": str(user_stat.rep),
+                        "historical": user_stat.daily_snapshots,
+                    }
+                    for user_stat in leaderboard
+                ],
+            }
+        )
+
     async def guild_perms(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
         if not guild_id or not guild_id.isdigit():
@@ -1311,6 +1405,7 @@ class APICog(commands.Cog):
                     "confessions": config.confessions_enabled,
                     "leaderboard": config.leaderboard_enabled,
                     "tags": config.tags_enabled,
+                    "rep": config.rep_enabled,
                 },
                 "settings": {
                     "allow_prefix": config.allow_prefix,
@@ -1425,6 +1520,8 @@ class APICog(commands.Cog):
             return leaderboard_info(self.bot, request, guild)
         elif module_name == "tags":
             return tags_info(self.bot, request, guild)
+        elif module_name == "rep":
+            return rep_info(self.bot, request, guild)
         else:
             return web.json_response({"error": "Module not found"}, status=404)
 
@@ -1476,6 +1573,8 @@ class APICog(commands.Cog):
                 validated_config = LeaderboardConfigModel(**data)
             elif module_name == "tags":
                 validated_config = TagsConfigModel(**data)
+            elif module_name == "rep":
+                validated_config = RepConfigModel(**data)
         except ValidationError as e:
             return web.json_response(self.__format_validation_error(e), status=400)
         except ValueError as e:
@@ -1800,12 +1899,13 @@ class APICog(commands.Cog):
                                 count_type=new_channel.type,
                             )
                             session.add(channel)
-                        except discord.Forbidden:
+                        except discord.Forbidden as e:
                             await log_error(
                                 bot=self.bot,
                                 module="Server Counters",
                                 guild_id=guild.id,
                                 error="Missing permissions to create server counter channel",
+                                exc=e,
                             )
                         except discord.HTTPException as e:
                             await log_error(
@@ -1851,12 +1951,13 @@ class APICog(commands.Cog):
                                     reason="Creating server counter channel",
                                 )
                                 channel_ids.append(discord_channel.id)
-                            except discord.Forbidden:
+                            except discord.Forbidden as e:
                                 await log_error(
                                     bot=self.bot,
                                     module="Server Counters",
                                     guild_id=guild.id,
                                     error="Missing permissions to create server counter channel",
+                                    exc=e,
                                 )
                                 continue
                             except discord.HTTPException as e:
@@ -1899,12 +2000,13 @@ class APICog(commands.Cog):
                                 await discord_channel.delete(
                                     reason="Removing server counter channel"
                                 )
-                            except discord.Forbidden:
+                            except discord.Forbidden as e:
                                 await log_error(
                                     bot=self.bot,
                                     module="Server Counters",
                                     guild_id=guild.id,
                                     error=f"Missing permissions to delete channel #{discord_channel.name} ({discord_channel.id})",
+                                    exc=e,
                                 )
                             except discord.HTTPException as e:
                                 await log_error(
@@ -2024,6 +2126,25 @@ class APICog(commands.Cog):
 
                 db_config.allow_user_tags = validated_config.allow_user_tags
                 db_config.prefix_fallback = validated_config.prefix_fallback
+
+                session.add(db_config)
+        elif module_name == "rep" and isinstance(validated_config, RepConfigModel):
+            async with get_session() as session:
+                db_config = await session.get(GuildRepSettings, guild.id)
+                if not db_config:
+                    db_config = GuildRepSettings(guild_id=guild.id)
+
+                db_config.rep_hint = validated_config.rep_hint
+                db_config.allow_rep_remove = validated_config.allow_rep_remove
+                db_config.delete_leavers = validated_config.delete_leavers
+
+                db_config.web_leaderboard_enabled = validated_config.web_leaderboard_enabled
+                db_config.web_login_required = validated_config.web_login_required
+
+                db_config.ignored_channels = [
+                    int(channel) for channel in validated_config.ignored_channels
+                ]
+                db_config.ignored_roles = [int(role) for role in validated_config.ignored_roles]
 
                 session.add(db_config)
         else:

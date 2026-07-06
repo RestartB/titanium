@@ -35,7 +35,7 @@ async def send_dm(
             embed=embed,
             view=View().add_item(jump_button(source_guild)),
         )
-    except discord.Forbidden:
+    except discord.Forbidden as e:
         dm_success = False
         dm_error = "User has DMs disabled."
 
@@ -45,6 +45,7 @@ async def send_dm(
             guild_id=source_guild.id,
             error=f"Can't send DM to @{user.name} ({user.id}) (DMs disabled)",
             send_webhook=False,
+            exc=e,
         )
     except discord.HTTPException as e:
         dm_success = False
@@ -56,6 +57,7 @@ async def send_dm(
             guild_id=source_guild.id,
             error=f"Unknown Discord error while DMing @{user.name} ({user.id})",
             details=e.text,
+            exc=e,
         )
     except Exception as e:
         dm_success = False

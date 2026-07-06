@@ -592,15 +592,6 @@ class LeaderboardCog(commands.Cog):
 
         await ctx.defer()
 
-        if ctx.author.id in self.bot.opt_out:
-            embed = discord.Embed(
-                title=f"{self.bot.error_emoji} Opted Out",
-                description="You have opted out of optional data collection and cannot use leaderboard features.",
-                colour=discord.Colour.red(),
-            )
-            await ctx.reply(embed=embed)
-            return
-
         guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
         if (
             not guild_settings
@@ -658,10 +649,7 @@ class LeaderboardCog(commands.Cog):
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            if len(pages) > 1:
-                await ctx.reply(embed=pages[0], view=view)
-            else:
-                await ctx.reply(embed=pages[0])
+            await ctx.reply(embed=pages[0], view=view)
 
     # Level command
     @commands.hybrid_command(name="level", aliases=["lvl"])

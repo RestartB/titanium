@@ -30,6 +30,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pyright>=1.1.411",
     "ruff>=0.15.20",
 ]
 
@@ -41,6 +42,8 @@ extend-select = ["I"]
 
 [tool.pyright]
 typeCheckingMode = "basic"
+venvPath = "."
+venv = ".venv"
 
 [tool.basedpyright]
 typeCheckingMode = "basic"

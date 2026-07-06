@@ -45,21 +45,12 @@ load_dotenv()
 from lib.sql.sql import (  # noqa: E402
     AvailableWebhook,
     FireboardMessage,
-    GuildAutomodSettings,
-    GuildBouncerSettings,
-    GuildConfessionsSettings,
-    GuildFireboardSettings,
-    GuildLeaderboardSettings,
-    GuildLimits,
-    GuildLoggingSettings,
-    GuildModerationSettings,
-    GuildServerCounterSettings,
     GuildSettings,
-    GuildTagSettings,
     LeaderboardUserStats,
     ModCase,
     OptOutIDs,
     ScheduledTask,
+    get_guild_settings_child_tables,
     get_session,
     init_db,
 )
@@ -143,6 +134,10 @@ class TitaniumBot(commands.Bot):
         cache_logger.info("Refreshing all guild config caches...")
 
         async with get_session() as session:
+            guild_ids = (await session.execute(select(GuildSettings.guild_id))).scalars().all()
+            for guild_id in guild_ids:
+                await self._ensure_guild_settings_child_tables(session, guild_id)
+
             # Settings
             stmt = select(GuildSettings).options(selectinload("*"))
             result = await session.execute(stmt)
@@ -176,6 +171,12 @@ class TitaniumBot(commands.Bot):
         cache_logger.debug(f"Refreshing guild config cache for guild {guild_id}...")
 
         async with get_session() as session:
+            guild_exists = await session.scalar(
+                select(GuildSettings.guild_id).where(GuildSettings.guild_id == guild_id)
+            )
+            if guild_exists:
+                await self._ensure_guild_settings_child_tables(session, guild_id)
+
             # Settings
             stmt = (
                 select(GuildSettings)
@@ -223,6 +224,12 @@ class TitaniumBot(commands.Bot):
         self.fireboard_messages.pop(guild_id, None)
         self.punishing.pop(guild_id, None)
 
+    async def _ensure_guild_settings_child_tables(self, session, guild_id: int) -> None:
+        for model, primary_key in get_guild_settings_child_tables():
+            stmt = insert(model).values({primary_key: guild_id})
+            stmt = stmt.on_conflict_do_nothing(index_elements=[primary_key])
+            await session.execute(stmt)
+
     async def init_guild(self, guild_id: int, refresh: bool = True) -> GuildSettings | None:
         db_logger.debug(f"Initializing guild {guild_id}...")
 
@@ -231,45 +238,7 @@ class TitaniumBot(commands.Bot):
             stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
             await session.execute(stmt)
 
-            stmt = insert(GuildModerationSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildAutomodSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildBouncerSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildLoggingSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildFireboardSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildServerCounterSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildLeaderboardSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildConfessionsSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildTagSettings).values(guild_id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["guild_id"])
-            await session.execute(stmt)
-
-            stmt = insert(GuildLimits).values(id=guild_id)
-            stmt = stmt.on_conflict_do_nothing(index_elements=["id"])
-            await session.execute(stmt)
+            await self._ensure_guild_settings_child_tables(session, guild_id)
 
         if refresh:
             await self.refresh_guild_config_cache(guild_id)

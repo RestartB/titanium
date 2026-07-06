@@ -845,6 +845,10 @@ class ModulesView(LayoutView):
             TextDisplay("### Tags\nSend server wide quick responses with key words."),
             accessory=FeatureToggleButton(bot, settings, "tags_enabled"),
         )
+        rep_section = Section(
+            TextDisplay("### Rep\nThank members by giving them rep points."),
+            accessory=FeatureToggleButton(bot, settings, "rep_enabled"),
+        )
 
         container = Container(
             top_section,
@@ -858,6 +862,7 @@ class ModulesView(LayoutView):
             server_counters_section,
             confessions_section,
             tags_section,
+            rep_section,
             accent_colour=Colour.light_grey(),
         )
 

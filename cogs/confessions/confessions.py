@@ -107,7 +107,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             return
 
         guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
-        if not guild_settings:
+        if not guild_settings or not guild_settings.confessions_settings:
             raise RuntimeError("No config returned")
 
         channel = interaction.channel
@@ -270,7 +270,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             return
 
         guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
-        if not guild_settings:
+        if not guild_settings or not guild_settings.confessions_settings:
             raise RuntimeError("No config returned")
 
         if not guild_settings.confessions_settings.polls_enabled:
@@ -298,7 +298,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
                 if image_or_video and guild_settings.confessions_settings.attachments_allowed
                 else None
             ),
-            show_live_results=show_live_results
+            show_live_results=show_live_results,
         )
 
         embed = Embed(

@@ -1,12 +1,12 @@
-name: Ruff
+name: Lint and Type Check
 permissions:
   contents: read
 
 on:
   push:
     paths:
-      - '**.py'
-      - 'uv.lock'
+      - "**.py"
+      - "uv.lock"
   pull_request:
   workflow_dispatch:
 
@@ -32,3 +32,8 @@ jobs:
       # Update output format to enable automatic inline annotations.
       - name: Run Ruff
         run: uv run ruff check --output-format=github .
+
+      - name: Run Pyright
+        uses: jakebailey/pyright-action@v3
+        with:
+          python-path: .venv/bin/python
