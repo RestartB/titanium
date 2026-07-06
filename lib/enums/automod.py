@@ -1,23 +1,6 @@
 from enum import StrEnum
 
 
-class AutomodRuleType(StrEnum):
-    BADWORD_DETECTION = "badword_detection"
-    SPAM_DETECTION = "spam_detection"
-    MALICIOUS_LINK = "malicious_link"
-    PHISHING_LINK = "phishing_link"
-
-
-class AutomodAntispamType(StrEnum):
-    MESSAGE = "message"
-    MENTION = "mention"
-    WORD = "word"
-    NEWLINE = "newline"
-    LINK = "link"
-    ATTACHMENT = "attachment"
-    EMOJI = "emoji"
-
-
 class AutomodCriteriaType(StrEnum):
     WORD_LIST = "word_list"
     MALICIOUS_LINK = "malicious_link"

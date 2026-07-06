@@ -36,12 +36,7 @@ from sqlalchemy.orm import (
     selectinload,
 )
 
-from lib.enums.automod import (
-    AutomodActionType,
-    AutomodAntispamType,
-    AutomodCriteriaType,
-    AutomodRuleType,
-)
+from lib.enums.automod import AutomodActionType, AutomodCriteriaType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
 from lib.enums.games import GameTypes
 from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
@@ -332,38 +327,6 @@ class GuildAutomodSettings(Base):
         "GuildSettings", back_populates="automod_settings", uselist=False
     )
 
-    badword_detection_rules: Mapped[list["OldAutomodRule"]] = relationship(
-        "OldAutomodRule",
-        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(OldAutomodRule.guild_id), OldAutomodRule.rule_type=='BADWORD_DETECTION')",
-        back_populates="guild",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-    spam_detection_rules: Mapped[list["OldAutomodRule"]] = relationship(
-        "OldAutomodRule",
-        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(OldAutomodRule.guild_id), OldAutomodRule.rule_type=='SPAM_DETECTION')",
-        back_populates="guild",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-        overlaps="badword_detection_rules",
-    )
-    malicious_link_rules: Mapped[list["OldAutomodRule"]] = relationship(
-        "OldAutomodRule",
-        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(OldAutomodRule.guild_id), OldAutomodRule.rule_type=='MALICIOUS_LINK')",
-        back_populates="guild",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-        overlaps="badword_detection_rules,spam_detection_rules",
-    )
-    phishing_link_rules: Mapped[list["OldAutomodRule"]] = relationship(
-        "OldAutomodRule",
-        primaryjoin="and_(GuildAutomodSettings.guild_id==foreign(OldAutomodRule.guild_id), OldAutomodRule.rule_type=='PHISHING_LINK')",
-        back_populates="guild",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-        overlaps="badword_detection_rules,malicious_link_rules,spam_detection_rules",
-    )
-
     rules: Mapped[list["AutomodRule"]] = relationship(
         "AutomodRule",
         back_populates="guild",
@@ -371,37 +334,6 @@ class GuildAutomodSettings(Base):
         passive_deletes=True,
     )
     show_outcome_message: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-
-
-class OldAutomodRule(Base):
-    __tablename__ = "old_automod_rules"
-    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("guild_automod_settings.guild_id", ondelete="CASCADE")
-    )
-    rule_type: Mapped[AutomodRuleType] = MappedColumn(Enum(AutomodRuleType))
-    antispam_type: Mapped[AutomodAntispamType | None] = MappedColumn(
-        Enum(AutomodAntispamType), nullable=True
-    )
-    rule_name: Mapped[str | None] = MappedColumn(String(length=100), nullable=True)
-    words: Mapped[list[str]] = MappedColumn(
-        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
-    )
-    match_whole_word: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    case_sensitive: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    threshold: Mapped[int] = MappedColumn(Integer)  # number of occurrences to trigger
-    duration: Mapped[int] = MappedColumn(Integer)  # duration to look for occurrences
-    actions: Mapped[list["OldAutomodAction"]] = relationship(
-        "OldAutomodAction",
-        back_populates="rule",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-    guild: Mapped["GuildAutomodSettings"] = relationship(
-        "GuildAutomodSettings",
-        overlaps="badword_detection_rules,spam_detection_rules,malicious_link_rules,phishing_link_rules",
-        uselist=False,
-    )
 
 
 class AutomodRule(Base):
@@ -471,35 +403,6 @@ class AutomodCriteria(Base):
     )
     rule: Mapped["AutomodRule"] = relationship(
         "AutomodRule", back_populates="criteria", uselist=False
-    )
-
-
-class OldAutomodAction(Base):
-    __tablename__ = "old_automod_actions"
-    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
-    guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE")
-    )
-
-    rule_type: Mapped[AutomodRuleType] = MappedColumn(Enum(AutomodRuleType))
-    type: Mapped[AutomodActionType] = MappedColumn(Enum(AutomodActionType))
-
-    duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
-    reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
-
-    message_content: Mapped[str | None] = MappedColumn(String(length=2000), nullable=True)
-    message_reply: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    message_mention: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    message_embed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    embed_colour: Mapped[str | None] = MappedColumn(String(length=7), nullable=True)
-
-    role_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
-
-    rule_id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True), ForeignKey("old_automod_rules.id", ondelete="CASCADE")
-    )
-    rule: Mapped["OldAutomodRule"] = relationship(
-        "OldAutomodRule", back_populates="actions", uselist=False
     )
 
 

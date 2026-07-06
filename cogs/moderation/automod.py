@@ -7,24 +7,15 @@ from typing import TYPE_CHECKING, Any, Literal
 import discord
 import emoji
 from discord.ext import commands
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 import lib.embeds.mod_actions as mod_embeds
 from lib.classes.automod_message import AutomodMessage
 from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
-from lib.enums.automod import AutomodActionType, AutomodCriteriaType, AutomodRuleType
+from lib.enums.automod import AutomodActionType, AutomodCriteriaType
 from lib.enums.moderation import CaseSource, CaseType
 from lib.helpers.log_error import log_error
-from lib.sql.sql import (
-    AutomodAction,
-    AutomodCriteria,
-    AutomodRule,
-    GuildAutomodSettings,
-    OldAutomodRule,
-    get_session,
-)
+from lib.sql.sql import AutomodAction, AutomodRule, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -46,109 +37,6 @@ class AutomodMonitorCog(commands.Cog):
     def normalise_automod_text(self, text: str) -> str:
         text = unicodedata.normalize("NFKC", text)
         return "".join(char for char in text if unicodedata.category(char) != "Cf")
-
-    # TODO: remove this soon
-    async def cog_load(self) -> None:
-        self.logger.info("Checking for old rules...")
-
-        migrated = 0
-        async with get_session() as session:
-            stmt = select(GuildAutomodSettings).options(
-                selectinload(GuildAutomodSettings.badword_detection_rules).selectinload(
-                    OldAutomodRule.actions
-                ),
-                selectinload(GuildAutomodSettings.malicious_link_rules).selectinload(
-                    OldAutomodRule.actions
-                ),
-                selectinload(GuildAutomodSettings.phishing_link_rules).selectinload(
-                    OldAutomodRule.actions
-                ),
-                selectinload(GuildAutomodSettings.spam_detection_rules).selectinload(
-                    OldAutomodRule.actions
-                ),
-            )
-            old_settings = (await session.execute(stmt)).scalars().all()
-
-            if len(old_settings) == 0:
-                self.logger.info("No servers to migrate")
-                return
-
-            for server in old_settings:
-                old_rules = (
-                    server.badword_detection_rules
-                    + server.malicious_link_rules
-                    + server.phishing_link_rules
-                    + server.spam_detection_rules
-                )
-
-                if len(old_rules) == 0:
-                    continue
-
-                for i, old_rule in enumerate(old_rules):
-                    new_rule = AutomodRule(
-                        guild_id=old_rule.guild_id,
-                        order=i,
-                    )
-
-                    if old_rule.rule_type == AutomodRuleType.BADWORD_DETECTION:
-                        new_rule.criteria.append(
-                            AutomodCriteria(
-                                type=AutomodCriteriaType.WORD_LIST,
-                                words=old_rule.words,
-                                match_whole_word=old_rule.match_whole_word,
-                                case_sensitive=old_rule.case_sensitive,
-                            )
-                        )
-                    elif old_rule.rule_type == AutomodRuleType.MALICIOUS_LINK:
-                        new_rule.criteria.append(
-                            AutomodCriteria(type=AutomodCriteriaType.MALICIOUS_LINK)
-                        )
-                    elif old_rule.rule_type == AutomodRuleType.PHISHING_LINK:
-                        new_rule.criteria.append(
-                            AutomodCriteria(type=AutomodCriteriaType.PHISHING_LINK)
-                        )
-                    elif (
-                        old_rule.rule_type == AutomodRuleType.SPAM_DETECTION
-                        and old_rule.antispam_type
-                    ):
-                        new_rule.criteria.append(
-                            AutomodCriteria(
-                                type=AutomodCriteriaType(old_rule.antispam_type + "_spam"),
-                                threshold=old_rule.threshold,
-                                duration=old_rule.duration,
-                            )
-                        )
-                    else:
-                        self.logger.warning(f"Unknown old rule type: {old_rule.rule_type.value}")
-                        continue
-
-                    new_rule.rule_name = (
-                        new_rule.criteria[0].type.value.replace("_", " ").capitalize()
-                    )
-
-                    for old_action in old_rule.actions:
-                        new_rule.actions.append(
-                            AutomodAction(
-                                type=old_action.type,
-                                duration=old_action.duration,
-                                reason=old_action.reason,
-                                message_content=old_action.message_content,
-                                message_reply=old_action.message_reply,
-                                message_mention=old_action.message_mention,
-                                message_embed=old_action.message_embed,
-                                embed_colour=old_action.embed_colour,
-                                role_ids=[old_action.role_id] if old_action.role_id else [],
-                            )
-                        )
-
-                    session.add(new_rule)
-                    await session.delete(old_rule)
-
-                    migrated += 1
-
-                await self.bot.refresh_guild_config_cache(server.guild_id)
-
-        self.logger.info(f"Migrated {migrated} rules")
 
     async def handle_message(
         self, message: discord.Message, event_type: Literal["new", "edit"] = "new"
