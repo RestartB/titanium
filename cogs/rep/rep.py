@@ -4,8 +4,9 @@ from datetime import time, timezone
 from typing import TYPE_CHECKING
 
 import discord
-from discord import app_commands
+from discord import Colour, app_commands
 from discord.ext import commands, tasks
+from discord.ext.commands import CooldownMapping
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
@@ -22,6 +23,15 @@ class RepCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger = logging.getLogger("rep")
+        self.xp_cooldowns = CooldownMapping.from_cooldown(
+            rate=1,
+            per=60 * 5,
+            type=lambda data: (
+                data["giver_id"],
+                data["receiver_id"],
+                data["guild_id"],
+            ),
+        )
 
     # Snapshot task
     @tasks.loop(time=time(hour=0, minute=0, tzinfo=timezone.utc))
@@ -97,7 +107,7 @@ class RepCog(commands.Cog):
             self.logger.debug(f"target has opted out: {target_member.id}")
             return
 
-        view = RepView(bot=self.bot, target_member=target_member)
+        view = RepView(bot=self.bot, target_member=target_member, cooldowns=self.xp_cooldowns)
         await message.reply(view=view, mention_author=False, delete_after=60)
 
     # Member leave event
@@ -150,7 +160,7 @@ class RepCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="This user has opted out of optional data collection and cannot use rep features.",
-                colour=discord.Colour.red(),
+                colour=Colour.red(),
             )
             await ctx.reply(embed=embed)
             return
@@ -184,7 +194,7 @@ class RepCog(commands.Cog):
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No Data",
                     description=f"**{user.display_name}** has no recorded rep.",
-                    colour=discord.Colour.red(),
+                    colour=Colour.red(),
                 )
                 await ctx.reply(embed=embed)
                 return
@@ -194,7 +204,7 @@ class RepCog(commands.Cog):
                 description=f"{self.bot.info_emoji} You have given this user `{given_rep:,}` rep."
                 if user != ctx.author
                 else None,
-                colour=discord.Colour.light_grey(),
+                colour=Colour.light_grey(),
             )
 
             embed.add_field(name="Rep", value=f"{user_stats.rep:,}", inline=True)
@@ -240,7 +250,7 @@ class RepCog(commands.Cog):
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} No Data",
                     description="No users have any rep yet.",
-                    colour=discord.Colour.red(),
+                    colour=Colour.red(),
                 )
                 await ctx.reply(embed=embed)
                 return
@@ -254,7 +264,7 @@ class RepCog(commands.Cog):
                             for x, entry in enumerate(chunk, start=1)
                         ]
                     ),
-                    colour=discord.Colour.light_grey(),
+                    colour=Colour.light_grey(),
                 ).set_author(
                     name=ctx.guild.name,
                     icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
@@ -275,17 +285,17 @@ class RepCog(commands.Cog):
     @rep_group.command(name="add", aliases=["plus"], description="Give a rep point to a user.")
     @app_commands.describe(member="The member to give rep to.")
     @commands.cooldown(1, 3)
-    async def add_rep(self, ctx: commands.Context["TitaniumBot"], user: discord.Member) -> None:
+    async def add_rep(self, ctx: commands.Context["TitaniumBot"], member: discord.Member) -> None:
         if not ctx.guild:
             raise ValueError("Guild only command but no guild available")
 
         await ctx.defer()
 
-        if user.id in self.bot.opt_out:
+        if member.id in self.bot.opt_out:
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="This user has opted out of optional data collection and cannot use rep features.",
-                colour=discord.Colour.red(),
+                colour=Colour.red(),
             )
             await ctx.reply(embed=embed)
             return
@@ -298,7 +308,27 @@ class RepCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Disabled",
                 description="The rep system is disabled in this server.",
-                colour=discord.Colour.red(),
+                colour=Colour.red(),
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        bucket = self.xp_cooldowns.get_bucket(
+            {
+                "giver_id": ctx.author.id,
+                "receiver_id": member.id,
+                "guild_id": ctx.guild.id,
+            }
+        )
+        if not bucket:
+            raise ValueError("No bucket returned")
+
+        retry_after = bucket.update_rate_limit()
+        if retry_after:
+            embed = discord.Embed(
+                title=f"{ctx.bot.error_emoji} Cooldown",
+                description=f"Please wait `{retry_after:.2f}s` before giving more rep to this user.",
+                colour=Colour.red(),
             )
             await ctx.reply(embed=embed)
             return
@@ -307,14 +337,14 @@ class RepCog(commands.Cog):
             session.add(
                 RepAddHistory(
                     user_id=ctx.author.id,
-                    target_id=user.id,
+                    target_id=member.id,
                     guild_id=ctx.guild.id,
                 )
             )
 
             stmt = insert(UserRep).values(
                 guild_id=ctx.guild.id,
-                user_id=user.id,
+                user_id=member.id,
                 rep=1,
             )
             stmt = stmt.on_conflict_do_update(
@@ -329,8 +359,8 @@ class RepCog(commands.Cog):
         await ctx.reply(
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
-                description=f"**1 rep** given to {user.mention} (`{rep.rep:,}` rep total)",
-                colour=discord.Colour.green(),
+                description=f"**1 rep** given to {member.mention} (`{rep.rep:,}` rep total)",
+                colour=Colour.green(),
             ),
         )
 
@@ -340,23 +370,22 @@ class RepCog(commands.Cog):
         description="Take away rep points that you gave to a user.",
     )
     @app_commands.describe(
-        member="The member to give rep to.",
-        amount="The amount of rep to remove from the user."
+        member="The member to give rep to.", amount="The amount of rep to remove from the user."
     )
     @commands.cooldown(1, 3)
     async def remove_rep(
-        self, ctx: commands.Context["TitaniumBot"], user: discord.Member, amount: int
+        self, ctx: commands.Context["TitaniumBot"], member: discord.Member, amount: int
     ) -> None:
         if not ctx.guild:
             raise ValueError("Guild only command but no guild available")
 
         await ctx.defer()
 
-        if user.id in self.bot.opt_out:
+        if member.id in self.bot.opt_out:
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="This user has opted out of optional data collection and cannot use rep features.",
-                colour=discord.Colour.red(),
+                colour=Colour.red(),
             )
             await ctx.reply(embed=embed)
             return
@@ -369,7 +398,7 @@ class RepCog(commands.Cog):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Disabled",
                 description="Removing user rep is disabled in this server.",
-                colour=discord.Colour.red(),
+                colour=Colour.red(),
             )
             await ctx.reply(embed=embed)
             return
@@ -380,7 +409,7 @@ class RepCog(commands.Cog):
                 .where(
                     RepAddHistory.guild_id == ctx.guild.id,
                     RepAddHistory.user_id == ctx.author.id,
-                    RepAddHistory.target_id == user.id,
+                    RepAddHistory.target_id == member.id,
                 )
                 .limit(amount)
             )
@@ -391,7 +420,7 @@ class RepCog(commands.Cog):
                     embed=discord.Embed(
                         title=f"{self.bot.error_emoji} Nothing to Remove",
                         description="You haven't given this user any rep before, so there is nothing to remove.",
-                        colour=discord.Colour.red(),
+                        colour=Colour.red(),
                     ),
                 )
                 return
@@ -401,7 +430,7 @@ class RepCog(commands.Cog):
                     embed=discord.Embed(
                         title=f"{self.bot.error_emoji} Too Much Rep",
                         description=f"You have only given this user `{len(history):,}` rep, so you can't remove `{amount - len(history):,}` extra rep.",
-                        colour=discord.Colour.red(),
+                        colour=Colour.red(),
                     ),
                 )
                 return
@@ -411,7 +440,7 @@ class RepCog(commands.Cog):
 
             stmt = insert(UserRep).values(
                 guild_id=ctx.guild.id,
-                user_id=user.id,
+                user_id=member.id,
                 rep=0,
             )
             stmt = stmt.on_conflict_do_update(
@@ -426,8 +455,8 @@ class RepCog(commands.Cog):
         await ctx.reply(
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
-                description=f"**{amount:,} rep** removed from {user.mention} (`{rep.rep:,}` rep total)",
-                colour=discord.Colour.green(),
+                description=f"**{amount:,} rep** removed from {member.mention} (`{rep.rep:,}` rep total)",
+                colour=Colour.green(),
             ),
         )
 
@@ -436,18 +465,18 @@ class RepCog(commands.Cog):
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3)
     async def set_rep(
-        self, ctx: commands.Context["TitaniumBot"], user: discord.Member, amount: int
+        self, ctx: commands.Context["TitaniumBot"], member: discord.Member, amount: int
     ) -> None:
         if not ctx.guild:
             raise ValueError("Guild only command but no guild available")
 
         await ctx.defer()
 
-        if user.id in self.bot.opt_out:
+        if member.id in self.bot.opt_out:
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="This user has opted out of optional data collection and cannot use rep features.",
-                colour=discord.Colour.red(),
+                colour=Colour.red(),
             )
             await ctx.reply(embed=embed)
             return
@@ -455,7 +484,7 @@ class RepCog(commands.Cog):
         async with get_session() as session:
             stmt = insert(UserRep).values(
                 guild_id=ctx.guild.id,
-                user_id=user.id,
+                user_id=member.id,
                 rep=amount,
             )
             stmt = stmt.on_conflict_do_update(
@@ -468,8 +497,8 @@ class RepCog(commands.Cog):
         await ctx.reply(
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
-                description=f"Set {user.mention}'s rep to `{amount:,}`.",
-                colour=discord.Colour.green(),
+                description=f"Set {member.mention}'s rep to `{amount:,}`.",
+                colour=Colour.green(),
             ),
         )
 

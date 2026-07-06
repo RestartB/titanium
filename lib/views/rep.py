@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
 
 import discord
-from discord import ButtonStyle, Interaction
+from discord import ButtonStyle, Colour, Interaction
+from discord.ext.commands import CooldownMapping
 from discord.ui import Button, View, button
 from sqlalchemy.dialects.postgresql import insert
 
@@ -16,11 +17,13 @@ class RepView(View):
         self,
         bot: TitaniumBot,
         target_member: discord.Member,
+        cooldowns: CooldownMapping,
         timeout: float = 60.0,
     ):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.target_member = target_member
+        self.cooldowns = cooldowns
         self.original_message: discord.Message | None
 
     @button(label="Give Rep", emoji="➕", style=ButtonStyle.green)
@@ -35,7 +38,27 @@ class RepView(View):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Rep Disabled",
                 description="The rep system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
-                colour=discord.Colour.red(),
+                colour=Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        bucket = self.cooldowns.get_bucket(
+            {
+                "giver_id": interaction.user.id,
+                "receiver_id": self.target_member.id,
+                "guild_id": interaction.guild_id,
+            }
+        )
+        if not bucket:
+            raise ValueError("No bucket returned")
+
+        retry_after = bucket.update_rate_limit()
+        if retry_after:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Cooldown",
+                description=f"Please wait `{retry_after:.2f}s` before giving more rep to this user.",
+                colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
@@ -68,7 +91,7 @@ class RepView(View):
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
                 description=f"**1 rep** given to {self.target_member.mention} (`{rep.rep}` rep total)",
-                colour=discord.Colour.green(),
+                colour=Colour.green(),
             ),
             ephemeral=True,
         )
@@ -87,7 +110,7 @@ class RepView(View):
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Not Allowed",
                 description="You didn't send this message. Only the message author or users with Manage Message permissions can delete the rep hint.",
-                colour=discord.Colour.red(),
+                colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
