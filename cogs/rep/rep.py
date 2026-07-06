@@ -135,6 +135,7 @@ class RepCog(commands.Cog):
     @commands.hybrid_group(
         name="rep", fallback="view", description="Set, add, remove, and view rep for users."
     )
+    @app_commands.describe(member="The member to view.")
     @commands.guild_only()
     @app_commands.guild_install()
     @commands.cooldown(1, 3)
@@ -272,6 +273,7 @@ class RepCog(commands.Cog):
             await ctx.reply(embed=pages[0], view=view)
 
     @rep_group.command(name="add", aliases=["plus"], description="Give a rep point to a user.")
+    @app_commands.describe(member="The member to give rep to.")
     @commands.cooldown(1, 3)
     async def add_rep(self, ctx: commands.Context["TitaniumBot"], user: discord.Member) -> None:
         if not ctx.guild:
@@ -336,6 +338,10 @@ class RepCog(commands.Cog):
         name="remove",
         aliases=["minus"],
         description="Take away rep points that you gave to a user.",
+    )
+    @app_commands.describe(
+        member="The member to give rep to.",
+        amount="The amount of rep to remove from the user."
     )
     @commands.cooldown(1, 3)
     async def remove_rep(
@@ -426,6 +432,7 @@ class RepCog(commands.Cog):
         )
 
     @rep_group.command(name="set", description="Manually set the rep of a user.")
+    @app_commands.describe(member="The member to set the rep of.")
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3)
     async def set_rep(
