@@ -151,6 +151,24 @@ class RepCog(commands.Cog):
             )
             await session.execute(stmt)
 
+    async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
+        if not ctx.guild:
+            return False
+
+        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        if not config or not config.rep_enabled or not config.rep_settings:
+            await ctx.reply(
+                embed=discord.Embed(
+                    colour=discord.Colour.red(),
+                    title=f"{self.bot.error_emoji} Rep Disabled",
+                    description="The rep module is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
+                ),
+                ephemeral=True,
+            )
+            return False
+
+        return True
+
     @commands.hybrid_group(
         name="rep", fallback="view", description="Set, add, remove, and view rep for users."
     )
