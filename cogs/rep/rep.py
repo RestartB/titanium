@@ -111,8 +111,13 @@ class RepCog(commands.Cog):
             self.logger.debug(f"target has opted out: {target_member.id}")
             return
 
-        view = RepView(bot=self.bot, target_member=target_member, cooldowns=self.xp_cooldowns)
-        await message.reply(view=view, mention_author=False, delete_after=60)
+        view = RepView(
+            bot=self.bot,
+            target_member=target_member,
+            cooldowns=self.xp_cooldowns,
+            original_message=message,
+        )
+        view.view_message = await message.reply(view=view, mention_author=False, delete_after=60)
 
     # Member leave event
     @commands.Cog.listener()

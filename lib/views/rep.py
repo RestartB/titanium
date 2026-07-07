@@ -18,13 +18,16 @@ class RepView(View):
         bot: TitaniumBot,
         target_member: discord.Member,
         cooldowns: CooldownMapping,
+        original_message: discord.Message,
         timeout: float = 60.0,
     ):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.target_member = target_member
         self.cooldowns = cooldowns
-        self.original_message: discord.Message | None
+
+        self.original_message: discord.Message | None = original_message
+        self.view_message: discord.Message | None = None
 
     @button(label="Give Rep", emoji="➕", style=ButtonStyle.green)
     async def give_rep(self, interaction: Interaction["TitaniumBot"], button: Button):
@@ -98,7 +101,7 @@ class RepView(View):
 
     @button(emoji="🗑️", style=ButtonStyle.grey)
     async def delete_button(self, interaction: Interaction["TitaniumBot"], button: Button):
-        if not self.original_message:
+        if not self.view_message or not self.original_message:
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -115,4 +118,4 @@ class RepView(View):
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
-        await interaction.delete_original_response()
+        await self.view_message.delete()
