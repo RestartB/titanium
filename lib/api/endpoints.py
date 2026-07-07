@@ -110,8 +110,12 @@ def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                 for rule in rules
             ],
             "show_outcome_message": config.automod_settings.show_outcome_message,
-            "global_ignored_roles": config.automod_settings.global_ignored_roles,
-            "global_ignored_channels": config.automod_settings.global_ignored_channels,
+            "global_ignored_roles": [
+                str(role_id) for role_id in config.automod_settings.global_ignored_roles
+            ],
+            "global_ignored_channels": [
+                str(channel_id) for channel_id in config.automod_settings.global_ignored_channels
+            ],
         }
     )
 
