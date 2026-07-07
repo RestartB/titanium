@@ -73,6 +73,10 @@ class RepCog(commands.Cog):
             self.logger.debug("ignoring message")
             return
 
+        if message.reference.resolved.author.id == message.author.id:
+            self.logger.debug("replying to own message, ignoring")
+            return
+
         # base settings
         guild_config = await self.bot.fetch_guild_config(message.guild.id)
         if (
@@ -91,10 +95,6 @@ class RepCog(commands.Cog):
 
         if not matches:
             self.logger.debug(f"no matches ({message.content})")
-            return
-
-        if message.reference.resolved.author.id == message.author.id:
-            self.logger.debug("replying to own message, ignoring")
             return
 
         referenced_message = message.reference.resolved
