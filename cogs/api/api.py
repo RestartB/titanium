@@ -1464,6 +1464,7 @@ class APICog(commands.Cog):
             db_config.server_counters_enabled = validated_settings.modules.server_counters
             db_config.leaderboard_enabled = validated_settings.modules.leaderboard
             db_config.tags_enabled = validated_settings.modules.tags
+            db_config.rep_enabled = validated_settings.modules.rep
 
             db_config.prefixes = validated_settings.prefixes
             db_config.allow_prefix = validated_settings.settings.allow_prefix

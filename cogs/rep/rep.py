@@ -93,6 +93,10 @@ class RepCog(commands.Cog):
             self.logger.debug(f"no matches ({message.content})")
             return
 
+        if message.reference.resolved.author.id == message.author.id:
+            self.logger.debug("replying to own message, ignoring")
+            return
+
         referenced_message = message.reference.resolved
         referenced_author = referenced_message.author
         if isinstance(referenced_author, discord.User):
