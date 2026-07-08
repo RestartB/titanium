@@ -40,16 +40,14 @@ class QuoteCommandsCog(
     ):
         await interaction.response.defer()
 
-        if message.clean_content == "":
+        if not message.clean_content:
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Nothing to quote",
-                description="Nothing to quote, there is no content in this message.",
+                description="There is no content to quote in this message.",
                 colour=discord.Colour.red(),
             )
 
-            await interaction.followup.send(
-                embed=embed,
-            )
+            await interaction.followup.send(embed=embed)
 
             return
         elif message.is_system():
@@ -59,9 +57,7 @@ class QuoteCommandsCog(
                 colour=discord.Colour.red(),
             )
 
-            await interaction.followup.send(
-                embed=embed,
-            )
+            await interaction.followup.send(embed=embed)
 
             return
 
@@ -85,7 +81,15 @@ class QuoteCommandsCog(
             )
         )
 
-        await interaction.followup.send(file=file, view=view)
+        data = {}
+        if not interaction.is_guild_integration():
+            data["embed"] = discord.Embed(
+                title=f"{interaction.client.info_emoji} Note",
+                description="Add Titanium to the server or use the `/quote` command to show the user's server nickname and PFP.",
+                colour=discord.Colour.light_grey(),
+            )
+
+        await interaction.followup.send(file=file, view=view, **data)
 
     @commands.hybrid_command(
         name="quote",
@@ -103,11 +107,11 @@ class QuoteCommandsCog(
     )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.checks.cooldown(1, 5)
+    @commands.cooldown(1, 5)
     async def custom_quote(
         self,
         ctx: commands.Context["TitaniumBot"],
-        user: discord.User,
+        user: discord.Member,
         *,
         content: str,
         output_format: ImageFormats | None = None,
