@@ -316,7 +316,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         async with defer(ctx, stop_only=True):
             async with get_session() as session:
                 case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
-                
+
                 try:
                     case = await case_manager.get_case_by_id(case_id)
                 except CaseNotFoundException:

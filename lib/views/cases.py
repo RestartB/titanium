@@ -45,7 +45,7 @@ class CommentModal(discord.ui.Modal, title="Enter Content"):
         if not isinstance(interaction.user, discord.Member) or not interaction.guild:
             await interaction.edit_original_response(
                 view=embed_to_v2(guild_only(interaction.client)),
-                allowed_mentions=discord.AllowedMentions.none()
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -57,7 +57,7 @@ class CommentModal(discord.ui.Modal, title="Enter Content"):
 
             await interaction.edit_original_response(
                 view=embed_to_v2(comment_edited(interaction.client)),
-                allowed_mentions=discord.AllowedMentions.none()
+                allowed_mentions=discord.AllowedMentions.none(),
             )
         elif self.case:
             await self.case.add_comment(
@@ -70,7 +70,7 @@ class CommentModal(discord.ui.Modal, title="Enter Content"):
             await interaction.followup.send(
                 view=embed_to_v2(comment_edited(interaction.client)),
                 allowed_mentions=discord.AllowedMentions.none(),
-                ephemeral=True
+                ephemeral=True,
             )
         else:
             raise ValueError("No case or comment was available")
@@ -87,14 +87,14 @@ class DeleteCommentButton(discord.ui.Button):
         if interaction.user.id != self.comment.user_id:
             await interaction.edit_original_response(
                 view=embed_to_v2(not_your_comment(interaction.client)),
-                allowed_mentions=discord.AllowedMentions.none()
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
         await self.comment.delete_comment()
         await interaction.edit_original_response(
             view=embed_to_v2(comment_deleted(interaction.client)),
-            allowed_mentions=discord.AllowedMentions.none()
+            allowed_mentions=discord.AllowedMentions.none(),
         )
 
 
@@ -107,7 +107,7 @@ class EditCommentButton(discord.ui.Button):
         if interaction.user.id != self.comment.user_id:
             await interaction.edit_original_response(
                 view=embed_to_v2(not_your_comment(interaction.client)),
-                allowed_mentions=discord.AllowedMentions.none()
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -127,7 +127,7 @@ class MenuButton(discord.ui.Button):
             await interaction.followup.send(
                 view=embed_to_v2(not_your_comment(interaction.client)),
                 allowed_mentions=discord.AllowedMentions.none(),
-                ephemeral=True
+                ephemeral=True,
             )
             return
 

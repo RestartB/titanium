@@ -253,7 +253,6 @@ class AutomodConfigModel(BaseModel):
     rules: list[AutomodRuleModel]
     show_outcome_message: bool
 
-
     global_ignored_roles: list[str] = Field(default_factory=list, max_length=100)
     global_ignored_channels: list[str] = Field(default_factory=list, max_length=100)
 
