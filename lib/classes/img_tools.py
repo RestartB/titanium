@@ -26,7 +26,7 @@ class EmojiRenderer:
     """Handle rendering text with emoji support"""
 
     # Twemoji CDN base URL
-    EMOJI_CDN = "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/{}.png"
+    EMOJI_CDN = "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/{}.png"
 
     def __init__(self):
         self._emoji_cache: dict[str, Image.Image] = {}
