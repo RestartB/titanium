@@ -78,7 +78,7 @@ def case_embed(
             icon_url=creator.display_avatar.url,
         )
 
-    embed.timestamp = case.time_created  # pyright: ignore[reportAttributeAccessIssue]
+    embed.timestamp = case.time_created
     return embed
 
 

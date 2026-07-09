@@ -989,6 +989,7 @@ dependencies = [
     { name = "shortuuid" },
     { name = "spotipy" },
     { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "topggpy" },
     { name = "wand" },
 ]
 
@@ -1020,6 +1021,7 @@ requires-dist = [
     { name = "shortuuid", specifier = ">=1.0.13" },
     { name = "spotipy", specifier = ">=2.25.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.51" },
+    { name = "topggpy", specifier = ">=1.4.0" },
     { name = "wand", specifier = ">=0.7.2" },
 ]
 
@@ -1027,6 +1029,18 @@ requires-dist = [
 dev = [
     { name = "pyright", specifier = ">=1.1.411" },
     { name = "ruff", specifier = ">=0.15.20" },
+]
+
+[[package]]
+name = "topggpy"
+version = "1.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "discord-py" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fe/aa/45e9aafedf5065f6da0c1f5eae5b234d3ab5c8973febcd561aec3ecf4f4c/topggpy-1.4.0.tar.gz", hash = "sha256:75a2f3011a073c058238b740989155cc85598250ed605b788b5de28c4314ec04", size = 15649, upload-time = "2021-11-06T09:10:49.462Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/94/2a/720c6ff93df413d2eca84e3e09bee0f8365cd84edc3a65558aab0f27ded1/topggpy-1.4.0-py3-none-any.whl", hash = "sha256:d0c9e329c6613d6a4889ad56295554e60440a5c5025d92ea3bf0b7a816dae27c", size = 19501, upload-time = "2021-11-06T09:10:47.204Z" },
 ]
 
 [[package]]

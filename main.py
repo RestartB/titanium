@@ -30,6 +30,7 @@ from rapidfuzz import fuzz, process, utils
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
+from topgg.client import DBLClient
 
 import lib.helpers.hybrid as adapters
 from lib.classes.automod_message import AutomodMessage
@@ -292,6 +293,10 @@ class TitaniumBot(commands.Bot):
             else []
         )
 
+        token = os.getenv("TOPGG_TOKEN")
+        if token:
+            self.topgg_client = DBLClient(bot=self, token=token, autopost=True)
+
         init_logger.info("Getting custom emojis...")
         try:
             info_emoji = os.getenv("INFO_EMOJI")
@@ -383,7 +388,7 @@ class TitaniumBot(commands.Bot):
             await log_error(
                 bot=self,
                 module=event,
-                guild_id=0,
+                guild_id=None,
                 error="Uncaught Error",
                 store_err=False,
                 exc=exc,
@@ -393,6 +398,16 @@ class TitaniumBot(commands.Bot):
                 logging.exception(exc)
             else:
                 logging.error(f"Unexpected error in {event}")
+
+    async def on_autopost_error(self, exception: Exception) -> None:
+        await log_error(
+            bot=self,
+            module="top.gg Autopost",
+            guild_id=None,
+            error="Error",
+            store_err=False,
+            exc=exception,
+        )
 
 
 async def get_prefix(bot: TitaniumBot, message: discord.Message):
