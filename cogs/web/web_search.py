@@ -32,7 +32,7 @@ class WebSearchCommandsCog(
         )
         embed.set_author(
             name="Urban Dictionary",
-            icon_url="https://media.licdn.com/dms/image/v2/D560BAQGlykJwWd7v-g/company-logo_200_200/company-logo_200_200/0/1718946315384/urbandictionary_logo?e=2147483647&v=beta&t=jnPuu32SKBWZsFOfOHz7KugJq0S2UARN8CL0wOAyyro",
+            icon_url="https://titanium.fyi/assets/ud.png",
         )
 
         return [
@@ -157,7 +157,7 @@ class WebSearchCommandsCog(
                     )
                     embed.set_author(
                         name="Wikipedia",
-                        icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
+                        icon_url="https://titanium.fyi/assets/wikipedia.png",
                     )
                     embed.set_footer(
                         text=f"@{ctx.author.name}",
@@ -178,7 +178,7 @@ class WebSearchCommandsCog(
             )
             embed.set_author(
                 name="Wikipedia",
-                icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
+                icon_url="https://titanium.fyi/assets/wikipedia.png",
             )
             embed.set_footer(
                 text=f"@{ctx.author.name}",
@@ -203,7 +203,7 @@ class WebSearchCommandsCog(
                     )
                     embed.set_author(
                         name="Wikipedia",
-                        icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
+                        icon_url="https://titanium.fyi/assets/wikipedia.png",
                     )
                     embed.set_footer(
                         text=f"@{ctx.author.name}",
@@ -227,7 +227,7 @@ class WebSearchCommandsCog(
         )
         embed.set_author(
             name="Wikipedia",
-            icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1200px-Wikipedia-logo-v2.svg.png",
+            icon_url="https://titanium.fyi/assets/wikipedia.png",
         )
 
         view = View()
