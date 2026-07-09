@@ -62,7 +62,7 @@ class QuoteCommandsCog(
             return
 
         pfp_data = BytesIO()
-        await message.author.display_avatar.save(pfp_data)
+        await message.author.display_avatar.with_format("png").save(pfp_data)
 
         data = QuoteData(
             content=message.clean_content,
@@ -123,7 +123,7 @@ class QuoteCommandsCog(
     ):
         async with defer(ctx):
             pfp_data = BytesIO()
-            await user.display_avatar.save(pfp_data)
+            await user.display_avatar.with_format("png").save(pfp_data)
 
             data = QuoteData(
                 content=content,

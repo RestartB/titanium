@@ -1,8 +1,11 @@
 import asyncio
+import base64
 import html
 import os
 import re
+import uuid
 from io import BytesIO
+from pathlib import Path
 
 import discord
 import jinja2
@@ -18,6 +21,19 @@ from lib.helpers.shorten import shorten_preserve
 async def create_quote_image(data: QuoteData) -> discord.File:
     image_data = BytesIO()
     content = data.content
+
+    def protect_escaped_markdown(match: re.Match[str]) -> str:
+        identifier = f"ESCAPEDMD{uuid.uuid4().hex}"
+        escaped_markdown[identifier] = match.group(1)
+        return identifier
+
+    # protect escaped markdown
+    escaped_markdown: dict[str, str] = {}
+    content = re.sub(
+        r"\\([\\`*_~|>#])",
+        protect_escaped_markdown,
+        content,
+    )
 
     content = html.escape(content)
 
@@ -76,6 +92,10 @@ async def create_quote_image(data: QuoteData) -> discord.File:
             f"<img src='https://cdn.discordapp.com/emojis/{html.escape(emoji_id)}.png' height='44' alt='{emoji}' />",
         )
 
+    # restore escaped markdown
+    for identifier, markdown in escaped_markdown.items():
+        content = content.replace(identifier, markdown)
+
     # Render Jinja2 template
     env = jinja2.Environment(
         enable_async=True,
@@ -83,9 +103,18 @@ async def create_quote_image(data: QuoteData) -> discord.File:
         autoescape=True,
     )
     template = env.get_template("quote.jinja")
+
+    pfp_base64 = base64.b64encode(data.pfp_data.getvalue()).decode("ascii")
+    pfp_src = f"data:image/png;base64,{pfp_base64}"
+
+    font_path = Path("lib/fonts/figtree.ttf")
+    font_base64 = base64.b64encode(font_path.read_bytes()).decode("ascii")
+
     quote_html = await template.render_async(
+        font_base64=font_base64,
         content=content,
         user=data.user,
+        user_pfp=pfp_src,
         nickname=data.nickname,
         fade=data.fade,
         light_mode=data.light_mode,
