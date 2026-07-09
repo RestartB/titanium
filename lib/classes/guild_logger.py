@@ -196,7 +196,7 @@ class GuildLogger:
                     guild_id=self.guild.id,
                     error=f"Missing permissions to create webhook in channel #{channel.name} ({channel.id})",
                     details=e.text,
-                    exc=e
+                    exc=e,
                 )
 
                 return None
@@ -207,7 +207,7 @@ class GuildLogger:
                     guild_id=self.guild.id,
                     error=f"Unknown Discord error while creating webhook in channel #{channel.name} ({channel.id})",
                     details=e.text,
-                    exc=e
+                    exc=e,
                 )
 
                 return None
@@ -280,7 +280,7 @@ class GuildLogger:
                 module="Logging",
                 guild_id=self.guild.id if self.guild else None,
                 error="Failed to find logging webhook.",
-                exc=e
+                exc=e,
             )
         except discord.HTTPException as e:
             await log_error(
@@ -289,7 +289,7 @@ class GuildLogger:
                 guild_id=self.guild.id if self.guild else None,
                 error="Failed to send logging message.",
                 details=e.text,
-                exc=e
+                exc=e,
             )
         except Exception as e:
             await log_error(
@@ -1319,17 +1319,18 @@ class GuildLogger:
         if not self._exists_and_enabled("member_ban"):
             return
 
+        log = await self._get_audit_log_entry(discord.AuditLogAction.ban, target=member)
+
         embed = discord.Embed(
             title="Member Banned",
             description=f"**User:** {member.mention} (`@{member.name}`)\n"
             f"**ID:** `{member.id}`\n"
-            f"**Account Created:** <t:{int(member.created_at.timestamp())}:R>",
+            f"**Account Created:** <t:{int(member.created_at.timestamp())}:R>\n"
+            f"**Reason: {log.reason if log and log.reason else 'No reason provided'}",
             colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-
-        log = await self._get_audit_log_entry(discord.AuditLogAction.ban, target=member)
         await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
@@ -1343,17 +1344,18 @@ class GuildLogger:
         if not self._exists_and_enabled("member_unban"):
             return
 
+        log = await self._get_audit_log_entry(discord.AuditLogAction.unban, target=member)
+
         embed = discord.Embed(
             title="Member Unbanned",
             description=f"**User:** {member.mention} (`@{member.name}`)\n"
             f"**ID:** `{member.id}`\n"
-            f"**Account Created:** <t:{int(member.created_at.timestamp())}:R>",
+            f"**Account Created:** <t:{int(member.created_at.timestamp())}:R>\n"
+            f"**Reason: {log.reason if log and log.reason else 'No reason provided'}",
             colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-
-        log = await self._get_audit_log_entry(discord.AuditLogAction.unban, target=member)
         await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
@@ -1386,7 +1388,8 @@ class GuildLogger:
             title="Member Kicked",
             description=f"**User:** {entry.target.mention} (`@{entry.target.name}`)\n"
             f"**ID:** `{entry.target.id}`\n"
-            f"**Reason:** {entry.reason}",
+            f"**Account Created:** <t:{int(entry.target.created_at.timestamp())}:R>\n"
+            f"**Reason:** {entry.reason if entry.reason else 'No reason provided'}",
             colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
@@ -1410,18 +1413,19 @@ class GuildLogger:
         if after.timed_out_until is None:
             return
 
+        log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=after)
+
         # Timeout added or updated
         embed = discord.Embed(
             title="Member Timed Out",
             description=f"**User:** {after.mention} (`@{after.name}`)\n"
             f"**ID:** `{after.id}`\n"
-            f"**Timeout Until:** <t:{int(after.timed_out_until.timestamp())}:R>",
+            f"**Timeout Until:** <t:{int(after.timed_out_until.timestamp())}:R>\n"
+            f"**Reason:** {log.reason if log and log.reason else 'No reason provided'}",
             colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=after.display_avatar.url)
-
-        log = await self._get_audit_log_entry(discord.AuditLogAction.member_update, target=after)
         await self._add_user_footer(embed, log)
 
         assert self.config is not None and self.config.logging_settings is not None
