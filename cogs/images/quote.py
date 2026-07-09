@@ -1,3 +1,4 @@
+import json
 import re
 from io import BytesIO
 from typing import TYPE_CHECKING
@@ -8,6 +9,7 @@ from discord.ext import commands
 
 from lib.classes.quote_config import QuoteData
 from lib.enums.images import ImageFormats
+from lib.helpers.cache import get_or_fetch_member
 from lib.helpers.hybrid import defer
 from lib.logic.quote import create_quote_image
 from lib.views.quote import QuoteView
@@ -38,6 +40,7 @@ class QuoteCommandsCog(
     async def quote_callback(
         self, interaction: discord.Interaction["TitaniumBot"], message: discord.Message
     ):
+        print(json.dumps(interaction.data, indent=2, default=str))
         await interaction.response.defer()
 
         if not message.clean_content:
@@ -61,12 +64,26 @@ class QuoteCommandsCog(
 
             return
 
+        # try to get member object when possible
+        author = message.author
+        if (
+            isinstance(author, discord.User)
+            and interaction.is_guild_integration()
+            and interaction.guild
+        ):
+            fetched_author = await get_or_fetch_member(
+                bot=self.bot, guild=interaction.guild, user_id=author.id
+            )
+
+            if fetched_author:
+                author = fetched_author
+
         pfp_data = BytesIO()
-        await message.author.display_avatar.with_format("png").save(pfp_data)
+        await author.display_avatar.with_format("png").save(pfp_data)
 
         data = QuoteData(
             content=message.clean_content,
-            user=message.author,
+            user=author,
             runner_user=interaction.user,
             output_format=ImageFormats.GIF,
             pfp_data=pfp_data,
@@ -100,7 +117,7 @@ class QuoteCommandsCog(
         content="The content to quote. To quote messages, right click the message, click apps, then Quote This.",
         output_format="Optional: the format to use. Defaults to GIF.",
         fade="Optional: whether to apply a fade to the user's PFP. Defaults to true.",
-        nickname="Optional: whether to show the user's nickname. Defaults to false.",
+        nickname="Optional: whether to show the user's nickname. Defaults to true.",
         light_mode="Optional: whether to start with light mode. Defaults to false.",
         bw_mode="Optional: whether to start with black and white mode. Defaults to false.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
@@ -116,7 +133,7 @@ class QuoteCommandsCog(
         content: str,
         output_format: ImageFormats | None = None,
         fade: bool = True,
-        nickname: bool = False,
+        nickname: bool = True,
         light_mode: bool = False,
         bw_mode: bool = False,
         spoiler: bool = False,
