@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 
 import discord
+from discord.utils import format_dt
 
 from lib.embeds.cases import case_embed, comment_deleted, comment_edited, not_your_comment
 from lib.embeds.general import guild_only
@@ -144,7 +145,7 @@ class Comment(discord.ui.Section):
         super().__init__(accessory=MenuButton(bot, comment))
         self.add_item(
             discord.ui.TextDisplay(
-                content=f"-# <@{comment.user_id}> - <t:{int(comment.time_created.timestamp())}:d>\n{discord.utils.escape_markdown(comment.comment)}"
+                content=f"-# <@{comment.user_id}> - {format_dt(comment.time_created, style='d')}\n{discord.utils.escape_markdown(comment.comment)}"
             )
         )
 

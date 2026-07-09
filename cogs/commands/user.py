@@ -4,6 +4,7 @@ import discord
 from discord import ButtonStyle, Embed, Member, User, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
+from discord.utils import format_dt
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -38,9 +39,6 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
         banner = fetched_user.banner
         accent_colour = fetched_user.accent_colour
 
-        creation_date = int(user.created_at.timestamp())
-        join_date = int(user.joined_at.timestamp()) if in_guild and user.joined_at else None
-
         embed = Embed(title="User Info", colour=accent_colour)
         embed.set_author(
             name=f"{user.display_name} (@{user.name})",
@@ -54,13 +52,14 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
         embed.add_field(name="ID", value=f"`{user.id}`")
         embed.add_field(
             name="Joined Discord",
-            value=f"<t:{creation_date}:R> (<t:{creation_date}:f>)",
+            value=f"{format_dt(user.created_at, style='R')} ({format_dt(user.created_at)})",
         )
 
+        join_date = user.joined_at if in_guild and user.joined_at else None
         if join_date:
             embed.add_field(
                 name="Joined Server",
-                value=f"<t:{join_date}:R> (<t:{join_date}:f>)",
+                value=f"{format_dt(join_date, style='R')} ({format_dt(join_date)})",
             )
 
         if in_guild and ctx.guild and len(user.roles) > 0:

@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Sequence
 
 from discord import Colour, Embed, Member, User
+from discord.utils import format_dt
 from sqlalchemy import Column
 
 from lib.helpers.duration import duration_to_timestring
@@ -33,7 +34,7 @@ def cases(
     for case in cases:
         embed.add_field(
             name=f"`{case.id}` • {bot.success_emoji if bool(case.resolved) else bot.warn_emoji} {'Resolved' if case.resolved else 'Open'}",
-            value=f"-# Created <t:{int(case.time_created.timestamp())}:f>\n{case.description}",
+            value=f"-# Created {format_dt(case.time_created)}\n{case.description}",
             inline=False,
         )
 
@@ -50,11 +51,11 @@ def case_embed(
         f"**Status:** {bot.success_emoji if bool(case.resolved) else bot.warn_emoji} {'Resolved' if bool(case.resolved) else 'Open'}",
         f"**Type:** {case.type.name.capitalize()}",
         f"**Target:** {f'<@{target}> (`{target}`)' if isinstance(target, int) or isinstance(target, Column) else f'{target.mention} (`{target.id}`)'}\n",
-        f"**Time Created:** <t:{int(case.time_created.timestamp())}:f>",
+        f"**Time Created:** {format_dt(case.time_created)}",
     ]
 
     if case.time_updated:
-        description_lines.append(f"**Time Updated:** <t:{int(case.time_updated.timestamp())}:f>")
+        description_lines.append(f"**Time Updated:** {format_dt(case.time_updated)}")
 
     description_lines.extend(
         [

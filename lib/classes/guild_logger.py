@@ -7,7 +7,7 @@ from textwrap import shorten
 from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 import discord
-from discord.utils import escape_markdown
+from discord.utils import escape_markdown, format_dt
 from humanize.time import naturaldelta
 from sqlalchemy import delete
 
@@ -1121,7 +1121,7 @@ class GuildLogger:
             title="Member Joined",
             description=f"**Name:** {member.mention} (`@{member.name}`)"
             f"\n**ID:** `{member.id}`"
-            f"\n**Account Created:** <t:{int(member.created_at.timestamp())}:R>",
+            f"\n**Account Created:** {format_dt(member.created_at, style='R')}",
             colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
         )
@@ -1142,7 +1142,7 @@ class GuildLogger:
             title="Member Left",
             description=f"**Name:** {member.mention} (`@{member.name}`)"
             f"\n**ID:** `{member.id}`"
-            f"\n**Account Created:** <t:{int(member.created_at.timestamp())}:R>",
+            f"\n**Account Created:** {format_dt(member.created_at, style='R')}",
             colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )
@@ -1325,7 +1325,7 @@ class GuildLogger:
             title="Member Banned",
             description=f"**User:** {member.mention} (`@{member.name}`)\n"
             f"**ID:** `{member.id}`\n"
-            f"**Account Created:** <t:{int(member.created_at.timestamp())}:R>\n"
+            f"**Account Created:** {format_dt(member.created_at, style='R')}\n"
             f"**Reason: {log.reason if log and log.reason else 'No reason provided'}",
             colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
@@ -1350,7 +1350,7 @@ class GuildLogger:
             title="Member Unbanned",
             description=f"**User:** {member.mention} (`@{member.name}`)\n"
             f"**ID:** `{member.id}`\n"
-            f"**Account Created:** <t:{int(member.created_at.timestamp())}:R>\n"
+            f"**Account Created:** {format_dt(member.created_at, style='R')}\n"
             f"**Reason: {log.reason if log and log.reason else 'No reason provided'}",
             colour=discord.Colour.green(),
             timestamp=discord.utils.utcnow(),
@@ -1388,7 +1388,7 @@ class GuildLogger:
             title="Member Kicked",
             description=f"**User:** {entry.target.mention} (`@{entry.target.name}`)\n"
             f"**ID:** `{entry.target.id}`\n"
-            f"**Account Created:** <t:{int(entry.target.created_at.timestamp())}:R>\n"
+            f"**Account Created:** {format_dt(entry.target.created_at, style='R')}\n"
             f"**Reason:** {entry.reason if entry.reason else 'No reason provided'}",
             colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
@@ -1420,7 +1420,7 @@ class GuildLogger:
             title="Member Timed Out",
             description=f"**User:** {after.mention} (`@{after.name}`)\n"
             f"**ID:** `{after.id}`\n"
-            f"**Timeout Until:** <t:{int(after.timed_out_until.timestamp())}:R>\n"
+            f"**Timeout Until:** {format_dt(after.timed_out_until, style='R')}\n"
             f"**Reason:** {log.reason if log and log.reason else 'No reason provided'}",
             colour=discord.Colour.yellow(),
             timestamp=discord.utils.utcnow(),
@@ -1930,9 +1930,9 @@ class GuildLogger:
             description=(
                 f"**Name:** `{event.name}`\n"
                 f"**ID:** `{event.id}`\n"
-                f"**Start Time:** <t:{int(event.start_time.timestamp())}:R> (<t:{int(event.start_time.timestamp())}:F>)\n"
+                f"**Start Time:** {format_dt(event.start_time, style='R')} ({format_dt(event.start_time, style='F')})\n"
                 + (
-                    f"**End Time:** <t:{int(event.end_time.timestamp())}:R> (<t:{int(event.end_time.timestamp())}:F>)\n"
+                    f"**End Time:** {format_dt(event.end_time, style='R')} ({format_dt(event.end_time, style='F')})\n"
                     if event.end_time is not None
                     else "**End Time:** `None`\n"
                 )
@@ -1963,9 +1963,9 @@ class GuildLogger:
             description=(
                 f"**Name:** `{event.name}`\n"
                 f"**ID:** `{event.id}`\n"
-                f"**Start Time:** <t:{int(event.start_time.timestamp())}:R> (<t:{int(event.start_time.timestamp())}:F>)\n"
+                f"**Start Time:** {format_dt(event.start_time, style='R')} ({format_dt(event.start_time, style='F')})\n"
                 + (
-                    f"**End Time:** <t:{int(event.end_time.timestamp())}:R> (<t:{int(event.end_time.timestamp())}:F>)\n"
+                    f"**End Time:** {format_dt(event.end_time, style='R')} ({format_dt(event.end_time, style='F')})\n"
                     if event.end_time is not None
                     else "**End Time:** `None`\n"
                 )
@@ -1999,17 +1999,17 @@ class GuildLogger:
 
         if after.start_time != before.start_time:
             changes.append(
-                f"**Start Time:** <t:{int(before.start_time.timestamp())}:R> (<t:{int(before.start_time.timestamp())}:F>) ➔ <t:{int(after.start_time.timestamp())}:R> (<t:{int(after.start_time.timestamp())}:F>)"
+                f"**Start Time:** {format_dt(before.start_time, style='R')} ({format_dt(before.start_time, style='F')}) ➔ {format_dt(after.start_time, style='R')} ({format_dt(after.start_time, style='F')})"
             )
 
         if after.end_time != before.end_time:
             if before.end_time is not None:
-                before_str = f"**End Time:** <t:{int(before.end_time.timestamp())}:R> (<t:{int(before.end_time.timestamp())}:F>)"
+                before_str = f"**End Time:** {format_dt(before.end_time, style='R')} ({format_dt(before.end_time, style='F')})"
             else:
                 before_str = "**End Time:** `None`"
 
             if after.end_time is not None:
-                after_str = f" ➔ <t:{int(after.end_time.timestamp())}:R> (<t:{int(after.end_time.timestamp())}:F>)"
+                after_str = f" ➔ {format_dt(after.end_time, style='R')} ({format_dt(after.end_time, style='F')})"
             else:
                 after_str = " ➔ `None`"
 
@@ -2915,7 +2915,7 @@ class GuildLogger:
 
         embed = discord.Embed(
             title=f"Case `{case.id}` Deleted",
-            description=f"Created: <t:{int(case.time_created.timestamp())}:R>\nCreator: <@{case.creator_user_id}> (`{case.creator_user_id}`)\nDescription: `{case.description}`",
+            description=f"Created: {format_dt(case.time_created, style='R')}\nCreator: <@{case.creator_user_id}> (`{case.creator_user_id}`)\nDescription: `{case.description}`",
             colour=discord.Colour.red(),
             timestamp=discord.utils.utcnow(),
         )

@@ -8,6 +8,7 @@ from colorthief import ColorThief
 from discord import ButtonStyle, Colour, app_commands
 from discord.ext import commands
 from discord.ui import Button, View
+from discord.utils import format_dt
 from sqlalchemy import select
 
 from lib.embeds.leaderboard import generate_lb_embeds
@@ -48,9 +49,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
         embed.add_field(name="Total Members", value=f"`{ctx.guild.member_count:,}`")
-        embed.add_field(
-            name="Creation Date", value=f"<t:{int(ctx.guild.created_at.timestamp())}:d>"
-        )
+        embed.add_field(name="Creation Date", value=format_dt(ctx.guild.created_at, style="d"))
 
         if ctx.guild.owner:
             embed.add_field(
