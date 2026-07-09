@@ -338,6 +338,7 @@ class ModerationBasicCog(
         user: discord.User | discord.Member,
         duration: str,
         reason: str,
+        delete_message_seconds: Optional[int] = None,
     ) -> tuple[PunishmentResult, Optional[ModCase], Optional[bool], Optional[str]]:
         # Check if member is in guild
         if not ctx.guild:
@@ -405,7 +406,9 @@ class ModerationBasicCog(
                     await ctx.guild.ban(
                         user=user,
                         reason=f"@{ctx.author.name}: {processed_reason}",
-                        delete_message_seconds=config.moderation_settings.ban_days * 86400
+                        delete_message_seconds=delete_message_seconds
+                        if delete_message_seconds is not None
+                        else config.moderation_settings.ban_days * 86400
                         if config
                         else 0,
                     )
@@ -846,6 +849,7 @@ class ModerationBasicCog(
         user="The user to ban.",
         duration="Optional: the duration of the ban (e.g., 10m, 1h, 2h30m).",
         reason="Optional: the reason for the ban.",
+        delete_message_days="Optional: amount of days of messages from the user that are deleted. Defaults to server default.",
     )
     @commands.cooldown(1, 5)
     async def ban(
@@ -855,6 +859,10 @@ class ModerationBasicCog(
         duration: str = "",
         *,
         reason: str = "",
+        delete_message_days: Optional[float] = commands.parameter(
+            converter=commands.Range[float, 0, 7],
+            default=None,
+        ),
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
@@ -870,7 +878,15 @@ class ModerationBasicCog(
         )
 
         async with defer(ctx, stop_only=True):
-            result, case, dm_success, dm_error = await self._ban_member(ctx, user, duration, reason)
+            result, case, dm_success, dm_error = await self._ban_member(
+                ctx,
+                user,
+                duration,
+                reason,
+                delete_message_seconds=(
+                    int(delete_message_days * 86400) if delete_message_days is not None else None
+                ),
+            )
 
             if (
                 result == PunishmentResult.SUCCESS
@@ -1440,6 +1456,7 @@ class ModerationBasicCog(
     @app_commands.describe(
         duration="Optional: the duration of the ban (e.g., 10m, 1h, 2h30m).",
         reason="Optional: the reason for the ban.",
+        delete_message_days="Optional: amount of days of messages from the user that are deleted. Defaults to server default.",
     )
     @commands.cooldown(1, 5)
     async def massban(
@@ -1468,6 +1485,10 @@ class ModerationBasicCog(
         duration: str = "",
         *,
         reason: str = "",
+        delete_message_days: Optional[float] = commands.parameter(
+            converter=commands.Range[float, 0, 7],
+            default=None,
+        ),
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
@@ -1551,7 +1572,9 @@ class ModerationBasicCog(
                     ban_result = await ctx.guild.bulk_ban(
                         users=valid_users,
                         reason=f"@{ctx.author.name}: {processed_reason}",
-                        delete_message_seconds=config.moderation_settings.ban_days * 86400
+                        delete_message_seconds=int(delete_message_days * 86400)
+                        if delete_message_days is not None
+                        else config.moderation_settings.ban_days * 86400
                         if config
                         else 0,
                     )
