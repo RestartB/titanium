@@ -1,10 +1,10 @@
 # Security Policy
 
-Welcome! This policy is for reporting security issues about Titanium, whether it's for the bot, website, or dashboard. It tells you what should be reported, and how  security issues should be reported. 
+Welcome! This policy is for reporting security issues about Titanium, whether it's for the bot, website, or dashboard. It tells you what should be reported, and how  security issues should be reported.
 
 ## What not to report
 
-If you believe you have discovered a true security issue (sending unwanted messages without permission, reading / writing config of other servers you don't have access to, getting private information of other sevrers / users, etc) then you are in the right place. 
+If you believe you have discovered a true security issue (sending unwanted messages without permission, reading / writing config of other servers you don't have access to, getting private information of other sevrers / users, etc) then you are in the right place.
 
 If you have discovered a bug that does not cause a security issue (dashboard page not working, bot feature broken, etc) please report this via the Issues tab on Titanium's GitHub repository, or in the [Discord server](https://titanium.fyi/server) if you do not wish to use GitHub.
 
@@ -12,7 +12,7 @@ If you have discovered a bug that does not cause a security issue (dashboard pag
 
 ### Bot
 
-Only the latest commit of Titanium v2 is supported. Older commits of Titanium v2 are not supported, as I am constantly applying fixes and new features / improvements. Titanium v1 is not supported, and issues / security reports for Titanium v1 will be rejected. 
+Only the latest commit of Titanium v2 is supported. Older commits of Titanium v2 are not supported, as I am constantly applying fixes and new features / improvements. Titanium v1 is not supported, and issues / security reports for Titanium v1 will be rejected.
 
 ### Dashboard and Website
 
