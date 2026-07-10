@@ -568,6 +568,17 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, commands.errors.NoPrivateMessage):
         await ctx.reply(embed=guild_only(bot), ephemeral=True)
+    elif isinstance(error, commands.HybridCommandError) and isinstance(
+        error.original, discord.app_commands.TransformerError
+    ):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Bad Argument",
+            description=str(error.original).replace(
+                str(error.original)[0], str(error.original)[0].upper(), 1
+            ),
+            colour=discord.Colour.red(),
+        )
+        await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, (commands.errors.BadArgument, commands.errors.ArgumentParsingError)):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bad Argument",
