@@ -435,6 +435,7 @@ class APICog(commands.Cog):
                     "server_counters": guild_limits.server_counters,
                     "tags": guild_limits.tags,
                 },
+                "bot_permissions": str(guild.me.guild_permissions.value),
             }
         )
 
