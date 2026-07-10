@@ -40,6 +40,7 @@ class ServerCountersCog(commands.Cog):
 
         cached_guilds: dict[int, discord.GuildPreview] = {}
 
+        # TODO: run every server at once so we don't wait for chunking
         for count_channel in channels:
             self.logger.debug(f"Updating {count_channel.id}")
             guild = self.bot.get_guild(count_channel.guild_id)

@@ -1,4 +1,3 @@
-import json
 import re
 from io import BytesIO
 from typing import TYPE_CHECKING
@@ -40,7 +39,6 @@ class QuoteCommandsCog(
     async def quote_callback(
         self, interaction: discord.Interaction["TitaniumBot"], message: discord.Message
     ):
-        print(json.dumps(interaction.data, indent=2, default=str))
         await interaction.response.defer()
 
         if not message.clean_content:

@@ -199,8 +199,15 @@
     </section>
 
     <script>
-        function fitTextToContainer(contentElement, authorElement, minFontSize = 30, maxFontSize = 65) {
-            const maxContentHeight = 492;
+        function fitTextToContainer(contentElement, authorElement, minFontSize = 22, maxFontSize = 56) {
+            const quoteElement = document.querySelector(".quote");
+            const styles = window.getComputedStyle(quoteElement);
+            
+            const verticalPadding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+            const gap = parseFloat(styles.gap) || 0;
+            
+            const fixedContentHeight = authorElement.offsetHeight + document.querySelector(".footer").offsetHeight + (gap * 2);
+            const maxContentHeight = quoteElement.clientHeight - verticalPadding - fixedContentHeight;
             
             let low = minFontSize;
             let high = maxFontSize;
