@@ -43,16 +43,19 @@ async def log_error(
         exc_info=exc,
     )
 
-    if store_err and guild_id is not None:
-        async with get_session() as session:
-            error_log = ErrorLog(
-                id=uuid_id,
-                module=module,
-                guild_id=guild_id,
-                error=error,
-                details=details,
-            )
-            session.add(error_log)
+    if store_err:
+        try:
+            async with get_session() as session:
+                error_log = ErrorLog(
+                    id=uuid_id,
+                    module=shorten_preserve(module, 100),
+                    guild_id=guild_id,
+                    error=shorten_preserve(error, 512),
+                    details=shorten_preserve(details, 1024) if details else None,
+                )
+                session.add(error_log)
+        except Exception:
+            logging.exception("Failed to store error log %s in the database", uuid_id)
 
     if not send_webhook:
         return uuid_id

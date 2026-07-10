@@ -1029,9 +1029,7 @@ class ErrorLog(Base):
     __table_args__ = (Index("ix_error_logs_guild_id", "guild_id", desc("time_occurred")),)
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    guild_id: Mapped[int] = MappedColumn(
-        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE")
-    )
+    guild_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     module: Mapped[str] = MappedColumn(String(length=100))
     error: Mapped[str] = MappedColumn(String(length=512))
     details: Mapped[str | None] = MappedColumn(String(length=1024), nullable=True)

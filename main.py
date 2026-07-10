@@ -45,6 +45,7 @@ load_dotenv()
 
 from lib.sql.sql import (  # noqa: E402
     AvailableWebhook,
+    ErrorLog,
     FireboardMessage,
     GuildSettings,
     LeaderboardUserStats,
@@ -265,6 +266,9 @@ class TitaniumBot(commands.Bot):
         # delete db entries
         async with get_session() as session:
             stmt = delete(GuildSettings).where(GuildSettings.guild_id == guild_id)
+            await session.execute(stmt)
+
+            stmt = delete(ErrorLog).where(ErrorLog.guild_id == guild_id)
             await session.execute(stmt)
 
             stmt = delete(AvailableWebhook).where(AvailableWebhook.guild_id == guild_id)
