@@ -128,7 +128,7 @@ class QuoteCommandsCog(
     async def custom_quote(
         self,
         ctx: commands.Context["TitaniumBot"],
-        user: discord.Member,
+        user: discord.User | discord.Member,
         *,
         content: str,
         output_format: ImageFormats | None = None,
