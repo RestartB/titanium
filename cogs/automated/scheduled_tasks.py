@@ -149,6 +149,18 @@ class ScheduledTasksCog(commands.Cog):
                     error=f"Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})",
                     exc=e,
                 )
+            finally:
+                now = discord.utils.utcnow()
+                async with get_session() as session:
+                    session.add(
+                        ScheduledTask(
+                            guild_id=task.guild_id,
+                            user_id=task.user_id,
+                            case_id=task.case_id,
+                            type=EventType.PERMA_MUTE_REFRESH,
+                            time_scheduled=now + timedelta(days=27),
+                        )
+                    )
         elif task.type == EventType.CLOSE_MUTE:
             if not task.guild_id or not task.user_id or not task.case_id:
                 raise ValueError("Guild ID, user ID or case ID is missing (close mute)")
