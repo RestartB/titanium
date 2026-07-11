@@ -141,15 +141,7 @@ class ScheduledTasksCog(commands.Cog):
                     discord.utils.utcnow() + timedelta(days=28),
                     reason=f"{task.case_id} - continuing perma mute",
                 )
-            except Exception as e:
-                await log_error(
-                    bot=self.bot,
-                    module="ScheduledTasks",
-                    guild_id=task.guild_id,
-                    error=f"Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})",
-                    exc=e,
-                )
-            finally:
+
                 now = discord.utils.utcnow()
                 async with get_session() as session:
                     session.add(
@@ -159,6 +151,25 @@ class ScheduledTasksCog(commands.Cog):
                             case_id=task.case_id,
                             type=EventType.PERMA_MUTE_REFRESH,
                             time_scheduled=now + timedelta(days=27),
+                        )
+                    )
+            except Exception as e:
+                await log_error(
+                    bot=self.bot,
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})",
+                    exc=e,
+                )
+                now = discord.utils.utcnow()
+                async with get_session() as session:
+                    session.add(
+                        ScheduledTask(
+                            guild_id=task.guild_id,
+                            user_id=task.user_id,
+                            case_id=task.case_id,
+                            type=EventType.PERMA_MUTE_REFRESH,
+                            time_scheduled=now + timedelta(minutes=5),
                         )
                     )
         elif task.type == EventType.CLOSE_MUTE:
