@@ -174,6 +174,10 @@ class GuildLogger:
             channel = self.guild.get_channel(channel_id)
             if channel is None or isinstance(channel, discord.CategoryChannel):
                 return None
+
+            if not channel.permissions_for(self.guild.me).manage_webhooks:
+                return None
+
             try:
                 # Create a webhook
                 webhook = await channel.create_webhook(name="Managed by Titanium")
@@ -307,6 +311,9 @@ class GuildLogger:
     ) -> Optional[discord.AuditLogEntry]:
         # Get audit log
         if not isinstance(self.guild, discord.Guild):
+            return None
+
+        if not self.guild.me.guild_permissions.view_audit_log:
             return None
 
         logs = self.guild.audit_logs(limit=1, action=action)
