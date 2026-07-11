@@ -2997,7 +2997,7 @@ class GuildLogger:
             name="Failed Actions",
             value="\n".join(
                 [
-                    f"{self.__generate_action_str(action)} - {reason}"
+                    f"{self.__generate_action_str(action)} - `{reason}`"
                     for action, reason in failed_actions
                 ]
             ),

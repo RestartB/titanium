@@ -1895,10 +1895,26 @@ class APICog(commands.Cog):
                                 guild, new_channel.type, new_channel.name, members
                             )
 
+                        if not guild.me.guild_permissions.manage_channels:
+                            return web.json_response(
+                                {
+                                    "error": "Bot - No Permissions",
+                                    "message": "Titanium does not have permission to create channels in your server.",
+                                }
+                            )
+
                         try:
                             discord_channel = await guild.create_voice_channel(
                                 name=new_name,
                                 reason="Creating server counter channel",
+                                overwrites={
+                                    guild.default_role: discord.PermissionOverwrite(
+                                        view_channel=True, connect=False
+                                    ),
+                                    guild.me: discord.PermissionOverwrite(
+                                        connect=True, manage_channels=True
+                                    ),
+                                },
                             )
                             channel_ids.append(discord_channel.id)
 
@@ -1955,6 +1971,14 @@ class APICog(commands.Cog):
                                 guild, new_channel.type, new_channel.name, members
                             )
 
+                            if not guild.me.guild_permissions.manage_channels:
+                                return web.json_response(
+                                    {
+                                        "error": "Bot - No Permissions",
+                                        "message": "Titanium does not have permission to create channels in your server.",
+                                    }
+                                )
+
                             try:
                                 discord_channel = await guild.create_voice_channel(
                                     name=new_name,
@@ -2006,6 +2030,14 @@ class APICog(commands.Cog):
                         discord_channel = guild.get_channel(existing_channel.id)
 
                         if discord_channel:
+                            if not guild.me.guild_permissions.manage_channels:
+                                return web.json_response(
+                                    {
+                                        "error": "Bot - No Permissions",
+                                        "message": "Titanium does not have permission to delete channels in your server.",
+                                    }
+                                )
+
                             try:
                                 await discord_channel.delete(
                                     reason="Removing server counter channel"

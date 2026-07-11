@@ -297,6 +297,12 @@ class LeaderboardCog(commands.Cog):
                     )
                     return
 
+                if not channel.permissions_for(member.guild.me).send_messages:
+                    self.logger.debug(
+                        f"Titanium doesn't have perms to send messages in {channel.id}"
+                    )
+                    return
+
                 await channel.send(
                     content=member.mention if lb_settings.notification_ping else "",
                     embed=discord.Embed(
@@ -501,8 +507,6 @@ class LeaderboardCog(commands.Cog):
             user_stats.level = new_level
 
         if lb_settings.levelup_notifications and new_level > old_level:
-            channel = message.channel
-
             try:
                 if lb_settings.notification_channel:
                     channel = message.guild.get_channel(lb_settings.notification_channel)
@@ -519,6 +523,12 @@ class LeaderboardCog(commands.Cog):
                         )
                         return
 
+                    if not channel.permissions_for(message.guild.me).send_messages:
+                        self.logger.debug(
+                            f"Titanium doesn't have perms to send messages in {channel.id}"
+                        )
+                        return
+
                     await channel.send(
                         content=message.author.mention if lb_settings.notification_ping else "",
                         embed=discord.Embed(
@@ -527,6 +537,12 @@ class LeaderboardCog(commands.Cog):
                         ),
                     )
                 else:
+                    if not message.channel.permissions_for(message.guild.me).send_messages:
+                        self.logger.debug(
+                            f"Titanium doesn't have perms to send messages in {message.channel.id}"
+                        )
+                        return
+
                     await message.reply(
                         embed=discord.Embed(
                             description=f"🎉 {message.author.mention} has leveled up to **level {user_stats.level}!**",

@@ -155,6 +155,12 @@ class BouncerMonitorCog(commands.Cog):
                     if not member.nick:
                         continue
 
+                    if (
+                        not member.guild.me.guild_permissions.manage_nicknames
+                        or member.top_role >= member.guild.me.top_role
+                    ):
+                        continue
+
                     try:
                         await member.edit(nick=None, reason=f"Bouncer: {punishment.reason}")
                     except discord.Forbidden as e:
@@ -181,6 +187,12 @@ class BouncerMonitorCog(commands.Cog):
 
                     role = member.guild.get_role(punishment.role_id)
                     if not role or role in member.roles:
+                        continue
+
+                    if (
+                        not member.guild.me.guild_permissions.manage_roles
+                        or role >= member.guild.me.top_role
+                    ):
                         continue
 
                     try:
@@ -211,6 +223,12 @@ class BouncerMonitorCog(commands.Cog):
                     if not role or role not in member.roles:
                         continue
 
+                    if (
+                        not member.guild.me.guild_permissions.manage_roles
+                        or role >= member.guild.me.top_role
+                    ):
+                        continue
+
                     try:
                         await member.remove_roles(role, reason=f"Bouncer: {punishment.reason}")
                     except discord.Forbidden as e:
@@ -237,6 +255,12 @@ class BouncerMonitorCog(commands.Cog):
 
                     role = member.guild.get_role(punishment.role_id)
                     if not role:
+                        continue
+
+                    if (
+                        not member.guild.me.guild_permissions.manage_roles
+                        or role >= member.guild.me.top_role
+                    ):
                         continue
 
                     try:
@@ -273,6 +297,12 @@ class BouncerMonitorCog(commands.Cog):
                 elif punishment.type == BouncerActionType.MUTE:
                     # Check if user is already timed out
                     if member.is_timed_out():
+                        continue
+
+                    if (
+                        not member.guild.me.guild_permissions.moderate_members
+                        or member.top_role >= member.guild.me.top_role
+                    ):
                         continue
 
                     # Time out user
@@ -323,6 +353,12 @@ class BouncerMonitorCog(commands.Cog):
                     punishment.type == BouncerActionType.KICK
                     and BouncerActionType.BAN not in punishment_types
                 ):
+                    if (
+                        not member.guild.me.guild_permissions.kick_members
+                        or member.top_role >= member.guild.me.top_role
+                    ):
+                        continue
+
                     # Kick user
                     case: ModCase
                     try:
@@ -365,6 +401,12 @@ class BouncerMonitorCog(commands.Cog):
                             await manager.delete_case(case.id)
                         raise e
                 elif punishment.type == BouncerActionType.BAN:
+                    if (
+                        not member.guild.me.guild_permissions.ban_members
+                        or member.top_role >= member.guild.me.top_role
+                    ):
+                        continue
+
                     # Ban user
                     case: ModCase
                     try:

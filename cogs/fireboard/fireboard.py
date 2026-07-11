@@ -430,7 +430,7 @@ class FireboardCog(commands.Cog):
                 or board_channel.guild.id != event.guild_id
             ):
                 self.logger.debug(f"Board channel {board.channel_id} not found or invalid type")
-                return
+                continue
 
             view = discord.ui.View()
             view.add_item(
@@ -473,6 +473,9 @@ class FireboardCog(commands.Cog):
                     source_msg = await source_msg.channel.fetch_message(source_msg.id)
                     files = []
 
+            if not board_channel.permissions_for(board_channel.guild.me).send_messages:
+                continue
+
             new_message = await board_channel.send(
                 content=content,
                 embed=self._fireboard_embed(source_msg, len(source_msg.attachments) - len(files)),
@@ -503,7 +506,7 @@ class FireboardCog(commands.Cog):
 
             if not board.send_notifications:
                 self.logger.debug("Board notifications disabled, skipping notification")
-                return
+                continue
 
             notification_embed = discord.Embed(
                 description=f"🎉 Your message was featured in {board_channel.mention}!",
@@ -519,6 +522,18 @@ class FireboardCog(commands.Cog):
                     style=discord.ButtonStyle.url,
                 )
             )
+
+            if (
+                source_msg.thread
+                and not msg_channel.permissions_for(msg_channel.guild.me).send_messages
+                or not msg_channel.permissions_for(msg_channel.guild.me).send_messages_in_threads
+            ):
+                continue
+            elif (
+                not source_msg.thread
+                and not msg_channel.permissions_for(msg_channel.guild.me).send_messages
+            ):
+                continue
 
             try:
                 await source_msg.reply(
@@ -544,8 +559,6 @@ class FireboardCog(commands.Cog):
                     details=str(e.text),
                     exc=e,
                 )
-
-            return
 
     async def message_edit_handler(self, payload: discord.RawMessageUpdateEvent):
         if not payload.guild_id:
@@ -595,6 +608,9 @@ class FireboardCog(commands.Cog):
                     or channel.guild.id != payload.guild_id
                 ):
                     self.logger.debug("Edit channel not found")
+                    continue
+
+                if not channel.permissions_for(channel.guild.me).send_messages:
                     continue
 
                 try:

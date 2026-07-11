@@ -59,6 +59,10 @@ class ServerCountersCog(commands.Cog):
                 self.logger.debug("Not a voice channel")
                 continue
 
+            if not discord_channel.permissions_for(guild.me).manage_channels:
+                self.logger.debug("Bot doesn't have permisison to edit channel")
+                continue
+
             members = list(guild.members)
             if (
                 count_channel.count_type == ServerCounterType.USERS

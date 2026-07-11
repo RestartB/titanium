@@ -143,6 +143,17 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             )
             return
 
+        if not channel.permissions_for(interaction.guild.me).send_messages:
+            await interaction.followup.send(
+                embed=Embed(
+                    colour=Colour.red(),
+                    title=f"{self.bot.error_emoji} Invalid Permissions",
+                    description="Titanium doesn't have permission to send to the configured confession channel. Please ask a server admin to give Titanium send message permissions in the selected channel.",
+                ),
+                ephemeral=True,
+            )
+            return
+
         embed = Embed(
             title="Anonymous Confession",
             description=message,
@@ -263,6 +274,17 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
                 colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        if not interaction.channel.permissions_for(interaction.guild.me).send_messages:
+            await interaction.followup.send(
+                embed=Embed(
+                    colour=Colour.red(),
+                    title=f"{self.bot.error_emoji} Invalid Permissions",
+                    description="Titanium doesn't have permission to send messages in this channel. Please ask a server admin to give Titanium send message permissions in this channel.",
+                ),
+                ephemeral=True,
+            )
             return
 
         if not duration:

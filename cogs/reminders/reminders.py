@@ -104,6 +104,17 @@ class TemplateCog(commands.Cog, description="Create reminders."):
             await ctx.reply(embed=embed)
             return
 
+        if not dm and (
+            not ctx.guild or not ctx.channel.permissions_for(ctx.guild.me).send_messages
+        ):
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} No Permissions",
+                description="Titanium doesn't have permissins to send messages in this channel. Your reminder will not send correctly.",
+                colour=Colour.red(),
+            )
+            await ctx.reply(embed=embed)
+            return
+
         if await get_reminder_count(ctx.author) >= 50:
             command_str = (
                 "`/reminder list`" if ctx.interaction else f"`{ctx.clean_prefix}reminders`"

@@ -107,6 +107,12 @@ class ScheduledTasksCog(commands.Cog):
             if not member.is_timed_out():
                 return
 
+            if (
+                not guild.me.guild_permissions.moderate_members
+                or member.top_role >= guild.me.top_role
+            ):
+                return
+
             try:
                 await member.timeout(
                     discord.utils.utcnow() + timedelta(seconds=task.duration),
@@ -137,6 +143,25 @@ class ScheduledTasksCog(commands.Cog):
                 return
 
             try:
+                next_time = discord.utils.utcnow() + timedelta(days=27)
+
+                if (
+                    not guild.me.guild_permissions.moderate_members
+                    or member.top_role >= guild.me.top_role
+                ):
+                    now = discord.utils.utcnow()
+                    async with get_session() as session:
+                        session.add(
+                            ScheduledTask(
+                                guild_id=task.guild_id,
+                                user_id=task.user_id,
+                                case_id=task.case_id,
+                                type=EventType.PERMA_MUTE_REFRESH,
+                                time_scheduled=next_time,
+                            )
+                        )
+                    return
+
                 await member.timeout(
                     discord.utils.utcnow() + timedelta(days=28),
                     reason=f"{task.case_id} - continuing perma mute",
@@ -150,7 +175,7 @@ class ScheduledTasksCog(commands.Cog):
                             user_id=task.user_id,
                             case_id=task.case_id,
                             type=EventType.PERMA_MUTE_REFRESH,
-                            time_scheduled=now + timedelta(days=27),
+                            time_scheduled=next_time,
                         )
                     )
             except Exception as e:
@@ -172,6 +197,7 @@ class ScheduledTasksCog(commands.Cog):
                             time_scheduled=now + timedelta(minutes=5),
                         )
                     )
+
         elif task.type == EventType.CLOSE_MUTE:
             if not task.guild_id or not task.user_id or not task.case_id:
                 raise ValueError("Guild ID, user ID or case ID is missing (close mute)")
@@ -207,6 +233,9 @@ class ScheduledTasksCog(commands.Cog):
             # Auto unban task
             guild = self.bot.get_guild(task.guild_id)
             if not guild:
+                return
+
+            if not guild.me.guild_permissions.ban_members:
                 return
 
             try:
@@ -311,6 +340,9 @@ class ScheduledTasksCog(commands.Cog):
             try:
                 channel = self.bot.get_channel(poll.channel_id)
                 if not channel or not isinstance(channel, discord.abc.Messageable):
+                    return
+
+                if not channel.permissions_for(channel.guild.me).send_messages:
                     return
 
                 try:

@@ -391,7 +391,7 @@ class AutomodMonitorCog(commands.Cog):
                         elif action.type == AutomodActionType.MUTE:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
-                                failed_actions[action] = "No permission to mute this user (Titanium's role below user's top role)"
+                                failed_actions[action] = "No permission to mute this user (Titanium's role not higher than user's top role)"
                                 embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="time out"))
                                 continue
                             elif not message.channel.permissions_for(message.guild.me).moderate_members:
@@ -432,7 +432,7 @@ class AutomodMonitorCog(commands.Cog):
                         elif action.type == AutomodActionType.KICK:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
-                                failed_actions[action] = "No permission to kick this user (Titanium's role below user's top role)"
+                                failed_actions[action] = "No permission to kick this user (Titanium's role not higher than user's top role)"
                                 embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="kick"))
                                 continue
                             elif not message.channel.permissions_for(message.guild.me).kick_members:
@@ -469,7 +469,7 @@ class AutomodMonitorCog(commands.Cog):
                         elif action.type == AutomodActionType.BAN:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
-                                failed_actions[action] = "No permission to ban this user (Titanium's role below user's top role)"
+                                failed_actions[action] = "No permission to ban this user (Titanium's role not higher than user's top role)"
                                 embeds.append(mod_embeds.titanium_not_allowed(self.bot, user=message.author, action="ban"))
                                 continue
                             elif not message.channel.permissions_for(message.guild.me).ban_members:
