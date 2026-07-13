@@ -118,7 +118,7 @@ class ScheduledTasksCog(commands.Cog):
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
                     error=f"No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
-                    detalis="Please ensure that Titanium has permission to time out the user"
+                    details="Please ensure that Titanium has permission to time out the user"
                 )
                 return
 
@@ -173,7 +173,7 @@ class ScheduledTasksCog(commands.Cog):
                         module="ScheduledTasks",
                         guild_id=task.guild_id,
                         error=f"No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
-                        detalis="Please ensure that Titanium has permission to time out the user"
+                        details="Please ensure that Titanium has permission to time out the user"
                     )
                     return
 
@@ -181,6 +181,17 @@ class ScheduledTasksCog(commands.Cog):
                     now + timedelta(days=28),
                     reason=f"{task.case_id} - continuing perma mute",
                 )
+
+                async with get_session() as session:
+                    session.add(
+                        ScheduledTask(
+                            guild_id=task.guild_id,
+                            user_id=task.user_id,
+                            case_id=task.case_id,
+                            type=EventType.PERMA_MUTE_REFRESH,
+                            time_scheduled=now + timedelta(days=27),
+                        )
+                    )
             except discord.Forbidden as e:
                 await log_error(
                     bot=self.bot,
@@ -190,9 +201,18 @@ class ScheduledTasksCog(commands.Cog):
                     details=e.text,
                     exc=e,
                 )
-            except Exception as e:
-                schedule_normal = False
 
+                async with get_session() as session:
+                    session.add(
+                        ScheduledTask(
+                            guild_id=task.guild_id,
+                            user_id=task.user_id,
+                            case_id=task.case_id,
+                            type=EventType.PERMA_MUTE_REFRESH,
+                            time_scheduled=now + timedelta(minutes=5),
+                        )
+                    )
+            except Exception as e:
                 await log_error(
                     bot=self.bot,
                     module="ScheduledTasks",
@@ -210,20 +230,6 @@ class ScheduledTasksCog(commands.Cog):
                             case_id=task.case_id,
                             type=EventType.PERMA_MUTE_REFRESH,
                             time_scheduled=now + timedelta(minutes=5),
-                        )
-                    )
-            finally:
-                if not schedule_normal:
-                    return
-
-                async with get_session() as session:
-                    session.add(
-                        ScheduledTask(
-                            guild_id=task.guild_id,
-                            user_id=task.user_id,
-                            case_id=task.case_id,
-                            type=EventType.PERMA_MUTE_REFRESH,
-                            time_scheduled=now + timedelta(days=27),
                         )
                     )
         elif task.type == EventType.CLOSE_MUTE:
