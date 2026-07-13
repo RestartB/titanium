@@ -162,7 +162,6 @@ class ScheduledTasksCog(commands.Cog):
                 return
 
             now = discord.utils.utcnow()
-            schedule_normal = True
             try:
                 if (
                     not guild.me.guild_permissions.moderate_members
