@@ -33,6 +33,8 @@ class ScheduledTasksCog(commands.Cog):
 
         self.task_queue: asyncio.Queue[ScheduledTask] = asyncio.Queue()
 
+    # TODO: we really don't need to do this
+    # just run a discord.py task every second and spawn tasks
     async def cog_load(self) -> None:
         # Start workers
         for _ in range(3):
@@ -111,6 +113,13 @@ class ScheduledTasksCog(commands.Cog):
                 not guild.me.guild_permissions.moderate_members
                 or member.top_role >= guild.me.top_role
             ):
+                await log_error(
+                    bot=self.bot,
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
+                    detalis="Please ensure that Titanium has permission to time out the user"
+                )
                 return
 
             try:
@@ -118,12 +127,22 @@ class ScheduledTasksCog(commands.Cog):
                     discord.utils.utcnow() + timedelta(seconds=task.duration),
                     reason=f"{task.case_id} - continuing mute",
                 )
+            except discord.Forbidden as e:
+                await log_error(
+                    bot=self.bot,
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
+                    details=e.text,
+                    exc=e,
+                )
             except Exception as e:
                 await log_error(
                     bot=self.bot,
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
-                    error=f"Failed to refresh mute for {member.id} in guild {guild.name} ({guild.id})",
+                    error=f"Failed to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
+                    details="An unknown error occurred.",
                     exc=e,
                 )
         elif task.type == EventType.PERMA_MUTE_REFRESH:
@@ -142,51 +161,47 @@ class ScheduledTasksCog(commands.Cog):
             if not member.is_timed_out():
                 return
 
+            now = discord.utils.utcnow()
+            schedule_normal = True
             try:
-                next_time = discord.utils.utcnow() + timedelta(days=27)
-
                 if (
                     not guild.me.guild_permissions.moderate_members
                     or member.top_role >= guild.me.top_role
                 ):
-                    now = discord.utils.utcnow()
-                    async with get_session() as session:
-                        session.add(
-                            ScheduledTask(
-                                guild_id=task.guild_id,
-                                user_id=task.user_id,
-                                case_id=task.case_id,
-                                type=EventType.PERMA_MUTE_REFRESH,
-                                time_scheduled=next_time,
-                            )
-                        )
+                    await log_error(
+                        bot=self.bot,
+                        module="ScheduledTasks",
+                        guild_id=task.guild_id,
+                        error=f"No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
+                        detalis="Please ensure that Titanium has permission to time out the user"
+                    )
                     return
 
                 await member.timeout(
-                    discord.utils.utcnow() + timedelta(days=28),
+                    now + timedelta(days=28),
                     reason=f"{task.case_id} - continuing perma mute",
                 )
-
-                now = discord.utils.utcnow()
-                async with get_session() as session:
-                    session.add(
-                        ScheduledTask(
-                            guild_id=task.guild_id,
-                            user_id=task.user_id,
-                            case_id=task.case_id,
-                            type=EventType.PERMA_MUTE_REFRESH,
-                            time_scheduled=next_time,
-                        )
-                    )
-            except Exception as e:
+            except discord.Forbidden as e:
                 await log_error(
                     bot=self.bot,
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
-                    error=f"Failed to refresh perma mute for {member.id} in guild {guild.name} ({guild.id})",
+                    error=f"No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
+                    details=e.text,
                     exc=e,
                 )
-                now = discord.utils.utcnow()
+            except Exception as e:
+                schedule_normal = False
+
+                await log_error(
+                    bot=self.bot,
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"Retrying in 5min: failed to refresh perma mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
+                    details="An unknown error occurred.",
+                    exc=e,
+                )
+
                 async with get_session() as session:
                     session.add(
                         ScheduledTask(
@@ -197,7 +212,20 @@ class ScheduledTasksCog(commands.Cog):
                             time_scheduled=now + timedelta(minutes=5),
                         )
                     )
+            finally:
+                if not schedule_normal:
+                    return
 
+                async with get_session() as session:
+                    session.add(
+                        ScheduledTask(
+                            guild_id=task.guild_id,
+                            user_id=task.user_id,
+                            case_id=task.case_id,
+                            type=EventType.PERMA_MUTE_REFRESH,
+                            time_scheduled=now + timedelta(days=27),
+                        )
+                    )
         elif task.type == EventType.CLOSE_MUTE:
             if not task.guild_id or not task.user_id or not task.case_id:
                 raise ValueError("Guild ID, user ID or case ID is missing (close mute)")
