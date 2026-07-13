@@ -118,7 +118,7 @@ class ScheduledTasksCog(commands.Cog):
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
                     error=f"No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
-                    details="Please ensure that Titanium has permission to time out the user"
+                    details="Please ensure that Titanium has permission to time out the user",
                 )
                 return
 
@@ -162,6 +162,8 @@ class ScheduledTasksCog(commands.Cog):
                 return
 
             now = discord.utils.utcnow()
+            retry = task.retry_amount < 3
+
             try:
                 if (
                     not guild.me.guild_permissions.moderate_members
@@ -171,8 +173,8 @@ class ScheduledTasksCog(commands.Cog):
                         bot=self.bot,
                         module="ScheduledTasks",
                         guild_id=task.guild_id,
-                        error=f"No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
-                        details="Please ensure that Titanium has permission to time out the user"
+                        error=f"{'Retrying in 5min: ' if retry else ''}No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
+                        details="Please ensure that Titanium has permission to time out the user",
                     )
                     return
 
@@ -191,46 +193,39 @@ class ScheduledTasksCog(commands.Cog):
                             time_scheduled=now + timedelta(days=27),
                         )
                     )
+
+                retry = False
             except discord.Forbidden as e:
                 await log_error(
                     bot=self.bot,
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
-                    error=f"No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
+                    error=f"{'Retrying in 5min: ' if retry else ''}No permission to refresh mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
                     details=e.text,
                     exc=e,
                 )
-
-                async with get_session() as session:
-                    session.add(
-                        ScheduledTask(
-                            guild_id=task.guild_id,
-                            user_id=task.user_id,
-                            case_id=task.case_id,
-                            type=EventType.PERMA_MUTE_REFRESH,
-                            time_scheduled=now + timedelta(minutes=5),
-                        )
-                    )
             except Exception as e:
                 await log_error(
                     bot=self.bot,
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
-                    error=f"Retrying in 5min: failed to refresh perma mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
+                    error=f"{'Retrying in 5min: ' if retry else ''}Failed to refresh perma mute for @{member.name} ({member.id}) in guild {guild.name} ({guild.id})",
                     details="An unknown error occurred.",
                     exc=e,
                 )
-
-                async with get_session() as session:
-                    session.add(
-                        ScheduledTask(
-                            guild_id=task.guild_id,
-                            user_id=task.user_id,
-                            case_id=task.case_id,
-                            type=EventType.PERMA_MUTE_REFRESH,
-                            time_scheduled=now + timedelta(minutes=5),
+            finally:
+                if retry:
+                    async with get_session() as session:
+                        session.add(
+                            ScheduledTask(
+                                guild_id=task.guild_id,
+                                user_id=task.user_id,
+                                case_id=task.case_id,
+                                type=EventType.PERMA_MUTE_REFRESH,
+                                time_scheduled=now + timedelta(minutes=5),
+                                retry_amount=task.retry_amount + 1,
+                            )
                         )
-                    )
         elif task.type == EventType.CLOSE_MUTE:
             if not task.guild_id or not task.user_id or not task.case_id:
                 raise ValueError("Guild ID, user ID or case ID is missing (close mute)")
@@ -268,37 +263,70 @@ class ScheduledTasksCog(commands.Cog):
             if not guild:
                 return
 
-            if not guild.me.guild_permissions.ban_members:
-                return
-
+            retry = task.retry_amount < 3
             try:
-                await guild.unban(
-                    discord.Object(id=task.user_id),
-                    reason=f"{task.case_id} - ban expired",
-                )
+                if not guild.me.guild_permissions.ban_members:
+                    return
+
+                try:
+                    await guild.unban(
+                        discord.Object(id=task.user_id),
+                        reason=f"{task.case_id} - ban expired",
+                    )
+                except discord.NotFound:
+                    pass
 
                 async with get_session() as session:
                     case_manager = GuildModCaseManager(bot=self.bot, guild=guild, session=session)
                     await case_manager.close_case(
                         case_id=task.case_id,
                     )
+
+                retry = False
+            except discord.Forbidden as e:
+                await log_error(
+                    bot=self.bot,
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"{'Retrying in 5min: ' if retry else ''}No permission to auto unban {task.user_id} in guild {guild.name} ({guild.id})",
+                    details=e.text,
+                    exc=e,
+                )
             except Exception as e:
                 await log_error(
                     bot=self.bot,
                     module="ScheduledTasks",
                     guild_id=task.guild_id,
-                    error=f"Failed to auto unban {task.user_id} in guild {guild.name} ({guild.id})",
+                    error=f"{'Retrying in 5min: ' if retry else ''}Failed to auto unban {task.user_id} in guild {guild.name} ({guild.id})",
+                    details="An unknown error occurred.",
                     exc=e,
                 )
+            finally:
+                if retry:
+                    async with get_session() as session:
+                        session.add(
+                            ScheduledTask(
+                                guild_id=task.guild_id,
+                                user_id=task.user_id,
+                                case_id=task.case_id,
+                                type=EventType.UNBAN,
+                                time_scheduled=discord.utils.utcnow() + timedelta(minutes=5),
+                                retry_amount=task.retry_amount + 1,
+                            )
+                        )
         elif task.type == EventType.REMINDER:
             reminder = task.reminder
             if not reminder:
                 return
 
+            retry = task.retry_amount < 3
+            channel = None
+
             try:
                 if reminder.dm:
                     channel = await get_or_fetch_user(self.bot, reminder.user_id)
                     if not channel:
+                        retry = False
                         return
                     member = channel
                 else:
@@ -307,17 +335,21 @@ class ScheduledTasksCog(commands.Cog):
 
                     guild = self.bot.get_guild(task.guild_id)
                     if not guild:
+                        retry = False
                         return
 
                     channel = guild.get_channel(reminder.channel_id)
                     if not channel:
+                        retry = False
                         return
 
                     if not isinstance(channel, discord.abc.Messageable):
+                        retry = False
                         return
 
                     member = await get_or_fetch_member(self.bot, guild, reminder.user_id)
                     if not member:
+                        retry = False
                         return
 
                     permissions = channel.permissions_for(guild.me)
@@ -326,13 +358,14 @@ class ScheduledTasksCog(commands.Cog):
                             bot=self.bot,
                             module="Reminders",
                             guild_id=task.guild_id,
-                            error=f"No permissions to send reminder message in #{channel.name} ({channel.id})",
+                            error=f"{'Retrying in 5min: ' if retry else ''}No permissions to send reminder message in #{channel.name} ({channel.id})",
                             send_webhook=False,
                         )
                         return
 
                     member_permissions = channel.permissions_for(member)
                     if not member_permissions.view_channel:
+                        retry = False
                         return
 
                 embed = discord.Embed(
@@ -363,8 +396,43 @@ class ScheduledTasksCog(commands.Cog):
                         content=member.mention if not reminder.dm and not reply_message else None,
                         embed=embed,
                     )
+
+                retry = False
+            except discord.Forbidden as e:
+                await log_error(
+                    bot=self.bot,
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"{'Retrying in 5min: ' if retry else ''}No permission to send reminder for {task.user_id} in #{channel.name if channel else '?'}",
+                    details=e.text,
+                    exc=e,
+                )
+            except Exception as e:
+                await log_error(
+                    bot=self.bot,
+                    module="ScheduledTasks",
+                    guild_id=task.guild_id,
+                    error=f"{'Retrying in 5min: ' if retry else ''}Failed to send reminder for {task.user_id} in #{channel.name if channel else '?'}",
+                    details="An unknown error occurred.",
+                    exc=e,
+                )
             finally:
-                await reminder.delete()
+                if retry:
+                    async with get_session() as session:
+                        session.add(
+                            ScheduledTask(
+                                guild_id=task.guild_id,
+                                channel_id=task.channel_id,
+                                user_id=task.user_id,
+                                message_id=task.message_id,
+                                reminder_id=task.reminder_id,
+                                type=EventType.REMINDER,
+                                time_scheduled=discord.utils.utcnow() + timedelta(minutes=5),
+                                retry_amount=task.retry_amount + 1,
+                            )
+                        )
+                else:
+                    await reminder.delete()
         elif task.type == EventType.POLL_END:
             poll = task.poll
             if not poll:

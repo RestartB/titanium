@@ -975,6 +975,7 @@ class ScheduledTask(Base):
 
     time_scheduled: Mapped[datetime] = MappedColumn(DateTime(timezone=True), index=True)
     type: Mapped[EventType] = MappedColumn(Enum(EventType), nullable=False)
+    retry_amount: Mapped[int] = MappedColumn(Integer, server_default=text("0"), nullable=False)
 
     guild_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     user_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
