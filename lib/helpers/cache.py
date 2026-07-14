@@ -30,23 +30,35 @@ async def get_or_fetch_message(
 
 @overload
 async def get_or_fetch_member(
-    bot: TitaniumBot, guild: discord.Guild, user_id: int, user_fallback: Literal[False] = False
+    bot: TitaniumBot,
+    guild: discord.Guild,
+    user_id: int,
+    user_fallback: Literal[False] = False,
+    fetch: bool = True,
 ) -> discord.Member | None: ...
 
 
 @overload
 async def get_or_fetch_member(
-    bot: TitaniumBot, guild: discord.Guild, user_id: int, user_fallback: Literal[True]
+    bot: TitaniumBot,
+    guild: discord.Guild,
+    user_id: int,
+    user_fallback: Literal[True],
+    fetch: bool = True,
 ) -> discord.Member | discord.User | None: ...
 
 
 async def get_or_fetch_member(
-    bot: TitaniumBot, guild: discord.Guild, user_id: int, user_fallback: bool = False
+    bot: TitaniumBot,
+    guild: discord.Guild,
+    user_id: int,
+    user_fallback: bool = False,
+    fetch: bool = True,
 ) -> discord.Member | discord.User | None:
     # Try to get the member from cache
     member = guild.get_member(user_id)
-    if member:
-        LOGGER.debug(f"Got member from cache (guild: {guild.id}, user: {user_id})")
+    if member or not fetch:
+        LOGGER.debug(f"Got member from cache or fetch is disabled (guild: {guild.id}, user: {user_id})")
         return member
 
     # If not in cache, fetch from API
@@ -62,11 +74,11 @@ async def get_or_fetch_member(
         return user
 
 
-async def get_or_fetch_user(bot: TitaniumBot, user_id: int) -> discord.User | None:
+async def get_or_fetch_user(bot: TitaniumBot, user_id: int, fetch: bool = True) -> discord.User | None:
     # Try to get the user from cache
     user = bot.get_user(user_id)
-    if user:
-        LOGGER.debug(f"Got user from cache (user: {user_id})")
+    if user or not fetch:
+        LOGGER.debug(f"Got user from cache or fetch is disabled (user: {user_id})")
         return user
 
     # If not in cache, fetch from API
