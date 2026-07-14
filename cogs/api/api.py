@@ -42,6 +42,7 @@ from lib.api.validators import (
 )
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.classes.guild_logger import LOGGING_EVENT_MAP, LOGGING_EVENTS
+from lib.enums.moderation import CaseType
 from lib.enums.server_counters import ServerCounterType
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.log_error import log_error
@@ -534,13 +535,16 @@ class APICog(commands.Cog):
         # Get user objects to send user info
         cached_users: dict[int, discord.User | discord.Member | None] = {}
         for case in cases:
-            for user_id in [case.user_id, case.creator_user_id]:
-                if user_id in cached_users:
-                    continue
-
-                cached_users[user_id] = await get_or_fetch_member(
-                    self.bot, guild, user_id, user_fallback=True
+            if case.creator_user_id not in cached_users:
+                cached_users[case.creator_user_id] = await get_or_fetch_member(
+                    self.bot, guild, case.creator_user_id
                 )
+
+            if case.type not in [CaseType.KICK, CaseType.BAN]:
+                if case.user_id not in cached_users:
+                    cached_users[case.user_id] = await get_or_fetch_member(
+                        self.bot, guild, case.user_id
+                    )
 
         cases_output = []
         for case in cases:
@@ -584,19 +588,23 @@ class APICog(commands.Cog):
 
         # Get user objects to send user info
         cached_users: dict[int, discord.User | discord.Member | None] = {}
-        for user_id in [case.user_id, case.creator_user_id]:
-            if user_id in cached_users:
+        cached_users[case.creator_user_id] = await get_or_fetch_member(
+            self.bot, guild, case.creator_user_id
+        )
+
+        if case.type not in [CaseType.KICK, CaseType.BAN]:
+            if case.user_id not in cached_users:
+                cached_users[case.user_id] = await get_or_fetch_member(
+                    self.bot, guild, case.user_id
+                )
+
+        for comment in case.comments:
+            if comment.user_id in cached_users:
                 continue
 
-            cached_users[user_id] = await get_or_fetch_user(self.bot, user_id)
-
-            for comment in case.comments:
-                if comment.user_id in cached_users:
-                    continue
-
-                cached_users[comment.user_id] = await get_or_fetch_member(
-                    self.bot, guild, comment.user_id
-                )
+            cached_users[comment.user_id] = await get_or_fetch_member(
+                self.bot, guild, comment.user_id
+            )
 
         user = cached_users.get(case.user_id)
         creator = cached_users.get(case.creator_user_id)
