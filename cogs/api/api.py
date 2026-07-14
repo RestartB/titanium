@@ -44,7 +44,7 @@ from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.classes.guild_logger import LOGGING_EVENT_MAP, LOGGING_EVENTS
 from lib.enums.moderation import CaseType
 from lib.enums.server_counters import ServerCounterType
-from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
+from lib.helpers.cache import get_or_fetch_member
 from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
 from lib.sql.sql import (
