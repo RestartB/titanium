@@ -1,6 +1,7 @@
+import logging
+
 from datetime import datetime
 from typing import TYPE_CHECKING
-import logging
 
 import discord
 from discord.ext import commands
@@ -91,7 +92,7 @@ class ModMonitorCog(commands.Cog):
                         self.logger.debug(f"Closing case - {mute_case.id}")
                         await case_manager.close_case(mute_case.id)
 
-                self.logger.debug(f"Closed {len(ban_cases)} mute cases")
+                self.logger.debug(f"Closed {len(mute_cases)} mute cases")
         elif entry.action == discord.AuditLogAction.kick:
             if (
                 not entry.target
