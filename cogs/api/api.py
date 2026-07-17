@@ -542,7 +542,9 @@ class APICog(commands.Cog):
 
             if case.type in [CaseType.KICK, CaseType.BAN]:
                 case_user = guild.get_member(case.user_id)
-                cached_users[case.user_id] = case_user if case_user else self.bot.get_user(case.user_id)
+                cached_users[case.user_id] = (
+                    case_user if case_user else self.bot.get_user(case.user_id)
+                )
             else:
                 if case.user_id not in cached_users:
                     cached_users[case.user_id] = await get_or_fetch_member(

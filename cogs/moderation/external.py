@@ -3,8 +3,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 import discord
-import lib.classes.case_manager as case_managers
 from discord.ext import commands
+
+import lib.classes.case_manager as case_managers
 from lib.enums.moderation import CaseType
 from lib.sql.sql import get_session
 
@@ -54,9 +55,7 @@ class ModMonitorCog(commands.Cog):
 
                 # Handle new mutes / updated mutes
                 async with get_session() as session:
-                    case_manager = case_managers.GuildModCaseManager(
-                        self.bot, entry.guild, session
-                    )
+                    case_manager = case_managers.GuildModCaseManager(self.bot, entry.guild, session)
 
                     # Create a case
                     await case_manager.create_case(
@@ -75,15 +74,11 @@ class ModMonitorCog(commands.Cog):
 
                 # Handle unmutes
                 async with get_session() as session:
-                    case_manager = case_managers.GuildModCaseManager(
-                        self.bot, entry.guild, session
-                    )
+                    case_manager = case_managers.GuildModCaseManager(self.bot, entry.guild, session)
 
                     # Close all open mute cases for this user
                     cases = await case_manager.get_cases_by_user(entry.target.id)
-                    mute_cases = [
-                        c for c in cases if c.type == CaseType.MUTE and not c.resolved
-                    ]
+                    mute_cases = [c for c in cases if c.type == CaseType.MUTE and not c.resolved]
 
                     # Close cases
                     for mute_case in mute_cases:

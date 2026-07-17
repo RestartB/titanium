@@ -58,7 +58,9 @@ async def get_or_fetch_member(
     # Try to get the member from cache
     member = guild.get_member(user_id)
     if member or not fetch:
-        LOGGER.debug(f"Got member from cache or fetch is disabled (guild: {guild.id}, user: {user_id})")
+        LOGGER.debug(
+            f"Got member from cache or fetch is disabled (guild: {guild.id}, user: {user_id})"
+        )
         return member
 
     # If not in cache, fetch from API
@@ -74,7 +76,9 @@ async def get_or_fetch_member(
         return user
 
 
-async def get_or_fetch_user(bot: TitaniumBot, user_id: int, fetch: bool = True) -> discord.User | None:
+async def get_or_fetch_user(
+    bot: TitaniumBot, user_id: int, fetch: bool = True
+) -> discord.User | None:
     # Try to get the user from cache
     user = bot.get_user(user_id)
     if user or not fetch:
