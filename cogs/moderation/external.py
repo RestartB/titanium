@@ -95,6 +95,10 @@ class ModMonitorCog(commands.Cog):
                 or not entry.user
             ):
                 self.logger.debug("Required information missing")
+                self.logger.debug("Target present" if entry.target else "Target missing")
+                self.logger.debug(isinstance(entry.target, (discord.User, discord.Member)))
+                self.logger.debug(entry.user_id)
+                self.logger.debug("User present" if entry.user else "User missing")
                 return
 
             async with get_session() as session:
@@ -119,6 +123,10 @@ class ModMonitorCog(commands.Cog):
                 or not entry.user
             ):
                 self.logger.debug("Required information missing")
+                self.logger.debug("Target present" if entry.target else "Target missing")
+                self.logger.debug(isinstance(entry.target, (discord.User, discord.Member)))
+                self.logger.debug(entry.user_id)
+                self.logger.debug("User present" if entry.user else "User missing")
                 return
 
             async with get_session() as session:
@@ -143,6 +151,10 @@ class ModMonitorCog(commands.Cog):
                 or not entry.user
             ):
                 self.logger.debug("Required information missing")
+                self.logger.debug("Target present" if entry.target else "Target missing")
+                self.logger.debug(isinstance(entry.target.id, int))
+                self.logger.debug(entry.user_id)
+                self.logger.debug("User present" if entry.user else "User missing")
                 return
 
             async with get_session() as session:
