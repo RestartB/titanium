@@ -859,10 +859,7 @@ class ModerationBasicCog(
         duration: str = "",
         *,
         reason: str = "",
-        delete_message_days: Optional[float] = commands.parameter(
-            converter=commands.Range[float, 0, 7],
-            default=None,
-        ),
+        delete_message_days: Optional[commands.Range[int, 0, 7]] = None,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
@@ -1485,10 +1482,7 @@ class ModerationBasicCog(
         duration: str = "",
         *,
         reason: str = "",
-        delete_message_days: Optional[float] = commands.parameter(
-            converter=commands.Range[float, 0, 7],
-            default=None,
-        ),
+        delete_message_days: Optional[commands.Range[int, 0, 7]] = None,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
