@@ -457,6 +457,11 @@ class LeaderboardConfigModel(BaseModel):
     ignored_roles: list[str] = Field(default_factory=list, max_length=100)
     ignored_channels: list[str] = Field(default_factory=list, max_length=100)
 
+    bot_message_tracking: bool
+    bot_message_xp: bool
+    bot_vc_tracking: bool
+    bot_vc_xp: bool
+
     levelup_notifications: bool
     notification_ping: bool
     notification_channel: Optional[str] = None

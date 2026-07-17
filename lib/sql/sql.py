@@ -650,6 +650,11 @@ class GuildLeaderboardSettings(Base):
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
 
+    bot_message_tracking: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    bot_message_xp: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    bot_vc_tracking: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    bot_vc_xp: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+
     levelup_notifications: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     notification_ping: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     notification_channel: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)

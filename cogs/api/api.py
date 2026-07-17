@@ -2155,6 +2155,10 @@ class APICog(commands.Cog):
                 existing_config.ignored_roles = [
                     int(role) for role in validated_config.ignored_roles
                 ]
+                existing_config.bot_message_tracking = validated_config.bot_message_tracking
+                existing_config.bot_message_xp = validated_config.bot_message_xp
+                existing_config.bot_vc_tracking = validated_config.bot_vc_tracking
+                existing_config.bot_vc_xp = validated_config.bot_vc_xp
                 existing_config.cooldown = validated_config.cooldown
                 existing_config.levelup_notifications = validated_config.levelup_notifications
                 existing_config.notification_ping = validated_config.notification_ping

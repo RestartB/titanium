@@ -237,27 +237,34 @@ class LeaderboardCog(commands.Cog):
 
         lb_settings = guild_settings.leaderboard_settings
 
+        if member.bot and not lb_settings.bot_vc_tracking:
+            self.logger.debug("Bot vc tracking is disabled")
+            return
+
         if any(role.id in lb_settings.ignored_roles for role in member.roles):
             self.logger.debug(f"Tracking from member with ignored role: {member.id}")
             return
 
         async with get_session() as session:
-            stmt = select(LeaderboardUserStats).where(
-                LeaderboardUserStats.guild_id == member.guild.id,
-                LeaderboardUserStats.user_id == member.id,
+            stmt = insert(LeaderboardUserStats).values(
+                guild_id=member.guild.id, user_id=member.id, vc_minutes=1
             )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["guild_id", "user_id"],
+                set_={
+                    "vc_minutes": LeaderboardUserStats.vc_minutes + 1,
+                },
+            ).returning(LeaderboardUserStats)
+
             result = await session.execute(stmt)
-            user_stats = result.scalar_one_or_none()
-
-            if not user_stats:
-                user_stats = LeaderboardUserStats(guild_id=member.guild.id, user_id=member.id)
-                session.add(user_stats)
-                await session.commit()
-
-            user_stats.vc_minutes += 1
+            user_stats = result.scalar_one()
 
             if not lb_settings.vc_enabled:
                 self.logger.debug(f"VC XP not enabled for guild: {member.guild.id}")
+                return
+
+            if member.bot and not lb_settings.bot_vc_xp:
+                self.logger.debug("Bot vc xp is disabled")
                 return
 
             if (discord.utils.utcnow() - start_time).total_seconds() < 60 * lb_settings.vc_delay:
@@ -371,8 +378,8 @@ class LeaderboardCog(commands.Cog):
     ) -> None:
         now = discord.utils.utcnow()
 
-        # opted out / bot
-        if member.id in self.bot.opt_out or member.bot:
+        # opted out
+        if member.id in self.bot.opt_out:
             return
 
         if (
@@ -401,12 +408,7 @@ class LeaderboardCog(commands.Cog):
     # Message event
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        if (
-            not message.guild
-            or message.is_system()
-            or isinstance(message.author, discord.User)
-            or message.author.bot
-        ):
+        if not message.guild or message.is_system() or isinstance(message.author, discord.User):
             return
 
         if message.author.id in self.bot.opt_out:
@@ -423,6 +425,10 @@ class LeaderboardCog(commands.Cog):
             return
 
         lb_settings = guild_settings.leaderboard_settings
+
+        if message.author.bot and not lb_settings.bot_message_tracking:
+            self.logger.debug("Bot message tracking is disabled")
+            return
 
         if message.channel.id in lb_settings.ignored_channels:
             self.logger.debug(f"Message in ignored channel: {message.channel.id}")
@@ -457,7 +463,6 @@ class LeaderboardCog(commands.Cog):
             stmt = insert(LeaderboardUserStats).values(
                 guild_id=message.guild.id,
                 user_id=message.author.id,
-                xp=0,
                 message_count=1,
                 word_count=word_count,
                 attachment_count=attachment_count,
@@ -476,6 +481,10 @@ class LeaderboardCog(commands.Cog):
 
             result = await session.execute(stmt)
             user_stats = result.scalar_one()
+
+            if message.author.bot and not lb_settings.bot_message_xp:
+                self.logger.debug("Bot message xp is disabled")
+                return
 
             if cooldown > 0:
                 created_at = message.created_at
