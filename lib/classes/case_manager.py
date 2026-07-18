@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, Sequence
+from typing import TYPE_CHECKING, Annotated, Literal, Optional, Sequence, overload
 
 import discord
 from discord import Guild
@@ -77,11 +77,40 @@ class GuildModCaseManager:
 
         return cases
 
+    @overload
     async def create_case(
         self,
         action: CaseType,
-        user: discord.User | discord.Member,
+        user: discord.User | discord.Member | discord.Object,
+        creator_user: discord.User | discord.Member | discord.ClientUser | discord.Object,
+        reason: Optional[str],
+        time_created: Optional[datetime] = None,
+        duration: Annotated[timedelta, DurationConverter] | None = None,
+        until: datetime | None = None,
+        source: CaseSource = CaseSource.MODERATION,
+        *,
+        external: Literal[True],
+    ) -> tuple[ModCase, bool, str]: ...
+
+    @overload
+    async def create_case(
+        self,
+        action: CaseType,
+        user: discord.User | discord.Member | discord.Object,
         creator_user: discord.User | discord.Member | discord.ClientUser,
+        reason: Optional[str],
+        time_created: Optional[datetime] = None,
+        duration: Annotated[timedelta, DurationConverter] | None = None,
+        until: datetime | None = None,
+        source: CaseSource = CaseSource.MODERATION,
+        external: Literal[False] = False,
+    ) -> tuple[ModCase, bool, str]: ...
+
+    async def create_case(
+        self,
+        action: CaseType,
+        user: discord.User | discord.Member | discord.Object,
+        creator_user: discord.User | discord.Member | discord.ClientUser | discord.Object,
         reason: Optional[str],
         time_created: Optional[datetime] = None,
         duration: Annotated[timedelta, DurationConverter] | None = None,
@@ -89,6 +118,9 @@ class GuildModCaseManager:
         source: CaseSource = CaseSource.MODERATION,
         external: bool = False,
     ) -> tuple[ModCase, bool, str]:
+        if not external and isinstance(creator_user, discord.Object):
+            raise TypeError("creator_user must not be discord.Object when external is False")
+
         if time_created:
             time_created = time_created.astimezone(timezone.utc)
         else:
@@ -170,6 +202,10 @@ class GuildModCaseManager:
         if external:
             return case, dm_success, dm_error
 
+        # make the type checker happy
+        # already covered by the if statement at the start
+        assert not isinstance(creator_user, discord.Object)
+
         if duration and action == CaseType.MUTE:
             # Schedule mute refreshes
             await self._schedule_mute_refreshes(case, duration)
@@ -229,8 +265,6 @@ class GuildModCaseManager:
             )
         elif action == CaseType.WARN:
             embed = warned_dm(bot=self.bot, ctx=user, reason=case.description)
-        else:
-            embed = None
 
         if embed and not user.bot:
             dm_success, dm_error = await send_dm(

@@ -33,15 +33,6 @@ class ModMonitorCog(commands.Cog):
 
         if entry.action == discord.AuditLogAction.member_update:
             self.logger.debug("Member update event received")
-            if (
-                not entry.target
-                or not isinstance(entry.target, discord.Member)
-                or not self.bot.user
-                or not entry.user_id
-                or not entry.user
-            ):
-                self.logger.debug("Required information missing")
-                return
 
             # Check if the timeout status was specifically changed in this event
             if not hasattr(entry.after, "timed_out_until"):
@@ -53,6 +44,15 @@ class ModMonitorCog(commands.Cog):
             if timeout_after is not None:
                 self.logger.debug("User timed out")
 
+                if (
+                    not entry.target
+                    or not isinstance(entry.target, (discord.User, discord.Member, discord.Object))
+                    or not self.bot.user
+                    or not entry.user_id
+                ):
+                    self.logger.debug("Required information missing")
+                    return
+
                 # Handle new mutes / updated mutes
                 async with get_session() as session:
                     case_manager = case_managers.GuildModCaseManager(self.bot, entry.guild, session)
@@ -61,7 +61,7 @@ class ModMonitorCog(commands.Cog):
                     await case_manager.create_case(
                         action=CaseType.MUTE,
                         user=entry.target,
-                        creator_user=entry.user,
+                        creator_user=entry.user if entry.user else discord.Object(id=entry.user_id),
                         reason=entry.reason,
                         time_created=entry.created_at,
                         until=timeout_after,
@@ -71,6 +71,14 @@ class ModMonitorCog(commands.Cog):
                 self.logger.debug("Created mute case")
             else:
                 self.logger.debug("User timeout removed")
+
+                if (
+                    not entry.target
+                    or not isinstance(entry.target, (discord.User, discord.Member, discord.Object))
+                    or not self.bot.user
+                ):
+                    self.logger.debug("Required information missing")
+                    return
 
                 # Handle unmutes
                 async with get_session() as session:
@@ -89,10 +97,9 @@ class ModMonitorCog(commands.Cog):
         elif entry.action == discord.AuditLogAction.kick:
             if (
                 not entry.target
-                or not isinstance(entry.target, (discord.User, discord.Member))
+                or not isinstance(entry.target, (discord.User, discord.Member, discord.Object))
                 or not self.bot.user
                 or not entry.user_id
-                or not entry.user
             ):
                 self.logger.debug("Required information missing")
                 self.logger.debug("Target present" if entry.target else "Target missing")
@@ -108,7 +115,7 @@ class ModMonitorCog(commands.Cog):
                 await case_manager.create_case(
                     action=CaseType.KICK,
                     user=entry.target,
-                    creator_user=entry.user,
+                    creator_user=entry.user if entry.user else discord.Object(id=entry.user_id),
                     reason=entry.reason,
                     external=True,
                 )
@@ -117,10 +124,9 @@ class ModMonitorCog(commands.Cog):
         elif entry.action == discord.AuditLogAction.ban:
             if (
                 not entry.target
-                or not isinstance(entry.target, (discord.User, discord.Member))
+                or not isinstance(entry.target, (discord.User, discord.Member, discord.Object))
                 or not self.bot.user
                 or not entry.user_id
-                or not entry.user
             ):
                 self.logger.debug("Required information missing")
                 self.logger.debug("Target present" if entry.target else "Target missing")
@@ -136,7 +142,7 @@ class ModMonitorCog(commands.Cog):
                 await case_manager.create_case(
                     action=CaseType.BAN,
                     user=entry.target,
-                    creator_user=entry.user,
+                    creator_user=entry.user if entry.user else discord.Object(id=entry.user_id),
                     reason=entry.reason,
                     external=True,
                 )
@@ -145,16 +151,12 @@ class ModMonitorCog(commands.Cog):
         elif entry.action == discord.AuditLogAction.unban:
             if (
                 not entry.target
-                or not isinstance(entry.target.id, int)
+                or not isinstance(entry.target, (discord.User, discord.Member, discord.Object))
                 or not self.bot.user
-                or not entry.user_id
-                or not entry.user
             ):
                 self.logger.debug("Required information missing")
                 self.logger.debug("Target present" if entry.target else "Target missing")
                 self.logger.debug(type(entry.target))
-                self.logger.debug(entry.user_id)
-                self.logger.debug("User present" if entry.user else "User missing")
                 return
 
             async with get_session() as session:
