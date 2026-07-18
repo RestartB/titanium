@@ -45,6 +45,3 @@ extend-select = ["I"]
 typeCheckingMode = "basic"
 venvPath = "."
 venv = ".venv"
-
-[tool.basedpyright]
-typeCheckingMode = "basic"

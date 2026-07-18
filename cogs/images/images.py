@@ -103,32 +103,6 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
 
         self.bot.tree.add_command(self.quote_ctx)
 
-    async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        embed = discord.Embed(title=f"{self.bot.error_emoji} Error", colour=discord.Colour.red())
-
-        if isinstance(error, img_tools.ImageTooSmallError):
-            embed.description = "The provided image is too small for this operation."
-        elif isinstance(error, img_tools.OperationTooLargeError):
-            embed.description = "The resulting image would be too large to process. Please ensure that the result image is below 10000x10000px."
-        else:
-            raise error
-
-        await ctx.reply(embed=embed)
-
-    async def cog_app_command_error(
-        self, interaction: discord.Interaction["TitaniumBot"], error: app_commands.AppCommandError
-    ) -> None:
-        embed = discord.Embed(title=f"{self.bot.error_emoji} Error", colour=discord.Colour.red())
-
-        if isinstance(error, img_tools.ImageTooSmallError):
-            embed.description = "The provided image is too small for this operation."
-        elif isinstance(error, img_tools.OperationTooLargeError):
-            embed.description = "The resulting image would be too large to process. Please ensure that the result image is below 10000x10000px."
-        else:
-            raise error
-
-        await interaction.edit_original_response(embed=embed)
-
     @app_commands.checks.cooldown(1, 5)
     async def convert_images_callback(
         self, interaction: discord.Interaction["TitaniumBot"], message: discord.Message

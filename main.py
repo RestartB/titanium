@@ -33,6 +33,7 @@ from sqlalchemy.orm import selectinload
 from topgg.client import DBLClient
 
 import lib.helpers.hybrid as adapters
+from lib.classes import img_tools
 from lib.classes.automod_message import AutomodMessage
 from lib.embeds.general import guild_only
 from lib.helpers.hybrid import SlashCommandOnly
@@ -498,7 +499,21 @@ async def check(ctx: commands.Context["TitaniumBot"]):
 
 @bot.event
 async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands.CommandError):
-    if (
+    original_error = getattr(error, "original", error)
+
+    if isinstance(original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)):
+        description = (
+            "The provided image is too small for this operation."
+            if isinstance(original_error, img_tools.ImageTooSmallError)
+            else "The resulting image would be too large to process. Please ensure that the result image is below 10000x10000px."
+        )
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Error",
+            description=description,
+            colour=discord.Colour.red(),
+        )
+        await ctx.reply(embed=embed)
+    elif (
         isinstance(error, commands.CommandNotFound)
         or isinstance(error, commands.NotOwner)
         or isinstance(error, adapters.GroupCommandNotFoundException)
@@ -654,7 +669,21 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
 async def on_app_command_error(
     interaction: discord.Interaction["TitaniumBot"], error: discord.app_commands.AppCommandError
 ):
-    if isinstance(error, discord.app_commands.CommandOnCooldown):
+    original_error = getattr(error, "original", error)
+
+    if isinstance(original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)):
+        description = (
+            "The provided image is too small for this operation."
+            if isinstance(original_error, img_tools.ImageTooSmallError)
+            else "The resulting image would be too large to process. Please ensure that the result image is below 10000x10000px."
+        )
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Error",
+            description=description,
+            colour=discord.Colour.red(),
+        )
+        await interaction.edit_original_response(embed=embed)
+    elif isinstance(error, discord.app_commands.CommandOnCooldown):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Cooldown",
             description=error,
