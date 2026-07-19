@@ -139,6 +139,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     @app_commands.describe(
         image="The image to convert.",
         output_format="The format to convert to.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def convert_image(
@@ -146,32 +147,34 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         ctx: commands.Context["TitaniumBot"],
         image: Attachment,
         output_format: ImageFormats,
+        ephemeral: bool = False,
     ) -> None:
         """Convert a image to various formats."""
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(image)
             file = await converter.convert(output_format, self.STANDARD_QUALITY)
 
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @image_group.command(
         name="gif",
         description="Convert an image to GIF. For more formats, use the /image format command.",
         aliases=["to-gif", "togif"],
     )
-    @app_commands.describe(image="The image to convert.")
+    @app_commands.describe(
+        image="The image to convert.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 5)
     async def gif_image(
-        self,
-        ctx: commands.Context["TitaniumBot"],
-        image: Attachment,
+        self, ctx: commands.Context["TitaniumBot"], image: Attachment, ephemeral: bool = False
     ) -> None:
         """Convert a image to GIF."""
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(image)
             file = await converter.convert(ImageFormats.GIF, self.STANDARD_QUALITY)
 
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @image_group.command(
         name="resize",
@@ -182,6 +185,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         width="The new width of the image.",
         height="The new height of the image.",
         output_format="Optional: the format to output to. Defaults to PNG.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def resize_image(
@@ -191,13 +195,14 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         width: commands.Range[int, 1, 5000],
         height: commands.Range[int, 1, 5000],
         output_format: ImageFormats = ImageFormats.PNG,
+        ephemeral: bool = False,
     ) -> None:
         """Resize an image to the specified dimensions."""
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(image)
             file = await converter.resize(output_format, width, height)
 
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @image_group.command(
         name="deepfry",
@@ -208,6 +213,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         intensity_scale="Optional: the intensity scale to apply (0 to 100). Defaults to 100.",
         red_filter="Optional: whether to apply a red filter. Defaults to True.",
         output_format="Optional: the format to output to. Defaults to PNG.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def deepfry_image(
@@ -217,16 +223,17 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         intensity_scale: commands.Range[float, 1, 100] = 100,
         red_filter: bool = True,
         output_format: ImageFormats = ImageFormats.PNG,
+        ephemeral: bool = False,
     ) -> None:
         """Deepfry an image."""
 
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             intensity_scale /= 100.0
 
             converter = img_tools.ImageTools(image)
             file = await converter.deepfry(output_format, intensity_scale, red_filter)
 
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @image_group.command(
         name="invert",
@@ -235,6 +242,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     @app_commands.describe(
         image="The image to invert.",
         output_format="Optional: the format to output to. Defaults to PNG.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def invert_image(
@@ -242,13 +250,14 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         ctx: commands.Context["TitaniumBot"],
         image: Attachment,
         output_format: ImageFormats = ImageFormats.PNG,
+        ephemeral: bool = False,
     ) -> None:
         """Invert the colours of an image."""
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(image)
             file = await converter.invert(output_format)
 
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @image_group.command(
         name="grayscale",
@@ -257,6 +266,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     @app_commands.describe(
         image="The image to convert to grayscale.",
         output_format="Optional: the format to output to. Defaults to PNG.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def grayscale_image(
@@ -264,13 +274,14 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         ctx: commands.Context["TitaniumBot"],
         image: Attachment,
         output_format: ImageFormats = ImageFormats.PNG,
+        ephemeral: bool = False,
     ) -> None:
         """Convert an image to grayscale."""
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(image)
             file = await converter.grayscale(output_format)
 
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @image_group.command(
         name="rotate",
@@ -280,6 +291,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         image="The image to rotate.",
         angle="The angle to rotate the image by (in degrees).",
         output_format="Optional: the format to output to. Defaults to PNG.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def rotate_image(
@@ -288,13 +300,14 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         image: Attachment,
         angle: int,
         output_format: ImageFormats = ImageFormats.PNG,
+        ephemeral: bool = False,
     ) -> None:
         """Rotate an image by the specified angle."""
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(image)
             file = await converter.rotate(output_format, angle)
 
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @image_group.command(
         name="speechbubble",
@@ -305,6 +318,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         direction="Optional: the direction the speech bubble points to. Defaults to right.",
         colour="Optional: the colour of the speech bubble. Defaults to white.",
         output_format="Optional: the format to output to. Defaults to PNG.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.choices(
         direction=[
@@ -325,13 +339,14 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         direction: Literal["left", "right"] = "right",
         colour: Literal["black", "white", "transparent"] = "white",
         output_format: ImageFormats = ImageFormats.PNG,
+        ephemeral: bool = False,
     ) -> None:
         """Add a speech bubble effect to an image."""
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(image)
             file = await converter.speech_bubble(output_format, direction, colour)
 
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @image_group.command(
         name="caption",
@@ -343,6 +358,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         font="Optional: the font to use for the caption. Defaults to Figtree.",
         position="Optional: the position to place the text in. Defaults to top.",
         output_format="Optional: the format to output to. Defaults to GIF.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.choices(
         position=[
@@ -364,9 +380,10 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         font: Literal["futura", "impact", "figtree"] = "figtree",
         position: Literal["top", "bottom"] = "top",
         output_format: ImageFormats = ImageFormats.GIF,
+        ephemeral: bool = False,
     ) -> None:
         """Add a caption to an image."""
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             if font == "futura":
                 selected_font = os.path.join("lib", "fonts", "futura.otf")
             else:
@@ -375,7 +392,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
             converter = img_tools.ImageTools(image)
             file = await converter.caption(output_format, caption.lower(), selected_font, position)
 
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @image_group.command(
         name="overlay",
@@ -386,6 +403,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         overlay="The image to overlay.",
         opacity="The percentage opacity of the overlay image.",
         output_format="Optional: the format to output to. Defaults to GIF.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def overlay_image(
@@ -395,12 +413,13 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         overlay: Attachment,
         opacity: commands.Range[int, 1, 100],
         output_format: ImageFormats = ImageFormats.GIF,
+        ephemeral: bool = False,
     ) -> None:
         """Overlay a static image onto another static image."""
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(source)
             file = await converter.overlay(overlay, opacity, output_format)
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @image_group.command(
         name="nasa",
@@ -409,6 +428,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     @app_commands.describe(
         word="Word to generate image of. Cannot contain spaces, numbers or special characters.",
         output_format="Optional: the format to output to. Defaults to GIF.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def nasa(
@@ -416,15 +436,16 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         ctx: commands.Context["TitaniumBot"],
         word: commands.Range[str, 1, 50],
         output_format: ImageFormats = ImageFormats.GIF,
+        ephemeral: bool = False,
     ) -> None:
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             if len(word) > 50:
                 embed = discord.Embed(
                     title=f"{ctx.bot.error_emoji} Too Long",
                     description="The word is too long. It can only be 50 letters long.",
                     colour=discord.Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             if not (word.isascii() and word.isalpha()):
@@ -433,7 +454,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
                     description="The word can only contain letters.",
                     colour=discord.Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             images: list[BytesIO] = []
@@ -460,7 +481,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
                 description=f"{ctx.bot.info_emoji} Images sourced from NASA and the U.S. Geological Survey.",
                 colour=discord.Colour.light_grey(),
             )
-            await ctx.reply(embed=embed, file=file)
+            await ctx.reply(embed=embed, file=file, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

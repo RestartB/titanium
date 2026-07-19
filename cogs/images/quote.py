@@ -119,6 +119,7 @@ class QuoteCommandsCog(
         light_mode="Optional: whether to start with light mode. Defaults to false.",
         bw_mode="Optional: whether to start with black and white mode. Defaults to false.",
         spoiler="Optional: whether to send the image as a spoiler. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -135,8 +136,9 @@ class QuoteCommandsCog(
         light_mode: bool = False,
         bw_mode: bool = False,
         spoiler: bool = False,
+        ephemeral: bool = False,
     ):
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             pfp_data = BytesIO()
             await user.display_avatar.with_format("png").save(pfp_data)
 
@@ -202,7 +204,7 @@ class QuoteCommandsCog(
             if output_format:
                 view.remove_item(view.png_button)
 
-            await ctx.reply(file=file, view=view)
+            await ctx.reply(file=file, view=view, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

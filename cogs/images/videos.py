@@ -43,12 +43,13 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
         description="Convert a video to GIF. Max 20MB, 10s, 15 FPS.",
         aliases=["to-gif", "togif"],
     )
-    @app_commands.describe(video="The video to convert to GIF.")
+    @app_commands.describe(
+        video="The video to convert to GIF.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 5)
     async def gif_video(
-        self,
-        ctx: commands.Context["TitaniumBot"],
-        video: Attachment,
+        self, ctx: commands.Context["TitaniumBot"], video: Attachment, ephemeral: bool = False
     ) -> None:
         """Convert a video to GIF."""
 
@@ -63,7 +64,7 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
             else:
                 embed.description = "Please upload a video."
 
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         if video.size > 20_000_000:
@@ -72,10 +73,10 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
                 description="Your video is too big. Please ensure that your source video is less than `20MB`.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
-        async with defer(ctx):
+        async with defer(ctx, ephemeral=ephemeral):
             proc = await asyncio.create_subprocess_exec(
                 "ffmpeg",
                 "-t",
@@ -109,7 +110,7 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
                     description="Failed to convert your video. Please try again later.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             output_size = len(stdout_data)
@@ -119,7 +120,7 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
                     description=f"The output is bigger than the Discord file limit (limit: `10MB`, output size: `{round(output_size / 1_000_000, 2)}MB`). Please try a smaller source video.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             output_data = BytesIO(stdout_data)
@@ -130,19 +131,20 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
                 filename=self._get_output_filename(video, "gif"),
                 spoiler=video.is_spoiler(),
             )
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
     @video_group.command(
         name="webp",
         description="Convert a video to WebP. Max 20MB, 20s, 30 FPS.",
         aliases=["to-webp", "towebp"],
     )
-    @app_commands.describe(video="The video to convert to WebP.")
+    @app_commands.describe(
+        video="The video to convert to WebP.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 5)
     async def webp_video(
-        self,
-        ctx: commands.Context["TitaniumBot"],
-        video: Attachment,
+        self, ctx: commands.Context["TitaniumBot"], video: Attachment, ephemeral: bool = False
     ) -> None:
         """Convert a video to WebP."""
 
@@ -157,7 +159,7 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
             else:
                 embed.description = "Please upload a video."
 
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         if video.size > 20_000_000:
@@ -166,7 +168,7 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
                 description="Your video is too big. Please ensure that your source video is less than `20MB`.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         async with defer(ctx):
@@ -207,7 +209,7 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
                     description="Failed to convert your video. Please try again later.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             output_size = len(stdout_data)
@@ -217,7 +219,7 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
                     description=f"The output is bigger than the Discord file limit (limit: `10MB`, output size: `{round(output_size / 1_000_000, 2)}MB`). Please try a smaller source video.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             # fix RIFF size header
@@ -234,7 +236,7 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
                 filename=self._get_output_filename(video, "webp"),
                 spoiler=video.is_spoiler(),
             )
-            await ctx.reply(file=file)
+            await ctx.reply(file=file, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

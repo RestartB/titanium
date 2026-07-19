@@ -28,12 +28,16 @@ class ReviewsCommandsCog(commands.Cog):
     @commands.hybrid_group(name="reviews", description="Get reviews for a user.", fallback="user")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.describe(user="Optional: the user to get reviews for. Defaults to yourself.")
+    @app_commands.describe(
+        user="Optional: the user to get reviews for. Defaults to yourself.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 5)
     async def reviews_group(
         self,
         ctx: commands.Context["TitaniumBot"],
         user: Optional[discord.User | discord.Member] | None,
+        ephemeral: bool = False,
     ) -> None:
         if user is None:
             user = ctx.author
@@ -58,7 +62,7 @@ class ReviewsCommandsCog(commands.Cog):
                     description="ReviewDB has encountered an error. Please try again later.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
 
                 return
             else:
@@ -116,18 +120,21 @@ class ReviewsCommandsCog(commands.Cog):
 
         if len(pages) > 1:
             view = PaginationView(embeds=pages, timeout=300)
-            await ctx.reply(embed=pages[0], view=view)
+            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
         else:
-            await ctx.reply(embed=pages[0])
+            await ctx.reply(embed=pages[0], ephemeral=ephemeral)
 
     # Server reviews command
     @reviews_group.command(name="server", description="Get reviews for the server.")
     @global_alias("serverreviews")
     @global_alias("server-reviews")
     @commands.guild_only()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def server_reviews(self, ctx: commands.Context["TitaniumBot"]):
-        await ctx.defer()
+    async def server_reviews(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
+        await ctx.defer(ephemeral=ephemeral)
 
         if not ctx.guild:
             raise commands.NoPrivateMessage
@@ -153,7 +160,7 @@ class ReviewsCommandsCog(commands.Cog):
                     colour=Colour.red(),
                 )
 
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
             else:
                 if review_response["hasNextPage"]:
@@ -210,9 +217,9 @@ class ReviewsCommandsCog(commands.Cog):
 
         if len(pages) > 1:
             view = PaginationView(embeds=pages, timeout=300)
-            await ctx.reply(embed=pages[0], view=view)
+            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
         else:
-            await ctx.reply(embed=pages[0])
+            await ctx.reply(embed=pages[0], ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

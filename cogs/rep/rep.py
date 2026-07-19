@@ -172,15 +172,23 @@ class RepCog(commands.Cog):
     @commands.hybrid_group(
         name="rep", fallback="view", description="Set, add, remove, and view rep for users."
     )
-    @app_commands.describe(member="The member to view.")
+    @app_commands.describe(
+        member="The member to view.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.guild_only()
     @app_commands.guild_install()
     @commands.cooldown(1, 3)
-    async def rep_group(self, ctx: commands.Context["TitaniumBot"], member: discord.Member) -> None:
+    async def rep_group(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        member: discord.Member,
+        ephemeral: bool = False,
+    ) -> None:
         if not ctx.guild:
             raise ValueError("Guild only command but no guild available")
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
         user = member or ctx.author
 
         if user.id in self.bot.opt_out:
@@ -189,7 +197,7 @@ class RepCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use rep features.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
@@ -223,7 +231,7 @@ class RepCog(commands.Cog):
                     description=f"**{user.display_name}** has no recorded rep.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             embed = discord.Embed(
@@ -248,7 +256,7 @@ class RepCog(commands.Cog):
                 url=user.display_avatar.url,
             )
 
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Leaderboard command
     @rep_group.command(
@@ -256,12 +264,15 @@ class RepCog(commands.Cog):
         aliases=["lb", "top"],
         description="View the rep leaderboard for this server.",
     )
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def rep_leaderboard(self, ctx: commands.Context["TitaniumBot"]):
+    async def rep_leaderboard(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
         if not ctx.guild:
             return
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         async with get_session() as session:
             stmt = (
@@ -279,7 +290,7 @@ class RepCog(commands.Cog):
                     description="No users have any rep yet.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             pages = [
@@ -307,16 +318,24 @@ class RepCog(commands.Cog):
             )
 
             view = RepReloadPageView(embeds=pages, timeout=240, title="Rep Leaderboard")
-            await ctx.reply(embed=pages[0], view=view)
+            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
 
     @rep_group.command(name="add", aliases=["plus"], description="Give a rep point to a user.")
-    @app_commands.describe(member="The member to give rep to.")
+    @app_commands.describe(
+        member="The member to give rep to.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 3)
-    async def add_rep(self, ctx: commands.Context["TitaniumBot"], member: discord.Member) -> None:
+    async def add_rep(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        member: discord.Member,
+        ephemeral: bool = False,
+    ) -> None:
         if not ctx.guild:
             raise ValueError("Guild only command but no guild available")
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if member.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -324,7 +343,7 @@ class RepCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use rep features.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         guild_config = await self.bot.fetch_guild_config(ctx.guild.id)
@@ -337,7 +356,7 @@ class RepCog(commands.Cog):
                 description="The rep system is disabled in this server.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         bucket = self.xp_cooldowns.get_bucket(
@@ -357,7 +376,7 @@ class RepCog(commands.Cog):
                 description=f"Please wait `{retry_after:.2f}s` before giving more rep to this user.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
@@ -384,6 +403,7 @@ class RepCog(commands.Cog):
             rep = (await session.execute(stmt)).scalar_one()
 
         await ctx.reply(
+            ephemeral=ephemeral,
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
                 description=f"**1 rep** given to {member.mention} (`{rep.rep:,}` rep total)",
@@ -397,16 +417,22 @@ class RepCog(commands.Cog):
         description="Take away rep points that you gave to a user.",
     )
     @app_commands.describe(
-        member="The member to give rep to.", amount="The amount of rep to remove from the user."
+        member="The member to give rep to.",
+        amount="The amount of rep to remove from the user.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 3)
     async def remove_rep(
-        self, ctx: commands.Context["TitaniumBot"], member: discord.Member, amount: int
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        member: discord.Member,
+        amount: int,
+        ephemeral: bool = False,
     ) -> None:
         if not ctx.guild:
             raise ValueError("Guild only command but no guild available")
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if member.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -414,7 +440,7 @@ class RepCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use rep features.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         guild_config = await self.bot.fetch_guild_config(ctx.guild.id)
@@ -427,7 +453,7 @@ class RepCog(commands.Cog):
                 description="Removing user rep is disabled in this server.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
@@ -444,6 +470,7 @@ class RepCog(commands.Cog):
 
             if not history:
                 await ctx.reply(
+                    ephemeral=ephemeral,
                     embed=discord.Embed(
                         title=f"{self.bot.error_emoji} Nothing to Remove",
                         description="You haven't given this user any rep before, so there is nothing to remove.",
@@ -454,6 +481,7 @@ class RepCog(commands.Cog):
 
             if len(history) != amount:
                 await ctx.reply(
+                    ephemeral=ephemeral,
                     embed=discord.Embed(
                         title=f"{self.bot.error_emoji} Too Much Rep",
                         description=f"You have only given this user `{len(history):,}` rep, so you can't remove `{amount - len(history):,}` extra rep.",
@@ -480,6 +508,7 @@ class RepCog(commands.Cog):
             rep = (await session.execute(stmt)).scalar_one()
 
         await ctx.reply(
+            ephemeral=ephemeral,
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
                 description=f"**{amount:,} rep** removed from {member.mention} (`{rep.rep:,}` rep total)",
@@ -488,16 +517,23 @@ class RepCog(commands.Cog):
         )
 
     @rep_group.command(name="set", description="Manually set the rep of a user.")
-    @app_commands.describe(member="The member to set the rep of.")
+    @app_commands.describe(
+        member="The member to set the rep of.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3)
     async def set_rep(
-        self, ctx: commands.Context["TitaniumBot"], member: discord.Member, amount: int
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        member: discord.Member,
+        amount: int,
+        ephemeral: bool = False,
     ) -> None:
         if not ctx.guild:
             raise ValueError("Guild only command but no guild available")
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if member.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -505,7 +541,7 @@ class RepCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use rep features.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
@@ -522,6 +558,7 @@ class RepCog(commands.Cog):
             await session.execute(stmt)
 
         await ctx.reply(
+            ephemeral=ephemeral,
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
                 description=f"Set {member.mention}'s rep to `{amount:,}`.",

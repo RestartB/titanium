@@ -29,7 +29,8 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         remove_global_aliases(self, self.bot)
 
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
-        await _defer(ctx)
+        ephemeral = bool(ctx.interaction and getattr(ctx.interaction.namespace, "ephemeral", False))
+        await _defer(ctx, ephemeral=ephemeral)
 
         if not ctx.guild:
             return False
@@ -37,6 +38,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         config = await self.bot.fetch_guild_config(ctx.guild.id)
         if not config or not config.moderation_enabled:
             await ctx.reply(
+                ephemeral=ephemeral,
                 embed=Embed(
                     colour=Colour.red(),
                     title=f"{self.bot.error_emoji} Moderation Disabled",
@@ -74,11 +76,15 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @commands.guild_only()
     @app_commands.describe(
-        user="The user to search for. You can only search for other users if you have a moderation permission."
+        user="The user to search for. You can only search for other users if you have a moderation permission.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def cases(
-        self, ctx: commands.Context["TitaniumBot"], user: User | None = None
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        user: User | None = None,
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or isinstance(ctx.author, User):
             return
@@ -94,11 +100,12 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                         and not ctx.author.guild_permissions.moderate_members
                     ):
                         return await ctx.reply(
+                            ephemeral=ephemeral,
                             embed=Embed(
                                 title=f"{self.bot.error_emoji} Permission Denied",
                                 description="You do not have permission to view cases for other users. Please ensure you have the Kick Members, Ban Members or Timeout Members permission.",
                                 colour=Colour.red(),
-                            )
+                            ),
                         )
 
                     cases_list = await case_manager.get_cases_by_user(user.id)
@@ -106,11 +113,12 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
                     if embeds == []:
                         return await ctx.reply(
+                            ephemeral=ephemeral,
                             embed=Embed(
                                 title=f"{self.bot.error_emoji} No Cases Found",
                                 description="This user has no moderation cases.",
                                 colour=Colour.red(),
-                            )
+                            ),
                         )
 
                     embeds[0].set_footer(
@@ -122,20 +130,21 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
                     if len(embeds) > 1:
                         view = PaginationView(embeds, 120)
-                        await ctx.reply(embed=embeds[0], view=view)
+                        await ctx.reply(ephemeral=ephemeral, embed=embeds[0], view=view)
                     else:
-                        await ctx.reply(embed=embeds[0])
+                        await ctx.reply(ephemeral=ephemeral, embed=embeds[0])
                 else:
                     cases_list = await case_manager.get_cases_by_user(ctx.author.id)
                     embeds = await self._build_embeds(cases_list, ctx.author, ctx.author)
 
                     if embeds == []:
                         return await ctx.reply(
+                            ephemeral=ephemeral,
                             embed=Embed(
                                 title=f"{self.bot.error_emoji} No Cases Found",
                                 description="You have no moderation cases.",
                                 colour=Colour.red(),
-                            )
+                            ),
                         )
 
                     embeds[0].set_footer(
@@ -147,9 +156,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
                     if len(embeds) > 1:
                         view = PaginationView(embeds, 120)
-                        await ctx.reply(embed=embeds[0], view=view)
+                        await ctx.reply(ephemeral=ephemeral, embed=embeds[0], view=view)
                     else:
-                        await ctx.reply(embed=embeds[0])
+                        await ctx.reply(ephemeral=ephemeral, embed=embeds[0])
 
     @commands.hybrid_group(
         name="case", fallback="view", description="View and manage moderation cases."
@@ -163,10 +172,16 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         commands.has_permissions(moderate_members=True),
     )
     @app_commands.default_permissions(moderate_members=True)
-    @app_commands.describe(case_id="The case ID to search for.")
+    @app_commands.describe(
+        case_id="The case ID to search for.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 3)
     async def case_group(
-        self, ctx: commands.Context["TitaniumBot"], case_id: str
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        case_id: str,
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
@@ -178,7 +193,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                         case_id
                     )
             except CaseNotFoundException:
-                return await ctx.reply(embed=case_embeds.case_not_found(self.bot, case_id))
+                return await ctx.reply(
+                    ephemeral=ephemeral, embed=case_embeds.case_not_found(self.bot, case_id)
+                )
 
             # Get creator
             creator = self.bot.get_user(case.creator_user_id)
@@ -207,7 +224,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             )
 
             await ctx.reply(
-                embed=case_embeds.case_embed(self.bot, case, creator, target), view=view
+                ephemeral=ephemeral,
+                embed=case_embeds.case_embed(self.bot, case, creator, target),
+                view=view,
             )
 
     @case_group.command(name="comments", description="View comments on a case.")
@@ -217,10 +236,16 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         commands.has_permissions(ban_members=True),
         commands.has_permissions(moderate_members=True),
     )
-    @app_commands.describe(case_id="The case ID to search for.")
+    @app_commands.describe(
+        case_id="The case ID to search for.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 3)
     async def case_comments(
-        self, ctx: commands.Context["TitaniumBot"], case_id: str
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        case_id: str,
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
@@ -232,7 +257,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                         case_id
                     )
             except CaseNotFoundException:
-                return await ctx.reply(embed=case_embeds.case_not_found(self.bot, case_id))
+                return await ctx.reply(
+                    ephemeral=ephemeral, embed=case_embeds.case_not_found(self.bot, case_id)
+                )
 
             pages: list[CommentPageContainer] = []
             current_page = []
@@ -252,7 +279,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 pages.append(container)
 
             layout = PaginationV2View(pages)
-            await ctx.reply(view=layout, allowed_mentions=AllowedMentions.none())
+            await ctx.reply(
+                ephemeral=ephemeral, view=layout, allowed_mentions=AllowedMentions.none()
+            )
 
     @case_group.command(name="addcomment", description="Add a comment to a case.")
     @commands.guild_only()
@@ -262,7 +291,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         commands.has_permissions(moderate_members=True),
     )
     @app_commands.describe(
-        case_id="The case ID to add a comment to.", comment="The comment to add."
+        case_id="The case ID to add a comment to.",
+        comment="The comment to add.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 10)
     async def case_add_comment(
@@ -271,12 +302,13 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         case_id: str,
         *,
         comment: commands.Range[str, 1, 500],
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
 
         if not isinstance(ctx.author, Member):
-            return await ctx.reply(embed=guild_only(self.bot))
+            return await ctx.reply(ephemeral=ephemeral, embed=guild_only(self.bot))
 
         async with defer(ctx, stop_only=True):
             try:
@@ -289,7 +321,9 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                         member=ctx.author, content=comment, bot=self.bot, guild=ctx.guild
                     )
             except CaseNotFoundException:
-                return await ctx.reply(embed=case_embeds.case_not_found(self.bot, str(case_id)))
+                return await ctx.reply(
+                    ephemeral=ephemeral, embed=case_embeds.case_not_found(self.bot, str(case_id))
+                )
 
             embed = Embed(
                 title=f"{self.bot.success_emoji} Added Comment",
@@ -297,7 +331,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 colour=Colour.green(),
             )
 
-            await ctx.reply(embed=embed)
+            await ctx.reply(ephemeral=ephemeral, embed=embed)
 
     @case_group.command(name="delete", description="Delete a case by its ID.")
     @global_alias("deletecase")
@@ -307,9 +341,17 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         commands.has_permissions(ban_members=True),
         commands.has_permissions(moderate_members=True),
     )
-    @app_commands.describe(case_id="The case ID to delete.")
+    @app_commands.describe(
+        case_id="The case ID to delete.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 3)
-    async def view_case(self, ctx: commands.Context["TitaniumBot"], case_id: str) -> None | Message:
+    async def view_case(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        case_id: str,
+        ephemeral: bool = False,
+    ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
 
@@ -320,7 +362,10 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 try:
                     case = await case_manager.get_case_by_id(case_id)
                 except CaseNotFoundException:
-                    return await ctx.reply(embed=case_embeds.case_not_found(self.bot, str(case_id)))
+                    return await ctx.reply(
+                        ephemeral=ephemeral,
+                        embed=case_embeds.case_not_found(self.bot, str(case_id)),
+                    )
 
                 # Get creator
                 creator = self.bot.get_user(case.creator_user_id)
@@ -345,6 +390,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
                 view = ConfirmView(bot=self.bot, original_user=ctx.author)
                 msg = await ctx.reply(
+                    ephemeral=ephemeral,
                     embeds=embeds,
                     view=view,
                 )
@@ -358,7 +404,10 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
                 try:
                     await case_manager.delete_case(case_id)
                 except CaseNotFoundException:
-                    return await ctx.reply(embed=case_embeds.case_not_found(self.bot, str(case_id)))
+                    return await ctx.reply(
+                        ephemeral=ephemeral,
+                        embed=case_embeds.case_not_found(self.bot, str(case_id)),
+                    )
 
             await msg.edit(embed=case_embeds.case_deleted(self.bot, case_id), view=None)
 
@@ -371,9 +420,17 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         commands.has_permissions(ban_members=True),
         commands.has_permissions(moderate_members=True),
     )
-    @app_commands.describe(user="The user to clean.")
+    @app_commands.describe(
+        user="The user to clean.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 3)
-    async def clean_cases(self, ctx: commands.Context["TitaniumBot"], user: User) -> None | Message:
+    async def clean_cases(
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        user: User,
+        ephemeral: bool = False,
+    ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
 
@@ -386,6 +443,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
         view = ConfirmView(bot=self.bot, original_user=ctx.author)
         msg = await ctx.reply(
+            ephemeral=ephemeral,
             embed=embed,
             view=view,
         )
@@ -419,8 +477,13 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
     @global_alias("deleteallcases")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 3)
-    async def delete_all_cases(self, ctx: commands.Context["TitaniumBot"]) -> None | Message:
+    async def delete_all_cases(
+        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+    ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
 
@@ -433,6 +496,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
         view = ConfirmView(bot=self.bot, original_user=ctx.author)
         msg = await ctx.reply(
+            ephemeral=ephemeral,
             embed=embed,
             view=view,
         )

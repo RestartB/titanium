@@ -45,8 +45,11 @@ class BasicCommandsCog(
             return self.bot.error_emoji
 
     @commands.hybrid_command(name="ping", description="Get the bot's ping.")
-    async def ping(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.defer()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def ping(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False) -> None:
+        await ctx.defer(ephemeral=ephemeral)
 
         embed = Embed(
             title="🏓 Pong!",
@@ -62,14 +65,15 @@ class BasicCommandsCog(
             icon_url=ctx.author.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @commands.hybrid_command(
         name="info", description="Get information about the bot.", aliases=["about"]
     )
-    async def info(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.defer()
-
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def info(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False) -> None:
         embed = Embed(
             title="About",
             description="Titanium is **your** multipurpose, open source Discord bot developed by **Restart**. "
@@ -98,10 +102,13 @@ class BasicCommandsCog(
             value="**Website:** https://titanium.fyi\n**Dashboard:** https://dash.titanium.fyi\n**Support Server:** https://titanium.fyi/server\n**Privacy Policy:** https://titanium.fyi/privacy\n**Terms of Use:** https://titanium.fyi/terms",
         )
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @commands.hybrid_command(name="invite", description="Get an invite link for the bot.")
-    async def invite(self, ctx: commands.Context["TitaniumBot"]):
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def invite(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
         embed = Embed(
             title=f"{ctx.bot.info_emoji} Invite",
             description="Use this invite to add Titanium to your account or server.",
@@ -118,17 +125,20 @@ class BasicCommandsCog(
             )
         )
 
-        await ctx.reply(embed=embed, view=view)
+        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
 
     # Host Info command
     @commands.hybrid_command(
         name="host-info", aliases=["hostinfo"], description="Info about the bot host."
     )
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def host_info(self, ctx: commands.Context["TitaniumBot"]):
-        await ctx.defer()
+    async def host_info(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
+        await ctx.defer(ephemeral=ephemeral)
 
-        embed = Embed(title="Host Info")
+        embed = Embed(title=f"{self.bot.info_emoji} Host Info", colour=Colour.light_gray())
 
         uptime_seconds = int(time.time() - psutil.boot_time())
         sec = timedelta(seconds=uptime_seconds)
@@ -167,15 +177,18 @@ class BasicCommandsCog(
             icon_url=ctx.author.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @commands.hybrid_command(
         name="prefixes", aliases=["prefix"], description="Get the bot's command prefixes."
     )
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.guild_only()
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
-    async def prefixes(self, ctx: commands.Context["TitaniumBot"]) -> None:
+    async def prefixes(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False) -> None:
         if (
             not ctx.guild
             or not self.bot.user
@@ -183,7 +196,7 @@ class BasicCommandsCog(
         ):
             return
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         prefix_str = ""
         config = await self.bot.fetch_guild_config(ctx.guild.id)
@@ -202,7 +215,7 @@ class BasicCommandsCog(
             )
             embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         for i, prefix in enumerate(config.prefixes):
@@ -219,7 +232,7 @@ class BasicCommandsCog(
         embed = Embed(
             title="Command Prefixes",
             description=prefix_str,
-            colour=Colour.green(),
+            colour=Colour.light_grey(),
         )
         embed.set_author(
             name=ctx.guild.name,
@@ -227,7 +240,7 @@ class BasicCommandsCog(
         )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

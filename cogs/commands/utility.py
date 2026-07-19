@@ -34,13 +34,16 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
         text="Text to convert to Base64.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    async def base64_group(self, ctx: commands.Context["TitaniumBot"], *, text: str) -> None:
+    async def base64_group(
+        self, ctx: commands.Context["TitaniumBot"], *, text: str, ephemeral: bool = False
+    ) -> None:
         """
         Encode text to Base64.
         """
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         encoded = base64.b64encode(text.encode("utf-8")).decode("utf-8")
 
@@ -51,7 +54,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
                 description="The encoded text is too long to display.",
             )
             embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         embed = Embed(
@@ -60,23 +63,21 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
             description=f"```{encoded}```",
         )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @base64_group.command(name="decode", description="Convert text from Base64.")
     @app_commands.describe(
         base_64="Base64 to convert to text.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     async def base64_decode(
-        self,
-        ctx: commands.Context["TitaniumBot"],
-        *,
-        base_64: str,
+        self, ctx: commands.Context["TitaniumBot"], *, base_64: str, ephemeral: bool = False
     ) -> None:
         """
         Decode Base64 to text.
         """
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         try:
             decoded = base64.b64decode(base_64.encode("utf-8")).decode("utf-8")
@@ -87,7 +88,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
                 description="The input is not valid Base64.",
             )
             embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         if len(decoded) > 4090:
@@ -97,7 +98,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
                 description="The decoded text is too long to display.",
             )
             embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         embed = Embed(
@@ -106,21 +107,25 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
             description=f"```{decoded}```",
         )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @commands.hybrid_command(name="qrcode", description="Generate a QR code from a string.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.describe(data="Data to be included in the QR code.")
+    @app_commands.describe(
+        data="Data to be included in the QR code.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 5)
     async def qrcode(
         self,
         ctx: commands.Context["TitaniumBot"],
         *,
         data: commands.Range[str, 1, 1000],
+        ephemeral: bool = False,
     ) -> None:
         """Generate a QR code from any string."""
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         file: File = await asyncio.to_thread(generate_qrcode, data)
 
@@ -132,15 +137,20 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         embed.set_image(url="attachment://titanium_qrcode.png")
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
-        await ctx.reply(embed=embed, file=file)
+        await ctx.reply(embed=embed, file=file, ephemeral=ephemeral)
 
     @commands.hybrid_command(name="file-info", description="Get basic info about a file.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.describe(file="The file to get info from.")
-    async def file_info(self, ctx: commands.Context["TitaniumBot"], *, file: Attachment) -> None:
+    @app_commands.describe(
+        file="The file to get info from.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
+    async def file_info(
+        self, ctx: commands.Context["TitaniumBot"], *, file: Attachment, ephemeral: bool = False
+    ) -> None:
         """Get detailed information of a file."""
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         size_hr = humanize.naturalsize(file.size)
 
@@ -155,7 +165,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         embed.add_field(name="Content Type", value=f"`{file.content_type}`" or "`Unknown`")
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

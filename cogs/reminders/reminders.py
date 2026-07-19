@@ -49,6 +49,9 @@ class TemplateCog(commands.Cog, description="Create reminders."):
         return False
 
     @commands.hybrid_group(name="reminder", fallback="create", description="Create a new reminder.")
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 3)
     @app_commands.choices(
         mode=[
@@ -63,11 +66,12 @@ class TemplateCog(commands.Cog, description="Create reminders."):
         time: ConvertedDuration,
         *,
         content: commands.Range[str, 1, 1000],
+        ephemeral: bool = False,
     ) -> None:
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if not time:
-            await ctx.reply(embed=invalid_duration(self.bot))
+            await ctx.reply(embed=invalid_duration(self.bot), ephemeral=ephemeral)
             return
 
         time_scheduled = ctx.message.created_at + time
@@ -79,7 +83,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
                 description="You are trying to create a server channel reminder in DMs. Please set the `DM` option to enabled.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         if not dm and (ctx.interaction and not ctx.interaction.is_guild_integration()):
@@ -88,7 +92,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
                 description="Server channel reminders cannot be created as Titanium is not in the server. Please add Titanium to the server first.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         if not dm and (
@@ -101,7 +105,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
                 description="You don't have permission to create server reminders in this channel.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         if not dm and (
@@ -112,7 +116,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
                 description="Titanium doesn't have permissins to send messages in this channel. Your reminder will not send correctly.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         if await get_reminder_count(ctx.author) >= 50:
@@ -124,7 +128,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
                 description=f"You can only create up to 50 reminders. Delete some old reminders using the {command_str} command.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         reminder = await create_reminder(
@@ -145,13 +149,18 @@ class TemplateCog(commands.Cog, description="Create reminders."):
         embed.add_field(name="Content", value=shorten_preserve(content, width=1024))
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @reminder_group.command(name="list", description="View and manage your created reminders.")
     @global_alias("reminders")
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def reminder_list(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.defer()
+    async def reminder_list(
+        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+    ) -> None:
+        await ctx.defer(ephemeral=ephemeral)
 
         reminders = await get_all_reminders(ctx.author)
         reminder_chunks = discord.utils.as_chunks(reminders, 5)
@@ -172,7 +181,7 @@ class TemplateCog(commands.Cog, description="Create reminders."):
         else:
             view.add_item(reminder_pages[0])
 
-        await ctx.reply(view=view, allowed_mentions=AllowedMentions.none())
+        await ctx.reply(view=view, allowed_mentions=AllowedMentions.none(), ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

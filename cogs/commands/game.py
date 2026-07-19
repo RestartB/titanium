@@ -29,15 +29,19 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
     @game_group.command(
         name="stats", aliases=["stat"], description="Get stats for games that you've played."
     )
-    @app_commands.describe(user="The user to get game stats for.")
+    @app_commands.describe(
+        user="The user to get game stats for.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 5)
     async def game_stats(
         self,
         ctx: commands.Context["TitaniumBot"],
         user: Member | User = commands.Author,
+        ephemeral: bool = False,
     ) -> None:
         """Get the all games stats, How many times they played, and win"""
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if ctx.author.id in self.bot.opt_out:
             embed = Embed(
@@ -68,14 +72,20 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
         await ctx.reply(embed=embed)
 
     @game_group.command(name="dice", description="Roll a dice and guess the number.")
-    @app_commands.describe(guess="Your guess, between 1 and 6.")
+    @app_commands.describe(
+        guess="Your guess, between 1 and 6.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 3)
     async def dice_game(
-        self, ctx: commands.Context["TitaniumBot"], guess: commands.Range[int, 1, 6]
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        guess: commands.Range[int, 1, 6],
+        ephemeral: bool = False,
     ) -> None:
         """Dice roll game."""
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         roll = random.randint(1, 6)
         win = roll == guess
@@ -95,12 +105,15 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
             )
 
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @game_group.command(
         name="coin-flip", aliases=["coinflip"], description="Flip a coin and guess the side."
     )
-    @app_commands.describe(choice="Your guess between heads and tails.")
+    @app_commands.describe(
+        choice="Your guess between heads and tails.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @app_commands.choices(
         choice=[
             app_commands.Choice(name="Heads", value="heads"),
@@ -112,9 +125,10 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
         self,
         ctx: commands.Context["TitaniumBot"],
         choice: Literal["heads", "tails"],
+        ephemeral: bool = False,
     ) -> None:
         """Coin flip game."""
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         flip_result = random.choice(["heads", "tails"])
         win = choice == flip_result
@@ -134,7 +148,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
             )
 
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @dice_game.after_invoke
     @coin_flip_game.after_invoke

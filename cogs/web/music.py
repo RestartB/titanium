@@ -551,7 +551,7 @@ class MusicCommandsCog(
                     title=f"{self.bot.error_emoji} No results found.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
             else:
                 for i, item in enumerate(result.items):
                     options_list.append(
@@ -656,14 +656,14 @@ class MusicCommandsCog(
                         description="The provided Spotify link is invalid. Please ensure the link is either a track, album, or artist.",
                         colour=Colour.red(),
                     )
-                    await ctx.reply(embed=embed)
+                    await ctx.reply(embed=embed, ephemeral=ephemeral)
             else:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Invalid Link",
                     description="The provided link is invalid. Please ensure the link is either a Spotify track, album, or artist.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Spotify Image command
     @spotify_group.command(

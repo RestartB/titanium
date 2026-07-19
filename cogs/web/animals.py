@@ -45,9 +45,12 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
 
     # Cat command
     @commands.hybrid_command(name="cat", description="Get a random cat picture.")
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def cat(self, ctx: commands.Context["TitaniumBot"]):
-        await ctx.defer()
+    async def cat(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
+        await ctx.defer(ephemeral=ephemeral)
 
         # Fetch image
         async with aiohttp.ClientSession() as session:
@@ -60,7 +63,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
                         description="The service has been rate limited. Try again later.",
                         colour=Colour.red(),
                     )
-                    await ctx.reply(embed=embed)
+                    await ctx.reply(embed=embed, ephemeral=ephemeral)
                     return
                 else:
                     request_data = await request.json()
@@ -75,13 +78,16 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
             icon_url=ctx.author.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Dog command
     @commands.hybrid_command(name="dog", description="Get a random dog picture.")
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def dog(self, ctx: commands.Context["TitaniumBot"]):
-        await ctx.defer()
+    async def dog(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
+        await ctx.defer(ephemeral=ephemeral)
 
         # Fetch image
         async with aiohttp.ClientSession() as session:
@@ -94,7 +100,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
                         description="The service has been rate limited. Try again later.",
                         colour=Colour.red(),
                     )
-                    await ctx.reply(embed=embed)
+                    await ctx.reply(embed=embed, ephemeral=ephemeral)
                     return
                 else:
                     request_data = await request.json()
@@ -109,13 +115,16 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
             icon_url=ctx.author.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Sand Cat command
     @commands.hybrid_command(name="sandcat", description="Get a random sand cat picture.")
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def sand_cat(self, ctx: commands.Context["TitaniumBot"]):
-        await ctx.defer()
+    async def sand_cat(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
+        await ctx.defer(ephemeral=ephemeral)
 
         request_data = {}
         request_data["filename"] = ""
@@ -135,7 +144,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
                             description="The service has been rate limited. Try again later.",
                             colour=Colour.red(),
                         )
-                        await ctx.reply(embed=embed)
+                        await ctx.reply(embed=embed, ephemeral=ephemeral)
                         return
                     elif request.status == 522:
                         embed = discord.Embed(
@@ -143,7 +152,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
                             description="The service timed out. Try again later.",
                             colour=Colour.red(),
                         )
-                        await ctx.reply(embed=embed)
+                        await ctx.reply(embed=embed, ephemeral=ephemeral)
                         return
                     else:
                         request_data = await request.json()
@@ -162,7 +171,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
             icon_url=ctx.author.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

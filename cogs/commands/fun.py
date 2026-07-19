@@ -25,9 +25,14 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
     @commands.hybrid_command(
         name="8ball", aliases=["8-ball"], description="Consult the mystical magic 8 ball."
     )
-    @app_commands.describe(question="Optional: your question.")
-    async def eight_ball(self, ctx: commands.Context["TitaniumBot"], *, question: str = "") -> None:
-        await ctx.defer()
+    @app_commands.describe(
+        question="Optional: your question.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
+    async def eight_ball(
+        self, ctx: commands.Context["TitaniumBot"], *, question: str = "", ephemeral: bool = False
+    ) -> None:
+        await ctx.defer(ephemeral=ephemeral)
 
         good_responses = [
             "It is certain.",
@@ -85,7 +90,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
                 value=shorten_preserve(question, width=1024),
             )
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Random number command
     @commands.hybrid_command(
@@ -96,11 +101,16 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
     @app_commands.describe(
         minimum="The minimum number that can be generated.",
         maximum="The maximum number that can be generated.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     async def random_number(
-        self, ctx: commands.Context["TitaniumBot"], minimum: int, maximum: int
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        minimum: int,
+        maximum: int,
+        ephemeral: bool = False,
     ) -> None:
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         embed = Embed(
             title=f"{random.randint(minimum, maximum):,}",
@@ -120,11 +130,15 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
     )
     @app_commands.describe(
         sides="Optional: the amount of sides. Defaults to a 6 sided die.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     async def dice(
-        self, ctx: commands.Context["TitaniumBot"], sides: Literal[4, 6, 8, 10, 12, 20, 100] = 6
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        sides: Literal[4, 6, 8, 10, 12, 20, 100] = 6,
+        ephemeral: bool = False,
     ) -> None:
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         embed = Embed(
             title=f"🎲 Rolled a {random.randint(1, sides):,}",
@@ -135,16 +149,21 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
             icon_url=ctx.author.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Insult command
     @commands.hybrid_command(
         name="insult",
         description="Generate a savage insult for the user of your selection.",
     )
-    @app_commands.describe(user="The user to insult.")
-    async def insult(self, ctx: commands.Context["TitaniumBot"], user: discord.User):
-        await ctx.defer()
+    @app_commands.describe(
+        user="The user to insult.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
+    async def insult(
+        self, ctx: commands.Context["TitaniumBot"], user: discord.User, ephemeral: bool = False
+    ):
+        await ctx.defer(ephemeral=ephemeral)
 
         # First parts of insult
         first = [
@@ -252,7 +271,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
             icon_url=ctx.author.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     freaky_map = {
         "q": "𝓺",

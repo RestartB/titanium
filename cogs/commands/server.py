@@ -34,8 +34,13 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
     @commands.guild_only()
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
-    async def server_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.defer()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def server_group(
+        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+    ) -> None:
+        await ctx.defer(ephemeral=ephemeral)
 
         if not ctx.guild:
             raise commands.errors.NoPrivateMessage
@@ -87,12 +92,17 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
             thief = ColorThief(BytesIO(await ctx.guild.icon.read()))
             embed.colour = Colour.from_rgb(*await asyncio.to_thread(thief.get_color))
 
-        await ctx.reply(embed=embed, view=view)
+        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
 
     @server_group.command(name="icon", description="Get the server's icon.")
     @commands.guild_only()
-    async def server_icon(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.defer()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def server_icon(
+        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+    ) -> None:
+        await ctx.defer(ephemeral=ephemeral)
 
         if not ctx.guild:
             raise commands.errors.NoPrivateMessage
@@ -106,7 +116,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
 
         if not ctx.guild.icon:
             embed.description = "This server does not have an icon."
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         image = ctx.guild.icon
@@ -118,12 +128,17 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         view = View().add_item(
             Button(label="Open in Browser", style=ButtonStyle.link, url=image.url)
         )
-        await ctx.reply(embed=embed, view=view)
+        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
 
     @server_group.command(name="banner", description="Get the server's banner.")
     @commands.guild_only()
-    async def server_banner(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.defer()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def server_banner(
+        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+    ) -> None:
+        await ctx.defer(ephemeral=ephemeral)
 
         if not ctx.guild:
             raise commands.errors.NoPrivateMessage
@@ -137,7 +152,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
 
         if not ctx.guild.banner:
             embed.description = "This server does not have an banner."
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         image = ctx.guild.banner
@@ -150,14 +165,19 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         view = View().add_item(
             Button(label="Open in Browser", style=ButtonStyle.link, url=image.url)
         )
-        await ctx.reply(embed=embed, view=view)
+        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
 
     @server_group.command(
         name="boosts", aliases=["boostinfo"], description="Get the server's boost information."
     )
     @commands.guild_only()
-    async def server_boosts(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.defer()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def server_boosts(
+        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+    ) -> None:
+        await ctx.defer(ephemeral=ephemeral)
 
         if not ctx.guild:
             raise commands.errors.NoPrivateMessage
@@ -177,18 +197,23 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
             thief = ColorThief(BytesIO(await ctx.guild.icon.read()))
             embed.colour = Colour.from_rgb(*await asyncio.to_thread(thief.get_color))
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Message leaderboard command
     @server_group.command(
         name="messages", description="Get the amount of messages members have sent in the server."
     )
     @commands.guild_only()
-    async def message_lb_command(self, ctx: commands.Context["TitaniumBot"]):
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def message_lb_command(
+        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+    ):
         if not ctx.guild:
             return
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if ctx.author.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -196,7 +221,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 description="You have opted out of data collection and cannot use leaderboard features.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
@@ -210,7 +235,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
@@ -229,7 +254,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                     description="No users have any recorded messages yet.",
                     colour=discord.Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             pages = generate_lb_embeds(
@@ -250,19 +275,22 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            await ctx.reply(embed=pages[0], view=view)
+            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
 
     # Word leaderboard command
     @server_group.command(
         name="words", description="Get the amount of words members have sent in the server."
     )
     @commands.guild_only()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def word_lb_command(self, ctx: commands.Context["TitaniumBot"]):
+    async def word_lb_command(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
         if not ctx.guild:
             return
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if ctx.author.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -270,7 +298,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 description="You have opted out of data collection and cannot use leaderboard features.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
@@ -284,7 +312,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
@@ -306,7 +334,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                     description="No users have any recorded words yet.",
                     colour=discord.Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             pages = generate_lb_embeds(
@@ -327,7 +355,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            await ctx.reply(embed=pages[0], view=view)
+            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
 
     # Attachment leaderboard command
     @server_group.command(
@@ -335,12 +363,17 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         description="Get the amount of attachments members have sent in the server.",
     )
     @commands.guild_only()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def attachment_lb_command(self, ctx: commands.Context["TitaniumBot"]):
+    async def attachment_lb_command(
+        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+    ):
         if not ctx.guild:
             return
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if ctx.author.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -348,7 +381,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 description="You have opted out of data collection and cannot use leaderboard features.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
@@ -362,7 +395,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
@@ -384,7 +417,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                     description="No users have any recorded attachments yet.",
                     colour=discord.Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             pages = generate_lb_embeds(
@@ -405,7 +438,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            await ctx.reply(embed=pages[0], view=view)
+            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
 
     # VC leaderboard command
     @server_group.command(
@@ -414,12 +447,15 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         description="Get the amount of time that users have spent in VC in the server.",
     )
     @commands.guild_only()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def vc_lb_command(self, ctx: commands.Context["TitaniumBot"]):
+    async def vc_lb_command(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
         if not ctx.guild:
             return
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if ctx.author.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -427,7 +463,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 description="You have opted out of data collection and cannot use leaderboard features.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
@@ -441,7 +477,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
@@ -463,7 +499,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                     description="No users have any recorded VC time yet.",
                     colour=discord.Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             pages = generate_lb_embeds(
@@ -484,7 +520,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            await ctx.reply(embed=pages[0], view=view)
+            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
 
     # Attachment leaderboard command
     @server_group.command(
@@ -492,12 +528,17 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         description="Get the amount of explicit words members have sent in the server.",
     )
     @commands.guild_only()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
     @commands.cooldown(1, 5)
-    async def explicit_lb_command(self, ctx: commands.Context["TitaniumBot"]):
+    async def explicit_lb_command(
+        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+    ):
         if not ctx.guild:
             return
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if ctx.author.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -505,7 +546,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 description="You have opted out of data collection and cannot use leaderboard features.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
@@ -519,7 +560,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
@@ -541,7 +582,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                     description="No users have said any explicit terms yet.",
                     colour=discord.Colour.red(),
                 )
-                await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
                 return
 
             pages = generate_lb_embeds(
@@ -562,7 +603,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            await ctx.reply(embed=pages[0], view=view)
+            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
 
     # First Message command
     @server_group.command(

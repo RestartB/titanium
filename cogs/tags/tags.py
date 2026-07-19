@@ -267,11 +267,16 @@ class TagCommandsCog(commands.Cog):
     )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.describe(tag="The tag to send.")
+    @app_commands.describe(
+        tag="The tag to send.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @app_commands.autocomplete(tag=tag_autocomplete)
     @commands.cooldown(1, 3)
-    async def tags_group(self, ctx: commands.Context["TitaniumBot"], tag: str):
-        await ctx.defer()
+    async def tags_group(
+        self, ctx: commands.Context["TitaniumBot"], tag: str, ephemeral: bool = False
+    ):
+        await ctx.defer(ephemeral=ephemeral)
 
         if not tag:
             embed = discord.Embed(
@@ -279,7 +284,7 @@ class TagCommandsCog(commands.Cog):
                 description="Please enter a tag name when sending the command.",
                 colour=discord.Colour.red(),
             )
-            return await ctx.reply(embed=embed)
+            return await ctx.reply(embed=embed, ephemeral=ephemeral)
 
         config = (
             await self.bot.fetch_guild_config(ctx.guild.id)
@@ -322,8 +327,8 @@ class TagCommandsCog(commands.Cog):
                 colour=discord.Colour.light_grey(),
             )
 
-            view = TagOptionView(original_user=ctx.author)
-            await ctx.reply(embed=embed, view=view)
+            view = TagOptionView(original_user=ctx.author, ephemeral=ephemeral)
+            await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
             timed_out = await view.wait()
 
             if not view.interaction:
@@ -356,7 +361,7 @@ class TagCommandsCog(commands.Cog):
             if view and view.interaction:
                 return await view.interaction.edit_original_response(embed=embed, view=None)
             else:
-                return await ctx.reply(embed=embed)
+                return await ctx.reply(embed=embed, ephemeral=ephemeral)
 
         if tag_data.is_user and not user_tags_allowed:
             embed = discord.Embed(
@@ -367,7 +372,7 @@ class TagCommandsCog(commands.Cog):
             if view and view.interaction:
                 return await view.interaction.edit_original_response(embed=embed, view=None)
             else:
-                return await ctx.reply(embed=embed)
+                return await ctx.reply(embed=embed, ephemeral=ephemeral)
 
         if view and view.interaction:
             await view.interaction.edit_original_response(
@@ -379,7 +384,9 @@ class TagCommandsCog(commands.Cog):
             await self.push_tag_usage(tag_data)
         else:
             await ctx.reply(
-                content=tag_data.content, allowed_mentions=discord.AllowedMentions.none()
+                content=tag_data.content,
+                allowed_mentions=discord.AllowedMentions.none(),
+                ephemeral=ephemeral,
             )
             await self.push_tag_usage(tag_data)
 
@@ -389,7 +396,10 @@ class TagCommandsCog(commands.Cog):
     )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.describe(mode="Whether to view server or user tags.")
+    @app_commands.describe(
+        mode="Whether to view server or user tags.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @app_commands.choices(
         mode=[
             app_commands.Choice(name="Server Tag", value="server"),
@@ -398,9 +408,12 @@ class TagCommandsCog(commands.Cog):
     )
     @commands.cooldown(1, 5)
     async def view_all_tags(
-        self, ctx: commands.Context["TitaniumBot"], mode: Literal["server", "user"] = "user"
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        mode: Literal["server", "user"] = "user",
+        ephemeral: bool = False,
     ):
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         config = (
             await self.bot.fetch_guild_config(ctx.guild.id)
@@ -413,7 +426,7 @@ class TagCommandsCog(commands.Cog):
                 description="Server tags are only available in servers with Titanium and the tags module enabled.",
                 colour=discord.Colour.red(),
             )
-            return await ctx.reply(embed=embed)
+            return await ctx.reply(embed=embed, ephemeral=ephemeral)
 
         if mode == "server" and ctx.guild:
             stmt = select(Tag).where(Tag.guild_id == ctx.guild.id)
@@ -474,16 +487,17 @@ class TagCommandsCog(commands.Cog):
                 description="Looks like you don't have any tags yet! To manage tags, use the `/settings` command.",
                 colour=discord.Colour.red(),
             )
-            return await ctx.reply(embed=embed)
+            return await ctx.reply(embed=embed, ephemeral=ephemeral)
 
         if len(tag_pages) > 1:
             view = PaginationView(embeds=tag_pages, timeout=1200)
-            await ctx.reply(embed=tag_pages[0], view=view)
+            await ctx.reply(embed=tag_pages[0], view=view, ephemeral=ephemeral)
         else:
             await ctx.reply(
                 embed=tag_pages[0].set_footer(
                     text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar
-                )
+                ),
+                ephemeral=ephemeral,
             )
 
 

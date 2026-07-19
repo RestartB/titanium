@@ -47,7 +47,8 @@ class ModerationBasicCog(
         self.bot = bot
 
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
-        await _defer(ctx, ephemeral=True)
+        ephemeral = bool(ctx.interaction and getattr(ctx.interaction.namespace, "ephemeral", False))
+        await _defer(ctx, ephemeral=ephemeral)
 
         if not ctx.guild:
             return False
@@ -60,7 +61,7 @@ class ModerationBasicCog(
                     title=f"{self.bot.error_emoji} Moderation Disabled",
                     description="The moderation module is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 ),
-                ephemeral=True,
+                ephemeral=ephemeral,
             )
             await _stop_loading(ctx)
             return False
@@ -451,7 +452,9 @@ class ModerationBasicCog(
         commands.has_permissions(moderate_members=True),
     )
     @app_commands.describe(
-        member="The member to warn.", reason="Optional: the reason for the warning."
+        member="The member to warn.",
+        reason="Optional: the reason for the warning.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def warn(
@@ -460,6 +463,7 @@ class ModerationBasicCog(
         member: discord.Member,
         *,
         reason: str = "",
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
@@ -483,7 +487,7 @@ class ModerationBasicCog(
                 and (dm_error is not None)
             ):
                 await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.warned(
                         self.bot,
                         user=member,
@@ -495,18 +499,22 @@ class ModerationBasicCog(
                     **del_kwargs,
                 )
             elif result == PunishmentResult.NOT_IN_GUILD:
-                await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member), **del_kwargs)
+                await ctx.reply(
+                    ephemeral=ephemeral, embed=not_in_guild(self.bot, member), **del_kwargs
+                )
             elif result == PunishmentResult.CANT_MOD_SELF:
                 await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
                 )
             elif result == PunishmentResult.NOT_ALLOWED:
                 return await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member), **del_kwargs
+                    ephemeral=ephemeral,
+                    embed=mod_embeds.not_allowed(self.bot, member),
+                    **del_kwargs,
                 )
             elif result == PunishmentResult.ALREADY_PUNISHING:
                 return await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.already_punishing(self.bot, member),
                     **del_kwargs,
                 )
@@ -522,6 +530,7 @@ class ModerationBasicCog(
         member="The member to mute.",
         duration="Optional: the duration of the mute (e.g., 10m, 1h, 2h30m).",
         reason="Optional: the reason for the mute.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def mute(
@@ -531,6 +540,7 @@ class ModerationBasicCog(
         duration: str = "",
         *,
         reason: str = "",
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
@@ -556,7 +566,7 @@ class ModerationBasicCog(
                 and (dm_error is not None)
             ):
                 await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.muted(
                         self.bot,
                         user=member,
@@ -568,40 +578,44 @@ class ModerationBasicCog(
                     **del_kwargs,
                 )
             elif result == PunishmentResult.NOT_IN_GUILD:
-                await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member), **del_kwargs)
+                await ctx.reply(
+                    ephemeral=ephemeral, embed=not_in_guild(self.bot, member), **del_kwargs
+                )
             elif result == PunishmentResult.CANT_MOD_SELF:
                 await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
                 )
             elif result == PunishmentResult.NOT_ALLOWED:
                 return await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member), **del_kwargs
+                    ephemeral=ephemeral,
+                    embed=mod_embeds.not_allowed(self.bot, member),
+                    **del_kwargs,
                 )
             elif result == PunishmentResult.BOT_NOT_ALLOWED:
                 return await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.titanium_not_allowed(self.bot, member),
                     **del_kwargs,
                 )
             elif result == PunishmentResult.ALREADY_PUNISHED:
                 return await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.already_muted(self.bot, member),
                     **del_kwargs,
                 )
             elif result == PunishmentResult.ALREADY_PUNISHING:
                 return await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.already_punishing(self.bot, member),
                     **del_kwargs,
                 )
             elif result == PunishmentResult.FORBIDDEN:
                 return await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
                 )
             elif result == PunishmentResult.UNKNOWN:
                 return await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.http_exception(self.bot, member),
                     **del_kwargs,
                 )
@@ -613,12 +627,16 @@ class ModerationBasicCog(
     )
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
-    @app_commands.describe(member="The member to unmute.")
+    @app_commands.describe(
+        member="The member to unmute.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 5)
     async def unmute(
         self,
         ctx: commands.Context["TitaniumBot"],
         member: discord.Member,
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
@@ -642,25 +660,27 @@ class ModerationBasicCog(
                 # Check if member is in guild
                 if member.guild.id != ctx.guild.id:
                     return await ctx.reply(
-                        ephemeral=True, embed=not_in_guild(self.bot, member), **del_kwargs
+                        ephemeral=ephemeral, embed=not_in_guild(self.bot, member), **del_kwargs
                     )
 
                 # Check if moderating self
                 if member.id == ctx.author.id:
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                        ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
                     )
 
                 # Check if target doesn't have higher role
                 if not self._hierarchy_check(member, ctx.author, ctx):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member), **del_kwargs
+                        ephemeral=ephemeral,
+                        embed=mod_embeds.not_allowed(self.bot, member),
+                        **del_kwargs,
                     )
 
                 # Check if Titanium can punish target
                 if not self._bot_perms_check(member, ctx):
                     return await ctx.reply(
-                        ephemeral=True,
+                        ephemeral=ephemeral,
                         embed=mod_embeds.titanium_not_allowed(self.bot, member),
                         **del_kwargs,
                     )
@@ -668,7 +688,7 @@ class ModerationBasicCog(
                 # Check if user is not muted
                 if not member.is_timed_out():
                     return await ctx.reply(
-                        ephemeral=True,
+                        ephemeral=ephemeral,
                         embed=mod_embeds.already_unmuted(self.bot, member),
                         **del_kwargs,
                     )
@@ -679,7 +699,7 @@ class ModerationBasicCog(
                     and member.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True,
+                        ephemeral=ephemeral,
                         embed=mod_embeds.already_punishing(self.bot, member),
                         **del_kwargs,
                     )
@@ -701,7 +721,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                        ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
                     )
                 except discord.HTTPException as e:
                     await log_error(
@@ -714,7 +734,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True,
+                        ephemeral=ephemeral,
                         embed=mod_embeds.http_exception(self.bot, member),
                         **del_kwargs,
                     )
@@ -745,7 +765,7 @@ class ModerationBasicCog(
 
                 # Send confirmation message
                 await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.unmuted(
                         self.bot,
                         user=member,
@@ -768,7 +788,9 @@ class ModerationBasicCog(
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     @app_commands.describe(
-        member="The member to kick.", reason="Optional: the reason for the kick."
+        member="The member to kick.",
+        reason="Optional: the reason for the kick.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def kick(
@@ -777,6 +799,7 @@ class ModerationBasicCog(
         member: discord.Member,
         *,
         reason: str = "",
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
@@ -800,7 +823,7 @@ class ModerationBasicCog(
                 and (dm_error is not None)
             ):
                 await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.kicked(
                         self.bot,
                         user=member,
@@ -812,32 +835,38 @@ class ModerationBasicCog(
                     **del_kwargs,
                 )
             elif result == PunishmentResult.NOT_IN_GUILD:
-                await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, member), **del_kwargs)
+                await ctx.reply(
+                    ephemeral=ephemeral, embed=not_in_guild(self.bot, member), **del_kwargs
+                )
             elif result == PunishmentResult.CANT_MOD_SELF:
                 await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
                 )
             elif result == PunishmentResult.NOT_ALLOWED:
                 await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.not_allowed(self.bot, member), **del_kwargs
+                    ephemeral=ephemeral,
+                    embed=mod_embeds.not_allowed(self.bot, member),
+                    **del_kwargs,
                 )
             elif result == PunishmentResult.BOT_NOT_ALLOWED:
                 await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.titanium_not_allowed(self.bot, member),
                     **del_kwargs,
                 )
             elif result == PunishmentResult.ALREADY_PUNISHING:
                 await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.already_punishing(self.bot, member),
                     **del_kwargs,
                 )
             elif result == PunishmentResult.FORBIDDEN:
-                await ctx.reply(ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs)
+                await ctx.reply(
+                    ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                )
             elif result == PunishmentResult.UNKNOWN:
                 await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.http_exception(self.bot, member),
                     **del_kwargs,
                 )
@@ -850,6 +879,7 @@ class ModerationBasicCog(
         duration="Optional: the duration of the ban (e.g., 10m, 1h, 2h30m).",
         reason="Optional: the reason for the ban.",
         delete_message_days="Optional: amount of days of messages from the user that are deleted. Defaults to server default.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def ban(
@@ -863,6 +893,7 @@ class ModerationBasicCog(
             converter=commands.Range[float, 0, 7],
             default=None,
         ),
+        ephemeral: bool = False,
     ) -> None | Message:
         if isinstance(delete_message_days, commands.Parameter):
             delete_message_days = None
@@ -897,7 +928,7 @@ class ModerationBasicCog(
                 and (dm_error is not None)
             ):
                 await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.banned(
                         self.bot,
                         user=user,
@@ -909,40 +940,42 @@ class ModerationBasicCog(
                     **del_kwargs,
                 )
             elif result == PunishmentResult.NOT_IN_GUILD:
-                await ctx.reply(ephemeral=True, embed=not_in_guild(self.bot, user), **del_kwargs)
+                await ctx.reply(
+                    ephemeral=ephemeral, embed=not_in_guild(self.bot, user), **del_kwargs
+                )
             elif result == PunishmentResult.CANT_MOD_SELF:
                 await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
                 )
             elif result == PunishmentResult.NOT_ALLOWED:
                 return await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.not_allowed(self.bot, user), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.not_allowed(self.bot, user), **del_kwargs
                 )
             elif result == PunishmentResult.BOT_NOT_ALLOWED:
                 return await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.titanium_not_allowed(self.bot, user),
                     **del_kwargs,
                 )
             elif result == PunishmentResult.ALREADY_PUNISHED:
                 return await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.already_muted(self.bot, user),
                     **del_kwargs,
                 )
             elif result == PunishmentResult.ALREADY_PUNISHING:
                 return await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.already_punishing(self.bot, user),
                     **del_kwargs,
                 )
             elif result == PunishmentResult.FORBIDDEN:
                 return await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
                 )
             elif result == PunishmentResult.UNKNOWN:
                 return await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.http_exception(self.bot, user),
                     **del_kwargs,
                 )
@@ -950,12 +983,16 @@ class ModerationBasicCog(
     @commands.hybrid_command(name="unban", description="Unban a user from the server.")
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    @app_commands.describe(user="The user to unban.")
+    @app_commands.describe(
+        user="The user to unban.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
+    )
     @commands.cooldown(1, 5)
     async def unban(
         self,
         ctx: commands.Context["TitaniumBot"],
         user: discord.User,
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
@@ -979,7 +1016,7 @@ class ModerationBasicCog(
                 # Check if moderating self
                 if user.id == ctx.author.id:
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                        ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
                     )
 
                 # Check if user is already being punished
@@ -988,7 +1025,7 @@ class ModerationBasicCog(
                     and user.id in self.bot.punishing[ctx.guild.id]
                 ):
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.already_punishing(self.bot, user)
+                        ephemeral=ephemeral, embed=mod_embeds.already_punishing(self.bot, user)
                     )
 
                 # Add user to punishing list
@@ -999,7 +1036,7 @@ class ModerationBasicCog(
                     await ctx.guild.fetch_ban(user)
                 except discord.NotFound:
                     return await ctx.reply(
-                        ephemeral=True,
+                        ephemeral=ephemeral,
                         embed=mod_embeds.already_unbanned(self.bot, user),
                         **del_kwargs,
                     )
@@ -1018,7 +1055,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                        ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
                     )
                 except discord.HTTPException as e:
                     await log_error(
@@ -1031,7 +1068,7 @@ class ModerationBasicCog(
                     )
 
                     return await ctx.reply(
-                        ephemeral=True,
+                        ephemeral=ephemeral,
                         embed=mod_embeds.http_exception(self.bot, user),
                         **del_kwargs,
                     )
@@ -1048,7 +1085,7 @@ class ModerationBasicCog(
 
                 # Send confirmation message
                 await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.unbanned(
                         self.bot,
                         user=user,
@@ -1076,6 +1113,7 @@ class ModerationBasicCog(
         amount="The number of messages to purge (max 300).",
         user="Optional: the user whose messages should be purged.",
         bot_only="Optional: whether to delete messages from bots only. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def purge(
@@ -1084,6 +1122,7 @@ class ModerationBasicCog(
         amount: commands.Range[int, 1, 300],
         user: discord.User | None = None,
         bot_only: bool = False,
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user:
             return
@@ -1105,7 +1144,7 @@ class ModerationBasicCog(
                     (discord.PartialMessageable, discord.DMChannel, discord.GroupChannel),
                 ):
                     await ctx.reply(
-                        ephemeral=True, embed=mod_embeds.cannot_purge(self.bot), **del_kwargs
+                        ephemeral=ephemeral, embed=mod_embeds.cannot_purge(self.bot), **del_kwargs
                     )
                     return
 
@@ -1120,13 +1159,13 @@ class ModerationBasicCog(
 
                 if len(deleted) == 0:
                     await ctx.reply(
-                        ephemeral=True,
+                        ephemeral=ephemeral,
                         embed=mod_embeds.none_to_purge(self.bot, ctx.author),
                         **del_kwargs,
                     )
                 else:
                     await ctx.reply(
-                        ephemeral=True,
+                        ephemeral=ephemeral,
                         embed=mod_embeds.purged(self.bot, ctx.author, len(deleted)),
                         **del_kwargs,
                     )
@@ -1145,7 +1184,7 @@ class ModerationBasicCog(
                     )
 
                 return await ctx.reply(
-                    ephemeral=True, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
                 )
             except discord.HTTPException as e:
                 if not isinstance(
@@ -1162,7 +1201,7 @@ class ModerationBasicCog(
                     )
 
                 return await ctx.reply(
-                    ephemeral=True,
+                    ephemeral=ephemeral,
                     embed=mod_embeds.http_exception(self.bot),
                     **del_kwargs,
                 )
@@ -1185,6 +1224,7 @@ class ModerationBasicCog(
         member4="The fourth member to warn.",
         member5="The fifth member to warn.",
         reason="Optional: the reason for the warning.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def masswarn(
@@ -1197,6 +1237,7 @@ class ModerationBasicCog(
         member5: Optional[discord.Member] = None,
         *,
         reason: str = "",
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
@@ -1222,7 +1263,7 @@ class ModerationBasicCog(
                 embed = mod_embeds.mass_warned(
                     self.bot, successful_warns, failed_warns, ctx.author, reason
                 )
-                return await ctx.reply(ephemeral=True, embed=embed, **del_kwargs)
+                return await ctx.reply(ephemeral=ephemeral, embed=embed, **del_kwargs)
 
             for user in valid_users:
                 status, _, dm_success, dm_error = await self._warn_member(
@@ -1251,7 +1292,7 @@ class ModerationBasicCog(
                 creator=ctx.author,
                 reason=reason,
             )
-            await ctx.reply(embed=embed, ephemeral=True)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @commands.hybrid_command(
         name="massmute",
@@ -1275,6 +1316,7 @@ class ModerationBasicCog(
         member5="The fifth member to mute.",
         duration="Optional: the duration of the mute (e.g., 10m, 1h, 2h30m).",
         reason="Optional: the reason for the mute.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def massmute(
@@ -1288,6 +1330,7 @@ class ModerationBasicCog(
         duration: str = "",
         *,
         reason: str = "",
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
@@ -1325,7 +1368,7 @@ class ModerationBasicCog(
                     processed_reason,
                     processed_duration,
                 )
-                return await ctx.reply(ephemeral=True, embed=embed, **del_kwargs)
+                return await ctx.reply(ephemeral=ephemeral, embed=embed, **del_kwargs)
 
             for user in valid_users:
                 status, _, dm_success, dm_error = await self._mute_member(
@@ -1361,7 +1404,7 @@ class ModerationBasicCog(
                 reason=processed_reason,
                 duration=processed_duration,
             )
-            await ctx.reply(embed=embed, ephemeral=True)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @commands.hybrid_command(
         name="masskick",
@@ -1377,6 +1420,7 @@ class ModerationBasicCog(
         member4="The fourth member to kick.",
         member5="The fifth member to kick.",
         reason="Optional: the reason for the kick.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def masskick(
@@ -1389,6 +1433,7 @@ class ModerationBasicCog(
         member5: Optional[discord.Member] = None,
         *,
         reason: str = "",
+        ephemeral: bool = False,
     ) -> None | Message:
         if not ctx.guild or not self.bot.user or not isinstance(ctx.author, discord.Member):
             return
@@ -1414,7 +1459,7 @@ class ModerationBasicCog(
                 embed = mod_embeds.mass_kicked(
                     self.bot, successful_kicks, failed_kicks, ctx.author, reason
                 )
-                return await ctx.reply(ephemeral=True, embed=embed, **del_kwargs)
+                return await ctx.reply(ephemeral=ephemeral, embed=embed, **del_kwargs)
 
             for user in valid_users:
                 status, _, dm_success, dm_error = await self._kick_member(
@@ -1447,7 +1492,7 @@ class ModerationBasicCog(
                 creator=ctx.author,
                 reason=reason,
             )
-            await ctx.reply(embed=embed, ephemeral=True)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @commands.hybrid_command(
         name="massban",
@@ -1460,6 +1505,7 @@ class ModerationBasicCog(
         duration="Optional: the duration of the ban (e.g., 10m, 1h, 2h30m).",
         reason="Optional: the reason for the ban.",
         delete_message_days="Optional: amount of days of messages from the user that are deleted. Defaults to server default.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
     async def massban(
@@ -1492,6 +1538,7 @@ class ModerationBasicCog(
             converter=commands.Range[float, 0, 7],
             default=None,
         ),
+        ephemeral: bool = False,
     ) -> None | Message:
         if isinstance(delete_message_days, commands.Parameter):
             delete_message_days = None
@@ -1509,7 +1556,7 @@ class ModerationBasicCog(
 
             # fmt: off
             raw_users = {
-                u for u in (user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, 
+                u for u in (user1, user2, user3, user4, user5, user6, user7, user8, user9, user10,
                             user11, user12, user13, user14, user15, user16, user17, user18, user19, user20) if u
             }
             # fmt: on
@@ -1558,7 +1605,7 @@ class ModerationBasicCog(
                     processed_reason,
                     processed_duration,
                 )
-                return await ctx.reply(ephemeral=True, embed=embed, **del_kwargs)
+                return await ctx.reply(ephemeral=ephemeral, embed=embed, **del_kwargs)
 
             cases: dict[int, tuple[ModCase, bool, str]] = {}
             async with get_session() as session:
@@ -1616,7 +1663,7 @@ class ModerationBasicCog(
                         processed_reason,
                         processed_duration,
                     )
-                    return await ctx.reply(ephemeral=True, embed=embed, **del_kwargs)
+                    return await ctx.reply(ephemeral=ephemeral, embed=embed, **del_kwargs)
                 except (discord.Forbidden, discord.HTTPException) as e:
                     error_msg = (
                         "Titanium was not allowed to massban members"
@@ -1641,7 +1688,7 @@ class ModerationBasicCog(
                         if isinstance(e, discord.Forbidden)
                         else mod_embeds.http_exception(self.bot)
                     )
-                    return await ctx.reply(ephemeral=True, embed=embed, **del_kwargs)
+                    return await ctx.reply(ephemeral=ephemeral, embed=embed, **del_kwargs)
 
 
 async def setup(bot: TitaniumBot) -> None:

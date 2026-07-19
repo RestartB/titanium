@@ -24,12 +24,17 @@ class HelpCommandCog(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
-        command_or_group="Optional: the command or command group to get information about."
+        command_or_group="Optional: the command or command group to get information about.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     async def help_group(
-        self, ctx: commands.Context["TitaniumBot"], *, command_or_group: str = ""
+        self,
+        ctx: commands.Context["TitaniumBot"],
+        *,
+        command_or_group: str = "",
+        ephemeral: bool = False,
     ) -> None:
-        await ctx.defer()
+        await ctx.defer(ephemeral=ephemeral)
 
         if not command_or_group:
             embed = discord.Embed(
@@ -67,7 +72,7 @@ class HelpCommandCog(commands.Cog):
                 value="Join the **[Support Server](https://titanium.fyi/server)** for feature and status updates, support, and more.",
             )
 
-            await ctx.reply(embed=embed, ephemeral=True)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         command = self.bot.get_command(command_or_group)
@@ -79,7 +84,7 @@ class HelpCommandCog(commands.Cog):
             )
             embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
-            await ctx.reply(embed=embed, ephemeral=True)
+            await ctx.reply(embed=embed, ephemeral=ephemeral)
             return
 
         embed = discord.Embed(
@@ -98,11 +103,16 @@ class HelpCommandCog(commands.Cog):
                 ),
             )
 
-        await ctx.reply(embed=embed, ephemeral=True)
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @help_group.command(name="commands", description="Get a list of all Titanium commands.")
-    async def all_commands(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        await ctx.defer()
+    @app_commands.describe(
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
+    )
+    async def all_commands(
+        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+    ) -> None:
+        await ctx.defer(ephemeral=ephemeral)
 
         command_list = []
         for command in ctx.bot.walk_commands():
@@ -159,12 +169,13 @@ class HelpCommandCog(commands.Cog):
 
         if len(command_pages) > 1:
             view = PaginationView(embeds=command_pages, timeout=1200)
-            await ctx.reply(embed=command_pages[0], view=view)
+            await ctx.reply(embed=command_pages[0], view=view, ephemeral=ephemeral)
         else:
             await ctx.reply(
                 embed=command_pages[0].set_footer(
                     text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar
-                )
+                ),
+                ephemeral=ephemeral,
             )
 
     @commands.Cog.listener()
