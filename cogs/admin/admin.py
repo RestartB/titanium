@@ -171,25 +171,25 @@ class AdminCog(commands.Cog):
                     )
                 )
 
-    @admin_group.command("reloadall", hidden=True)
-    @commands.is_owner()
-    async def reload_all(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        success: list[str] = []
-        failed: list[str] = []
-        for cog in self.bot.cogs:
-            try:
-                await self.bot.reload_extension(cog)
-                success.append(cog)
-            except Exception as e:
-                self.logger.error(f"Error unloading {cog}", exc_info=e)
-                failed.append(cog)
+    # @admin_group.command("reloadall", hidden=True)
+    # @commands.is_owner()
+    # async def reload_all(self, ctx: commands.Context["TitaniumBot"]) -> None:
+    #     success: list[str] = []
+    #     failed: list[str] = []
+    #     for cog in self.bot.cogs:
+    #         try:
+    #             await self.bot.reload_extension(cog)
+    #             success.append(cog)
+    #         except Exception as e:
+    #             self.logger.error(f"Error unloading {cog}", exc_info=e)
+    #             failed.append(cog)
 
-        embed = discord.Embed(
-            title=f"{self.bot.success_emoji} Reloaded All Cogs",
-            description=f"**Reload Successful ({len(success)})**\n`{'`, `'.join(success)}`\n**Reload Failed ({len(failed)})**\n`{'`, `'.join(failed)}`",
-            colour=discord.Colour.green(),
-        )
-        await ctx.reply(embed=embed)
+    #     embed = discord.Embed(
+    #         title=f"{self.bot.success_emoji} Reloaded All Cogs",
+    #         description=f"**Reload Successful ({len(success)})**\n`{'`, `'.join(success)}`\n**Reload Failed ({len(failed)})**\n`{'`, `'.join(failed)}`",
+    #         colour=discord.Colour.green(),
+    #     )
+    #     await ctx.reply(embed=embed)
 
     @admin_group.command(name="migrate-db", hidden=True)
     @commands.is_owner()
