@@ -25,6 +25,7 @@ from typing import Awaitable, Callable, Optional
 
 import discord
 from discord.ext import commands
+from discord.utils import utcnow
 from dotenv import load_dotenv
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import delete, select
@@ -377,12 +378,12 @@ class TitaniumBot(commands.Bot):
 
     async def on_resumed(self):
         self.connected = True
-        self.last_resume = datetime.datetime.now(datetime.timezone.utc)
+        self.last_resume = utcnow()
 
     async def on_disconnect(self):
         if self.connected:
             self.connected = False
-            self.last_disconnect = datetime.datetime.now(datetime.timezone.utc)
+            self.last_disconnect = utcnow()
 
     async def on_error(self, event: str, *args, **kwargs):
         exc = sys.exc_info()[1]
@@ -789,7 +790,7 @@ if __name__ == "__main__":
 
         init_logger.info("Starting Titanium bot...")
 
-        bot.connect_time = datetime.datetime.now(datetime.timezone.utc)
+        bot.connect_time = utcnow()
         bot.last_disconnect = None
         bot.last_resume = None
 

@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import time, timezone
+from datetime import UTC, time
 from typing import TYPE_CHECKING
 
 import discord
@@ -34,7 +34,7 @@ class RepCog(commands.Cog):
         )
 
     # Snapshot task
-    @tasks.loop(time=time(hour=0, minute=0, tzinfo=timezone.utc))
+    @tasks.loop(time=time(hour=0, minute=0, tzinfo=UTC))
     async def take_daily_snapshots(self) -> None:
         await self.bot.wait_until_ready()
 

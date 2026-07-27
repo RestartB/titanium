@@ -3,12 +3,12 @@ import logging
 import re
 from asyncio import Lock
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Annotated, Literal, Optional, overload
 from urllib.parse import quote
 
 import aiohttp
 import dacite
+from discord.utils import utcnow
 from sqlalchemy import select
 from typing_extensions import deprecated
 
@@ -39,9 +39,7 @@ class TitaniumSpotifyClient:
                     self.LOGGER.debug("Requesting new access token")
                     return await self.__fetch_access_token()
 
-                if (
-                    datetime.now(timezone.utc) - token_entry.time_added
-                ).total_seconds() >= token_entry.expires_in:
+                if (utcnow() - token_entry.time_added).total_seconds() >= token_entry.expires_in:
                     self.LOGGER.debug("Token expired, requesting new token")
                     await session.delete(token_entry)
                     return await self.__fetch_access_token()

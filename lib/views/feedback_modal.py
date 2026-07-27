@@ -1,10 +1,10 @@
 import logging
 import os
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import discord
 from discord import Colour, Embed, Webhook
+from discord.utils import utcnow
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -85,7 +85,7 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
             f"**Feedback Content:** {self.feedback_content.component.value}",
             colour=Colour.light_grey(),
         )
-        e.timestamp = datetime.now(timezone.utc)
+        e.timestamp = utcnow()
         return e
 
     async def _send_notification(self, webhook_url: str) -> bool:

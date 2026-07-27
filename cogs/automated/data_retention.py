@@ -1,9 +1,10 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands, tasks
+from discord.utils import utcnow
 from sqlalchemy import delete, select
 
 from lib.sql.sql import AvailableWebhook, GuildSettings, get_session
@@ -45,7 +46,7 @@ class DataRetention(commands.Cog):
                     self.logger.info(
                         f"Left server while bot is offline - {server.guild_id}. Setting leave date."
                     )
-                    server.leave_date = datetime.now(timezone.utc)
+                    server.leave_date = utcnow()
                     self.bot.remove_cached_config(guild_id=server.guild_id)
                 else:
                     self.logger.info(
@@ -94,7 +95,7 @@ class DataRetention(commands.Cog):
                     return
 
                 self.logger.info(f"Left server - {guild.id}. Setting leave date.")
-                settings.leave_date = datetime.now(timezone.utc)
+                settings.leave_date = utcnow()
                 self.bot.remove_cached_config(guild_id=guild.id)
             else:
                 self.logger.info(f"Left server - {guild.id}. Deleting config.")
@@ -108,7 +109,7 @@ class DataRetention(commands.Cog):
         async with get_session() as session:
             # get servers where we left more than 3 days ago
             stmt = select(GuildSettings).where(
-                GuildSettings.leave_date <= datetime.now(timezone.utc) - timedelta(days=3)
+                GuildSettings.leave_date <= utcnow() - timedelta(days=3)
             )
             old_servers = (await session.execute(stmt)).scalars().all()
 

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import discord
@@ -470,7 +470,7 @@ class ScheduledTasksCog(commands.Cog):
             stmt = (
                 select(ScheduledTask)
                 .options(selectinload("*"))
-                .where(ScheduledTask.time_scheduled <= datetime.now(timezone.utc))
+                .where(ScheduledTask.time_scheduled <= utcnow())
             )
             result = await session.execute(stmt)
             results = result.scalars().all()
