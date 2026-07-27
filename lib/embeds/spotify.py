@@ -121,7 +121,7 @@ async def artist(
 
     try:
         topsong_string = ""
-        for i in range(0, 5):
+        for i in range(5):
             artist_string = ", ".join([artist.name for artist in top_tracks.tracks[i].artists])
 
             # Hide artist string from song listing if there is only one artist

@@ -299,7 +299,7 @@ class ClosedPollView(discord.ui.LayoutView):
         container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
 
         results = {}
-        for i in range(0, len(poll.choices)):
+        for i in range(len(poll.choices)):
             results[i] = sum(
                 [1 if response.answer_index == i else 0 for response in poll.responses]
             )
@@ -339,7 +339,7 @@ class PollView(discord.ui.LayoutView):
 
         results: dict[int, int] = {}
         if show_live_results:
-            for i in range(0, len(poll.choices)):
+            for i in range(len(poll.choices)):
                 results[i] = sum(
                     [1 if response.answer_index == i else 0 for response in poll.responses]
                 )
