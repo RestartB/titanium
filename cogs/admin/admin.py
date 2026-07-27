@@ -1,10 +1,7 @@
 import logging
-import os
-import textwrap
 import traceback
 from typing import TYPE_CHECKING
 
-import aiohttp
 import discord
 from discord.ext import commands
 

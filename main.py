@@ -46,7 +46,7 @@ from v1_to_v2.migrate import migrate_v1_to_v2
 # load the env variables
 load_dotenv()
 
-from lib.sql.sql import (  # noqa: E402
+from lib.sql.sql import (
     AvailableWebhook,
     ErrorLog,
     FireboardMessage,
