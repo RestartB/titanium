@@ -520,10 +520,8 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
-    elif (
-        isinstance(error, commands.CommandNotFound)
-        or isinstance(error, commands.NotOwner)
-        or isinstance(error, adapters.GroupCommandNotFoundException)
+    elif isinstance(
+        error, (commands.CommandNotFound, commands.NotOwner, adapters.GroupCommandNotFoundException)
     ):
         if ctx.bot.pre_not_found and await ctx.bot.pre_not_found(ctx, error):
             return

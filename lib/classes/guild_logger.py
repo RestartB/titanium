@@ -1672,9 +1672,9 @@ class GuildLogger:
             return
 
         if (
-            isinstance(message.channel, discord.DMChannel)
-            or isinstance(message.channel, discord.GroupChannel)
-        ) or not message.poll:
+            isinstance(message.channel, (discord.DMChannel, discord.GroupChannel))
+            or not message.poll
+        ):
             return
 
         embed = discord.Embed(
@@ -1716,8 +1716,7 @@ class GuildLogger:
         if (
             not event.cached_message
             or not event.cached_message.poll
-            or isinstance(event.cached_message.channel, discord.DMChannel)
-            or isinstance(event.cached_message.channel, discord.GroupChannel)
+            or isinstance(event.cached_message.channel, (discord.DMChannel, discord.GroupChannel))
         ):
             return
 
@@ -1762,9 +1761,7 @@ class GuildLogger:
         if not self._exists_and_enabled("reaction_clear"):
             return
 
-        if isinstance(message.channel, discord.DMChannel) or isinstance(
-            message.channel, discord.GroupChannel
-        ):
+        if isinstance(message.channel, (discord.DMChannel, discord.GroupChannel)):
             return
 
         embed = discord.Embed(
@@ -1801,9 +1798,7 @@ class GuildLogger:
 
         message = reaction.message
 
-        if isinstance(message.channel, discord.DMChannel) or isinstance(
-            message.channel, discord.GroupChannel
-        ):
+        if isinstance(message.channel, (discord.DMChannel, discord.GroupChannel)):
             return
 
         embed = discord.Embed(
