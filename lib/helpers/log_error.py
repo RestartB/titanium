@@ -2,7 +2,7 @@ import logging
 import os
 import traceback
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 
@@ -16,12 +16,12 @@ if TYPE_CHECKING:
 async def log_error(
     bot: TitaniumBot,
     module: str,
-    guild_id: Optional[int],
+    guild_id: int | None,
     error: str,
     details: str = "",
     dev_info: str = "",
     user: discord.User | discord.Member | None = None,
-    exc: Optional[Exception] = None,
+    exc: Exception | None = None,
     store_err: bool = True,
     send_webhook: bool = True,
 ) -> uuid.UUID:

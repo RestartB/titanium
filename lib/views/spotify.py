@@ -1,6 +1,6 @@
 import os
 from textwrap import shorten
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from urllib.parse import quote, quote_plus
 
 import aiohttp
@@ -20,8 +20,8 @@ class SongView(View):
         self,
         item: SpotifyTrack,
         colours: list,
-        add_button_url: Optional[str] = None,
-        add_button_text: Optional[str] = None,
+        add_button_url: str | None = None,
+        add_button_text: str | None = None,
     ):
         super().__init__(timeout=259200)  # 3 days
 
@@ -61,8 +61,8 @@ class SongMenuView(View):
         self,
         item: SpotifyTrack,
         colours: list,
-        add_button_url: Optional[str] = None,
-        add_button_text: Optional[str] = None,
+        add_button_url: str | None = None,
+        add_button_text: str | None = None,
     ):
         super().__init__()
 
@@ -383,8 +383,8 @@ class AlbumMenuButton(discord.ui.Button):
         artists: str,
         artist_img: str,
         colours: list,
-        add_button_url: Optional[str] = None,
-        add_button_text: Optional[str] = None,
+        add_button_url: str | None = None,
+        add_button_text: str | None = None,
     ):
         super().__init__(label="Menu", style=discord.ButtonStyle.gray)
 
@@ -417,8 +417,8 @@ class AlbumMenuView(View):
         artists: str,
         artist_img: str,
         colours: list,
-        add_button_url: Optional[str] = None,
-        add_button_text: Optional[str] = None,
+        add_button_url: str | None = None,
+        add_button_text: str | None = None,
     ):
         super().__init__()
 

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from discord import ButtonStyle, Embed, Member, User, app_commands
@@ -118,7 +118,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
     async def pfp(
         self,
         ctx: commands.Context["TitaniumBot"],
-        user: Optional[User | Member],
+        user: User | Member | None,
         ephemeral: bool = False,
     ) -> None:
         await ctx.defer(ephemeral=ephemeral)
@@ -153,7 +153,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
     )
     @commands.cooldown(1, 3)
     async def server_pfp(
-        self, ctx: commands.Context["TitaniumBot"], user: Optional[Member], ephemeral: bool = False
+        self, ctx: commands.Context["TitaniumBot"], user: Member | None, ephemeral: bool = False
     ) -> None:
         await ctx.defer(ephemeral=ephemeral)
 
@@ -195,7 +195,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
     async def banner(
         self,
         ctx: commands.Context["TitaniumBot"],
-        user: Optional[Member | User],
+        user: Member | User | None,
         ephemeral: bool = False,
     ) -> None:
         await ctx.defer(ephemeral=ephemeral)

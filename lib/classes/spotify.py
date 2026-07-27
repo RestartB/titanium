@@ -3,7 +3,7 @@ import logging
 import re
 from asyncio import Lock
 from dataclasses import dataclass
-from typing import Annotated, Literal, Optional, overload
+from typing import Annotated, Literal, overload
 from urllib.parse import quote
 
 import aiohttp
@@ -72,14 +72,14 @@ class TitaniumSpotifyClient:
 
     @overload
     async def __authed_get_req(
-        self, endpoint: str, data: Optional[dict] = None, text: Literal[False] = ...
+        self, endpoint: str, data: dict | None = None, text: Literal[False] = ...
     ) -> dict: ...
     @overload
     async def __authed_get_req(
-        self, endpoint: str, data: Optional[dict] = None, text: Literal[True] = ...
+        self, endpoint: str, data: dict | None = None, text: Literal[True] = ...
     ) -> str: ...
     async def __authed_get_req(
-        self, endpoint: str, data: Optional[dict] = None, text: bool = False
+        self, endpoint: str, data: dict | None = None, text: bool = False
     ) -> dict | str:
         async with aiohttp.ClientSession() as session:
             async with session.get(
@@ -190,8 +190,8 @@ class SpotifyBaseObj:
 @dataclass
 class SpotifyImage:
     url: str
-    height: Optional[int]
-    width: Optional[int]
+    height: int | None
+    width: int | None
 
 
 @dataclass
@@ -202,7 +202,7 @@ class SpotifyCopyright:
 
 @dataclass
 class SpotifyFollowers:
-    href: Optional[str]
+    href: str | None
     total: int
 
 
@@ -210,9 +210,9 @@ class SpotifyFollowers:
 class SpotifySearchObj:
     href: str
     limit: int
-    next: Optional[str]
+    next: str | None
     offset: int
-    previous: Optional[str]
+    previous: str | None
     total: int
 
 
@@ -225,9 +225,9 @@ class SpotifySimplifiedTrack(SpotifyBaseObj):
     disc_number: int
     duration_ms: int
     explicit: bool
-    is_playable: Optional[bool]
-    restrictions: Optional[dict[Literal["reason"], Literal["market", "product", "explicit"]]]
-    preview_url: Annotated[Optional[str], deprecated("This field is deprecated")]
+    is_playable: bool | None
+    restrictions: dict[Literal["reason"], Literal["market", "product", "explicit"]] | None
+    preview_url: Annotated[str | None, deprecated("This field is deprecated")]
     track_number: int
     is_local: bool
 
@@ -247,7 +247,7 @@ class SpotifySimplifiedAlbum(SpotifyBaseObj):
     images: list[SpotifyImage]
     release_date: str
     release_date_precision: str
-    restrictions: Optional[dict[Literal["reason"], Literal["market", "product", "explicit"]]]
+    restrictions: dict[Literal["reason"], Literal["market", "product", "explicit"]] | None
     artists: list[SpotifySimplifiedArtist]
 
 
@@ -264,7 +264,7 @@ class SpotifyTrack(SpotifySimplifiedTrack):
 
 @dataclass
 class SpotifyArtist(SpotifySimplifiedArtist):
-    followers: Annotated[Optional[SpotifyFollowers], deprecated("This field is deprecated")]
+    followers: Annotated[SpotifyFollowers | None, deprecated("This field is deprecated")]
     genres: Annotated[list[str], deprecated("This field is deprecated")]
     images: list[SpotifyImage]
     popularity: Annotated[int, deprecated("This field is deprecated")]

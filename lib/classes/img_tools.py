@@ -3,7 +3,7 @@ import logging
 import os
 import textwrap
 from io import BytesIO
-from typing import Literal, Optional, Tuple
+from typing import Literal, Tuple
 
 import aiohttp
 from discord import Attachment, File
@@ -232,7 +232,7 @@ class ImageTools:
     def _load_sync(self, data: bytes) -> Image.Image:
         return Image.open(BytesIO(data))
 
-    async def _load_image(self, attachment: Optional[Attachment] = None) -> Image.Image:
+    async def _load_image(self, attachment: Attachment | None = None) -> Image.Image:
         if not self.image and not attachment:
             raise ValueError("No image provided to load")
 

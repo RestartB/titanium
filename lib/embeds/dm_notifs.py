@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from discord import ButtonStyle, Colour, Embed, Guild, Member, Message
 from discord.ext import commands
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 def warned_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
-    reason: Optional[str],
+    reason: str | None,
 ) -> Embed:
     return Embed(
         title=f"{bot.warn_emoji} Warned",
@@ -24,7 +24,7 @@ def muted_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     duration: str,
-    reason: Optional[str],
+    reason: str | None,
 ) -> Embed:
     return Embed(
         title=f"{bot.warn_emoji} Muted",
@@ -47,7 +47,7 @@ def unmuted_dm(
 def kicked_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
-    reason: Optional[str],
+    reason: str | None,
 ) -> Embed:
     return Embed(
         title=f"{bot.warn_emoji} Kicked",
@@ -60,7 +60,7 @@ def banned_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     duration: str,
-    reason: Optional[str],
+    reason: str | None,
 ) -> Embed:
     return Embed(
         title=f"{bot.warn_emoji} Banned",

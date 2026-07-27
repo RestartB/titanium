@@ -1,7 +1,7 @@
 import re
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from discord import Colour
@@ -270,7 +270,7 @@ class ChoiceRow(discord.ui.Section):
         poll: AnonymousPoll,
         choice: str,
         index: int,
-        votes: Optional[int],
+        votes: int | None,
     ) -> None:
         super().__init__(
             discord.ui.TextDisplay(

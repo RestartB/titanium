@@ -1,6 +1,6 @@
 import typing
 from datetime import timedelta
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal
 
 import discord
 from discord import AllowedMentions, Colour, app_commands
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 class TemplateCog(commands.Cog, description="Create reminders."):
     """Create reminders"""
 
-    ConvertedDuration = typing.Annotated[typing.Union[Optional[timedelta]], DurationConverter]
+    ConvertedDuration = typing.Annotated[timedelta | None, DurationConverter]
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot

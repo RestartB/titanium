@@ -1,7 +1,7 @@
 import asyncio
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from colorthief import ColorThief
@@ -620,7 +620,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
     async def first_message(
         self,
         ctx: commands.Context["TitaniumBot"],
-        channel: Optional[discord.abc.GuildChannel] = None,
+        channel: discord.abc.GuildChannel | None = None,
         ephemeral: bool = True,
     ) -> None:
         await ctx.defer(ephemeral=ephemeral)

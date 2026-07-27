@@ -4,7 +4,7 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import shortuuid
 from discord import Guild, Member, PartialInviteGuild
@@ -941,7 +941,7 @@ class Reminder(Base):
         passive_deletes=True,
     )
 
-    async def edit(self, content: Optional[str] = None, time: Optional[datetime] = None) -> Tag:
+    async def edit(self, content: str | None = None, time: datetime | None = None) -> Tag:
         if not content and not time:
             raise ValueError("Content or time must be specified")
 

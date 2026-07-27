@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal
 
 import discord
 from discord import app_commands
@@ -175,7 +175,7 @@ class TagCommandsCog(commands.Cog):
     def __server_tag_available(
         self,
         ctx: commands.Context["TitaniumBot"] | discord.Interaction["TitaniumBot"],
-        config: Optional[GuildSettings],
+        config: GuildSettings | None,
     ) -> bool:
         author = ctx.author if isinstance(ctx, commands.Context) else ctx.user
         return bool(

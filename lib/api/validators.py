@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Optional
+from typing import Annotated
 
 from emoji import is_emoji
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
@@ -64,7 +64,7 @@ class GuildPermissionsModel(BaseModel):
 
 class ConfessionsConfigModel(BaseModel):
     confessions_in_channel: bool
-    confessions_channel_id: Optional[str] = None
+    confessions_channel_id: str | None = None
     polls_enabled: bool
     attachments_allowed: bool
 
@@ -87,8 +87,8 @@ class CaseComment(BaseModel):
 class AutomodCriteriaModel(BaseModel):
     type: AutomodCriteriaType
 
-    threshold: Optional[int] = Field(None, ge=1, le=1_892_160_000)
-    duration: Optional[int] = Field(None, ge=1, le=1_892_160_000)
+    threshold: int | None = Field(None, ge=1, le=1_892_160_000)
+    duration: int | None = Field(None, ge=1, le=1_892_160_000)
 
     words: list[
         Annotated[
@@ -121,32 +121,21 @@ class AutomodCriteriaModel(BaseModel):
 class AutomodActionModel(BaseModel):
     type: AutomodActionType
 
-    duration: Optional[int] = Field(None, ge=1, le=1_892_160_000)
-    reason: Optional[
-        Annotated[
-            str,
-            StringConstraints(max_length=512, strip_whitespace=True),
-        ]
-    ] = None
+    duration: int | None = Field(None, ge=1, le=1_892_160_000)
+    reason: Annotated[str, StringConstraints(max_length=512, strip_whitespace=True)] | None = None
 
     role_ids: list[str] = Field(default_factory=list, max_length=10)
 
-    message_content: Optional[
-        Annotated[
-            str,
-            StringConstraints(max_length=1024, strip_whitespace=True),
-        ]
-    ] = None
+    message_content: (
+        Annotated[str, StringConstraints(max_length=1024, strip_whitespace=True)] | None
+    ) = None
     message_reply: bool
     message_mention: bool
     message_embed: bool
     # TODO: validate hex code
-    embed_colour: Optional[
-        Annotated[
-            str,
-            StringConstraints(max_length=7, strip_whitespace=True),
-        ]
-    ] = None
+    embed_colour: Annotated[str, StringConstraints(max_length=7, strip_whitespace=True)] | None = (
+        None
+    )
 
     @model_validator(mode="after")
     def validate_role_present(self):
@@ -260,9 +249,9 @@ class AutomodConfigModel(BaseModel):
 class BouncerCriterionModel(BaseModel):
     type: BouncerCriteriaType
 
-    account_age: Optional[int] = Field(None, ge=1, le=1_892_160_000)
+    account_age: int | None = Field(None, ge=1, le=1_892_160_000)
 
-    words: Optional[list[str]] = None
+    words: list[str] | None = None
     match_whole_word: bool = False
     case_sensitive: bool = False
 
@@ -280,10 +269,10 @@ class BouncerCriterionModel(BaseModel):
 class BouncerActionModel(BaseModel):
     type: BouncerActionType
 
-    duration: Optional[int] = Field(None, ge=1, le=1_892_160_000)
-    reason: Optional[str] = None
+    duration: int | None = Field(None, ge=1, le=1_892_160_000)
+    reason: str | None = None
 
-    role_id: Optional[str] = None
+    role_id: str | None = None
 
     @model_validator(mode="after")
     def validate_role_present(self):
@@ -366,7 +355,7 @@ class BouncerConfigModel(BaseModel):
 
 
 class LoggingConfigModel(BaseModel):
-    channels: dict[str, Optional[str]] = Field(default_factory=dict, max_length=120)
+    channels: dict[str, str | None] = Field(default_factory=dict, max_length=120)
 
     @model_validator(mode="after")
     def validate_keys(self):
@@ -380,7 +369,7 @@ class LoggingConfigModel(BaseModel):
 
 
 class FireboardBoardModel(BaseModel):
-    id: Optional[uuid.UUID] = None
+    id: uuid.UUID | None = None
 
     channel_id: str
     reaction: str
@@ -416,7 +405,7 @@ class FireboardConfigModel(BaseModel):
 
 
 class ServerCounterChannelModel(BaseModel):
-    id: Optional[str] = None
+    id: str | None = None
     name: str
     type: ServerCounterType
 
@@ -464,7 +453,7 @@ class LeaderboardConfigModel(BaseModel):
 
     levelup_notifications: bool
     notification_ping: bool
-    notification_channel: Optional[str] = None
+    notification_channel: str | None = None
 
     web_leaderboard_enabled: bool
     web_login_required: bool

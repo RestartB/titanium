@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from discord import ClientUser, Colour, Embed, Member, Object, User
 
@@ -465,7 +465,7 @@ def forbidden(bot: TitaniumBot, action: str = "") -> Embed:
 
 
 def http_exception(
-    bot: TitaniumBot, user: Optional[Member | User | ClientUser] = None, action: str = ""
+    bot: TitaniumBot, user: Member | User | ClientUser | None = None, action: str = ""
 ) -> Embed:
     embed = Embed(
         title=f"{bot.error_emoji} Error",

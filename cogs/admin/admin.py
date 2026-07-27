@@ -2,7 +2,7 @@ import logging
 import os
 import textwrap
 import traceback
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
@@ -64,7 +64,7 @@ class AdminCog(commands.Cog):
     async def warn(
         self,
         ctx: commands.Context["TitaniumBot"],
-        server_id: Optional[int] = None,
+        server_id: int | None = None,
     ) -> None:
         async with defer(ctx, ephemeral=True):
             # Sync commands

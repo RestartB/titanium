@@ -21,7 +21,7 @@ import logging
 import os
 import sys
 from glob import glob
-from typing import Awaitable, Callable, Optional
+from typing import Awaitable, Callable
 
 import discord
 from discord.ext import commands
@@ -88,8 +88,8 @@ class TitaniumBot(commands.Bot):
 
     connected: bool = False
     connect_time: datetime.datetime
-    last_disconnect: Optional[datetime.datetime]
-    last_resume: Optional[datetime.datetime]
+    last_disconnect: datetime.datetime | None
+    last_resume: datetime.datetime | None
     api_latency: float = 0.0
 
     guild_configs: dict[int, GuildSettings] = {}
@@ -108,7 +108,7 @@ class TitaniumBot(commands.Bot):
 
     trusted_servers: list[int] = []
 
-    pre_not_found: Optional[
+    pre_not_found: (
         Callable[
             [
                 commands.Context["TitaniumBot"],
@@ -118,7 +118,8 @@ class TitaniumBot(commands.Bot):
             ],
             Awaitable[bool],
         ]
-    ] = None
+        | None
+    ) = None
 
     async def refresh_opt_out(self) -> None:
         cache_logger.info("Refreshing opt-out IDs...")

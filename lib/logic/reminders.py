@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 import discord
 from sqlalchemy import func, select
@@ -13,9 +12,9 @@ async def create_reminder(
     time: datetime,
     creator: discord.User | discord.Member,
     dm: bool,
-    guild_id: Optional[int] = None,
-    channel_id: Optional[int] = None,
-    message_id: Optional[int] = None,
+    guild_id: int | None = None,
+    channel_id: int | None = None,
+    message_id: int | None = None,
 ) -> Reminder:
     reminder = Reminder(
         guild_id=guild_id,
@@ -56,9 +55,7 @@ async def get_reminder_count(creator: discord.User | discord.Member) -> int:
     return result.scalar() or 0
 
 
-async def get_reminder(
-    reminder_id: str, creator: discord.User | discord.Member
-) -> Optional[Reminder]:
+async def get_reminder(reminder_id: str, creator: discord.User | discord.Member) -> Reminder | None:
     async with get_session() as session:
         stmt = select(Reminder).where(Reminder.id == reminder_id, Reminder.user_id == creator.id)
         return (await session.execute(stmt)).scalar_one_or_none()

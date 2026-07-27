@@ -1,7 +1,7 @@
 import os
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
@@ -35,12 +35,12 @@ async def song(
     sp: TitaniumSpotifyClient,
     item: SpotifyTrack,
     ctx: commands.Context["TitaniumBot"],
-    add_button_url: Optional[str] = None,
-    add_button_text: Optional[str] = None,
+    add_button_url: str | None = None,
+    add_button_text: str | None = None,
     cached: bool = False,
     ephemeral: bool = False,
     responded: bool = False,
-    respond_msg: Optional[discord.Message] = None,
+    respond_msg: discord.Message | None = None,
 ):
     """
     Handle Spotify song embeds.
@@ -105,7 +105,7 @@ async def artist(
     ctx: commands.Context["TitaniumBot"],
     ephemeral: bool = False,
     responded: bool = False,
-    respond_msg: Optional[discord.Message] = None,
+    respond_msg: discord.Message | None = None,
 ):
     """
     Handle Spotify artist embeds.
@@ -173,11 +173,11 @@ async def album(
     sp: TitaniumSpotifyClient,
     item: SpotifyAlbum,
     ctx: commands.Context["TitaniumBot"],
-    add_button_url: Optional[str] = None,
-    add_button_text: Optional[str] = None,
+    add_button_url: str | None = None,
+    add_button_text: str | None = None,
     ephemeral: bool = False,
     responded: bool = False,
-    respond_msg: Optional[discord.Message] = None,
+    respond_msg: discord.Message | None = None,
 ):
     """
     Handle Spotify album embeds.

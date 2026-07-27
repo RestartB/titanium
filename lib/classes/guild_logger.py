@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING, Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
 import discord
 from discord.utils import escape_markdown, format_dt
@@ -151,7 +151,7 @@ class GuildLogger:
         self.logger.debug(f"{entry} log type is enabled")
         return True
 
-    async def _find_webhook(self, channel_id: int | None) -> Optional[str]:
+    async def _find_webhook(self, channel_id: int | None) -> str | None:
         if not channel_id:
             return None
 
@@ -218,7 +218,7 @@ class GuildLogger:
 
     async def _send_to_webhook(
         self,
-        url: Optional[str],
+        url: str | None,
         embed: discord.Embed | None = None,
         embeds: list[discord.Embed] | None = None,
         view: discord.ui.View | None = None,
@@ -307,8 +307,8 @@ class GuildLogger:
     async def _get_audit_log_entry(
         self,
         action: discord.AuditLogAction,
-        target: Optional[Any] = None,
-    ) -> Optional[discord.AuditLogEntry]:
+        target: Any | None = None,
+    ) -> discord.AuditLogEntry | None:
         # Get audit log
         if not isinstance(self.guild, discord.Guild):
             return None
@@ -327,8 +327,8 @@ class GuildLogger:
     async def _add_user_footer(
         self,
         embed: discord.Embed,
-        log: Optional[discord.AuditLogEntry] = None,
-        user_id: Optional[int] = None,
+        log: discord.AuditLogEntry | None = None,
+        user_id: int | None = None,
     ) -> None:
         if not log or user_id:
             return
@@ -2914,7 +2914,7 @@ class GuildLogger:
         )
 
     async def titanium_case_delete(
-        self, case: ModCase, deleted_by: Optional[discord.Member] = None
+        self, case: ModCase, deleted_by: discord.Member | None = None
     ) -> None:
         await self._ensure_config()
         if not self._exists_and_enabled("titanium_case_delete"):

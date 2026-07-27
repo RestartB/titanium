@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
@@ -36,7 +36,7 @@ class ReviewsCommandsCog(commands.Cog):
     async def reviews_group(
         self,
         ctx: commands.Context["TitaniumBot"],
-        user: Optional[discord.User | discord.Member] | None,
+        user: discord.User | discord.Member | None,
         ephemeral: bool = False,
     ) -> None:
         if user is None:

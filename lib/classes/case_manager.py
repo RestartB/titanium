@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, Sequence, overload
+from typing import TYPE_CHECKING, Annotated, Literal, Sequence, overload
 
 import discord
 from discord import Guild
@@ -84,8 +84,8 @@ class GuildModCaseManager:
         action: CaseType,
         user: discord.User | discord.Member | discord.Object,
         creator_user: discord.User | discord.Member | discord.ClientUser | discord.Object,
-        reason: Optional[str],
-        time_created: Optional[datetime] = None,
+        reason: str | None,
+        time_created: datetime | None = None,
         duration: Annotated[timedelta, DurationConverter] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
@@ -99,8 +99,8 @@ class GuildModCaseManager:
         action: CaseType,
         user: discord.User | discord.Member | discord.Object,
         creator_user: discord.User | discord.Member | discord.ClientUser,
-        reason: Optional[str],
-        time_created: Optional[datetime] = None,
+        reason: str | None,
+        time_created: datetime | None = None,
         duration: Annotated[timedelta, DurationConverter] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
@@ -112,8 +112,8 @@ class GuildModCaseManager:
         action: CaseType,
         user: discord.User | discord.Member | discord.Object,
         creator_user: discord.User | discord.Member | discord.ClientUser | discord.Object,
-        reason: Optional[str],
-        time_created: Optional[datetime] = None,
+        reason: str | None,
+        time_created: datetime | None = None,
         duration: Annotated[timedelta, DurationConverter] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
@@ -324,8 +324,8 @@ class GuildModCaseManager:
     async def update_case(
         self,
         case_id: str,
-        reason: Optional[str],
-        resolved: Optional[bool],
+        reason: str | None,
+        resolved: bool | None,
         duration: Annotated[timedelta, DurationConverter] | None = None,
     ) -> ModCase:
         case = await self.get_case_by_id(case_id)
