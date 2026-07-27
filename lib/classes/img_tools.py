@@ -3,7 +3,7 @@ import logging
 import os
 import textwrap
 from io import BytesIO
-from typing import Literal, Tuple
+from typing import Literal
 
 import aiohttp
 from discord import Attachment, File
@@ -52,7 +52,7 @@ class EmojiRenderer:
                 else:
                     raise ValueError(f"Failed to download emoji: {emoji}")
 
-    def _split_text_and_emoji(self, text: str) -> list[Tuple[str, bool]]:
+    def _split_text_and_emoji(self, text: str) -> list[tuple[str, bool]]:
         """
         Split text into segments of regular text and emoji
         Returns list of (segment, is_emoji) tuples
@@ -81,7 +81,7 @@ class EmojiRenderer:
 
     def get_line_size(
         self, text: str, font: ImageFont.FreeTypeFont, align: str = "left"
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Calculate the size of a line of text with emojis
         """
@@ -130,10 +130,10 @@ class EmojiRenderer:
     async def render_text(
         self,
         img: Image.Image,
-        xy: Tuple[int, int],
+        xy: tuple[int, int],
         text: str,
         font: ImageFont.FreeTypeFont,
-        fill: Tuple[int, int, int, int] = (0, 0, 0, 255),
+        fill: tuple[int, int, int, int] = (0, 0, 0, 255),
         align: str = "left",
     ) -> Image.Image:
         """

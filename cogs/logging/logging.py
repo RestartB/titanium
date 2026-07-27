@@ -1,5 +1,6 @@
 import logging
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands

@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from discord import Colour, Embed, Member, User
 from discord.utils import format_dt

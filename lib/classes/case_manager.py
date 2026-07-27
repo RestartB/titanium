@@ -1,7 +1,8 @@
 import asyncio
 import logging
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Annotated, Literal, Sequence, overload
+from typing import TYPE_CHECKING, Annotated, Literal, overload
 
 import discord
 from discord import Guild

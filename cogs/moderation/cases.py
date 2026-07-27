@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from discord import AllowedMentions, ButtonStyle, Colour, Embed, Member, Message, User, app_commands
 from discord.ext import commands

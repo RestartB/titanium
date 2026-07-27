@@ -20,8 +20,9 @@ import datetime
 import logging
 import os
 import sys
+from collections.abc import Awaitable, Callable
 from glob import glob
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 import discord
 from discord.ext import commands

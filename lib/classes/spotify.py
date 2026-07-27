@@ -5,12 +5,12 @@ from asyncio import Lock
 from dataclasses import dataclass
 from typing import Annotated, Literal, overload
 from urllib.parse import quote
+from warnings import deprecated
 
 import aiohttp
 import dacite
 from discord.utils import utcnow
 from sqlalchemy import select
-from typing_extensions import deprecated
 
 from lib.sql.sql import SpotifyToken, get_session
 

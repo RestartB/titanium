@@ -1,10 +1,11 @@
 import asyncio
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING, Any, ClassVar, Sequence
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import discord
 from discord.utils import escape_markdown, format_dt
