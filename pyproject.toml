@@ -40,7 +40,7 @@ line-length = 100
 
 [tool.ruff.lint]
 extend-select = ["I"]
-ignore = ["LOG015", "UP037"]
+ignore = ["LOG015", "UP037", "BLE001"]
 
 [tool.pyright]
 typeCheckingMode = "basic"
