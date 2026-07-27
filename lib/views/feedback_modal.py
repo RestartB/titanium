@@ -47,7 +47,7 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
         if not webhook_url or not webhook_url.strip():
             e = Embed(
                 colour=Colour.red(),
-                title=f"{str(interaction.client.error_emoji)} Unavailable",
+                title=f"{interaction.client.error_emoji} Unavailable",
                 description="Sending feedback is currently unavailable, please try again later.",
             )
             LOGGER.error("The feedback webhook url is not in the .env file")
@@ -57,14 +57,14 @@ class FeedbackModal(discord.ui.Modal, title="Share Feedback"):
         if not is_success:
             e = Embed(
                 colour=Colour.red(),
-                title=f"{str(interaction.client.error_emoji)} Error",
+                title=f"{interaction.client.error_emoji} Error",
                 description="Failed to send feedback to the developer. Please try again later.",
             )
             return await interaction.followup.send(embed=e, ephemeral=True)
 
         e = Embed(
             colour=Colour.green(),
-            title=f"{str(interaction.client.success_emoji)} Feedback Sent",
+            title=f"{interaction.client.success_emoji} Feedback Sent",
             description="Thank you for your feedback!",
         )
         await interaction.followup.send(embed=e, ephemeral=True)

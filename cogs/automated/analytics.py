@@ -61,7 +61,7 @@ class Analytics(commands.Cog):
     async def on_interaction(self, interaction: discord.Interaction["TitaniumBot"]):
         embed = discord.Embed(
             title=f"`@{interaction.user.name}` started an interaction",
-            description=f"`{str(interaction.type)}`",
+            description=f"`{interaction.type}`",
             timestamp=interaction.created_at,
         )
         embed.add_field(name="User", value=f"{interaction.user.mention} (`{interaction.user.id}`)")
