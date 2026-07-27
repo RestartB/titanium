@@ -42,8 +42,6 @@ class ReviewsCommandsCog(commands.Cog):
         if user is None:
             user = ctx.author
 
-        review_list = []
-
         # Send request to ReviewDB
         async with (
             aiohttp.ClientSession() as session,
@@ -54,8 +52,7 @@ class ReviewsCommandsCog(commands.Cog):
         ):
             review_response = await request.json()
 
-        for review in review_response["reviews"][1:]:
-            review_list.append(review)
+        review_list: list = review_response["reviews"][1:]
 
         while True:
             if not review_response["success"]:
@@ -78,9 +75,7 @@ class ReviewsCommandsCog(commands.Cog):
                         ) as request,
                     ):
                         review_response = await request.json()
-
-                    for review in review_response["reviews"]:
-                        review_list.append(review)
+                    review_list.extend(review_response["reviews"])
                 else:
                     break
 
@@ -143,8 +138,6 @@ class ReviewsCommandsCog(commands.Cog):
         if not ctx.guild:
             raise commands.NoPrivateMessage
 
-        review_list = []
-
         # Send request to ReviewDB
         async with (
             aiohttp.ClientSession() as session,
@@ -155,8 +148,7 @@ class ReviewsCommandsCog(commands.Cog):
         ):
             review_response = await request.json()
 
-        for review in review_response["reviews"][1:]:
-            review_list.append(review)
+        review_list: list = review_response["reviews"][1:]
 
         while True:
             if not review_response["success"]:
@@ -179,9 +171,7 @@ class ReviewsCommandsCog(commands.Cog):
                         ) as request,
                     ):
                         review_response = await request.json()
-
-                    for review in review_response["reviews"]:
-                        review_list.append(review)
+                    review_list.extend(review_response["reviews"])
                 else:
                     break
 

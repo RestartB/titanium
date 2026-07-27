@@ -317,9 +317,9 @@ class ModerationBasicCog(
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.UNKNOWN, None, None, None
-                except Exception as e:
+                except Exception:
                     await manager.delete_case(case.id, raise_not_found=False)
-                    raise e
+                    raise
 
             return PunishmentResult.SUCCESS, case, dm_success, dm_error
         finally:
@@ -429,9 +429,9 @@ class ModerationBasicCog(
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.UNKNOWN, None, None, None
-                except Exception as e:
+                except Exception:
                     await manager.delete_case(case.id, raise_not_found=False)
-                    raise e
+                    raise
 
             return PunishmentResult.SUCCESS, case, dm_success, dm_error
         finally:

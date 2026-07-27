@@ -460,9 +460,9 @@ class AutomodMonitorCog(commands.Cog):
                                         dm_error=dm_error,
                                     )
                                 )
-                            except Exception as e:
+                            except Exception:
                                 await manager.delete_case(case.id, raise_not_found=False)
-                                raise e
+                                raise
                         elif action.type == AutomodActionType.BAN:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
@@ -502,9 +502,9 @@ class AutomodMonitorCog(commands.Cog):
                                         dm_error=dm_error,
                                     )
                                 )
-                            except Exception as e:
+                            except Exception:
                                 await manager.delete_case(case.id, raise_not_found=False)
-                                raise e
+                                raise
                         elif action.type == AutomodActionType.DELETE:
                             # fmt: off
                             if not message.channel.permissions_for(message.guild.me).manage_messages:

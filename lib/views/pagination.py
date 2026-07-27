@@ -19,7 +19,7 @@ class PaginationView(View):
         self,
         embeds: list[Embed] | list[list[Embed]],
         timeout: float,
-        custom_buttons: list[Button] = [],
+        custom_buttons: list[Button] | None = None,
         page_offset: int = 0,
         footer_embed: int = -1,
     ):
@@ -33,7 +33,7 @@ class PaginationView(View):
             else:
                 self.embeds.append([embed_group])
 
-        for custom_button in custom_buttons:
+        for custom_button in custom_buttons or []:
             self.add_item(custom_button)
 
         self.page_count.label = f"1/{len(embeds)}"

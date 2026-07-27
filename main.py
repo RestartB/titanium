@@ -722,13 +722,10 @@ async def on_app_command_error(
         if interaction.command and not isinstance(
             interaction.command, discord.app_commands.ContextMenu
         ):
-            try:
-                for param in interaction.command.parameters:
-                    if param.name not in interaction.namespace:
-                        continue
-                    params.append(f"{param.name}: {interaction.namespace[param.name]}")
-            except Exception:
-                pass
+            for param in interaction.command.parameters:
+                if param.name not in interaction.namespace:
+                    continue
+                params.append(f"{param.name}: {interaction.namespace[param.name]}")
 
         try:
             error_id = await log_error(

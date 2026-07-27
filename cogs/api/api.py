@@ -981,8 +981,8 @@ class APICog(commands.Cog):
                 err_code = getattr(e.orig, "sqlstate", getattr(e.orig, "pgcode", None))
                 if err_code == "23505":  # 23505 = unique_violation
                     return web.json_response({"error": "tag_in_use"}, status=404)
-                else:
-                    raise e
+
+                raise
 
         await self.bot.refresh_guild_config_cache(guild.id)
         return web.Response(status=204)
@@ -1035,8 +1035,7 @@ class APICog(commands.Cog):
                 err_code = getattr(e.orig, "sqlstate", getattr(e.orig, "pgcode", None))
                 if err_code == "23505":  # 23505 = unique_violation
                     return web.json_response({"error": "tag_in_use"}, status=404)
-                else:
-                    raise e
+                raise
 
         await self.bot.refresh_guild_config_cache(guild.id)
         return web.Response(status=204)

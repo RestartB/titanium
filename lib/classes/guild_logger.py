@@ -223,8 +223,10 @@ class GuildLogger:
         embed: discord.Embed | None = None,
         embeds: list[discord.Embed] | None = None,
         view: discord.ui.View | None = None,
-        files: list[discord.File] = [],
+        files: list[discord.File] | None = None,
     ) -> None:
+        files = files or []
+
         if url is None:
             return
 
@@ -1378,7 +1380,7 @@ class GuildLogger:
         if not self._exists_and_enabled("member_kick"):
             return
 
-        if not entry.action == discord.AuditLogAction.kick:
+        if entry.action != discord.AuditLogAction.kick:
             return
 
         if not isinstance(entry.target, discord.Member) and not isinstance(
@@ -1628,7 +1630,7 @@ class GuildLogger:
         for message_id in event.message_ids:
             message = message_id
             for cached_message in event.cached_messages:
-                if not cached_message.id == message_id:
+                if cached_message.id != message_id:
                     continue
                 message = cached_message
             message_list.append(message)

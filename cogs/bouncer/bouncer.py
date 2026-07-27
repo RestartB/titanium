@@ -395,10 +395,10 @@ class BouncerMonitorCog(commands.Cog):
 
                         if case:
                             await manager.delete_case(case.id)
-                    except Exception as e:
+                    except Exception:
                         if case:
                             await manager.delete_case(case.id)
-                        raise e
+                        raise
                 elif punishment.type == BouncerActionType.BAN:
                     if (
                         not member.guild.me.guild_permissions.ban_members
@@ -449,10 +449,10 @@ class BouncerMonitorCog(commands.Cog):
 
                         if case:
                             await manager.delete_case(case.id)
-                    except Exception as e:
+                    except Exception:
                         if case:
                             await manager.delete_case(case.id)
-                        raise e
+                        raise
                 else:
                     await log_error(
                         bot=self.bot,

@@ -187,8 +187,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                             colour=discord.Colour.red(),
                         )
                         return await interaction.followup.send(embed=embed, ephemeral=True)
-                    else:
-                        raise e
+                    raise
 
             embed = discord.Embed(
                 title=f"{interaction.client.success_emoji} Done",
@@ -261,8 +260,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                             colour=discord.Colour.red(),
                         )
                         return await interaction.followup.send(embed=embed, ephemeral=True)
-                    else:
-                        raise e
+                    raise
 
             embed = discord.Embed(
                 title=f"{interaction.client.success_emoji} Done",
