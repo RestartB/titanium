@@ -263,9 +263,11 @@ class AutomodMonitorCog(commands.Cog):
                             if matches:
                                 words_matched += 1
 
-                        if criteria.match_all_words and words_matched == len(criteria.words):
-                            criteria_met = True
-                        elif not criteria.match_all_words and words_matched > 0:
+                        if (
+                            criteria.match_all_words
+                            and words_matched == len(criteria.words)
+                            or (not criteria.match_all_words and words_matched > 0)
+                        ):
                             criteria_met = True
                     elif type == AutomodCriteriaType.MALICIOUS_LINK:
                         for link in self.bot.malicious_links:
@@ -291,14 +293,9 @@ class AutomodMonitorCog(commands.Cog):
                             current_state[0]
                         )
 
-                if rule.match_all_criteria and criterion_matched == len(rule.criteria):
-                    self.logger.debug(f"({rule.id}) Rule met")
-                    triggered_rules.append(rule)
-                    triggered_actions.extend(rule.actions)
-
-                    if rule.stop_if_triggered:
-                        break
-                elif not rule.match_all_criteria and criterion_matched > 0:
+                if (rule.match_all_criteria and criterion_matched == len(rule.criteria)) or (
+                    not rule.match_all_criteria and criterion_matched > 0
+                ):
                     self.logger.debug(f"({rule.id}) Rule met")
                     triggered_rules.append(rule)
                     triggered_actions.extend(rule.actions)

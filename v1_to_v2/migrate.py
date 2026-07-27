@@ -236,10 +236,7 @@ async def migrate_tags(bot: TitaniumBot):
                     if bot.get_guild(int(tag[1])):
                         known_guilds.append(int(tag[1]))
                         mode = "guild"
-                    elif bot.get_user(int(tag[1])):
-                        known_users.append(int(tag[1]))
-                        mode = "user"
-                    elif await bot.fetch_user(int(tag[1])):
+                    elif bot.get_user(int(tag[1])) or await bot.fetch_user(int(tag[1])):
                         known_users.append(int(tag[1]))
                         mode = "user"
                     else:

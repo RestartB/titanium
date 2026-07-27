@@ -555,9 +555,7 @@ class ImageTools:
         renderer = EmojiRenderer()
         while True:
             size = renderer.get_size(text=wrapped_text, font=font_data)
-            if size[0] <= img.width - 20:
-                break
-            elif font_data.size <= 25:
+            if size[0] <= img.width - 20 or font_data.size <= 25:
                 break
             else:
                 font_data = ImageFont.truetype(font_path, font_data.size - 1)
