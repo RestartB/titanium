@@ -153,9 +153,10 @@ class AutomodActionModel(BaseModel):
 
     @model_validator(mode="after")
     def validate_message_content(self):
-        if self.type == AutomodActionType.SEND_MESSAGE:
-            if not self.message_content or self.message_content.strip() == "":
-                raise ValueError("Message content must be provided for send message action")
+        if self.type == AutomodActionType.SEND_MESSAGE and (
+            not self.message_content or self.message_content.strip() == ""
+        ):
+            raise ValueError("Message content must be provided for send message action")
         return self
 
     @model_validator(mode="after")

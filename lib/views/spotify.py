@@ -228,10 +228,11 @@ class SongLyricSelection(Select):
 
         for paragraph in lyrics_paragraphs:
             for line in paragraph.splitlines():
-                if (len(current_page)) >= 1024 or len(current_page.splitlines()) >= 30:
-                    if current_page:
-                        lyrics.append(current_page.strip())
-                        current_page = ""
+                if (
+                    (len(current_page)) >= 1024 or len(current_page.splitlines()) >= 30
+                ) and current_page:
+                    lyrics.append(current_page.strip())
+                    current_page = ""
 
                 current_page += f"{line}\n"
 

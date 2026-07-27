@@ -355,20 +355,21 @@ class TitaniumBot(commands.Bot):
         init_logger.info("Loading cogs...")
         # Find all cogs in command dir
         for filename in glob(os.path.join("cogs", "**"), recursive=True, include_hidden=False):
-            if not os.path.isdir(filename):
-                # Determine if file is a python file
-                if filename.endswith(".py") and not filename.startswith("."):
-                    filename = filename.replace("\\", "/").replace("/", ".")[:-3]
+            if (
+                not os.path.isdir(filename)
+                and filename.endswith(".py")
+                and not filename.startswith(".")
+            ):
+                filename = filename.replace("\\", "/").replace("/", ".")[:-3]
+                init_logger.debug(f"Loading normal cog: {filename}...")
 
-                    init_logger.debug(f"Loading normal cog: {filename}...")
+                try:
+                    await bot.load_extension(filename)
+                    init_logger.debug(f"Loaded normal cog: {filename}")
+                except Exception as e:
+                    init_logger.error(f"Failed to load normal cog: {filename}", exc_info=e)
 
-                    try:
-                        await bot.load_extension(filename)
-                        init_logger.debug(f"Loaded normal cog: {filename}")
-                    except Exception as e:
-                        init_logger.error(f"Failed to load normal cog: {filename}", exc_info=e)
-
-                        continue
+                    continue
         init_logger.info("Loading cogs complete.")
 
     async def on_ready(self):
@@ -520,9 +521,8 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         or isinstance(error, commands.NotOwner)
         or isinstance(error, adapters.GroupCommandNotFoundException)
     ):
-        if ctx.bot.pre_not_found:
-            if await ctx.bot.pre_not_found(ctx, error):
-                return
+        if ctx.bot.pre_not_found and await ctx.bot.pre_not_found(ctx, error):
+            return
 
         if isinstance(error, adapters.GroupCommandNotFoundException):
             command_name = error.command_name

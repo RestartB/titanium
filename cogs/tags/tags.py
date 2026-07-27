@@ -294,9 +294,14 @@ class TagCommandsCog(commands.Cog):
         user_tags_allowed = True
         server_tags_allowed = self.__server_tag_available(ctx, config)
 
-        if server_tags_allowed and ctx.guild:
-            if config and config.tag_settings and not config.tag_settings.allow_user_tags:
-                user_tags_allowed = False
+        if (
+            server_tags_allowed
+            and ctx.guild
+            and config
+            and config.tag_settings
+            and not config.tag_settings.allow_user_tags
+        ):
+            user_tags_allowed = False
 
         tag_data: Tag | None = None
         server_result: Tag | None = None

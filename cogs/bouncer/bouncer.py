@@ -132,11 +132,10 @@ class BouncerMonitorCog(commands.Cog):
                         self.logger.debug("Account age match found")
                         spotted = True
                         break
-                elif criteria.type == BouncerCriteriaType.AVATAR:
-                    if not member.avatar:
-                        self.logger.debug("No avatar match found")
-                        spotted = True
-                        break
+                elif criteria.type == BouncerCriteriaType.AVATAR and not member.avatar:
+                    self.logger.debug("No avatar match found")
+                    spotted = True
+                    break
 
             if spotted:
                 triggers.append(rule)
