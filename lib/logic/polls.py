@@ -24,7 +24,7 @@ async def create_anonymous_poll(
     attachment: discord.Attachment | None = None,
 ) -> AnonymousPoll:
     if not isinstance(channel, discord.abc.GuildChannel):
-        raise ValueError("Channel provided is not a guild channel")
+        raise TypeError("Channel provided is not a guild channel")
 
     poll = AnonymousPoll(
         id=uuid.uuid4(),

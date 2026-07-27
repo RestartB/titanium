@@ -3131,7 +3131,7 @@ class GuildLogger:
         attachment: discord.Attachment | None,
     ) -> None:
         if not isinstance(poll_message.channel, discord.abc.GuildChannel):
-            raise ValueError("Message channel is not a guild channel")
+            raise TypeError("Message channel is not a guild channel")
 
         await self._ensure_config()
         if not self._exists_and_enabled("titanium_anon_poll"):

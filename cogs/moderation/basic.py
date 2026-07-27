@@ -105,23 +105,17 @@ class ModerationBasicCog(
         if target.id == ctx.guild.owner_id:
             return False
 
-        if target.top_role >= moderator.top_role:
-            return False
-
-        return True
+        return moderator.top_role > target.top_role
 
     def _bot_perms_check(
         self,
         target: discord.Member,
         ctx: commands.Context["TitaniumBot"],
-    ):
+    ) -> bool:
         if not ctx.guild:
             return False
 
-        if target.top_role >= ctx.guild.me.top_role:
-            return False
-
-        return True
+        return ctx.guild.me.top_role > target.top_role
 
     async def _warn_member(
         self, ctx: commands.Context["TitaniumBot"], member: discord.Member, reason: str
@@ -1081,7 +1075,7 @@ class ModerationBasicCog(
                     case = next((c for c in cases if c.type == CaseType.BAN), None)
                     if case:
                         # Close case
-                        case, dm_success, dm_error = await manager.close_case(case.id)
+                        case, _, _ = await manager.close_case(case.id)
 
                 # Send confirmation message
                 await ctx.reply(
