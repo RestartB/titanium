@@ -68,8 +68,8 @@ async def migrate_fireboard(bot: TitaniumBot) -> None:
                     channel_id=channel_id,
                     threshold=reaction_amount,
                     reaction=extract_emoji_id(emoji),
-                    ignore_bots=True if ignore_bots == 1 else False,
-                    ignore_self_reactions=True if ignore_bots == 1 else False,
+                    ignore_bots=ignore_bots == 1,
+                    ignore_self_reactions=ignore_bots == 1,
                 )
 
                 session.add(new_fireboard_board)
@@ -108,8 +108,8 @@ async def migrate_alternate_fireboard(bot: TitaniumBot, db_filename: str) -> Non
                     channel_id=channel_id,
                     threshold=reaction_amount,
                     reaction=extract_emoji_id(emoji),
-                    ignore_bots=True if ignore_bots == 1 else False,
-                    ignore_self_reactions=True if ignore_bots == 1 else False,
+                    ignore_bots=ignore_bots == 1,
+                    ignore_self_reactions=ignore_bots == 1,
                 )
 
                 session.add(new_fireboard_board)
@@ -187,7 +187,7 @@ async def migrate_leaderboard(bot: TitaniumBot) -> None:
                         new_settings = GuildLeaderboardSettings(guild_id=int(server_id))
                         session.add(new_settings)
 
-                    new_settings.delete_leavers = True if delete_leavers == 1 else False
+                    new_settings.delete_leavers = delete_leavers == 1
 
             async with get_session() as session:
                 legacy_leaderboard_entries = cur.execute(f"SELECT * FROM '{table}'").fetchall()
