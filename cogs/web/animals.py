@@ -53,20 +53,19 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
         await ctx.defer(ephemeral=ephemeral)
 
         # Fetch image
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                "https://api.thecatapi.com/v1/images/search", headers=self.REQUEST_HEADERS
-            ) as request:
-                if request.status == 429:
-                    embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} Rate Limited",
-                        description="The service has been rate limited. Try again later.",
-                        colour=Colour.red(),
-                    )
-                    await ctx.reply(embed=embed, ephemeral=ephemeral)
-                    return
-                else:
-                    request_data = await request.json()
+        async with aiohttp.ClientSession() as session, session.get(
+            "https://api.thecatapi.com/v1/images/search", headers=self.REQUEST_HEADERS
+        ) as request:
+            if request.status == 429:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} Rate Limited",
+                    description="The service has been rate limited. Try again later.",
+                    colour=Colour.red(),
+                )
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return
+            else:
+                request_data = await request.json()
 
         # Create and send embed
         embed_title = random.choice(self.CAT_TITLES)
@@ -90,20 +89,19 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
         await ctx.defer(ephemeral=ephemeral)
 
         # Fetch image
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                "https://dog.ceo/api/breeds/image/random", headers=self.REQUEST_HEADERS
-            ) as request:
-                if request.status == 429:
-                    embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} Timed Out",
-                        description="The service has been rate limited. Try again later.",
-                        colour=Colour.red(),
-                    )
-                    await ctx.reply(embed=embed, ephemeral=ephemeral)
-                    return
-                else:
-                    request_data = await request.json()
+        async with aiohttp.ClientSession() as session, session.get(
+            "https://dog.ceo/api/breeds/image/random", headers=self.REQUEST_HEADERS
+        ) as request:
+            if request.status == 429:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} Timed Out",
+                    description="The service has been rate limited. Try again later.",
+                    colour=Colour.red(),
+                )
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return
+            else:
+                request_data = await request.json()
 
         # Create and send embed
         embed_title = random.choice(self.DOG_TITLES)
@@ -134,28 +132,27 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
             (".png", ".jpg", ".jpeg", ".webp", ".gif")
         ):
             # Fetch image
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    "https://sandcat.link/api/json/", headers=self.REQUEST_HEADERS
-                ) as request:
-                    if request.status == 429:
-                        embed = discord.Embed(
-                            title=f"{self.bot.error_emoji} Rate Limited",
-                            description="The service has been rate limited. Try again later.",
-                            colour=Colour.red(),
-                        )
-                        await ctx.reply(embed=embed, ephemeral=ephemeral)
-                        return
-                    elif request.status == 522:
-                        embed = discord.Embed(
-                            title=f"{self.bot.error_emoji} Timed Out",
-                            description="The service timed out. Try again later.",
-                            colour=Colour.red(),
-                        )
-                        await ctx.reply(embed=embed, ephemeral=ephemeral)
-                        return
-                    else:
-                        request_data = await request.json()
+            async with aiohttp.ClientSession() as session, session.get(
+                "https://sandcat.link/api/json/", headers=self.REQUEST_HEADERS
+            ) as request:
+                if request.status == 429:
+                    embed = discord.Embed(
+                        title=f"{self.bot.error_emoji} Rate Limited",
+                        description="The service has been rate limited. Try again later.",
+                        colour=Colour.red(),
+                    )
+                    await ctx.reply(embed=embed, ephemeral=ephemeral)
+                    return
+                elif request.status == 522:
+                    embed = discord.Embed(
+                        title=f"{self.bot.error_emoji} Timed Out",
+                        description="The service timed out. Try again later.",
+                        colour=Colour.red(),
+                    )
+                    await ctx.reply(embed=embed, ephemeral=ephemeral)
+                    return
+                else:
+                    request_data = await request.json()
 
         # Create and send embed
         embed_title = random.choice(self.CAT_TITLES)

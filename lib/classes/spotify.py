@@ -53,13 +53,12 @@ class TitaniumSpotifyClient:
             + base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                "https://accounts.spotify.com/api/token",
-                headers=headers,
-                data={"grant_type": "client_credentials"},
-            ) as response:
-                token_json = await response.json()
+        async with aiohttp.ClientSession() as session, session.post(
+            "https://accounts.spotify.com/api/token",
+            headers=headers,
+            data={"grant_type": "client_credentials"},
+        ) as response:
+            token_json = await response.json()
 
         async with get_session() as session:
             token_entry = SpotifyToken(
@@ -81,18 +80,17 @@ class TitaniumSpotifyClient:
     async def __authed_get_req(
         self, endpoint: str, data: dict | None = None, text: bool = False
     ) -> dict | str:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"{self.SPOTIFY_API_BASE}{endpoint}",
-                data=data,
-                headers={"Authorization": f"Bearer {await self.__access_token}"},
-            ) as response:
-                response.raise_for_status()
+        async with aiohttp.ClientSession() as session, session.get(
+            f"{self.SPOTIFY_API_BASE}{endpoint}",
+            data=data,
+            headers={"Authorization": f"Bearer {await self.__access_token}"},
+        ) as response:
+            response.raise_for_status()
 
-                if text:
-                    return await response.text()
+            if text:
+                return await response.text()
 
-                return await response.json()
+            return await response.json()
 
     async def album(self, query: str, market: str = "") -> SpotifyAlbum:
         match = re.search(TitaniumSpotifyClient.SPOTIFY_URL_REGEX, query)

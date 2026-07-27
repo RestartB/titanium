@@ -45,12 +45,14 @@ class ReviewsCommandsCog(commands.Cog):
         review_list = []
 
         # Send request to ReviewDB
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
                 f"https://manti.vendicated.dev/api/reviewdb/users/{user.id}/reviews?offset=0",
                 headers=self.REQUEST_HEADERS,
-            ) as request:
-                review_response = await request.json()
+            ) as request,
+        ):
+            review_response = await request.json()
 
         for review in review_response["reviews"][1:]:
             review_list.append(review)
@@ -68,12 +70,14 @@ class ReviewsCommandsCog(commands.Cog):
             else:
                 if review_response["hasNextPage"]:
                     # Send request to ReviewDB
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(
+                    async with (
+                        aiohttp.ClientSession() as session,
+                        session.get(
                             f"https://manti.vendicated.dev/api/reviewdb/users/{user.id}/reviews?offset={len(review_list)}",
                             headers=self.REQUEST_HEADERS,
-                        ) as request:
-                            review_response = await request.json()
+                        ) as request,
+                    ):
+                        review_response = await request.json()
 
                     for review in review_response["reviews"]:
                         review_list.append(review)
@@ -142,12 +146,14 @@ class ReviewsCommandsCog(commands.Cog):
         review_list = []
 
         # Send request to ReviewDB
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
                 f"https://manti.vendicated.dev/api/reviewdb/users/{ctx.guild.id}/reviews?offset=0",
                 headers=self.REQUEST_HEADERS,
-            ) as request:
-                review_response = await request.json()
+            ) as request,
+        ):
+            review_response = await request.json()
 
         for review in review_response["reviews"][1:]:
             review_list.append(review)
@@ -165,12 +171,14 @@ class ReviewsCommandsCog(commands.Cog):
             else:
                 if review_response["hasNextPage"]:
                     # Send request to ReviewDB
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(
+                    async with (
+                        aiohttp.ClientSession() as session,
+                        session.get(
                             f"https://manti.vendicated.dev/api/reviewdb/users/{ctx.guild.id}/reviews?offset={len(review_list)}",
                             headers=self.REQUEST_HEADERS,
-                        ) as request:
-                            review_response = await request.json()
+                        ) as request,
+                    ):
+                        review_response = await request.json()
 
                     for review in review_response["reviews"]:
                         review_list.append(review)

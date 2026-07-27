@@ -461,16 +461,18 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
             for character in word:
                 number = random.choice(self.NASA_NUMBER_OF[character.upper()])
 
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.get(
                         f"https://science.nasa.gov/specials/your-name-in-landsat/images/{character}_{number}.jpg"
-                    ) as request:
-                        image_data = BytesIO()
+                    ) as request,
+                ):
+                    image_data = BytesIO()
 
-                        async for chunk in request.content.iter_chunked(8192):
-                            image_data.write(chunk)
+                    async for chunk in request.content.iter_chunked(8192):
+                        image_data.write(chunk)
 
-                        image_data.seek(0)
+                    image_data.seek(0)
 
                 images.append(image_data)
 

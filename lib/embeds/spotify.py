@@ -70,14 +70,16 @@ async def song(
     )
 
     # Get image, store in memory
-    async with aiohttp.ClientSession() as session:
-        async with session.get(item.album.images[0].url, headers=REQUEST_HEADERS) as request:
-            image_data = BytesIO()
+    async with (
+        aiohttp.ClientSession() as session,
+        session.get(item.album.images[0].url, headers=REQUEST_HEADERS) as request,
+    ):
+        image_data = BytesIO()
 
-            async for chunk in request.content.iter_chunked(10):
-                image_data.write(chunk)
+        async for chunk in request.content.iter_chunked(10):
+            image_data.write(chunk)
 
-            image_data.seek(0)  # Reset buffer position to start
+        image_data.seek(0)  # Reset buffer position to start
 
     # Get dominant colour for embed
     color_thief = ColorThief(image_data)
@@ -141,14 +143,16 @@ async def artist(
         pass
 
     # Get image, store in memory
-    async with aiohttp.ClientSession() as session:
-        async with session.get(item.images[0].url, headers=REQUEST_HEADERS) as request:
-            image_data = BytesIO()
+    async with (
+        aiohttp.ClientSession() as session,
+        session.get(item.images[0].url, headers=REQUEST_HEADERS) as request,
+    ):
+        image_data = BytesIO()
 
-            async for chunk in request.content.iter_chunked(10):
-                image_data.write(chunk)
+        async for chunk in request.content.iter_chunked(10):
+            image_data.write(chunk)
 
-            image_data.seek(0)  # Reset buffer position to start
+        image_data.seek(0)  # Reset buffer position to start
 
     # Get dominant colour for embed
     color_thief = ColorThief(image_data)
@@ -221,14 +225,16 @@ async def album(
         pages.append("\n".join(page))
 
     # Get image, store in memory
-    async with aiohttp.ClientSession() as session:
-        async with session.get(item.images[0].url, headers=REQUEST_HEADERS) as request:
-            image_data = BytesIO()
+    async with (
+        aiohttp.ClientSession() as session,
+        session.get(item.images[0].url, headers=REQUEST_HEADERS) as request,
+    ):
+        image_data = BytesIO()
 
-            async for chunk in request.content.iter_chunked(10):
-                image_data.write(chunk)
+        async for chunk in request.content.iter_chunked(10):
+            image_data.write(chunk)
 
-            image_data.seek(0)  # Reset buffer position to start
+        image_data.seek(0)  # Reset buffer position to start
 
     # Get dominant colour for embed
     color_thief = ColorThief(image_data)

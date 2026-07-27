@@ -42,15 +42,14 @@ class EmojiRenderer:
         codepoint = self._emoji_to_codepoint(emoji)
         url = self.EMOJI_CDN.format(codepoint)
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    data = await response.read()
-                    emoji_img = Image.open(BytesIO(data)).convert("RGBA")
-                    self._emoji_cache[emoji] = emoji_img
-                    return emoji_img
-                else:
-                    raise ValueError(f"Failed to download emoji: {emoji}")
+        async with aiohttp.ClientSession() as session, session.get(url) as response:
+            if response.status == 200:
+                data = await response.read()
+                emoji_img = Image.open(BytesIO(data)).convert("RGBA")
+                self._emoji_cache[emoji] = emoji_img
+                return emoji_img
+            else:
+                raise ValueError(f"Failed to download emoji: {emoji}")
 
     def _split_text_and_emoji(self, text: str) -> list[tuple[str, bool]]:
         """
