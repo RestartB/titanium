@@ -32,32 +32,7 @@ class AdminCog(commands.Cog):
     @commands.is_owner()
     async def raise_exception(self, ctx: commands.Context["TitaniumBot"]) -> None:
         async with defer(ctx):
-            raise Exception("Test")
-
-    @admin_group.command(name="clear", hidden=True)
-    @commands.is_owner()
-    async def clear_console(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        async with defer(ctx, ephemeral=True):
-            try:
-                os.system("cls" if os.name == "nt" else "clear")
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Console Cleared",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error("Error clearing console", exc_info=e)
-
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Clearing Console",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
+            raise RuntimeError("Test")
 
     @admin_group.command(name="sync", hidden=True)
     @commands.is_owner()
@@ -306,25 +281,16 @@ class AdminCog(commands.Cog):
                 for server in self.bot.punishing:
                     if user_id not in self.bot.punishing[server]:
                         continue
-
                     self.bot.punishing[server].remove(user_id)
-                    await ctx.reply(
-                        embed=discord.Embed(
-                            title=f"{self.bot.success_emoji} User Unlocked",
-                            description=f"Successfully unlocked user ID `{user_id}`.",
-                            colour=discord.Colour.green(),
-                        ),
-                        ephemeral=True,
-                    )
-                else:
-                    await ctx.reply(
-                        embed=discord.Embed(
-                            title=f"{self.bot.error_emoji} User Not Locked",
-                            description=f"User ID `{user_id}` is not locked.",
-                            colour=discord.Colour.red(),
-                        ),
-                        ephemeral=True,
-                    )
+
+                await ctx.reply(
+                    embed=discord.Embed(
+                        title=f"{self.bot.success_emoji} User Unlocked",
+                        description=f"Successfully unlocked user ID `{user_id}`.",
+                        colour=discord.Colour.green(),
+                    ),
+                    ephemeral=True,
+                )
             except Exception as e:
                 self.logger.error(f"Error unlocking user {user_id}", exc_info=e)
 
@@ -467,81 +433,6 @@ class AdminCog(commands.Cog):
                 view=view,
                 ephemeral=True,
             )
-
-    @admin_group.command(name="get", hidden=True)
-    @commands.is_owner()
-    async def get_request(self, ctx: commands.Context["TitaniumBot"], url: str) -> None:
-        async with defer(ctx, ephemeral=True):
-            try:
-                async with aiohttp.ClientSession() as session:
-                    headers = {
-                        "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
-                    }
-                    async with session.get(url, headers=headers) as response:
-                        try:
-                            response_text = await response.text()
-                        except Exception:
-                            response_text = "<No Response Body>"
-
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} GET Request Sent",
-                        description=f"Response Status: `{response.status}`\nResponse Body:\n```{textwrap.shorten(response_text, width=4000)}```",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error(f"Error sending GET request to {url}", exc_info=e)
-
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Sending GET Request",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
-
-    @admin_group.command(name="post", hidden=True)
-    @commands.is_owner()
-    async def post_request(
-        self, ctx: commands.Context["TitaniumBot"], url: str, content_type: str, *, content: str
-    ) -> None:
-        async with defer(ctx, ephemeral=True):
-            try:
-                async with aiohttp.ClientSession() as session:
-                    headers = {
-                        "Content-Type": content_type,
-                        "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
-                    }
-                    async with session.post(
-                        url, data=content.encode(), headers=headers
-                    ) as response:
-                        try:
-                            response_text = await response.text()
-                        except Exception:
-                            response_text = "<No Response Body>"
-
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} POST Request Sent",
-                        description=f"Response Status: `{response.status}`\nResponse Body:\n```{textwrap.shorten(response_text, width=4000)}```",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error(f"Error sending POST request to {url}", exc_info=e)
-
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Sending POST Request",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
 
     @admin_group.command(name="usertest", hidden=True)
     @commands.is_owner()
