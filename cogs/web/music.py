@@ -2,7 +2,7 @@ import logging
 import os
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import quote, urlsplit
 
 import aiohttp
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class MusicCommandsCog(
     commands.Cog, name="Music", description="Search Spotify and get song lyrics."
 ):
-    REQUEST_HEADERS = {
+    REQUEST_HEADERS: ClassVar = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
     }
 

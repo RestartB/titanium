@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any, ClassVar, Sequence
 
 import discord
 from discord.utils import escape_markdown, format_dt
@@ -126,7 +126,7 @@ LOGGING_EVENT_MAP = {event.event: event for event in LOGGING_EVENTS}
 class GuildLogger:
     """Server logging class, used to log Discord events to server webhooks"""
 
-    _channel_locks: dict[int, asyncio.Lock] = {}
+    _channel_locks: ClassVar[dict[int, asyncio.Lock]] = {}
 
     def __init__(self, bot: TitaniumBot, guild: discord.Guild | discord.PartialInviteGuild):
         self.bot = bot

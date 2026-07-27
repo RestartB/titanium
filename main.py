@@ -21,7 +21,7 @@ import logging
 import os
 import sys
 from glob import glob
-from typing import Awaitable, Callable
+from typing import Any, Awaitable, Callable
 
 import discord
 from discord.ext import commands
@@ -92,22 +92,6 @@ class TitaniumBot(commands.Bot):
     last_resume: datetime.datetime | None
     api_latency: float = 0.0
 
-    guild_configs: dict[int, GuildSettings] = {}
-    available_webhooks: dict[int, list[AvailableWebhook]] = {}
-    automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
-    fireboard_messages: dict[int, list[FireboardMessage]] = {}
-
-    punishing: dict[int, list[int]] = {}
-
-    malicious_links: list[str] = []
-    phishing_links: list[str] = []
-    nsfw_links: list[str] = []
-    explicit_phrases: list[str] = []
-
-    opt_out: list[int] = []
-
-    trusted_servers: list[int] = []
-
     pre_not_found: (
         Callable[
             [
@@ -120,6 +104,25 @@ class TitaniumBot(commands.Bot):
         ]
         | None
     ) = None
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+
+        self.guild_configs: dict[int, GuildSettings] = {}
+        self.available_webhooks: dict[int, list[AvailableWebhook]] = {}
+        self.automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
+        self.fireboard_messages: dict[int, list[FireboardMessage]] = {}
+
+        self.punishing: dict[int, list[int]] = {}
+
+        self.malicious_links: list[str] = []
+        self.phishing_links: list[str] = []
+        self.nsfw_links: list[str] = []
+        self.explicit_phrases: list[str] = []
+
+        self.opt_out: list[int] = []
+
+        self.trusted_servers: list[int] = []
 
     async def refresh_opt_out(self) -> None:
         cache_logger.info("Refreshing opt-out IDs...")

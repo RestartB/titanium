@@ -1,7 +1,7 @@
 import os
 import random
 from io import BytesIO
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 import aiohttp
 import discord
@@ -60,7 +60,7 @@ class ImageFormatPicker(discord.ui.View):
 
 class ImageCog(commands.Cog, name="Images", description="Image processing commands."):
     STANDARD_QUALITY = 95
-    NASA_NUMBER_OF = {
+    NASA_NUMBER_OF: ClassVar = {
         "A": [0, 1, 2, 3, 4],
         "B": [0, 1],
         "C": [0, 1, 2],

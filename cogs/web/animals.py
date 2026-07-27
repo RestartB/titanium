@@ -1,6 +1,6 @@
 import os
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import aiohttp
 import discord
@@ -14,11 +14,11 @@ if TYPE_CHECKING:
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="See cute animals."):
-    REQUEST_HEADERS = {
+    REQUEST_HEADERS: ClassVar = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
     }
 
-    CAT_TITLES = [
+    CAT_TITLES: ClassVar = [
         "🐱 Aww!",
         "🐱 Cute cat!",
         "🐱 Adorable!",
@@ -30,7 +30,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
         "🐱 :3",
     ]
 
-    DOG_TITLES = [
+    DOG_TITLES: ClassVar = [
         "🐶 Aww!",
         "🐶 Cute dog!",
         "🐶 Adorable!",

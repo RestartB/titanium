@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import aiohttp
 from discord.ext import commands, tasks
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class BadLinkFetcherCog(commands.Cog):
     """Automatic tasks to fetch and update bad links and explicit terms"""
 
-    REQUEST_HEADERS = {
+    REQUEST_HEADERS: ClassVar = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
     }
 

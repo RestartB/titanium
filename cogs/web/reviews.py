@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import aiohttp
 import discord
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class ReviewsCommandsCog(commands.Cog):
-    REQUEST_HEADERS = {
+    REQUEST_HEADERS: ClassVar = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
     }
 

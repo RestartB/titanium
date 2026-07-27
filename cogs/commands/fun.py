@@ -1,5 +1,5 @@
 import random
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 import aiohttp
 import discord
@@ -273,7 +273,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
 
         await ctx.reply(embed=embed, ephemeral=ephemeral)
 
-    freaky_map = {
+    freaky_map: ClassVar = {
         "q": "𝓺",
         "w": "𝔀",
         "e": "𝓮",
