@@ -25,7 +25,7 @@ def add_global_aliases(cog: commands.Cog, bot: TitaniumBot):
         callback = command.callback
 
         if hasattr(callback, "_global_aliases"):
-            aliases: list[str] = getattr(callback, "_global_aliases")
+            aliases: list[str] = callback._global_aliases
 
             # copy command with alias as name
             for alias in aliases:
@@ -52,8 +52,7 @@ def remove_global_aliases(cog: commands.Cog, bot: TitaniumBot):
         callback = command.callback
 
         if hasattr(callback, "_global_aliases"):
-            aliases: list[str] = getattr(callback, "_global_aliases")
-
+            aliases: list[str] = callback._global_aliases
             # remove commands
             for alias in aliases:
                 bot.remove_command(alias)
