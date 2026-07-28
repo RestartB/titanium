@@ -319,7 +319,7 @@ class APICog(commands.Cog):
                 raise RuntimeError("No guild config returned")
 
             delegate_roles = config.case_managers + config.dashboard_managers
-            if any([role.id in delegate_roles for role in member.roles]):
+            if any(role.id in delegate_roles for role in member.roles):
                 delegate_guild_ids.append(mutual_id)
 
         return web.json_response({"mutual": mutual_guild_ids, "delegate": delegate_guild_ids})

@@ -1241,7 +1241,7 @@ class ModerationBasicCog(
             failed_warns: list[tuple[discord.Member, str]] = []
 
             raw_users = {u for u in (member1, member2, member3, member4, member5) if u}
-            valid_users: set[discord.Member] = set([user for user in raw_users if user is not None])
+            valid_users: set[discord.Member] = {user for user in raw_users if user is not None}
 
             config = await self.bot.fetch_guild_config(ctx.guild.id)
             if not config or not config.moderation_settings:
@@ -1334,7 +1334,7 @@ class ModerationBasicCog(
             failed_mutes: list[tuple[discord.Member, str]] = []
 
             raw_users = {u for u in (member1, member2, member3, member4, member5) if u}
-            valid_users: set[discord.Member] = set([user for user in raw_users if user is not None])
+            valid_users: set[discord.Member] = {user for user in raw_users if user is not None}
 
             config = await self.bot.fetch_guild_config(ctx.guild.id)
             if not config or not config.moderation_settings:
@@ -1437,7 +1437,7 @@ class ModerationBasicCog(
             failed_kicks: list[tuple[discord.Member, str]] = []
 
             raw_users = {u for u in (member1, member2, member3, member4, member5) if u}
-            valid_users: set[discord.Member] = set([user for user in raw_users if user is not None])
+            valid_users: set[discord.Member] = {user for user in raw_users if user is not None}
 
             config = await self.bot.fetch_guild_config(ctx.guild.id)
             if not config or not config.moderation_settings:

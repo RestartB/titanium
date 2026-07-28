@@ -144,7 +144,7 @@ class BouncerMonitorCog(commands.Cog):
                     punishments.append(action)
 
         # Get list of punishment types
-        punishment_types = list(set(action.type for action in punishments))
+        punishment_types = {action.type for action in punishments}
 
         async with get_session() as session:
             manager = GuildModCaseManager(self.bot, member.guild, session)
