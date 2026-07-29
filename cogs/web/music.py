@@ -622,7 +622,7 @@ class MusicCommandsCog(
 
             if parsed_url.netloc == "open.spotify.com":
                 if parsed_url.path.startswith("/track/"):
-                    item = await self.sp.track(parsed_url.path.lstrip("/track/").split("?")[0])
+                    item = await self.sp.track(parsed_url.path.removeprefix("/track/").split("?")[0])
                     await elements.song(
                         bot=self.bot,
                         sp=self.sp,
@@ -631,7 +631,7 @@ class MusicCommandsCog(
                         ephemeral=ephemeral,
                     )
                 elif parsed_url.path.startswith("/album/"):
-                    item = await self.sp.album(parsed_url.path.lstrip("/album/").split("?")[0])
+                    item = await self.sp.album(parsed_url.path.removeprefix("/album/").split("?")[0])
                     await elements.album(
                         sp=self.sp,
                         item=item,
@@ -639,9 +639,9 @@ class MusicCommandsCog(
                         ephemeral=ephemeral,
                     )
                 elif parsed_url.path.startswith("/artist/"):
-                    item = await self.sp.artist(parsed_url.path.lstrip("/artist/").split("?")[0])
+                    item = await self.sp.artist(parsed_url.path.removeprefix("/artist/").split("?")[0])
                     top_tracks = await self.sp.artist_top_tracks(
-                        parsed_url.path.lstrip("/artist/").split("?")[0]
+                        parsed_url.path.removeprefix("/artist/").split("?")[0]
                     )
 
                     await elements.artist(
