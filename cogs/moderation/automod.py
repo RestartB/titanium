@@ -513,14 +513,13 @@ class AutomodMonitorCog(commands.Cog):
                                 continue
                             # fmt: on
 
-                            for channel_id in messages_to_delete:
+                            for channel_id, value in messages_to_delete.items():
                                 channel = message.guild.get_channel(channel_id)
                                 if not channel or not isinstance(channel, discord.abc.Messageable):
                                     continue
 
                                 unique_messages = {
-                                    delete_msg.message_id: delete_msg
-                                    for delete_msg in messages_to_delete[channel_id]
+                                    delete_msg.message_id: delete_msg for delete_msg in value
                                 }
                                 messages = [
                                     discord.Object(id=delete_msg.message_id)
