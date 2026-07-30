@@ -94,7 +94,7 @@ class APICog(commands.Cog):
 
         # Get host and port from env with defaults
         self.host = os.getenv("BOT_API_HOST", "127.0.0.1")
-        self.port = int(os.getenv("BOT_API_PORT", 5000))
+        self.port = int(os.getenv("BOT_API_PORT", "5000"))
         self.api_secret = os.getenv("BOT_API_TOKEN")
 
     async def cog_load(self) -> None:
@@ -387,7 +387,7 @@ class APICog(commands.Cog):
                     {
                         "id": str(role.id),
                         "name": role.name,
-                        "colour": "#%02x%02x%02x" % role.colour.to_rgb(),
+                        "colour": "#{:02x}{:02x}{:02x}".format(*role.colour.to_rgb()),
                         "hoist": role.hoist,
                         "position": role.position,
                     }

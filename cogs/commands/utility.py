@@ -162,7 +162,10 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
 
         embed.add_field(name="Name", value=f"`{file.filename}`")
         embed.add_field(name="Size", value=f"`{size_hr}`")
-        embed.add_field(name="Content Type", value=f"`{file.content_type}`" or "`Unknown`")
+        embed.add_field(
+            name="Content Type",
+            value=f"`{file.content_type}`" if file.content_type else "`Unknown`",
+        )
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
 
         await ctx.reply(embed=embed, ephemeral=ephemeral)

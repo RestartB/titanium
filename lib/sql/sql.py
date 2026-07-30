@@ -1087,7 +1087,7 @@ SQLALCHEMY_DATABASE_URL = URL.create(
     username=os.getenv("DB_USERNAME", ""),
     password=os.getenv("DB_PASSWORD", ""),
     host=os.getenv("DB_HOST", ""),
-    port=int(os.getenv("DB_PORT", 0)),
+    port=int(os.getenv("DB_PORT", "0")),
     database=os.getenv("DB_DATABASE_NAME", ""),
 )
 

@@ -249,13 +249,13 @@ class FireboardCog(commands.Cog):
         source_msg_fetched = False
 
         # board messages should be ignored
-        if event.message_id in list(
+        if event.message_id in [
             fireboard_message.fireboard_message_id
             for fireboard_message in self.bot.fireboard_messages.get(event.guild_id, [])
-        ):
+        ]:
             return
 
-        for fireboard_message in list(self.bot.fireboard_messages.get(event.guild_id, [])):
+        for fireboard_message in self.bot.fireboard_messages.get(event.guild_id, []):
             if fireboard_message.message_id == event.message_id:
                 normalized_board_reaction = self._normalize_emoji(
                     fireboard_message.fireboard.reaction

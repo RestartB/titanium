@@ -385,7 +385,6 @@ class ScheduledTasksCog(commands.Cog):
                         self.logger.debug("fetched message for reminder")
                     except Exception as e:
                         self.logger.debug("can't get message for reminder", exc_info=e)
-                        pass
                 else:
                     self.logger.debug("no message id for reminder")
 

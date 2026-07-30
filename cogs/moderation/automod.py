@@ -716,7 +716,7 @@ class AutomodMonitorCog(commands.Cog):
                             await message.channel.send(
                                 embeds=chunk,
                                 allowed_mentions=discord.AllowedMentions.none(),
-                                *del_kwargs,
+                                *del_kwargs,  # noqa: B026
                             )
                     except discord.Forbidden as e:
                         await log_error(

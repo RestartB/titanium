@@ -361,7 +361,7 @@ class LoggingConfigModel(BaseModel):
     @model_validator(mode="after")
     def validate_keys(self):
         seen_keys: list[str] = []
-        for key in self.channels.keys():
+        for key in self.channels:
             if key in seen_keys:
                 raise ValueError(f"Duplicate event type: {key}")
             seen_keys.append(key)

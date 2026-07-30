@@ -156,7 +156,6 @@ async def create_quote_image(data: QuoteData) -> discord.File:
         )
 
     image_data.seek(0)
-    data.image_data = image_data
 
     return discord.File(
         image_data,

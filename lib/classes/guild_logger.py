@@ -825,7 +825,7 @@ class GuildLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.emoji_update)
 
         for after_emoji in updated:
-            before_emoji = [emoji for emoji in before if emoji.id == after_emoji.id][0]
+            before_emoji = next(emoji for emoji in before if emoji.id == after_emoji.id)
             changes = []
 
             if before_emoji.name != after_emoji.name:
@@ -955,7 +955,7 @@ class GuildLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.sticker_update)
 
         for after_sticker in updated:
-            before_sticker = [sticker for sticker in before if sticker.id == after_sticker.id][0]
+            before_sticker = next(sticker for sticker in before if sticker.id == after_sticker.id)
             changes = []
 
             if before_sticker.name != after_sticker.name:

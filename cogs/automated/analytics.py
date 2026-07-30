@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import discord
 from discord import Colour, app_commands
@@ -37,7 +37,7 @@ class Analytics(commands.Cog):
     async def on_app_command_completion(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        command: Union[app_commands.Command, app_commands.ContextMenu],
+        command: app_commands.Command | app_commands.ContextMenu,
     ) -> None:
         if (
             interaction.command
