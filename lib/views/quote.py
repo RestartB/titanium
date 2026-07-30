@@ -47,7 +47,7 @@ class QuoteView(View):
             self.fade_mode.emoji = "👓"
             self.fade_mode.style = ButtonStyle.red
 
-        file = await create_quote_image(self.data)
+        file = await create_quote_image(self.data, renderer=self.bot.browser_renderer)
         await interaction.edit_original_response(attachments=[file], view=self)
 
     @button(label="Black and White", emoji="⚫", style=ButtonStyle.grey)
@@ -63,7 +63,7 @@ class QuoteView(View):
             self.colour_mode.label = "Colour"
             self.colour_mode.emoji = "🎨"
 
-        file = await create_quote_image(self.data)
+        file = await create_quote_image(self.data, renderer=self.bot.browser_renderer)
         await interaction.edit_original_response(attachments=[file], view=self)
 
     @button(label="Light Mode", emoji="☀️", style=ButtonStyle.grey)
@@ -79,7 +79,7 @@ class QuoteView(View):
             self.theme_mode.label = "Dark Mode"
             self.theme_mode.emoji = "🌙"
 
-        file = await create_quote_image(self.data)
+        file = await create_quote_image(self.data, renderer=self.bot.browser_renderer)
         await interaction.edit_original_response(attachments=[file], view=self)
 
     @button(label="PNG", emoji="🖼️", style=ButtonStyle.grey)
@@ -89,7 +89,7 @@ class QuoteView(View):
         copy_data = dataclasses.replace(self.data)
         copy_data.output_format = ImageFormats.PNG
 
-        file = await create_quote_image(copy_data)
+        file = await create_quote_image(copy_data, renderer=self.bot.browser_renderer)
         await interaction.followup.send(file=file, ephemeral=True)
 
     @button(emoji="🗑️", style=ButtonStyle.red)

@@ -87,7 +87,7 @@ class QuoteCommandsCog(
             pfp_data=pfp_data,
         )
 
-        file = await create_quote_image(data=data)
+        file = await create_quote_image(data=data, renderer=self.bot.browser_renderer)
 
         view = QuoteView(bot=self.bot, data=data)
         view.add_item(
@@ -198,7 +198,7 @@ class QuoteCommandsCog(
 
             data.content = re.sub(r"<(@[!&]?|#)([0-9]{15,20})>", repl, data.content)
 
-            file = await create_quote_image(data)
+            file = await create_quote_image(data, renderer=self.bot.browser_renderer)
             view = QuoteView(bot=self.bot, data=data)
 
             if output_format:

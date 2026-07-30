@@ -10,15 +10,15 @@ from pathlib import Path
 import discord
 import jinja2
 from PIL import Image
-from playwright.async_api import async_playwright
 
+from lib.classes.browser import BrowserRenderer
 from lib.classes.img_tools import ImageTools
 from lib.classes.quote_config import QuoteData
 from lib.helpers.shorten import shorten_preserve
 
 
 # Create quote image function
-async def create_quote_image(data: QuoteData) -> discord.File:
+async def create_quote_image(data: QuoteData, renderer: BrowserRenderer) -> discord.File:
     image_data = BytesIO()
     content = data.content
 
@@ -124,27 +124,13 @@ async def create_quote_image(data: QuoteData) -> discord.File:
         is_bot=data.user.bot,
     )
 
-    async with async_playwright() as p:
-        # Launch browser
-        browser = await p.chromium.launch()
-        page = await browser.new_page(viewport={"width": 1200, "height": 600})
-
-        # Set HTML content
-        await page.set_content(quote_html)
-
-        # Wait for images
-        await page.wait_for_selector("body.ready")
-
-        # Take screenshot as bytes
-        screenshot = await page.screenshot(
-            type="png",
-            full_page=False,
-            clip={"x": 0, "y": 0, "width": 1200, "height": 600},
-        )
-
-        # Write to BytesIO
-        image_data.write(screenshot)
-        await browser.close()
+    screenshot = await renderer.screenshot_html(
+        quote_html,
+        selector="body",
+        viewport_width=1200,
+        viewport_height=600,
+    )
+    image_data.write(screenshot)
 
     if data.output_format != "PNG":
         tools = ImageTools()

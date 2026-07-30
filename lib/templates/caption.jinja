@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8" />
+    <title>title</title>
+
+    <style>
+        @font-face {
+            font-family: "Figtree";
+            src: url("data:font/ttf;base64,{{ font_base64 }}") format("truetype");
+            font-style: normal;
+            font-weight: 300 900;
+        }
+
+        @font-face {
+            font-family: "Impact";
+            src: url("data:font/ttf;base64,{{ font_base64 }}") format("truetype");
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: "Futura";
+            src: url("data:font/ttf;base64,{{ font_base64 }}") format("opentype");
+            font-style: normal;
+        }
+
+        html,
+        body {
+            min-width: {{ width }}px;
+            max-width: {{ width }}px;
+            margin: 0;
+            padding: 0;
+            color: black;
+            background-color: white;
+            font-family: "{{ font }}", "Noto Sans JP", "Noto Sans SC", "Noto Sans TC", "Noto Sans KR", "Noto Color Emoji", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 500;
+            font-style: normal;
+            font-size: min(10vw, 100px);
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
+        p,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            margin: 0;
+            padding: 0;
+        }
+
+        .content {
+            margin-top: auto;
+            height: fit-content;
+            font-size: inherit;
+            line-height: 1.15;
+            overflow: hidden;
+            word-break: normal;
+            overflow-wrap: break-word;
+            hyphens: manual;
+            text-align: center;
+            width: 100%;
+            white-space: pre-wrap;
+        }
+
+        .content img {
+            height: 0.9em;
+            width: auto;
+            object-fit: contain;
+            vertical-align: middle;
+        }
+
+        .content img:not([src]),
+        .content img[src=""],
+        .content img[src*="undefined"],
+        .content img:error {
+            display: none;
+        }
+
+        .content img:not([src])::after,
+        .content img[src=""]::after,
+        .content img[src*="undefined"]::after,
+        .content img:error::after {
+            content: attr(alt);
+            display: inline;
+        }
+    </style>
+</head>
+
+<body class="ready">
+    <p class="content">{{ content|safe }}</p>
+</body>
+
+</html>

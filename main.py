@@ -37,6 +37,7 @@ from topgg.client import DBLClient
 import lib.helpers.hybrid as adapters
 from lib.classes import img_tools
 from lib.classes.automod_message import AutomodMessage
+from lib.classes.browser import BrowserRenderer
 from lib.embeds.general import guild_only
 from lib.helpers.hybrid import SlashCommandOnly
 from lib.helpers.log_error import log_error
@@ -108,6 +109,8 @@ class TitaniumBot(commands.Bot):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+
+        self.browser_renderer = BrowserRenderer(max_concurrency=3)
 
         self.guild_configs: dict[int, GuildSettings] = {}
         self.available_webhooks: dict[int, list[AvailableWebhook]] = {}
@@ -298,6 +301,10 @@ class TitaniumBot(commands.Bot):
         await self.refresh_opt_out()
         await self.refresh_all_caches()
 
+        init_logger.info("Starting Chromium renderer...")
+        await self.browser_renderer.start()
+        init_logger.info("Chromium renderer started.")
+
         self.trusted_servers = (
             [int(x) for x in os.getenv("TRUSTED_SERVERS", "").split(",")]
             if os.getenv("TRUSTED_SERVERS")
@@ -375,6 +382,12 @@ class TitaniumBot(commands.Bot):
 
                     continue
         init_logger.info("Loading cogs complete.")
+
+    async def close(self) -> None:
+        try:
+            await self.browser_renderer.close()
+        finally:
+            await super().close()
 
     async def on_ready(self):
         init_logger.info(f"Bot is ready and connected as {bot.user}.")

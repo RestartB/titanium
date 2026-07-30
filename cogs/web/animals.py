@@ -53,9 +53,12 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
         await ctx.defer(ephemeral=ephemeral)
 
         # Fetch image
-        async with aiohttp.ClientSession() as session, session.get(
-            "https://api.thecatapi.com/v1/images/search", headers=self.REQUEST_HEADERS
-        ) as request:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                "https://api.thecatapi.com/v1/images/search", headers=self.REQUEST_HEADERS
+            ) as request,
+        ):
             if request.status == 429:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Rate Limited",
@@ -89,9 +92,12 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
         await ctx.defer(ephemeral=ephemeral)
 
         # Fetch image
-        async with aiohttp.ClientSession() as session, session.get(
-            "https://dog.ceo/api/breeds/image/random", headers=self.REQUEST_HEADERS
-        ) as request:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                "https://dog.ceo/api/breeds/image/random", headers=self.REQUEST_HEADERS
+            ) as request,
+        ):
             if request.status == 429:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Timed Out",
@@ -132,9 +138,12 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
             (".png", ".jpg", ".jpeg", ".webp", ".gif")
         ):
             # Fetch image
-            async with aiohttp.ClientSession() as session, session.get(
-                "https://sandcat.link/api/json/", headers=self.REQUEST_HEADERS
-            ) as request:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(
+                    "https://sandcat.link/api/json/", headers=self.REQUEST_HEADERS
+                ) as request,
+            ):
                 if request.status == 429:
                     embed = discord.Embed(
                         title=f"{self.bot.error_emoji} Rate Limited",

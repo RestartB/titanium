@@ -390,7 +390,9 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
                 selected_font = os.path.join("lib", "fonts", f"{font}.ttf")
 
             converter = img_tools.ImageTools(image)
-            file = await converter.caption(output_format, caption.lower(), selected_font, position)
+            file = await converter.caption(
+                output_format, caption.lower(), selected_font, self.bot.browser_renderer, position
+            )
 
             await ctx.reply(file=file, ephemeral=ephemeral)
 

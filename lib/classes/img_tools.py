@@ -1,16 +1,21 @@
 import asyncio
+import base64
+import html
 import logging
 import os
-import textwrap
+import re
 from io import BytesIO
+from pathlib import Path
 from typing import Literal
 
 import aiohttp
+import jinja2
 from discord import Attachment, File
 from emoji import emoji_list
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFont, ImageOps
 from wand.image import Image as WandImage
 
+from lib.classes.browser import BrowserRenderer
 from lib.enums.images import ImageFormats
 
 
@@ -492,50 +497,23 @@ class ImageTools:
     async def _create_caption_frame(
         self,
         img: Image.Image,
-        font_data: ImageFont.FreeTypeFont,
-        text_width: int,
-        white_height: int,
-        wrapped_text: str,
+        caption: Image.Image,
         pos: Literal["top", "bottom"],
     ) -> Image.Image:
         img = img.convert("RGBA").copy()
+        caption = caption.convert("RGBA").copy()
 
-        # Create a new image with white background for this frame
-        frame_output = Image.new(
-            "RGBA",
-            (img.width, img.height + white_height),
-            (255, 255, 255, 255),
-        )
-        frame_output.paste(img, (0, (white_height if pos == "top" else 0)), img)
+        frame_image = Image.new("RGBA", size=(img.width, img.height + caption.height))
+        frame_image.paste(img, (0, (caption.height if pos == "top" else 0)), img)
+        frame_image.paste(caption, (0, (0 if pos == "top" else img.height)), caption)
 
-        # Calculate center X position for text
-        x = frame_output.width // 2
-
-        # Calculate center Y position for text
-        if pos == "top":
-            y = white_height // 2
-        else:
-            y = img.height + (white_height // 2)
-
-        renderer = EmojiRenderer()
-        frame_output = await renderer.render_text(
-            frame_output,
-            xy=(x, y),
-            text=wrapped_text,
-            font=font_data,
-            fill=(0, 0, 0, 255),
-            align="center",
-        )
-
-        if frame_output.height > 4000:
-            raise OperationTooLargeError
-
-        return frame_output
+        return frame_image
 
     async def _caption_sync(
         self,
+        renderer: BrowserRenderer,
         img: Image.Image,
-        caption: str,
+        content: str,
         font_path: str,
         pos: Literal["top", "bottom"],
     ) -> BytesIO:
@@ -544,33 +522,54 @@ class ImageTools:
         if img.width < 100:
             raise ImageTooSmallError
 
-        wrapped_text = textwrap.fill(caption, width=(img.width // 13))
+        content = html.escape(content)
+        lines = content.splitlines()
 
-        if not os.path.exists(font_path):
-            raise FileNotFoundError(f"Font file not found: {font_path}")
-        font_data = ImageFont.truetype(font_path, max(img.width // 11, 25))
+        # Process markdown formatting
+        for line in lines:
+            # Discord emojis
+            discord_emojis = re.findall(r"&lt;a?:\w+:\d+&gt;", line)
 
-        # decide font size
-        renderer = EmojiRenderer()
-        while True:
-            size = renderer.get_size(text=wrapped_text, font=font_data)
-            if size[0] <= img.width - 20 or font_data.size <= 25:
-                break
-            else:
-                font_data = ImageFont.truetype(font_path, font_data.size - 1)
+        content = "<br>".join(lines)
 
-        TEXT_WIDTH = size[0]
-        TEXT_HEIGHT = size[1]
+        # Replace Discord emojis with image tags
+        for emoji in discord_emojis:
+            emoji: str
+            emoji_id = emoji.split(":")[2].rstrip("&gt;")
+            content = content.replace(
+                emoji,
+                f"<img src='https://cdn.discordapp.com/emojis/{html.escape(emoji_id)}.png' height='44' alt='{emoji}' />",
+            )
 
-        # decide padding
-        if img.width < 500:
-            # less padding on smaller images
-            padding = max(10, int(img.width * 0.08))  # 8% of width, minimum 10px
-        else:
-            # normal padding
-            padding = 40
+        # Render Jinja2 template
+        env = jinja2.Environment(
+            enable_async=True,
+            loader=jinja2.FileSystemLoader(os.path.join("lib", "templates")),
+            autoescape=True,
+        )
+        template = env.get_template("caption.jinja")
 
-        WHITE_HEIGHT = 10 + TEXT_HEIGHT + padding
+        font_file = Path(font_path)
+        font_base64 = base64.b64encode(font_file.read_bytes()).decode("ascii")
+
+        quote_html = await template.render_async(
+            font="Figtree"
+            if "figtree" in font_path
+            else "Impact"
+            if "impact" in font_path
+            else "Futura",
+            font_base64=font_base64,
+            content=content,
+            width=img.width,
+        )
+
+        screenshot_bytes = await renderer.screenshot_html(
+            quote_html,
+            selector="body",
+            viewport_width=img.width,
+            viewport_height=600,
+        )
+        screenshot = Image.open(BytesIO(screenshot_bytes))
 
         is_animated = getattr(img, "n_frames", 1) > 1
 
@@ -580,17 +579,7 @@ class ImageTools:
             # process frames
             for frame in range(getattr(img, "n_frames", 1)):
                 img.seek(frame)
-
-                frames.append(
-                    await self._create_caption_frame(
-                        img,
-                        font_data,
-                        int(TEXT_WIDTH),
-                        int(WHITE_HEIGHT),
-                        wrapped_text,
-                        pos,
-                    )
-                )
+                frames.append(await self._create_caption_frame(img, screenshot, pos))
 
             # save as png to convert later
             frames[0].save(
@@ -604,15 +593,7 @@ class ImageTools:
                 loop=0,
             )
         else:
-            output_img = await self._create_caption_frame(
-                img,
-                font_data,
-                int(TEXT_WIDTH),
-                int(WHITE_HEIGHT),
-                wrapped_text,
-                pos,
-            )
-
+            output_img = await self._create_caption_frame(img, screenshot, pos)
             output_img.save(output_data, format="PNG")
 
         output_data.seek(0)
@@ -623,13 +604,14 @@ class ImageTools:
         output_format: ImageFormats,
         caption: str,
         font: str,
+        renderer: BrowserRenderer,
         pos: Literal["top", "bottom"],
     ) -> File:
         """
         Add a caption to the image and return file.
         """
         img = await self._load_image()
-        captioned_buffer = await self._caption_sync(img, caption, font, pos)
+        captioned_buffer = await self._caption_sync(renderer, img, caption, font, pos)
 
         # check if image is animated
         captioned_img = await asyncio.to_thread(self._load_sync, captioned_buffer.getvalue())
