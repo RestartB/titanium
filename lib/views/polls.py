@@ -1,7 +1,7 @@
 import re
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from discord import Colour
@@ -270,7 +270,7 @@ class ChoiceRow(discord.ui.Section):
         poll: AnonymousPoll,
         choice: str,
         index: int,
-        votes: Optional[int],
+        votes: int | None,
     ) -> None:
         super().__init__(
             discord.ui.TextDisplay(
@@ -299,7 +299,7 @@ class ClosedPollView(discord.ui.LayoutView):
         container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
 
         results = {}
-        for i in range(0, len(poll.choices)):
+        for i in range(len(poll.choices)):
             results[i] = sum(
                 [1 if response.answer_index == i else 0 for response in poll.responses]
             )
@@ -339,7 +339,7 @@ class PollView(discord.ui.LayoutView):
 
         results: dict[int, int] = {}
         if show_live_results:
-            for i in range(0, len(poll.choices)):
+            for i in range(len(poll.choices)):
                 results[i] = sum(
                     [1 if response.answer_index == i else 0 for response in poll.responses]
                 )

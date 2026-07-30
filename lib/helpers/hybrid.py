@@ -15,8 +15,6 @@ async def defer(ctx: commands.Context[TitaniumBot], ephemeral: bool = False, sto
             await _defer(ctx, ephemeral)
 
         yield
-    except Exception:
-        raise
     finally:
         await _stop_loading(ctx)
 

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 
@@ -21,10 +21,10 @@ async def create_anonymous_poll(
     choices: list[str],
     closing_time: datetime,
     show_live_results: bool,
-    attachment: Optional[discord.Attachment] = None,
+    attachment: discord.Attachment | None = None,
 ) -> AnonymousPoll:
     if not isinstance(channel, discord.abc.GuildChannel):
-        raise ValueError("Channel provided is not a guild channel")
+        raise TypeError("Channel provided is not a guild channel")
 
     poll = AnonymousPoll(
         id=uuid.uuid4(),

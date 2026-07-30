@@ -101,7 +101,7 @@ class StatsUpdateCog(commands.Cog):
             self.bot.api_latency = delta
         except Exception as e:
             self.bot.api_latency = 0
-            logging.exception(e)
+            logging.error("Failed to measure API latency", exc_info=e)
 
 
 async def setup(bot: TitaniumBot):

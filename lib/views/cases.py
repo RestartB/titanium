@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from discord.utils import format_dt
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class CommentModal(discord.ui.Modal, title="Enter Content"):
-    def __init__(self, case: Optional[ModCase] = None, comment: Optional[ModCaseComment] = None):
+    def __init__(self, case: ModCase | None = None, comment: ModCaseComment | None = None):
         super().__init__(timeout=360)
 
         if not case and not comment:
@@ -51,7 +51,7 @@ class CommentModal(discord.ui.Modal, title="Enter Content"):
             return
 
         if not isinstance(self.comment_label.component, discord.ui.TextInput):
-            raise RuntimeError("Impossible: text input component is of wrong type")
+            raise TypeError("Text input component is not discord.ui.TextInput")
 
         if self.comment:
             await self.comment.edit_comment(self.comment_label.component.value)

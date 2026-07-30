@@ -51,7 +51,7 @@ async def create_quote_image(data: QuoteData) -> discord.File:
             line = f"<span style='color: green;'>{line}</span>"
 
         # Remove header characters
-        line = line.lstrip("### ").lstrip("## ").lstrip("# ")
+        line = line.removeprefix("### ").removeprefix("## ").removeprefix("# ")
 
         # Bold
         line = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", line)
@@ -156,7 +156,6 @@ async def create_quote_image(data: QuoteData) -> discord.File:
         )
 
     image_data.seek(0)
-    data.image_data = image_data
 
     return discord.File(
         image_data,

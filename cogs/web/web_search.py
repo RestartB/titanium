@@ -71,11 +71,13 @@ class WebSearchCommandsCog(
         item_list: list[dict] = []
         embeds_list: list[list[discord.Embed]] = []
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
                 f"https://api.urbandictionary.com/v0/define?term={urllib.parse.quote(query)}"
-            ) as request:
-                request_data = await request.json()
+            ) as request,
+        ):
+            request_data = await request.json()
 
         if len(request_data["list"]) != 0:
             page = max(1, min(len(request_data["list"]), page))
@@ -144,31 +146,33 @@ class WebSearchCommandsCog(
 
         headers = {"User-Agent": os.getenv("REQUEST_USER_AGENT", "")}
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
                 f"https://api.wikimedia.org/core/v1/wikipedia/en/search/title?q={urllib.parse.quote(search)}&limit=1",
                 headers=headers,
-            ) as request:
-                if request.status == 404:
-                    embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} No Results Found",
-                        description=f"Couldn't find any results for `{search}`. Please try a different search term.",
-                        colour=Colour.red(),
-                    )
-                    embed.set_author(
-                        name="Wikipedia",
-                        icon_url="https://titanium.fyi/assets/wikipedia.png",
-                    )
-                    embed.set_footer(
-                        text=f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
-                    )
+            ) as request,
+        ):
+            if request.status == 404:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} No Results Found",
+                    description=f"Couldn't find any results for `{search}`. Please try a different search term.",
+                    colour=Colour.red(),
+                )
+                embed.set_author(
+                    name="Wikipedia",
+                    icon_url="https://titanium.fyi/assets/wikipedia.png",
+                )
+                embed.set_footer(
+                    text=f"@{ctx.author.name}",
+                    icon_url=ctx.author.display_avatar.url,
+                )
 
-                    await ctx.reply(embed=embed, ephemeral=ephemeral)
-                    return
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return
 
-                request.raise_for_status()
-                page_data = await request.json()
+            request.raise_for_status()
+            page_data = await request.json()
 
         if not page_data.get("pages") or len(page_data["pages"]) == 0:
             embed = discord.Embed(
@@ -190,31 +194,33 @@ class WebSearchCommandsCog(
 
         target_page = page_data["pages"][0]
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
                 f"https://en.wikipedia.org/api/rest_v1/page/summary/{target_page['key']}",
                 headers=headers,
-            ) as request:
-                if request.status == 404:
-                    embed = discord.Embed(
-                        title=f"{self.bot.error_emoji} No Results Found",
-                        description=f"Couldn't find any results for `{search}`. Please try a different search term.",
-                        colour=Colour.red(),
-                    )
-                    embed.set_author(
-                        name="Wikipedia",
-                        icon_url="https://titanium.fyi/assets/wikipedia.png",
-                    )
-                    embed.set_footer(
-                        text=f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
-                    )
+            ) as request,
+        ):
+            if request.status == 404:
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} No Results Found",
+                    description=f"Couldn't find any results for `{search}`. Please try a different search term.",
+                    colour=Colour.red(),
+                )
+                embed.set_author(
+                    name="Wikipedia",
+                    icon_url="https://titanium.fyi/assets/wikipedia.png",
+                )
+                embed.set_footer(
+                    text=f"@{ctx.author.name}",
+                    icon_url=ctx.author.display_avatar.url,
+                )
 
-                    await ctx.reply(embed=embed, ephemeral=ephemeral)
-                    return
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return
 
-                request.raise_for_status()
-                page = await request.json()
+            request.raise_for_status()
+            page = await request.json()
 
         embed = discord.Embed(
             title=page["title"],

@@ -2,7 +2,7 @@ import logging
 import os
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import quote, urlsplit
 
 import aiohttp
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class MusicCommandsCog(
     commands.Cog, name="Music", description="Search Spotify and get song lyrics."
 ):
-    REQUEST_HEADERS = {
+    REQUEST_HEADERS: ClassVar = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
     }
 
@@ -622,7 +622,7 @@ class MusicCommandsCog(
 
             if parsed_url.netloc == "open.spotify.com":
                 if parsed_url.path.startswith("/track/"):
-                    item = await self.sp.track(parsed_url.path.lstrip("/track/").split("?")[0])
+                    item = await self.sp.track(parsed_url.path.removeprefix("/track/").split("?")[0])
                     await elements.song(
                         bot=self.bot,
                         sp=self.sp,
@@ -631,7 +631,7 @@ class MusicCommandsCog(
                         ephemeral=ephemeral,
                     )
                 elif parsed_url.path.startswith("/album/"):
-                    item = await self.sp.album(parsed_url.path.lstrip("/album/").split("?")[0])
+                    item = await self.sp.album(parsed_url.path.removeprefix("/album/").split("?")[0])
                     await elements.album(
                         sp=self.sp,
                         item=item,
@@ -639,9 +639,9 @@ class MusicCommandsCog(
                         ephemeral=ephemeral,
                     )
                 elif parsed_url.path.startswith("/artist/"):
-                    item = await self.sp.artist(parsed_url.path.lstrip("/artist/").split("?")[0])
+                    item = await self.sp.artist(parsed_url.path.removeprefix("/artist/").split("?")[0])
                     top_tracks = await self.sp.artist_top_tracks(
-                        parsed_url.path.lstrip("/artist/").split("?")[0]
+                        parsed_url.path.removeprefix("/artist/").split("?")[0]
                     )
 
                     await elements.artist(
@@ -688,9 +688,11 @@ class MusicCommandsCog(
                     )
                     url = f"https://{url}"
 
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(url, headers=self.REQUEST_HEADERS) as request:
-                            url = str(request.url)
+                    async with (
+                        aiohttp.ClientSession() as session,
+                        session.get(url, headers=self.REQUEST_HEADERS) as request,
+                    ):
+                        url = str(request.url)
 
                 except Exception as error:
                     error_id = await log_error(
@@ -733,14 +735,16 @@ class MusicCommandsCog(
                     image_url = result.album.images[0].url
 
                     # Get image, store in memory
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(image_url, headers=self.REQUEST_HEADERS) as request:
-                            image_data = BytesIO()
+                    async with (
+                        aiohttp.ClientSession() as session,
+                        session.get(image_url, headers=self.REQUEST_HEADERS) as request,
+                    ):
+                        image_data = BytesIO()
 
-                            async for chunk in request.content.iter_chunked(10):
-                                image_data.write(chunk)
+                        async for chunk in request.content.iter_chunked(10):
+                            image_data.write(chunk)
 
-                            image_data.seek(0)
+                        image_data.seek(0)
 
                     # Get dominant colour for embed
                     color_thief = ColorThief(image_data)
@@ -815,14 +819,16 @@ class MusicCommandsCog(
                 image_url = result.images[0].url
 
                 # Get image, store in memory
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url, headers=self.REQUEST_HEADERS) as request:
-                        image_data = BytesIO()
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.get(image_url, headers=self.REQUEST_HEADERS) as request,
+                ):
+                    image_data = BytesIO()
 
-                        async for chunk in request.content.iter_chunked(10):
-                            image_data.write(chunk)
+                    async for chunk in request.content.iter_chunked(10):
+                        image_data.write(chunk)
 
-                        image_data.seek(0)
+                    image_data.seek(0)
 
                 # Get dominant colour for embed
                 color_thief = ColorThief(image_data)
@@ -908,10 +914,12 @@ class MusicCommandsCog(
             url = f"https://lrclib.net/api/search?q={quote(search)}"
             headers = {"User-Agent": os.getenv("REQUEST_USER_AGENT", "")}
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as response:
-                    response.raise_for_status()
-                    data = await response.json()
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(url, headers=headers) as response,
+            ):
+                response.raise_for_status()
+                data = await response.json()
 
             if data == []:
                 embed = discord.Embed(

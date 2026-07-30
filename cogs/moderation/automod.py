@@ -263,9 +263,11 @@ class AutomodMonitorCog(commands.Cog):
                             if matches:
                                 words_matched += 1
 
-                        if criteria.match_all_words and words_matched == len(criteria.words):
-                            criteria_met = True
-                        elif not criteria.match_all_words and words_matched > 0:
+                        if (
+                            criteria.match_all_words
+                            and words_matched == len(criteria.words)
+                            or (not criteria.match_all_words and words_matched > 0)
+                        ):
                             criteria_met = True
                     elif type == AutomodCriteriaType.MALICIOUS_LINK:
                         for link in self.bot.malicious_links:
@@ -291,14 +293,9 @@ class AutomodMonitorCog(commands.Cog):
                             current_state[0]
                         )
 
-                if rule.match_all_criteria and criterion_matched == len(rule.criteria):
-                    self.logger.debug(f"({rule.id}) Rule met")
-                    triggered_rules.append(rule)
-                    triggered_actions.extend(rule.actions)
-
-                    if rule.stop_if_triggered:
-                        break
-                elif not rule.match_all_criteria and criterion_matched > 0:
+                if (rule.match_all_criteria and criterion_matched == len(rule.criteria)) or (
+                    not rule.match_all_criteria and criterion_matched > 0
+                ):
                     self.logger.debug(f"({rule.id}) Rule met")
                     triggered_rules.append(rule)
                     triggered_actions.extend(rule.actions)
@@ -463,9 +460,9 @@ class AutomodMonitorCog(commands.Cog):
                                         dm_error=dm_error,
                                     )
                                 )
-                            except Exception as e:
+                            except Exception:
                                 await manager.delete_case(case.id, raise_not_found=False)
-                                raise e
+                                raise
                         elif action.type == AutomodActionType.BAN:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:
@@ -505,9 +502,9 @@ class AutomodMonitorCog(commands.Cog):
                                         dm_error=dm_error,
                                     )
                                 )
-                            except Exception as e:
+                            except Exception:
                                 await manager.delete_case(case.id, raise_not_found=False)
-                                raise e
+                                raise
                         elif action.type == AutomodActionType.DELETE:
                             # fmt: off
                             if not message.channel.permissions_for(message.guild.me).manage_messages:
@@ -516,14 +513,13 @@ class AutomodMonitorCog(commands.Cog):
                                 continue
                             # fmt: on
 
-                            for channel_id in messages_to_delete:
+                            for channel_id, value in messages_to_delete.items():
                                 channel = message.guild.get_channel(channel_id)
                                 if not channel or not isinstance(channel, discord.abc.Messageable):
                                     continue
 
                                 unique_messages = {
-                                    delete_msg.message_id: delete_msg
-                                    for delete_msg in messages_to_delete[channel_id]
+                                    delete_msg.message_id: delete_msg for delete_msg in value
                                 }
                                 messages = [
                                     discord.Object(id=delete_msg.message_id)
@@ -720,7 +716,7 @@ class AutomodMonitorCog(commands.Cog):
                             await message.channel.send(
                                 embeds=chunk,
                                 allowed_mentions=discord.AllowedMentions.none(),
-                                *del_kwargs,
+                                *del_kwargs,  # noqa: B026
                             )
                     except discord.Forbidden as e:
                         await log_error(

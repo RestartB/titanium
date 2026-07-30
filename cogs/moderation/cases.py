@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from discord import AllowedMentions, ButtonStyle, Colour, Embed, Member, Message, User, app_commands
 from discord.ext import commands
@@ -89,76 +90,75 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not ctx.guild or not self.bot.user or isinstance(ctx.author, User):
             return
 
-        async with defer(ctx, stop_only=True):
-            async with get_session() as session:
-                case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
+        async with defer(ctx, stop_only=True), get_session() as session:
+            case_manager = GuildModCaseManager(self.bot, ctx.guild, session)
 
-                if user:
-                    if (
-                        not ctx.author.guild_permissions.kick_members
-                        and not ctx.author.guild_permissions.ban_members
-                        and not ctx.author.guild_permissions.moderate_members
-                    ):
-                        return await ctx.reply(
-                            ephemeral=ephemeral,
-                            embed=Embed(
-                                title=f"{self.bot.error_emoji} Permission Denied",
-                                description="You do not have permission to view cases for other users. Please ensure you have the Kick Members, Ban Members or Timeout Members permission.",
-                                colour=Colour.red(),
-                            ),
-                        )
-
-                    cases_list = await case_manager.get_cases_by_user(user.id)
-                    embeds = await self._build_embeds(cases_list, target=user, user=ctx.author)
-
-                    if embeds == []:
-                        return await ctx.reply(
-                            ephemeral=ephemeral,
-                            embed=Embed(
-                                title=f"{self.bot.error_emoji} No Cases Found",
-                                description="This user has no moderation cases.",
-                                colour=Colour.red(),
-                            ),
-                        )
-
-                    embeds[0].set_footer(
-                        text=f"Controlling: @{ctx.author.name}"
-                        if len(embeds) > 1
-                        else f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
+            if user:
+                if (
+                    not ctx.author.guild_permissions.kick_members
+                    and not ctx.author.guild_permissions.ban_members
+                    and not ctx.author.guild_permissions.moderate_members
+                ):
+                    return await ctx.reply(
+                        ephemeral=ephemeral,
+                        embed=Embed(
+                            title=f"{self.bot.error_emoji} Permission Denied",
+                            description="You do not have permission to view cases for other users. Please ensure you have the Kick Members, Ban Members or Timeout Members permission.",
+                            colour=Colour.red(),
+                        ),
                     )
 
-                    if len(embeds) > 1:
-                        view = PaginationView(embeds, 120)
-                        await ctx.reply(ephemeral=ephemeral, embed=embeds[0], view=view)
-                    else:
-                        await ctx.reply(ephemeral=ephemeral, embed=embeds[0])
+                cases_list = await case_manager.get_cases_by_user(user.id)
+                embeds = await self._build_embeds(cases_list, target=user, user=ctx.author)
+
+                if embeds == []:
+                    return await ctx.reply(
+                        ephemeral=ephemeral,
+                        embed=Embed(
+                            title=f"{self.bot.error_emoji} No Cases Found",
+                            description="This user has no moderation cases.",
+                            colour=Colour.red(),
+                        ),
+                    )
+
+                embeds[0].set_footer(
+                    text=f"Controlling: @{ctx.author.name}"
+                    if len(embeds) > 1
+                    else f"@{ctx.author.name}",
+                    icon_url=ctx.author.display_avatar.url,
+                )
+
+                if len(embeds) > 1:
+                    view = PaginationView(embeds, 120)
+                    await ctx.reply(ephemeral=ephemeral, embed=embeds[0], view=view)
                 else:
-                    cases_list = await case_manager.get_cases_by_user(ctx.author.id)
-                    embeds = await self._build_embeds(cases_list, ctx.author, ctx.author)
+                    await ctx.reply(ephemeral=ephemeral, embed=embeds[0])
+            else:
+                cases_list = await case_manager.get_cases_by_user(ctx.author.id)
+                embeds = await self._build_embeds(cases_list, ctx.author, ctx.author)
 
-                    if embeds == []:
-                        return await ctx.reply(
-                            ephemeral=ephemeral,
-                            embed=Embed(
-                                title=f"{self.bot.error_emoji} No Cases Found",
-                                description="You have no moderation cases.",
-                                colour=Colour.red(),
-                            ),
-                        )
-
-                    embeds[0].set_footer(
-                        text=f"Controlling: @{ctx.author.name}"
-                        if len(embeds) > 1
-                        else f"@{ctx.author.name}",
-                        icon_url=ctx.author.display_avatar.url,
+                if embeds == []:
+                    return await ctx.reply(
+                        ephemeral=ephemeral,
+                        embed=Embed(
+                            title=f"{self.bot.error_emoji} No Cases Found",
+                            description="You have no moderation cases.",
+                            colour=Colour.red(),
+                        ),
                     )
 
-                    if len(embeds) > 1:
-                        view = PaginationView(embeds, 120)
-                        await ctx.reply(ephemeral=ephemeral, embed=embeds[0], view=view)
-                    else:
-                        await ctx.reply(ephemeral=ephemeral, embed=embeds[0])
+                embeds[0].set_footer(
+                    text=f"Controlling: @{ctx.author.name}"
+                    if len(embeds) > 1
+                    else f"@{ctx.author.name}",
+                    icon_url=ctx.author.display_avatar.url,
+                )
+
+                if len(embeds) > 1:
+                    view = PaginationView(embeds, 120)
+                    await ctx.reply(ephemeral=ephemeral, embed=embeds[0], view=view)
+                else:
+                    await ctx.reply(ephemeral=ephemeral, embed=embeds[0])
 
     @commands.hybrid_group(
         name="case", fallback="view", description="View and manage moderation cases."

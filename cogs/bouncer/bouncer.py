@@ -132,11 +132,10 @@ class BouncerMonitorCog(commands.Cog):
                         self.logger.debug("Account age match found")
                         spotted = True
                         break
-                elif criteria.type == BouncerCriteriaType.AVATAR:
-                    if not member.avatar:
-                        self.logger.debug("No avatar match found")
-                        spotted = True
-                        break
+                elif criteria.type == BouncerCriteriaType.AVATAR and not member.avatar:
+                    self.logger.debug("No avatar match found")
+                    spotted = True
+                    break
 
             if spotted:
                 triggers.append(rule)
@@ -145,7 +144,7 @@ class BouncerMonitorCog(commands.Cog):
                     punishments.append(action)
 
         # Get list of punishment types
-        punishment_types = list(set(action.type for action in punishments))
+        punishment_types = {action.type for action in punishments}
 
         async with get_session() as session:
             manager = GuildModCaseManager(self.bot, member.guild, session)
@@ -396,10 +395,10 @@ class BouncerMonitorCog(commands.Cog):
 
                         if case:
                             await manager.delete_case(case.id)
-                    except Exception as e:
+                    except Exception:
                         if case:
                             await manager.delete_case(case.id)
-                        raise e
+                        raise
                 elif punishment.type == BouncerActionType.BAN:
                     if (
                         not member.guild.me.guild_permissions.ban_members
@@ -450,10 +449,10 @@ class BouncerMonitorCog(commands.Cog):
 
                         if case:
                             await manager.delete_case(case.id)
-                    except Exception as e:
+                    except Exception:
                         if case:
                             await manager.delete_case(case.id)
-                        raise e
+                        raise
                 else:
                     await log_error(
                         bot=self.bot,

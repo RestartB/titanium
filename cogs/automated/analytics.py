@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import discord
 from discord import Colour, app_commands
@@ -37,7 +37,7 @@ class Analytics(commands.Cog):
     async def on_app_command_completion(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        command: Union[app_commands.Command, app_commands.ContextMenu],
+        command: app_commands.Command | app_commands.ContextMenu,
     ) -> None:
         if (
             interaction.command
@@ -61,7 +61,7 @@ class Analytics(commands.Cog):
     async def on_interaction(self, interaction: discord.Interaction["TitaniumBot"]):
         embed = discord.Embed(
             title=f"`@{interaction.user.name}` started an interaction",
-            description=f"`{str(interaction.type)}`",
+            description=f"`{interaction.type}`",
             timestamp=interaction.created_at,
         )
         embed.add_field(name="User", value=f"{interaction.user.mention} (`{interaction.user.id}`)")

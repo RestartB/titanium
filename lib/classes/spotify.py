@@ -3,14 +3,14 @@ import logging
 import re
 from asyncio import Lock
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Annotated, Literal, Optional, overload
+from typing import Annotated, Literal, overload
 from urllib.parse import quote
+from warnings import deprecated
 
 import aiohttp
 import dacite
+from discord.utils import utcnow
 from sqlalchemy import select
-from typing_extensions import deprecated
 
 from lib.sql.sql import SpotifyToken, get_session
 
@@ -39,9 +39,7 @@ class TitaniumSpotifyClient:
                     self.LOGGER.debug("Requesting new access token")
                     return await self.__fetch_access_token()
 
-                if (
-                    datetime.now(timezone.utc) - token_entry.time_added
-                ).total_seconds() >= token_entry.expires_in:
+                if (utcnow() - token_entry.time_added).total_seconds() >= token_entry.expires_in:
                     self.LOGGER.debug("Token expired, requesting new token")
                     await session.delete(token_entry)
                     return await self.__fetch_access_token()
@@ -55,13 +53,12 @@ class TitaniumSpotifyClient:
             + base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                "https://accounts.spotify.com/api/token",
-                headers=headers,
-                data={"grant_type": "client_credentials"},
-            ) as response:
-                token_json = await response.json()
+        async with aiohttp.ClientSession() as session, session.post(
+            "https://accounts.spotify.com/api/token",
+            headers=headers,
+            data={"grant_type": "client_credentials"},
+        ) as response:
+            token_json = await response.json()
 
         async with get_session() as session:
             token_entry = SpotifyToken(
@@ -74,27 +71,26 @@ class TitaniumSpotifyClient:
 
     @overload
     async def __authed_get_req(
-        self, endpoint: str, data: Optional[dict] = None, text: Literal[False] = ...
+        self, endpoint: str, data: dict | None = None, text: Literal[False] = ...
     ) -> dict: ...
     @overload
     async def __authed_get_req(
-        self, endpoint: str, data: Optional[dict] = None, text: Literal[True] = ...
+        self, endpoint: str, data: dict | None = None, text: Literal[True] = ...
     ) -> str: ...
     async def __authed_get_req(
-        self, endpoint: str, data: Optional[dict] = None, text: bool = False
+        self, endpoint: str, data: dict | None = None, text: bool = False
     ) -> dict | str:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"{self.SPOTIFY_API_BASE}{endpoint}",
-                data=data,
-                headers={"Authorization": f"Bearer {await self.__access_token}"},
-            ) as response:
-                response.raise_for_status()
+        async with aiohttp.ClientSession() as session, session.get(
+            f"{self.SPOTIFY_API_BASE}{endpoint}",
+            data=data,
+            headers={"Authorization": f"Bearer {await self.__access_token}"},
+        ) as response:
+            response.raise_for_status()
 
-                if text:
-                    return await response.text()
+            if text:
+                return await response.text()
 
-                return await response.json()
+            return await response.json()
 
     async def album(self, query: str, market: str = "") -> SpotifyAlbum:
         match = re.search(TitaniumSpotifyClient.SPOTIFY_URL_REGEX, query)
@@ -192,8 +188,8 @@ class SpotifyBaseObj:
 @dataclass
 class SpotifyImage:
     url: str
-    height: Optional[int]
-    width: Optional[int]
+    height: int | None
+    width: int | None
 
 
 @dataclass
@@ -204,7 +200,7 @@ class SpotifyCopyright:
 
 @dataclass
 class SpotifyFollowers:
-    href: Optional[str]
+    href: str | None
     total: int
 
 
@@ -212,9 +208,9 @@ class SpotifyFollowers:
 class SpotifySearchObj:
     href: str
     limit: int
-    next: Optional[str]
+    next: str | None
     offset: int
-    previous: Optional[str]
+    previous: str | None
     total: int
 
 
@@ -227,9 +223,9 @@ class SpotifySimplifiedTrack(SpotifyBaseObj):
     disc_number: int
     duration_ms: int
     explicit: bool
-    is_playable: Optional[bool]
-    restrictions: Optional[dict[Literal["reason"], Literal["market", "product", "explicit"]]]
-    preview_url: Annotated[Optional[str], deprecated("This field is deprecated")]
+    is_playable: bool | None
+    restrictions: dict[Literal["reason"], Literal["market", "product", "explicit"]] | None
+    preview_url: Annotated[str | None, deprecated("This field is deprecated")]
     track_number: int
     is_local: bool
 
@@ -249,7 +245,7 @@ class SpotifySimplifiedAlbum(SpotifyBaseObj):
     images: list[SpotifyImage]
     release_date: str
     release_date_precision: str
-    restrictions: Optional[dict[Literal["reason"], Literal["market", "product", "explicit"]]]
+    restrictions: dict[Literal["reason"], Literal["market", "product", "explicit"]] | None
     artists: list[SpotifySimplifiedArtist]
 
 
@@ -266,7 +262,7 @@ class SpotifyTrack(SpotifySimplifiedTrack):
 
 @dataclass
 class SpotifyArtist(SpotifySimplifiedArtist):
-    followers: Annotated[Optional[SpotifyFollowers], deprecated("This field is deprecated")]
+    followers: Annotated[SpotifyFollowers | None, deprecated("This field is deprecated")]
     genres: Annotated[list[str], deprecated("This field is deprecated")]
     images: list[SpotifyImage]
     popularity: Annotated[int, deprecated("This field is deprecated")]

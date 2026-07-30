@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from sqlalchemy import func, select
@@ -58,7 +58,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
         server_tag_allowed: bool,
         user_tag_allowed: bool,
         timeout: float = 240,
-        existing_tag: Optional[Tag] = None,
+        existing_tag: Tag | None = None,
     ) -> None:
         super().__init__(timeout=timeout)
         self.server_tag_allowed = server_tag_allowed
@@ -187,8 +187,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                             colour=discord.Colour.red(),
                         )
                         return await interaction.followup.send(embed=embed, ephemeral=True)
-                    else:
-                        raise e
+                    raise
 
             embed = discord.Embed(
                 title=f"{interaction.client.success_emoji} Done",
@@ -261,8 +260,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                             colour=discord.Colour.red(),
                         )
                         return await interaction.followup.send(embed=embed, ephemeral=True)
-                    else:
-                        raise e
+                    raise
 
             embed = discord.Embed(
                 title=f"{interaction.client.success_emoji} Done",

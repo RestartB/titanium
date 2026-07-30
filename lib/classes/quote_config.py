@@ -14,7 +14,6 @@ class QuoteData:
     output_format: ImageFormats
 
     pfp_data: BytesIO
-    image_data: BytesIO = BytesIO()
 
     nickname: bool = True
     fade: bool = True

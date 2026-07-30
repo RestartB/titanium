@@ -1,5 +1,6 @@
 import logging
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -158,8 +159,11 @@ class EventLoggingCog(commands.Cog):
             if entry.target:
                 try:
                     webhook = await self.bot.fetch_webhook(int(entry.target.id))
-                except Exception:
-                    pass
+                except Exception as e:
+                    self.logger.error(
+                        f"Failed to get webhook {entry.target.id} in guild {entry.guild.id}",
+                        exc_info=e,
+                    )
 
             await guild_logger.webhook_channel_update(entry, webhook)
             await guild_logger.webhook_icon_update(entry, webhook)

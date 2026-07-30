@@ -1,10 +1,12 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, Sequence, overload
+from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING, Annotated, Literal, overload
 
 import discord
 from discord import Guild
+from discord.utils import utcnow
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -83,8 +85,8 @@ class GuildModCaseManager:
         action: CaseType,
         user: discord.User | discord.Member | discord.Object,
         creator_user: discord.User | discord.Member | discord.ClientUser | discord.Object,
-        reason: Optional[str],
-        time_created: Optional[datetime] = None,
+        reason: str | None,
+        time_created: datetime | None = None,
         duration: Annotated[timedelta, DurationConverter] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
@@ -98,8 +100,8 @@ class GuildModCaseManager:
         action: CaseType,
         user: discord.User | discord.Member | discord.Object,
         creator_user: discord.User | discord.Member | discord.ClientUser,
-        reason: Optional[str],
-        time_created: Optional[datetime] = None,
+        reason: str | None,
+        time_created: datetime | None = None,
         duration: Annotated[timedelta, DurationConverter] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
@@ -111,8 +113,8 @@ class GuildModCaseManager:
         action: CaseType,
         user: discord.User | discord.Member | discord.Object,
         creator_user: discord.User | discord.Member | discord.ClientUser | discord.Object,
-        reason: Optional[str],
-        time_created: Optional[datetime] = None,
+        reason: str | None,
+        time_created: datetime | None = None,
         duration: Annotated[timedelta, DurationConverter] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
@@ -122,9 +124,9 @@ class GuildModCaseManager:
             raise TypeError("creator_user must not be discord.Object when external is False")
 
         if time_created:
-            time_created = time_created.astimezone(timezone.utc)
+            time_created = time_created.astimezone(UTC)
         else:
-            time_created = datetime.now(timezone.utc)
+            time_created = utcnow()
 
         if external:
             guild_settings = await self.bot.fetch_guild_config(self.guild.id)
@@ -150,7 +152,7 @@ class GuildModCaseManager:
         )
 
         if until:
-            case.time_expires = until.astimezone(timezone.utc)
+            case.time_expires = until.astimezone(UTC)
         elif duration:
             case.time_expires = time_created + duration
 
@@ -162,7 +164,7 @@ class GuildModCaseManager:
 
             for mute_case in mute_cases:
                 mute_case.resolved = True
-                mute_case.time_updated = datetime.now(timezone.utc)
+                mute_case.time_updated = utcnow()
         elif action == CaseType.BAN:
             # set all previous bans to resolved
             cases = await self.get_cases_by_user(user.id)
@@ -170,7 +172,7 @@ class GuildModCaseManager:
 
             for ban_case in ban_cases:
                 ban_case.resolved = True
-                ban_case.time_updated = datetime.now(timezone.utc)
+                ban_case.time_updated = utcnow()
 
         self.session.add(case)
         await self.session.flush()
@@ -323,8 +325,8 @@ class GuildModCaseManager:
     async def update_case(
         self,
         case_id: str,
-        reason: Optional[str],
-        resolved: Optional[bool],
+        reason: str | None,
+        resolved: bool | None,
         duration: Annotated[timedelta, DurationConverter] | None = None,
     ) -> ModCase:
         case = await self.get_case_by_id(case_id)
@@ -339,9 +341,9 @@ class GuildModCaseManager:
             case.resolved = True
 
         if duration:
-            case.time_expires = datetime.now(timezone.utc) + duration
+            case.time_expires = utcnow() + duration
 
-        case.time_updated = datetime.now(timezone.utc)
+        case.time_updated = utcnow()
 
         return case
 
@@ -352,7 +354,7 @@ class GuildModCaseManager:
             raise CaseNotFoundException("Case not found")
 
         case.resolved = True
-        case.time_updated = datetime.now(timezone.utc)
+        case.time_updated = utcnow()
 
         if case.type == CaseType.MUTE:
             await self.delete_scheduled_tasks_for_user(case.user_id, EventType.PERMA_MUTE_REFRESH)

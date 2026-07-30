@@ -141,8 +141,8 @@ class BasicCommandsCog(
         embed = Embed(title=f"{self.bot.info_emoji} Host Info", colour=Colour.light_gray())
 
         uptime_seconds = int(time.time() - psutil.boot_time())
-        sec = timedelta(seconds=uptime_seconds)
-        d = datetime.datetime(1, 1, 1) + sec
+        uptime_seconds_delta = timedelta(seconds=uptime_seconds)
+        uptime_date = datetime.datetime(1, 1, 1, tzinfo=datetime.UTC) + uptime_seconds_delta
 
         sysinfo = cpuinfo.get_cpu_info()
 
@@ -154,7 +154,7 @@ class BasicCommandsCog(
 
         embed.add_field(
             name="System Uptime",
-            value=f"`{(d.day - 1):02d}:{d.hour:02d}:{d.minute:02d}:{d.second:02d}`",
+            value=f"`{(uptime_date.day - 1):02d}:{uptime_date.hour:02d}:{uptime_date.minute:02d}:{uptime_date.second:02d}`",
         )
         embed.add_field(name="CPU Name", value=f"`{sysinfo['brand_raw']}`")
         embed.add_field(name="CPU Usage", value=f"`{psutil.cpu_percent()}%`")

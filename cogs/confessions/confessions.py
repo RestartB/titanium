@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from discord import Colour, Embed, app_commands
@@ -77,7 +77,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         self,
         interaction: discord.Interaction["TitaniumBot"],
         message: str,
-        image: Optional[discord.Attachment] = None,
+        image: discord.Attachment | None = None,
     ) -> None:
         await interaction.response.defer(ephemeral=True)
 
@@ -222,11 +222,11 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
         title: str,
         duration: app_commands.Transform[timedelta | None, DurationTransformer],
         choice1: app_commands.Range[str, 1, 100],
-        choice2: Optional[app_commands.Range[str, 1, 100]] = None,
-        choice3: Optional[app_commands.Range[str, 1, 100]] = None,
-        choice4: Optional[app_commands.Range[str, 1, 100]] = None,
-        choice5: Optional[app_commands.Range[str, 1, 100]] = None,
-        image_or_video: Optional[discord.Attachment] = None,
+        choice2: app_commands.Range[str, 1, 100] | None = None,
+        choice3: app_commands.Range[str, 1, 100] | None = None,
+        choice4: app_commands.Range[str, 1, 100] | None = None,
+        choice5: app_commands.Range[str, 1, 100] | None = None,
+        image_or_video: discord.Attachment | None = None,
         show_live_results: bool = True,
     ) -> None:
         await interaction.response.defer(ephemeral=True)

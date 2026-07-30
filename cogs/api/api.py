@@ -94,7 +94,7 @@ class APICog(commands.Cog):
 
         # Get host and port from env with defaults
         self.host = os.getenv("BOT_API_HOST", "127.0.0.1")
-        self.port = int(os.getenv("BOT_API_PORT", 5000))
+        self.port = int(os.getenv("BOT_API_PORT", "5000"))
         self.api_secret = os.getenv("BOT_API_TOKEN")
 
     async def cog_load(self) -> None:
@@ -319,7 +319,7 @@ class APICog(commands.Cog):
                 raise RuntimeError("No guild config returned")
 
             delegate_roles = config.case_managers + config.dashboard_managers
-            if any([role.id in delegate_roles for role in member.roles]):
+            if any(role.id in delegate_roles for role in member.roles):
                 delegate_guild_ids.append(mutual_id)
 
         return web.json_response({"mutual": mutual_guild_ids, "delegate": delegate_guild_ids})
@@ -387,7 +387,7 @@ class APICog(commands.Cog):
                     {
                         "id": str(role.id),
                         "name": role.name,
-                        "colour": "#%02x%02x%02x" % role.colour.to_rgb(),
+                        "colour": "#{:02x}{:02x}{:02x}".format(*role.colour.to_rgb()),
                         "hoist": role.hoist,
                         "position": role.position,
                     }
@@ -981,8 +981,8 @@ class APICog(commands.Cog):
                 err_code = getattr(e.orig, "sqlstate", getattr(e.orig, "pgcode", None))
                 if err_code == "23505":  # 23505 = unique_violation
                     return web.json_response({"error": "tag_in_use"}, status=404)
-                else:
-                    raise e
+
+                raise
 
         await self.bot.refresh_guild_config_cache(guild.id)
         return web.Response(status=204)
@@ -1035,8 +1035,7 @@ class APICog(commands.Cog):
                 err_code = getattr(e.orig, "sqlstate", getattr(e.orig, "pgcode", None))
                 if err_code == "23505":  # 23505 = unique_violation
                     return web.json_response({"error": "tag_in_use"}, status=404)
-                else:
-                    raise e
+                raise
 
         await self.bot.refresh_guild_config_cache(guild.id)
         return web.Response(status=204)

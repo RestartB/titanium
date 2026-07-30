@@ -1,5 +1,5 @@
 import random
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 import aiohttp
 import discord
@@ -273,7 +273,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
 
         await ctx.reply(embed=embed, ephemeral=ephemeral)
 
-    freaky_map = {
+    freaky_map: ClassVar = {
         "q": "𝓺",
         "w": "𝔀",
         "e": "𝓮",
@@ -386,13 +386,15 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
     ):
         async with defer(ctx, ephemeral=ephemeral):
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.post(
                         url="https://githubroast.mgytr.top/llama",
                         json={"username": username, "language": "english"},
-                    ) as request:
-                        request.raise_for_status()
-                        response = await request.json()
+                    ) as request,
+                ):
+                    request.raise_for_status()
+                    response = await request.json()
             except aiohttp.ClientResponseError as e:
                 embed = discord.Embed(
                     title=f"{self.bot.error_emoji} Error",

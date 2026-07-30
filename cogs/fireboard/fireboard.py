@@ -40,9 +40,9 @@ class FireboardCog(commands.Cog):
         return emoji.replace("\ufe0f", "")
 
     def _get_emoji_identifier(self, emoji: discord.Emoji | discord.PartialEmoji | str) -> str:
-        if isinstance(emoji, discord.Emoji):
-            return str(emoji.id)
-        elif isinstance(emoji, discord.PartialEmoji) and emoji.is_custom_emoji():
+        if isinstance(emoji, discord.Emoji) or (
+            isinstance(emoji, discord.PartialEmoji) and emoji.is_custom_emoji()
+        ):
             return str(emoji.id)
         else:
             return self._normalize_emoji(str(emoji))
@@ -249,10 +249,10 @@ class FireboardCog(commands.Cog):
         source_msg_fetched = False
 
         # board messages should be ignored
-        if event.message_id in list(
+        if event.message_id in [
             fireboard_message.fireboard_message_id
             for fireboard_message in self.bot.fireboard_messages.get(event.guild_id, [])
-        ):
+        ]:
             return
 
         for fireboard_message in list(self.bot.fireboard_messages.get(event.guild_id, [])):
@@ -527,9 +527,7 @@ class FireboardCog(commands.Cog):
                 source_msg.thread
                 and not msg_channel.permissions_for(msg_channel.guild.me).send_messages
                 or not msg_channel.permissions_for(msg_channel.guild.me).send_messages_in_threads
-            ):
-                continue
-            elif (
+            ) or (
                 not source_msg.thread
                 and not msg_channel.permissions_for(msg_channel.guild.me).send_messages
             ):

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from discord import (
@@ -151,7 +151,7 @@ class BackButtonHomeReload(Button["SettingsView"]):
 
 # region Tag Views
 def _get_if_server_tag_allowed(
-    interaction: discord.Interaction["TitaniumBot"], config: Optional[GuildSettings]
+    interaction: discord.Interaction["TitaniumBot"], config: GuildSettings | None
 ) -> bool:
     return bool(
         interaction.guild
@@ -166,7 +166,7 @@ def _get_if_server_tag_allowed(
 async def build_tags_pagination_view(
     interaction: discord.Interaction["TitaniumBot"],
     user_tag: bool,
-    previous_view: Optional[LayoutView],
+    previous_view: LayoutView | None,
 ) -> LayoutView:
     if user_tag:
         stmt = (
@@ -391,7 +391,7 @@ class TagsActionsView(LayoutView):
 
 class TagSelectDropdown(Select):
     def __init__(
-        self, tags: list[Tag], user_tag: bool, my_view: Optional[PaginationV2View] = None
+        self, tags: list[Tag], user_tag: bool, my_view: PaginationV2View | None = None
     ) -> None:
         super().__init__()
         self.user_tag = user_tag
@@ -429,8 +429,8 @@ class SelectTagContainer(Container):
         self,
         this_page: list[Tag],
         user_tag: bool,
-        previous_view: Optional[LayoutView],
-        my_view: Optional[PaginationV2View] = None,
+        previous_view: LayoutView | None,
+        my_view: PaginationV2View | None = None,
     ) -> None:
         super().__init__(accent_colour=Colour.light_grey())
         self.previous_view = previous_view
@@ -874,7 +874,7 @@ class SettingsView(LayoutView):
         self,
         interaction: Interaction["TitaniumBot"],
         bot: TitaniumBot,
-        settings: Optional[GuildSettings],
+        settings: GuildSettings | None,
     ) -> None:
         super().__init__(timeout=600)
 

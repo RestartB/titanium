@@ -1,7 +1,7 @@
 import os
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
@@ -35,12 +35,12 @@ async def song(
     sp: TitaniumSpotifyClient,
     item: SpotifyTrack,
     ctx: commands.Context["TitaniumBot"],
-    add_button_url: Optional[str] = None,
-    add_button_text: Optional[str] = None,
+    add_button_url: str | None = None,
+    add_button_text: str | None = None,
     cached: bool = False,
     ephemeral: bool = False,
     responded: bool = False,
-    respond_msg: Optional[discord.Message] = None,
+    respond_msg: discord.Message | None = None,
 ):
     """
     Handle Spotify song embeds.
@@ -70,14 +70,16 @@ async def song(
     )
 
     # Get image, store in memory
-    async with aiohttp.ClientSession() as session:
-        async with session.get(item.album.images[0].url, headers=REQUEST_HEADERS) as request:
-            image_data = BytesIO()
+    async with (
+        aiohttp.ClientSession() as session,
+        session.get(item.album.images[0].url, headers=REQUEST_HEADERS) as request,
+    ):
+        image_data = BytesIO()
 
-            async for chunk in request.content.iter_chunked(10):
-                image_data.write(chunk)
+        async for chunk in request.content.iter_chunked(10):
+            image_data.write(chunk)
 
-            image_data.seek(0)  # Reset buffer position to start
+        image_data.seek(0)  # Reset buffer position to start
 
     # Get dominant colour for embed
     color_thief = ColorThief(image_data)
@@ -105,7 +107,7 @@ async def artist(
     ctx: commands.Context["TitaniumBot"],
     ephemeral: bool = False,
     responded: bool = False,
-    respond_msg: Optional[discord.Message] = None,
+    respond_msg: discord.Message | None = None,
 ):
     """
     Handle Spotify artist embeds.
@@ -121,7 +123,7 @@ async def artist(
 
     try:
         topsong_string = ""
-        for i in range(0, 5):
+        for i in range(5):
             artist_string = ", ".join([artist.name for artist in top_tracks.tracks[i].artists])
 
             # Hide artist string from song listing if there is only one artist
@@ -141,14 +143,16 @@ async def artist(
         pass
 
     # Get image, store in memory
-    async with aiohttp.ClientSession() as session:
-        async with session.get(item.images[0].url, headers=REQUEST_HEADERS) as request:
-            image_data = BytesIO()
+    async with (
+        aiohttp.ClientSession() as session,
+        session.get(item.images[0].url, headers=REQUEST_HEADERS) as request,
+    ):
+        image_data = BytesIO()
 
-            async for chunk in request.content.iter_chunked(10):
-                image_data.write(chunk)
+        async for chunk in request.content.iter_chunked(10):
+            image_data.write(chunk)
 
-            image_data.seek(0)  # Reset buffer position to start
+        image_data.seek(0)  # Reset buffer position to start
 
     # Get dominant colour for embed
     color_thief = ColorThief(image_data)
@@ -173,11 +177,11 @@ async def album(
     sp: TitaniumSpotifyClient,
     item: SpotifyAlbum,
     ctx: commands.Context["TitaniumBot"],
-    add_button_url: Optional[str] = None,
-    add_button_text: Optional[str] = None,
+    add_button_url: str | None = None,
+    add_button_text: str | None = None,
     ephemeral: bool = False,
     responded: bool = False,
-    respond_msg: Optional[discord.Message] = None,
+    respond_msg: discord.Message | None = None,
 ):
     """
     Handle Spotify album embeds.
@@ -221,14 +225,16 @@ async def album(
         pages.append("\n".join(page))
 
     # Get image, store in memory
-    async with aiohttp.ClientSession() as session:
-        async with session.get(item.images[0].url, headers=REQUEST_HEADERS) as request:
-            image_data = BytesIO()
+    async with (
+        aiohttp.ClientSession() as session,
+        session.get(item.images[0].url, headers=REQUEST_HEADERS) as request,
+    ):
+        image_data = BytesIO()
 
-            async for chunk in request.content.iter_chunked(10):
-                image_data.write(chunk)
+        async for chunk in request.content.iter_chunked(10):
+            image_data.write(chunk)
 
-            image_data.seek(0)  # Reset buffer position to start
+        image_data.seek(0)  # Reset buffer position to start
 
     # Get dominant colour for embed
     color_thief = ColorThief(image_data)

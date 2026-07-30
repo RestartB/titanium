@@ -4,7 +4,7 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import shortuuid
 from discord import Guild, Member, PartialInviteGuild
@@ -941,7 +941,7 @@ class Reminder(Base):
         passive_deletes=True,
     )
 
-    async def edit(self, content: Optional[str] = None, time: Optional[datetime] = None) -> Tag:
+    async def edit(self, content: str | None = None, time: datetime | None = None) -> Tag:
         if not content and not time:
             raise ValueError("Content or time must be specified")
 
@@ -1087,7 +1087,7 @@ SQLALCHEMY_DATABASE_URL = URL.create(
     username=os.getenv("DB_USERNAME", ""),
     password=os.getenv("DB_PASSWORD", ""),
     host=os.getenv("DB_HOST", ""),
-    port=int(os.getenv("DB_PORT", 0)),
+    port=int(os.getenv("DB_PORT", "0")),
     database=os.getenv("DB_DATABASE_NAME", ""),
 )
 

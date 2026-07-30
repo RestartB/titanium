@@ -1,6 +1,6 @@
 import os
 from textwrap import shorten
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from urllib.parse import quote, quote_plus
 
 import aiohttp
@@ -20,8 +20,8 @@ class SongView(View):
         self,
         item: SpotifyTrack,
         colours: list,
-        add_button_url: Optional[str] = None,
-        add_button_text: Optional[str] = None,
+        add_button_url: str | None = None,
+        add_button_text: str | None = None,
     ):
         super().__init__(timeout=259200)  # 3 days
 
@@ -61,8 +61,8 @@ class SongMenuView(View):
         self,
         item: SpotifyTrack,
         colours: list,
-        add_button_url: Optional[str] = None,
-        add_button_text: Optional[str] = None,
+        add_button_url: str | None = None,
+        add_button_text: str | None = None,
     ):
         super().__init__()
 
@@ -152,41 +152,43 @@ class SongMenuView(View):
         url = f"https://lrclib.net/api/search?track_name={quote(self.item.name)}&artist_name={quote(self.item.artists[0].name)}"
         headers = {"User-Agent": os.getenv("REQUEST_USER_AGENT", "")}
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    if data != []:
-                        selector = SongLyricSelection()
-                        for lyric_data in data:
-                            selector.add_option(
-                                label=shorten(lyric_data["name"], width=100),
-                                value=lyric_data["id"],
-                                description=shorten(
-                                    f"{lyric_data['artistName']} - {lyric_data['albumName']}",
-                                    width=100,
-                                ),
-                            )
-
-                        view = SongLyricsSelectionView()
-                        view.add_item(selector)
-                        await interaction.edit_original_response(view=view)
-
-                        view.message = await interaction.original_response()
-                    else:
-                        embed = Embed(
-                            title=f"{interaction.client.error_emoji} No Lyrics Found",
-                            description="No lyrics were found for this song.",
-                            colour=Colour.red(),
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(url, headers=headers) as response,
+        ):
+            if response.status == 200:
+                data = await response.json()
+                if data != []:
+                    selector = SongLyricSelection()
+                    for lyric_data in data:
+                        selector.add_option(
+                            label=shorten(lyric_data["name"], width=100),
+                            value=lyric_data["id"],
+                            description=shorten(
+                                f"{lyric_data['artistName']} - {lyric_data['albumName']}",
+                                width=100,
+                            ),
                         )
-                        await interaction.edit_original_response(embed=embed)
+
+                    view = SongLyricsSelectionView()
+                    view.add_item(selector)
+                    await interaction.edit_original_response(view=view)
+
+                    view.message = await interaction.original_response()
                 else:
                     embed = Embed(
-                        title=f"{interaction.client.error_emoji} Error",
-                        description="Failed to fetch lyrics. Please try again later.",
+                        title=f"{interaction.client.error_emoji} No Lyrics Found",
+                        description="No lyrics were found for this song.",
                         colour=Colour.red(),
                     )
                     await interaction.edit_original_response(embed=embed)
+            else:
+                embed = Embed(
+                    title=f"{interaction.client.error_emoji} Error",
+                    description="Failed to fetch lyrics. Please try again later.",
+                    colour=Colour.red(),
+                )
+                await interaction.edit_original_response(embed=embed)
 
         self.stop()
 
@@ -207,18 +209,17 @@ class SongLyricSelection(Select):
 
         request_url = f"https://lrclib.net/api/get/{self.values[0]}"
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(request_url) as response:
-                if response.status == 200:
-                    selected_song_data = await response.json()
-                else:
-                    embed = Embed(
-                        title=f"{interaction.client.error_emoji} Error",
-                        description="Failed to fetch lyrics. Please try again later.",
-                        colour=Colour.red(),
-                    )
-                    await interaction.edit_original_response(embed=embed)
-                    return
+        async with aiohttp.ClientSession() as session, session.get(request_url) as response:
+            if response.status == 200:
+                selected_song_data = await response.json()
+            else:
+                embed = Embed(
+                    title=f"{interaction.client.error_emoji} Error",
+                    description="Failed to fetch lyrics. Please try again later.",
+                    colour=Colour.red(),
+                )
+                await interaction.edit_original_response(embed=embed)
+                return
 
         raw_lyrics: str = selected_song_data["plainLyrics"]
 
@@ -228,10 +229,11 @@ class SongLyricSelection(Select):
 
         for paragraph in lyrics_paragraphs:
             for line in paragraph.splitlines():
-                if (len(current_page)) >= 1024 or len(current_page.splitlines()) >= 30:
-                    if current_page:
-                        lyrics.append(current_page.strip())
-                        current_page = ""
+                if (
+                    (len(current_page)) >= 1024 or len(current_page.splitlines()) >= 30
+                ) and current_page:
+                    lyrics.append(current_page.strip())
+                    current_page = ""
 
                 current_page += f"{line}\n"
 
@@ -383,8 +385,8 @@ class AlbumMenuButton(discord.ui.Button):
         artists: str,
         artist_img: str,
         colours: list,
-        add_button_url: Optional[str] = None,
-        add_button_text: Optional[str] = None,
+        add_button_url: str | None = None,
+        add_button_text: str | None = None,
     ):
         super().__init__(label="Menu", style=discord.ButtonStyle.gray)
 
@@ -417,8 +419,8 @@ class AlbumMenuView(View):
         artists: str,
         artist_img: str,
         colours: list,
-        add_button_url: Optional[str] = None,
-        add_button_text: Optional[str] = None,
+        add_button_url: str | None = None,
+        add_button_text: str | None = None,
     ):
         super().__init__()
 

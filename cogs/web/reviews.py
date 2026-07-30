@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, ClassVar
 
 import aiohttp
 import discord
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class ReviewsCommandsCog(commands.Cog):
-    REQUEST_HEADERS = {
+    REQUEST_HEADERS: ClassVar = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
     }
 
@@ -36,24 +36,23 @@ class ReviewsCommandsCog(commands.Cog):
     async def reviews_group(
         self,
         ctx: commands.Context["TitaniumBot"],
-        user: Optional[discord.User | discord.Member] | None,
+        user: discord.User | discord.Member | None,
         ephemeral: bool = False,
     ) -> None:
         if user is None:
             user = ctx.author
 
-        review_list = []
-
         # Send request to ReviewDB
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
                 f"https://manti.vendicated.dev/api/reviewdb/users/{user.id}/reviews?offset=0",
                 headers=self.REQUEST_HEADERS,
-            ) as request:
-                review_response = await request.json()
+            ) as request,
+        ):
+            review_response = await request.json()
 
-        for review in review_response["reviews"][1:]:
-            review_list.append(review)
+        review_list: list = review_response["reviews"][1:]
 
         while True:
             if not review_response["success"]:
@@ -68,15 +67,15 @@ class ReviewsCommandsCog(commands.Cog):
             else:
                 if review_response["hasNextPage"]:
                     # Send request to ReviewDB
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(
+                    async with (
+                        aiohttp.ClientSession() as session,
+                        session.get(
                             f"https://manti.vendicated.dev/api/reviewdb/users/{user.id}/reviews?offset={len(review_list)}",
                             headers=self.REQUEST_HEADERS,
-                        ) as request:
-                            review_response = await request.json()
-
-                    for review in review_response["reviews"]:
-                        review_list.append(review)
+                        ) as request,
+                    ):
+                        review_response = await request.json()
+                    review_list.extend(review_response["reviews"])
                 else:
                     break
 
@@ -139,18 +138,17 @@ class ReviewsCommandsCog(commands.Cog):
         if not ctx.guild:
             raise commands.NoPrivateMessage
 
-        review_list = []
-
         # Send request to ReviewDB
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
                 f"https://manti.vendicated.dev/api/reviewdb/users/{ctx.guild.id}/reviews?offset=0",
                 headers=self.REQUEST_HEADERS,
-            ) as request:
-                review_response = await request.json()
+            ) as request,
+        ):
+            review_response = await request.json()
 
-        for review in review_response["reviews"][1:]:
-            review_list.append(review)
+        review_list: list = review_response["reviews"][1:]
 
         while True:
             if not review_response["success"]:
@@ -165,15 +163,15 @@ class ReviewsCommandsCog(commands.Cog):
             else:
                 if review_response["hasNextPage"]:
                     # Send request to ReviewDB
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(
+                    async with (
+                        aiohttp.ClientSession() as session,
+                        session.get(
                             f"https://manti.vendicated.dev/api/reviewdb/users/{ctx.guild.id}/reviews?offset={len(review_list)}",
                             headers=self.REQUEST_HEADERS,
-                        ) as request:
-                            review_response = await request.json()
-
-                    for review in review_response["reviews"]:
-                        review_list.append(review)
+                        ) as request,
+                    ):
+                        review_response = await request.json()
+                    review_list.extend(review_response["reviews"])
                 else:
                     break
 

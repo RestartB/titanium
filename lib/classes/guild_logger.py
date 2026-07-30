@@ -1,10 +1,11 @@
 import asyncio
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING, Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import discord
 from discord.utils import escape_markdown, format_dt
@@ -126,7 +127,7 @@ LOGGING_EVENT_MAP = {event.event: event for event in LOGGING_EVENTS}
 class GuildLogger:
     """Server logging class, used to log Discord events to server webhooks"""
 
-    _channel_locks: dict[int, asyncio.Lock] = {}
+    _channel_locks: ClassVar[dict[int, asyncio.Lock]] = {}
 
     def __init__(self, bot: TitaniumBot, guild: discord.Guild | discord.PartialInviteGuild):
         self.bot = bot
@@ -151,7 +152,7 @@ class GuildLogger:
         self.logger.debug(f"{entry} log type is enabled")
         return True
 
-    async def _find_webhook(self, channel_id: int | None) -> Optional[str]:
+    async def _find_webhook(self, channel_id: int | None) -> str | None:
         if not channel_id:
             return None
 
@@ -218,12 +219,14 @@ class GuildLogger:
 
     async def _send_to_webhook(
         self,
-        url: Optional[str],
+        url: str | None,
         embed: discord.Embed | None = None,
         embeds: list[discord.Embed] | None = None,
         view: discord.ui.View | None = None,
-        files: list[discord.File] = [],
+        files: list[discord.File] | None = None,
     ) -> None:
+        files = files or []
+
         if url is None:
             return
 
@@ -307,8 +310,8 @@ class GuildLogger:
     async def _get_audit_log_entry(
         self,
         action: discord.AuditLogAction,
-        target: Optional[Any] = None,
-    ) -> Optional[discord.AuditLogEntry]:
+        target: Any | None = None,
+    ) -> discord.AuditLogEntry | None:
         # Get audit log
         if not isinstance(self.guild, discord.Guild):
             return None
@@ -327,8 +330,8 @@ class GuildLogger:
     async def _add_user_footer(
         self,
         embed: discord.Embed,
-        log: Optional[discord.AuditLogEntry] = None,
-        user_id: Optional[int] = None,
+        log: discord.AuditLogEntry | None = None,
+        user_id: int | None = None,
     ) -> None:
         if not log or user_id:
             return
@@ -822,7 +825,7 @@ class GuildLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.emoji_update)
 
         for after_emoji in updated:
-            before_emoji = [emoji for emoji in before if emoji.id == after_emoji.id][0]
+            before_emoji = next(emoji for emoji in before if emoji.id == after_emoji.id)
             changes = []
 
             if before_emoji.name != after_emoji.name:
@@ -952,7 +955,7 @@ class GuildLogger:
         log = await self._get_audit_log_entry(discord.AuditLogAction.sticker_update)
 
         for after_sticker in updated:
-            before_sticker = [sticker for sticker in before if sticker.id == after_sticker.id][0]
+            before_sticker = next(sticker for sticker in before if sticker.id == after_sticker.id)
             changes = []
 
             if before_sticker.name != after_sticker.name:
@@ -1377,7 +1380,7 @@ class GuildLogger:
         if not self._exists_and_enabled("member_kick"):
             return
 
-        if not entry.action == discord.AuditLogAction.kick:
+        if entry.action != discord.AuditLogAction.kick:
             return
 
         if not isinstance(entry.target, discord.Member) and not isinstance(
@@ -1627,7 +1630,7 @@ class GuildLogger:
         for message_id in event.message_ids:
             message = message_id
             for cached_message in event.cached_messages:
-                if not cached_message.id == message_id:
+                if cached_message.id != message_id:
                     continue
                 message = cached_message
             message_list.append(message)
@@ -1671,9 +1674,9 @@ class GuildLogger:
             return
 
         if (
-            isinstance(message.channel, discord.DMChannel)
-            or isinstance(message.channel, discord.GroupChannel)
-        ) or not message.poll:
+            isinstance(message.channel, (discord.DMChannel, discord.GroupChannel))
+            or not message.poll
+        ):
             return
 
         embed = discord.Embed(
@@ -1715,8 +1718,7 @@ class GuildLogger:
         if (
             not event.cached_message
             or not event.cached_message.poll
-            or isinstance(event.cached_message.channel, discord.DMChannel)
-            or isinstance(event.cached_message.channel, discord.GroupChannel)
+            or isinstance(event.cached_message.channel, (discord.DMChannel, discord.GroupChannel))
         ):
             return
 
@@ -1761,9 +1763,7 @@ class GuildLogger:
         if not self._exists_and_enabled("reaction_clear"):
             return
 
-        if isinstance(message.channel, discord.DMChannel) or isinstance(
-            message.channel, discord.GroupChannel
-        ):
+        if isinstance(message.channel, (discord.DMChannel, discord.GroupChannel)):
             return
 
         embed = discord.Embed(
@@ -1800,9 +1800,7 @@ class GuildLogger:
 
         message = reaction.message
 
-        if isinstance(message.channel, discord.DMChannel) or isinstance(
-            message.channel, discord.GroupChannel
-        ):
+        if isinstance(message.channel, (discord.DMChannel, discord.GroupChannel)):
             return
 
         embed = discord.Embed(
@@ -2914,7 +2912,7 @@ class GuildLogger:
         )
 
     async def titanium_case_delete(
-        self, case: ModCase, deleted_by: Optional[discord.Member] = None
+        self, case: ModCase, deleted_by: discord.Member | None = None
     ) -> None:
         await self._ensure_config()
         if not self._exists_and_enabled("titanium_case_delete"):
@@ -3130,7 +3128,7 @@ class GuildLogger:
         attachment: discord.Attachment | None,
     ) -> None:
         if not isinstance(poll_message.channel, discord.abc.GuildChannel):
-            raise ValueError("Message channel is not a guild channel")
+            raise TypeError("Message channel is not a guild channel")
 
         await self._ensure_config()
         if not self._exists_and_enabled("titanium_anon_poll"):

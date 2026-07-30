@@ -1,7 +1,7 @@
 import asyncio
 from io import BytesIO
 from textwrap import shorten
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from colorthief import ColorThief
@@ -620,16 +620,16 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
     async def first_message(
         self,
         ctx: commands.Context["TitaniumBot"],
-        channel: Optional[discord.abc.GuildChannel] = None,
+        channel: discord.abc.GuildChannel | None = None,
         ephemeral: bool = True,
     ) -> None:
         await ctx.defer(ephemeral=ephemeral)
 
         if isinstance(ctx.author, discord.User):
-            raise RuntimeError("Impossible: author is a user")
+            raise TypeError("Author is a discord.User")
 
         if isinstance(ctx.me, discord.ClientUser):
-            raise RuntimeError("Impossible: bot is a user")
+            raise TypeError("Bot is a discord.ClientUser")
 
         if not channel:
             if not isinstance(ctx.channel, discord.abc.GuildChannel):

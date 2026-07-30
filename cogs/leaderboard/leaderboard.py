@@ -3,9 +3,10 @@ import logging
 import math
 import random
 import re
+from collections.abc import Awaitable
 from dataclasses import dataclass
-from datetime import datetime, time, timezone
-from typing import TYPE_CHECKING, Awaitable
+from datetime import UTC, datetime, time
+from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 
 POSTGRES_MAX_INT = 9223372036854775807
 POSTGRES_MIN_INT = -9223372036854775808
-DAILY_SNAPSHOT_TIME = time(hour=0, minute=0, tzinfo=timezone.utc)
+DAILY_SNAPSHOT_TIME = time(hour=0, minute=0, tzinfo=UTC)
 
 
 @dataclass

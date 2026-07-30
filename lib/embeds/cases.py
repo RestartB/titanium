@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from discord import Colour, Embed, Member, User
 from discord.utils import format_dt
@@ -50,7 +51,7 @@ def case_embed(
     description_lines = [
         f"**Status:** {bot.success_emoji if bool(case.resolved) else bot.warn_emoji} {'Resolved' if bool(case.resolved) else 'Open'}",
         f"**Type:** {case.type.name.capitalize()}",
-        f"**Target:** {f'<@{target}> (`{target}`)' if isinstance(target, int) or isinstance(target, Column) else f'{target.mention} (`{target.id}`)'}\n",
+        f"**Target:** {f'<@{target}> (`{target}`)' if isinstance(target, (int, Column)) else f'{target.mention} (`{target.id}`)'}\n",
         f"**Time Created:** {format_dt(case.time_created)}",
     ]
 
@@ -71,7 +72,7 @@ def case_embed(
         colour=Colour.light_grey(),
     )
 
-    if isinstance(creator, int) or isinstance(creator, Column):
+    if isinstance(creator, (int, Column)):
         embed.set_author(name=creator)
     else:
         embed.set_author(

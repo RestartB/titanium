@@ -20,11 +20,13 @@ import datetime
 import logging
 import os
 import sys
+from collections.abc import Awaitable, Callable
 from glob import glob
-from typing import Awaitable, Callable, Optional
+from typing import Any
 
 import discord
 from discord.ext import commands
+from discord.utils import utcnow
 from dotenv import load_dotenv
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import delete, select
@@ -44,7 +46,7 @@ from v1_to_v2.migrate import migrate_v1_to_v2
 # load the env variables
 load_dotenv()
 
-from lib.sql.sql import (  # noqa: E402
+from lib.sql.sql import (
     AvailableWebhook,
     ErrorLog,
     FireboardMessage,
@@ -87,27 +89,11 @@ class TitaniumBot(commands.Bot):
 
     connected: bool = False
     connect_time: datetime.datetime
-    last_disconnect: Optional[datetime.datetime]
-    last_resume: Optional[datetime.datetime]
+    last_disconnect: datetime.datetime | None
+    last_resume: datetime.datetime | None
     api_latency: float = 0.0
 
-    guild_configs: dict[int, GuildSettings] = {}
-    available_webhooks: dict[int, list[AvailableWebhook]] = {}
-    automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
-    fireboard_messages: dict[int, list[FireboardMessage]] = {}
-
-    punishing: dict[int, list[int]] = {}
-
-    malicious_links: list[str] = []
-    phishing_links: list[str] = []
-    nsfw_links: list[str] = []
-    explicit_phrases: list[str] = []
-
-    opt_out: list[int] = []
-
-    trusted_servers: list[int] = []
-
-    pre_not_found: Optional[
+    pre_not_found: (
         Callable[
             [
                 commands.Context["TitaniumBot"],
@@ -117,7 +103,27 @@ class TitaniumBot(commands.Bot):
             ],
             Awaitable[bool],
         ]
-    ] = None
+        | None
+    ) = None
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+
+        self.guild_configs: dict[int, GuildSettings] = {}
+        self.available_webhooks: dict[int, list[AvailableWebhook]] = {}
+        self.automod_messages: dict[int, dict[int, list[AutomodMessage]]] = {}
+        self.fireboard_messages: dict[int, list[FireboardMessage]] = {}
+
+        self.punishing: dict[int, list[int]] = {}
+
+        self.malicious_links: list[str] = []
+        self.phishing_links: list[str] = []
+        self.nsfw_links: list[str] = []
+        self.explicit_phrases: list[str] = []
+
+        self.opt_out: list[int] = []
+
+        self.trusted_servers: list[int] = []
 
     async def refresh_opt_out(self) -> None:
         cache_logger.info("Refreshing opt-out IDs...")
@@ -353,20 +359,21 @@ class TitaniumBot(commands.Bot):
         init_logger.info("Loading cogs...")
         # Find all cogs in command dir
         for filename in glob(os.path.join("cogs", "**"), recursive=True, include_hidden=False):
-            if not os.path.isdir(filename):
-                # Determine if file is a python file
-                if filename.endswith(".py") and not filename.startswith("."):
-                    filename = filename.replace("\\", "/").replace("/", ".")[:-3]
+            if (
+                not os.path.isdir(filename)
+                and filename.endswith(".py")
+                and not filename.startswith(".")
+            ):
+                filename = filename.replace("\\", "/").replace("/", ".")[:-3]
+                init_logger.debug(f"Loading normal cog: {filename}...")
 
-                    init_logger.debug(f"Loading normal cog: {filename}...")
+                try:
+                    await bot.load_extension(filename)
+                    init_logger.debug(f"Loaded normal cog: {filename}")
+                except Exception as e:
+                    init_logger.error(f"Failed to load normal cog: {filename}", exc_info=e)
 
-                    try:
-                        await bot.load_extension(filename)
-                        init_logger.debug(f"Loaded normal cog: {filename}")
-                    except Exception as e:
-                        init_logger.error(f"Failed to load normal cog: {filename}", exc_info=e)
-
-                        continue
+                    continue
         init_logger.info("Loading cogs complete.")
 
     async def on_ready(self):
@@ -377,12 +384,12 @@ class TitaniumBot(commands.Bot):
 
     async def on_resumed(self):
         self.connected = True
-        self.last_resume = datetime.datetime.now(datetime.timezone.utc)
+        self.last_resume = utcnow()
 
     async def on_disconnect(self):
         if self.connected:
             self.connected = False
-            self.last_disconnect = datetime.datetime.now(datetime.timezone.utc)
+            self.last_disconnect = utcnow()
 
     async def on_error(self, event: str, *args, **kwargs):
         exc = sys.exc_info()[1]
@@ -513,14 +520,11 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed)
-    elif (
-        isinstance(error, commands.CommandNotFound)
-        or isinstance(error, commands.NotOwner)
-        or isinstance(error, adapters.GroupCommandNotFoundException)
+    elif isinstance(
+        error, (commands.CommandNotFound, commands.NotOwner, adapters.GroupCommandNotFoundException)
     ):
-        if ctx.bot.pre_not_found:
-            if await ctx.bot.pre_not_found(ctx, error):
-                return
+        if ctx.bot.pre_not_found and await ctx.bot.pre_not_found(ctx, error):
+            return
 
         if isinstance(error, adapters.GroupCommandNotFoundException):
             command_name = error.command_name
@@ -718,13 +722,10 @@ async def on_app_command_error(
         if interaction.command and not isinstance(
             interaction.command, discord.app_commands.ContextMenu
         ):
-            try:
-                for param in interaction.command.parameters:
-                    if param.name not in interaction.namespace:
-                        continue
-                    params.append(f"{param.name}: {interaction.namespace[param.name]}")
-            except Exception:
-                pass
+            for param in interaction.command.parameters:
+                if param.name not in interaction.namespace:
+                    continue
+                params.append(f"{param.name}: {interaction.namespace[param.name]}")
 
         try:
             error_id = await log_error(
@@ -789,7 +790,7 @@ if __name__ == "__main__":
 
         init_logger.info("Starting Titanium bot...")
 
-        bot.connect_time = datetime.datetime.now(datetime.timezone.utc)
+        bot.connect_time = utcnow()
         bot.last_disconnect = None
         bot.last_resume = None
 

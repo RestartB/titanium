@@ -89,7 +89,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
 
         roll = random.randint(1, 6)
         win = roll == guess
-        setattr(ctx, "win", win)
+        setattr(ctx, "win", win)  # noqa: B010
 
         if win:
             embed = Embed(
@@ -132,7 +132,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
 
         flip_result = random.choice(["heads", "tails"])
         win = choice == flip_result
-        setattr(ctx, "win", win)
+        setattr(ctx, "win", win)  # noqa: B010
 
         if win:
             embed = Embed(

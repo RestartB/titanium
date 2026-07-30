@@ -1,6 +1,6 @@
 from datetime import timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import discord
 from discord import Message, app_commands
@@ -105,27 +105,21 @@ class ModerationBasicCog(
         if target.id == ctx.guild.owner_id:
             return False
 
-        if target.top_role >= moderator.top_role:
-            return False
-
-        return True
+        return moderator.top_role > target.top_role
 
     def _bot_perms_check(
         self,
         target: discord.Member,
         ctx: commands.Context["TitaniumBot"],
-    ):
+    ) -> bool:
         if not ctx.guild:
             return False
 
-        if target.top_role >= ctx.guild.me.top_role:
-            return False
-
-        return True
+        return ctx.guild.me.top_role > target.top_role
 
     async def _warn_member(
         self, ctx: commands.Context["TitaniumBot"], member: discord.Member, reason: str
-    ) -> tuple[PunishmentResult, Optional[ModCase], Optional[bool], Optional[str]]:
+    ) -> tuple[PunishmentResult, ModCase | None, bool | None, str | None]:
         # Check if member is in guild
         if not ctx.guild or member.guild.id != ctx.guild.id:
             return PunishmentResult.NOT_IN_GUILD, None, None, None
@@ -171,7 +165,7 @@ class ModerationBasicCog(
         member: discord.Member,
         duration: str,
         reason: str,
-    ) -> tuple[PunishmentResult, Optional[ModCase], Optional[bool], Optional[str]]:
+    ) -> tuple[PunishmentResult, ModCase | None, bool | None, str | None]:
         # Check if member is in guild
         if not ctx.guild or member.guild.id != ctx.guild.id:
             return PunishmentResult.NOT_IN_GUILD, None, None, None
@@ -260,7 +254,7 @@ class ModerationBasicCog(
 
     async def _kick_member(
         self, ctx: commands.Context["TitaniumBot"], member: discord.Member, reason: str
-    ) -> tuple[PunishmentResult, Optional[ModCase], Optional[bool], Optional[str]]:
+    ) -> tuple[PunishmentResult, ModCase | None, bool | None, str | None]:
         # Check if member is in guild
         if not ctx.guild or member.guild.id != ctx.guild.id:
             return PunishmentResult.NOT_IN_GUILD, None, None, None
@@ -323,9 +317,9 @@ class ModerationBasicCog(
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.UNKNOWN, None, None, None
-                except Exception as e:
+                except Exception:
                     await manager.delete_case(case.id, raise_not_found=False)
-                    raise e
+                    raise
 
             return PunishmentResult.SUCCESS, case, dm_success, dm_error
         finally:
@@ -339,8 +333,8 @@ class ModerationBasicCog(
         user: discord.User | discord.Member,
         duration: str,
         reason: str,
-        delete_message_seconds: Optional[int] = None,
-    ) -> tuple[PunishmentResult, Optional[ModCase], Optional[bool], Optional[str]]:
+        delete_message_seconds: int | None = None,
+    ) -> tuple[PunishmentResult, ModCase | None, bool | None, str | None]:
         # Check if member is in guild
         if not ctx.guild:
             raise RuntimeError("No guild when there should be one")
@@ -435,9 +429,9 @@ class ModerationBasicCog(
                     )
                     await manager.delete_case(case.id, raise_not_found=False)
                     return PunishmentResult.UNKNOWN, None, None, None
-                except Exception as e:
+                except Exception:
                     await manager.delete_case(case.id, raise_not_found=False)
-                    raise e
+                    raise
 
             return PunishmentResult.SUCCESS, case, dm_success, dm_error
         finally:
@@ -889,7 +883,7 @@ class ModerationBasicCog(
         duration: str = "",
         *,
         reason: str = "",
-        delete_message_days: Optional[float] = commands.parameter(
+        delete_message_days: float | None = commands.parameter(
             converter=commands.Range[float, 0, 7],
             default=None,
         ),
@@ -1081,7 +1075,7 @@ class ModerationBasicCog(
                     case = next((c for c in cases if c.type == CaseType.BAN), None)
                     if case:
                         # Close case
-                        case, dm_success, dm_error = await manager.close_case(case.id)
+                        case, _, _ = await manager.close_case(case.id)
 
                 # Send confirmation message
                 await ctx.reply(
@@ -1232,9 +1226,9 @@ class ModerationBasicCog(
         ctx: commands.Context["TitaniumBot"],
         member1: discord.Member,
         member2: discord.Member,
-        member3: Optional[discord.Member] = None,
-        member4: Optional[discord.Member] = None,
-        member5: Optional[discord.Member] = None,
+        member3: discord.Member | None = None,
+        member4: discord.Member | None = None,
+        member5: discord.Member | None = None,
         *,
         reason: str = "",
         ephemeral: bool = False,
@@ -1247,7 +1241,7 @@ class ModerationBasicCog(
             failed_warns: list[tuple[discord.Member, str]] = []
 
             raw_users = {u for u in (member1, member2, member3, member4, member5) if u}
-            valid_users: set[discord.Member] = set([user for user in raw_users if user is not None])
+            valid_users: set[discord.Member] = {user for user in raw_users if user is not None}
 
             config = await self.bot.fetch_guild_config(ctx.guild.id)
             if not config or not config.moderation_settings:
@@ -1324,9 +1318,9 @@ class ModerationBasicCog(
         ctx: commands.Context["TitaniumBot"],
         member1: discord.Member,
         member2: discord.Member,
-        member3: Optional[discord.Member] = None,
-        member4: Optional[discord.Member] = None,
-        member5: Optional[discord.Member] = None,
+        member3: discord.Member | None = None,
+        member4: discord.Member | None = None,
+        member5: discord.Member | None = None,
         duration: str = "",
         *,
         reason: str = "",
@@ -1340,7 +1334,7 @@ class ModerationBasicCog(
             failed_mutes: list[tuple[discord.Member, str]] = []
 
             raw_users = {u for u in (member1, member2, member3, member4, member5) if u}
-            valid_users: set[discord.Member] = set([user for user in raw_users if user is not None])
+            valid_users: set[discord.Member] = {user for user in raw_users if user is not None}
 
             config = await self.bot.fetch_guild_config(ctx.guild.id)
             if not config or not config.moderation_settings:
@@ -1428,9 +1422,9 @@ class ModerationBasicCog(
         ctx: commands.Context["TitaniumBot"],
         member1: discord.Member,
         member2: discord.Member,
-        member3: Optional[discord.Member] = None,
-        member4: Optional[discord.Member] = None,
-        member5: Optional[discord.Member] = None,
+        member3: discord.Member | None = None,
+        member4: discord.Member | None = None,
+        member5: discord.Member | None = None,
         *,
         reason: str = "",
         ephemeral: bool = False,
@@ -1443,7 +1437,7 @@ class ModerationBasicCog(
             failed_kicks: list[tuple[discord.Member, str]] = []
 
             raw_users = {u for u in (member1, member2, member3, member4, member5) if u}
-            valid_users: set[discord.Member] = set([user for user in raw_users if user is not None])
+            valid_users: set[discord.Member] = {user for user in raw_users if user is not None}
 
             config = await self.bot.fetch_guild_config(ctx.guild.id)
             if not config or not config.moderation_settings:
@@ -1513,28 +1507,28 @@ class ModerationBasicCog(
         ctx: commands.Context["TitaniumBot"],
         user1: discord.User,
         user2: discord.User,
-        user3: Optional[discord.User] = None,
-        user4: Optional[discord.User] = None,
-        user5: Optional[discord.User] = None,
-        user6: Optional[discord.User] = None,
-        user7: Optional[discord.User] = None,
-        user8: Optional[discord.User] = None,
-        user9: Optional[discord.User] = None,
-        user10: Optional[discord.User] = None,
-        user11: Optional[discord.User] = None,
-        user12: Optional[discord.User] = None,
-        user13: Optional[discord.User] = None,
-        user14: Optional[discord.User] = None,
-        user15: Optional[discord.User] = None,
-        user16: Optional[discord.User] = None,
-        user17: Optional[discord.User] = None,
-        user18: Optional[discord.User] = None,
-        user19: Optional[discord.User] = None,
-        user20: Optional[discord.User] = None,
+        user3: discord.User | None = None,
+        user4: discord.User | None = None,
+        user5: discord.User | None = None,
+        user6: discord.User | None = None,
+        user7: discord.User | None = None,
+        user8: discord.User | None = None,
+        user9: discord.User | None = None,
+        user10: discord.User | None = None,
+        user11: discord.User | None = None,
+        user12: discord.User | None = None,
+        user13: discord.User | None = None,
+        user14: discord.User | None = None,
+        user15: discord.User | None = None,
+        user16: discord.User | None = None,
+        user17: discord.User | None = None,
+        user18: discord.User | None = None,
+        user19: discord.User | None = None,
+        user20: discord.User | None = None,
         duration: str = "",
         *,
         reason: str = "",
-        delete_message_days: Optional[float] = commands.parameter(
+        delete_message_days: float | None = commands.parameter(
             converter=commands.Range[float, 0, 7],
             default=None,
         ),

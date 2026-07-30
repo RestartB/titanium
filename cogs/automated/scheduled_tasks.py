@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import discord
@@ -385,7 +385,6 @@ class ScheduledTasksCog(commands.Cog):
                         self.logger.debug("fetched message for reminder")
                     except Exception as e:
                         self.logger.debug("can't get message for reminder", exc_info=e)
-                        pass
                 else:
                     self.logger.debug("no message id for reminder")
 
@@ -470,7 +469,7 @@ class ScheduledTasksCog(commands.Cog):
             stmt = (
                 select(ScheduledTask)
                 .options(selectinload("*"))
-                .where(ScheduledTask.time_scheduled <= datetime.now(timezone.utc))
+                .where(ScheduledTask.time_scheduled <= utcnow())
             )
             result = await session.execute(stmt)
             results = result.scalars().all()

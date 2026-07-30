@@ -3,7 +3,7 @@ import logging
 import os
 import textwrap
 from io import BytesIO
-from typing import Literal, Optional, Tuple
+from typing import Literal
 
 import aiohttp
 from discord import Attachment, File
@@ -42,17 +42,16 @@ class EmojiRenderer:
         codepoint = self._emoji_to_codepoint(emoji)
         url = self.EMOJI_CDN.format(codepoint)
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    data = await response.read()
-                    emoji_img = Image.open(BytesIO(data)).convert("RGBA")
-                    self._emoji_cache[emoji] = emoji_img
-                    return emoji_img
-                else:
-                    raise ValueError(f"Failed to download emoji: {emoji}")
+        async with aiohttp.ClientSession() as session, session.get(url) as response:
+            if response.status == 200:
+                data = await response.read()
+                emoji_img = Image.open(BytesIO(data)).convert("RGBA")
+                self._emoji_cache[emoji] = emoji_img
+                return emoji_img
+            else:
+                raise ValueError(f"Failed to download emoji: {emoji}")
 
-    def _split_text_and_emoji(self, text: str) -> list[Tuple[str, bool]]:
+    def _split_text_and_emoji(self, text: str) -> list[tuple[str, bool]]:
         """
         Split text into segments of regular text and emoji
         Returns list of (segment, is_emoji) tuples
@@ -81,7 +80,7 @@ class EmojiRenderer:
 
     def get_line_size(
         self, text: str, font: ImageFont.FreeTypeFont, align: str = "left"
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Calculate the size of a line of text with emojis
         """
@@ -130,10 +129,10 @@ class EmojiRenderer:
     async def render_text(
         self,
         img: Image.Image,
-        xy: Tuple[int, int],
+        xy: tuple[int, int],
         text: str,
         font: ImageFont.FreeTypeFont,
-        fill: Tuple[int, int, int, int] = (0, 0, 0, 255),
+        fill: tuple[int, int, int, int] = (0, 0, 0, 255),
         align: str = "left",
     ) -> Image.Image:
         """
@@ -232,7 +231,7 @@ class ImageTools:
     def _load_sync(self, data: bytes) -> Image.Image:
         return Image.open(BytesIO(data))
 
-    async def _load_image(self, attachment: Optional[Attachment] = None) -> Image.Image:
+    async def _load_image(self, attachment: Attachment | None = None) -> Image.Image:
         if not self.image and not attachment:
             raise ValueError("No image provided to load")
 
@@ -555,9 +554,7 @@ class ImageTools:
         renderer = EmojiRenderer()
         while True:
             size = renderer.get_size(text=wrapped_text, font=font_data)
-            if size[0] <= img.width - 20:
-                break
-            elif font_data.size <= 25:
+            if size[0] <= img.width - 20 or font_data.size <= 25:
                 break
             else:
                 font_data = ImageFont.truetype(font_path, font_data.size - 1)

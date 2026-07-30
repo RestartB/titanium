@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import aiohttp
 from discord.ext import commands, tasks
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class BadLinkFetcherCog(commands.Cog):
     """Automatic tasks to fetch and update bad links and explicit terms"""
 
-    REQUEST_HEADERS = {
+    REQUEST_HEADERS: ClassVar = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
     }
 
@@ -66,7 +66,7 @@ class BadLinkFetcherCog(commands.Cog):
                 if response.status == 200:
                     new_malicious_links = self._generate_list(await response.text())
                 else:
-                    self.logger.error("Failed to fetch malicious links:", response.status)
+                    self.logger.error(f"Failed to fetch malicious links: {response.status}")
                     return
 
             async with session.get(
@@ -76,7 +76,7 @@ class BadLinkFetcherCog(commands.Cog):
                 if response.status == 200:
                     new_malicious_links += self._generate_list(await response.text())
                 else:
-                    self.logger.error("Failed to fetch malicious links:", response.status)
+                    self.logger.error(f"Failed to fetch malicious links: {response.status}")
                     return
 
             self.bot.malicious_links = new_malicious_links
@@ -95,7 +95,7 @@ class BadLinkFetcherCog(commands.Cog):
                 if response.status == 200:
                     new_phishing_links = self._generate_list(await response.text())
                 else:
-                    self.logger.error("Failed to fetch phishing links:", response.status)
+                    self.logger.error(f"Failed to fetch phishing links: {response.status}")
                     return
 
             self.bot.phishing_links = new_phishing_links
@@ -120,7 +120,7 @@ class BadLinkFetcherCog(commands.Cog):
                         self.logger.error("NSFW list name not found in meta.")
                         return
                 else:
-                    self.logger.error("Failed to fetch NSFW meta:", response.status)
+                    self.logger.error(f"Failed to fetch NSFW meta: {response.status}")
                     return
 
             nsfw_url = f"https://raw.githubusercontent.com/Bon-Appetit/porn-domains/refs/heads/main/{nsfw_name}"
@@ -130,7 +130,7 @@ class BadLinkFetcherCog(commands.Cog):
                 if response.status == 200:
                     new_nsfw_links = (await response.text()).splitlines()
                 else:
-                    self.logger.error("Failed to fetch NSFW links:", response.status)
+                    self.logger.error(f"Failed to fetch NSFW links: {response.status}")
                     return
 
             self.bot.nsfw_links = new_nsfw_links
@@ -149,7 +149,7 @@ class BadLinkFetcherCog(commands.Cog):
                 if response.status == 200:
                     explicit_phrases = self._generate_list(await response.text())
                 else:
-                    self.logger.error("Failed to fetch explicit word list:", response.status)
+                    self.logger.error(f"Failed to fetch explicit word list: {response.status}")
                     return
 
             self.bot.explicit_phrases = explicit_phrases
