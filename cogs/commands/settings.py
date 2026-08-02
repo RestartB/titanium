@@ -29,6 +29,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from lib.embeds.general import cancelled
 from lib.helpers.hybrid import SlashCommandOnly
+from lib.helpers.strings import dashboard_url
 from lib.helpers.validation import is_valid_uuid
 from lib.sql.sql import (
     GameStat,
@@ -46,10 +47,6 @@ from lib.views.tags_modals import TagModal
 
 if TYPE_CHECKING:
     from main import TitaniumBot
-
-
-def dashboard_url(guild_id: int) -> str:
-    return f"[Titanium Dashboard](https://dash.titanium.fyi/guild/{guild_id})"
 
 
 # region Buttons

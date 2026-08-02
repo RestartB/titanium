@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from lib.helpers.strings import dashboard_url
 from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
@@ -67,9 +68,30 @@ class HelpCommandCog(commands.Cog):
                         name=f"Prefixes for {ctx.guild.name}", value=value, inline=False
                     )
 
+            if (
+                ctx.interaction and ctx.interaction.is_guild_integration() and ctx.guild
+            ) or ctx.guild:
+                guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+                if isinstance(ctx.author, discord.Member) and (
+                    ctx.author.guild_permissions.administrator
+                    or (
+                        guild_settings
+                        and any(
+                            role.id in guild_settings.dashboard_managers
+                            for role in ctx.author.roles
+                        )
+                    )
+                ):
+                    embed.add_field(
+                        name="Manage Settings",
+                        value=f"Use `/settings` or the **{dashboard_url(ctx.guild.id)}** to manage Titanium's settings for this server.",
+                        inline=False,
+                    )
+
             embed.add_field(
                 name="Need more help?",
                 value="Join the **[Support Server](https://titanium.fyi/server)** for feature and status updates, support, and more.",
+                inline=False,
             )
 
             await ctx.reply(embed=embed, ephemeral=ephemeral)
