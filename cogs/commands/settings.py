@@ -812,11 +812,15 @@ class ModulesView(LayoutView):
             accessory=FeatureToggleButton(bot, settings, "moderation_enabled"),
         )
         automod_section = Section(
-            TextDisplay("### Automod\nAllow Titanium to moderate your server for you."),
+            TextDisplay(
+                "### Automod\nAllow Titanium to moderate your server for you. Requires **Moderation** module to be enabled."
+            ),
             accessory=FeatureToggleButton(bot, settings, "automod_enabled"),
         )
         bouncer_section = Section(
-            TextDisplay("### Bouncer\nAllow Titanium to monitor users as they join."),
+            TextDisplay(
+                "### Bouncer\nAllow Titanium to monitor users as they join. Requires **Moderation** module to be enabled."
+            ),
             accessory=FeatureToggleButton(bot, settings, "bouncer_enabled"),
         )
         logging_section = Section(
@@ -879,16 +883,12 @@ class SettingsView(LayoutView):
         super().__init__(timeout=600)
 
         if settings and interaction.guild:
-            if interaction.guild.icon or bot.user:
+            if interaction.guild.icon:
                 top_section = Section(
                     TextDisplay(
                         f"## Settings\nManage settings for your account and this server. To manage more server settings, please go to the {dashboard_url(interaction.guild.id)}."
                     ),
-                    accessory=Thumbnail(
-                        media=interaction.guild.icon.url
-                        if interaction.guild.icon
-                        else bot.user.display_avatar.url  # type: ignore
-                    ),
+                    accessory=Thumbnail(media=interaction.guild.icon.url),
                 )
             else:
                 top_section = TextDisplay(
