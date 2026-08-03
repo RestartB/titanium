@@ -2368,10 +2368,9 @@ class GuildLogger:
             return
 
         embed = discord.Embed(
-            title="Voice Channel Joined",
+            title="Joined Voice Chat",
             description=(
-                f"**User:** {member.mention} (`@{member.name}`)\n"
-                f"**ID:** `{member.id}`\n"
+                f"**User:** {member.mention} (`@{member.name}`, `{member.id}`)\n"
                 f"**Channel:** {after.channel.mention} (`#{after.channel.name}`, `{after.channel.id}`)\n"
             ),
             colour=discord.Colour.green(),
@@ -2399,10 +2398,9 @@ class GuildLogger:
             return
 
         embed = discord.Embed(
-            title="Voice Channel Left",
+            title="Left Voice Chat",
             description=(
-                f"**User:** {member.mention} (`@{member.name}`)\n"
-                f"**ID:** `{member.id}`\n"
+                f"**User:** {member.mention} (`@{member.name}`, `{member.id}`)\n"
                 f"**Channel:** {before.channel.mention} (`#{before.channel.name}`, `{before.channel.id}`)\n"
             ),
             colour=discord.Colour.red(),
@@ -2432,8 +2430,7 @@ class GuildLogger:
         embed = discord.Embed(
             title="Switched Voice Channel",
             description=(
-                f"**User:** {member.mention} (`@{member.name}`)\n"
-                f"**ID:** `{member.id}`\n"
+                f"**User:** {member.mention} (`@{member.name}`, `{member.id}`)\n"
                 f"**From:** {before.channel.mention} (`#{before.channel.name}`, `{before.channel.id}`)\n"
                 f"**To:** {after.channel.mention} (`#{after.channel.name}`, `{after.channel.id}`)\n"
             ),
@@ -2468,7 +2465,7 @@ class GuildLogger:
             return
 
         embed = discord.Embed(
-            title="Member VC Server Muted",
+            title="Server Member VC Muted",
             description=(
                 f"**User:** {member.mention} (`@{member.name}`)\n"
                 f"**ID:** `{member.id}`\n"
@@ -2507,7 +2504,7 @@ class GuildLogger:
             return
 
         embed = discord.Embed(
-            title="Member VC Server Unmuted",
+            title="Server Member VC Unmuted",
             description=(
                 f"**User:** {member.mention} (`@{member.name}`)\n"
                 f"**ID:** `{member.id}`\n"
@@ -2546,7 +2543,7 @@ class GuildLogger:
             return
 
         embed = discord.Embed(
-            title="Member VC Server Deafened",
+            title="Server Member VC Deafened",
             description=(
                 f"**User:** {member.mention} (`@{member.name}`)\n"
                 f"**ID:** `{member.id}`\n"
@@ -2585,7 +2582,7 @@ class GuildLogger:
             return
 
         embed = discord.Embed(
-            title="Member VC Server Undeafened",
+            title="Server Member VC Undeafened",
             description=(
                 f"**User:** {member.mention} (`@{member.name}`)\n"
                 f"**ID:** `{member.id}`\n"
