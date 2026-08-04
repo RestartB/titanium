@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from lib.helpers.cache import get_or_fetch_member
+from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.sql.sql import RepAddHistory, UserRep, get_session
 from lib.views.pagination import RepReloadPageView
 from lib.views.rep import RepView
@@ -32,6 +33,10 @@ class RepCog(commands.Cog):
                 data["guild_id"],
             ),
         )
+        add_global_aliases(self, bot)
+
+    async def cog_unload(self) -> None:
+        remove_global_aliases(self, self.bot)
 
     # Snapshot task
     @tasks.loop(time=time(hour=0, minute=0, tzinfo=UTC))
@@ -89,7 +94,7 @@ class RepCog(commands.Cog):
             return
 
         matches = []
-        for check_word in ["thank you", "thx", "thanks"]:
+        for check_word in ["thank you", "thx", "thanks", "tysm"]:
             pattern = r"\b" + re.escape(check_word) + r"\b"
             matches.extend(re.findall(pattern, message.content, flags=re.IGNORECASE))
 
@@ -320,7 +325,13 @@ class RepCog(commands.Cog):
             view = RepReloadPageView(embeds=pages, timeout=240, title="Rep Leaderboard")
             await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
 
-    @rep_group.command(name="add", aliases=["plus"], description="Give a rep point to a user.")
+    @rep_group.command(
+        name="add", aliases=["give", "plus", "+"], description="Give a rep point to a user."
+    )
+    @global_alias("addrep")
+    @global_alias("giverep")
+    @global_alias("plusrep")
+    @global_alias("+")
     @app_commands.describe(
         member="The member to give rep to.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -413,9 +424,13 @@ class RepCog(commands.Cog):
 
     @rep_group.command(
         name="remove",
-        aliases=["minus"],
+        aliases=["take", "minus", "-"],
         description="Take away rep points that you gave to a user.",
     )
+    @global_alias("removerep")
+    @global_alias("takerep")
+    @global_alias("minusrep")
+    @global_alias("-")
     @app_commands.describe(
         member="The member to give rep to.",
         amount="The amount of rep to remove from the user.",
