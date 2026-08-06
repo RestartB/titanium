@@ -1673,7 +1673,6 @@ class APICog(commands.Cog):
                 ]
 
                 await session.execute(delete(AutomodRule).where(AutomodRule.guild_id == guild_id))
-
                 for rule in validated_config.rules:
                     for criterion in rule.criteria:
                         if (
@@ -1717,7 +1716,6 @@ class APICog(commands.Cog):
                     db_config = GuildBouncerSettings(guild_id=guild.id)
 
                 await session.execute(delete(BouncerRule).where(BouncerRule.guild_id == guild_id))
-
                 for rule in validated_config.rules:
                     for criterion in rule.criteria:
                         if (
