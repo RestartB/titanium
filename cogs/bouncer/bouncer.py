@@ -489,6 +489,15 @@ class BouncerMonitorCog(commands.Cog):
     # Listen for member updates
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
+        if (
+            before.name == after.name
+            and before.display_name == after.display_name
+            and before.global_name == after.global_name
+            and before.nick == after.nick
+            and before.primary_guild.tag == after.primary_guild.tag
+        ):
+            return
+
         try:
             await self.handle_event(after, BouncerEventType.UPDATE)
         except Exception as e:
