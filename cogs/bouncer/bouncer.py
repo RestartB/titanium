@@ -19,6 +19,9 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+# FIXME: create a migration for existing single role_id to list of role_ids
+
+
 class BouncerMonitorCog(commands.Cog):
     """Monitors joiners and member updates for bouncer triggers and creates cases/punishments"""
 
