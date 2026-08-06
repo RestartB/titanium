@@ -97,7 +97,7 @@ def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                             "type": action.type,
                             "duration": action.duration,
                             "reason": action.reason,
-                            "role_ids": action.role_ids,
+                            "role_ids": [str(role) for role in action.role_ids],
                             "message_content": action.message_content,
                             "message_reply": action.message_reply,
                             "message_mention": action.message_mention,
@@ -153,7 +153,7 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                         {
                             "type": action.type.value,
                             "duration": action.duration,
-                            "role_id": str(action.role_id) if action.role_id else None,
+                            "role_ids": [str(role) for role in action.role_ids],
                             "reason": action.reason,
                         }
                         for action in rule.actions
