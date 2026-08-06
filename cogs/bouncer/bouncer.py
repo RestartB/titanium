@@ -1,5 +1,6 @@
 import logging
 import re
+import unicodedata
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -17,17 +18,16 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-# TODO: possible idea
-# get the events from discord manually, but add a lock for the user id
-# then if the lock is active or something like that, ignore the manual event
-
-
 class BouncerMonitorCog(commands.Cog):
     """Monitors joiners and member updates for bouncer triggers and creates cases/punishments"""
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("bouncer")
+
+    def normalise_automod_text(self, text: str) -> str:
+        text = unicodedata.normalize("NFKC", text)
+        return "".join(char for char in text if unicodedata.category(char) != "Cf")
 
     async def handle_event(self, member: discord.Member, event_type: BouncerEventType):
         self.logger.debug(f"Processing member join/update: {member.id}")
@@ -77,7 +77,6 @@ class BouncerMonitorCog(commands.Cog):
             criterion_matched = 0
             for criteria in rule.criteria:
                 if criteria.type == BouncerCriteriaType.USERNAME:
-                    # TODO: implement
                     for word in criteria.words:
                         check_word = word.lower() if not criteria.case_sensitive else word
                         matches = []
@@ -90,17 +89,31 @@ class BouncerMonitorCog(commands.Cog):
                             contents_to_check.append(member.nick)
 
                         for content_to_check in contents_to_check:
-                            if not criteria.case_sensitive:
-                                content_to_check = content_to_check.lower()
+                            words_matched = 0
+                            for word in criteria.words:
+                                normalised_word = self.normalise_automod_text(word)
 
-                            if criteria.match_whole_word:
-                                pattern = r"\b" + re.escape(check_word) + r"\b"
-                                matches = re.findall(pattern, content_to_check)
-                            else:
-                                pattern = re.escape(check_word)
-                                matches = re.findall(pattern, content_to_check)
+                                pattern = r"\b" + re.escape(normalised_word) + r"\b"
+                                if not criteria.match_whole_word:
+                                    pattern = pattern.lstrip(r"\b").rstrip(r"\b")
 
-                        if matches:
+                                matches = re.findall(
+                                    pattern,
+                                    self.normalise_automod_text(content_to_check),
+                                    flags=(0 if criteria.case_sensitive else re.IGNORECASE),
+                                )
+                                if matches:
+                                    words_matched += 1
+
+                            if (
+                                criteria.match_all_words
+                                and words_matched == len(criteria.words)
+                                or (not criteria.match_all_words and words_matched > 0)
+                            ):
+                                criteria_met = True
+                                break
+
+                        if criteria_met:
                             self.logger.debug("Username match found")
                             criterion_matched += 1
                             break
