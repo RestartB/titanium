@@ -462,9 +462,17 @@ class BouncerRule(Base):
         BigInteger, ForeignKey("guild_bouncer_settings.guild_id", ondelete="CASCADE")
     )
 
-    rule_name: Mapped[str | None] = MappedColumn(String(length=100), nullable=True)
-    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    rule_name: Mapped[str] = MappedColumn(String(length=100))
+    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"), nullable=False)
     evaluate_for_existing_members: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    match_all_criteria: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("true"), nullable=False
+    )
+
+    order: Mapped[int] = MappedColumn(Integer, nullable=False)
+    stop_if_triggered: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("false"), nullable=False
+    )
 
     criteria: Mapped[list["BouncerCriteria"]] = relationship(
         "BouncerCriteria",
@@ -497,10 +505,17 @@ class BouncerCriteria(Base):
     account_age: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
 
     words: Mapped[list[str]] = MappedColumn(
-        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
+        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]"), nullable=False
     )
-    match_whole_word: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    case_sensitive: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    match_whole_word: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("false"), nullable=False
+    )
+    match_all_words: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("false"), nullable=False
+    )
+    case_sensitive: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("false"), nullable=False
+    )
 
     rule: Mapped["BouncerRule"] = relationship(
         "BouncerRule", back_populates="criteria", uselist=False
@@ -515,14 +530,13 @@ class BouncerAction(Base):
     )
     type: Mapped[BouncerActionType] = MappedColumn(Enum(BouncerActionType))
 
-    # Actions with duration
     duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
-
-    # Role actions
-    role_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
-
-    # All actions
     reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
+
+    role_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+    role_ids: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False
+    )
 
     rule: Mapped["BouncerRule"] = relationship(
         "BouncerRule", back_populates="actions", uselist=False
