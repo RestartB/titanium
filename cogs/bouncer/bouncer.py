@@ -77,6 +77,7 @@ class BouncerMonitorCog(commands.Cog):
             criterion_matched = 0
             for criteria in rule.criteria:
                 if criteria.type == BouncerCriteriaType.USERNAME:
+                    # TODO: implement 
                     for word in criteria.words:
                         check_word = word.lower() if not criteria.case_sensitive else word
                         matches = []

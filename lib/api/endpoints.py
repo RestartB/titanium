@@ -132,14 +132,19 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
             "rules": [
                 {
                     "id": str(rule.id),
+                    "rule_name": rule.rule_name,
                     "enabled": rule.enabled,
                     "evaluate_for_existing_members": rule.evaluate_for_existing_members,
+                    "match_all_criteria": rule.match_all_criteria,
+                    "order": rule.order,
+                    "stop_if_triggered": rule.stop_if_triggered,
                     "criteria": [
                         {
                             "type": criterion.type.value,
                             "account_age": criterion.account_age,
                             "words": criterion.words,
                             "match_whole_word": criterion.match_whole_word,
+                            "match_all_words": criterion.match_all_words,
                             "case_sensitive": criterion.case_sensitive,
                         }
                         for criterion in rule.criteria
