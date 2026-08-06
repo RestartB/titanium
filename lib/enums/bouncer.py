@@ -4,6 +4,7 @@ from enum import StrEnum
 class BouncerEventType(StrEnum):
     JOIN = "join"
     UPDATE = "update"
+    REACTION = "reaction"
 
 
 class BouncerCriteriaType(StrEnum):
@@ -11,6 +12,7 @@ class BouncerCriteriaType(StrEnum):
     TAG = "tag"
     AGE = "age"
     AVATAR = "avatar"
+    REACTION = "reaction"
 
 
 class BouncerActionType(StrEnum):

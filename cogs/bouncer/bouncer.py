@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
+from discord.utils import utcnow
 
 from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
@@ -116,7 +117,6 @@ class BouncerMonitorCog(commands.Cog):
                         if criteria_met:
                             self.logger.debug("Username match found")
                             criterion_matched += 1
-                            break
                 elif criteria.type == BouncerCriteriaType.TAG and member.primary_guild:
                     if not member.primary_guild.tag:
                         continue
@@ -134,7 +134,6 @@ class BouncerMonitorCog(commands.Cog):
                         if matches:
                             self.logger.debug("Tag match found")
                             criterion_matched += 1
-                            break
                 elif (
                     criteria.type == BouncerCriteriaType.AGE
                     and event_type == BouncerEventType.JOIN
@@ -148,11 +147,19 @@ class BouncerMonitorCog(commands.Cog):
                     ).total_seconds() <= criteria.account_age:
                         self.logger.debug("Account age match found")
                         criterion_matched += 1
-                        break
                 elif criteria.type == BouncerCriteriaType.AVATAR and not member.avatar:
                     self.logger.debug("No avatar match found")
                     criterion_matched += 1
-                    break
+                elif criteria.type == BouncerCriteriaType.REACTION and member.joined_at:
+                    if event_type != BouncerEventType.REACTION:
+                        criterion_matched += 1
+                        continue
+
+                    if utcnow() - member.joined_at > timedelta(seconds=3):
+                        continue
+
+                    self.logger.debug("Suspicious bot reaction behaviour found")
+                    criterion_matched += 1
 
             if (rule.match_all_criteria and criterion_matched == len(rule.criteria)) or (
                 not rule.match_all_criteria and criterion_matched > 0
@@ -468,6 +475,25 @@ class BouncerMonitorCog(commands.Cog):
                 module="Bouncer",
                 guild_id=after.guild.id,
                 error=f"An unknown error occurred while processing a user update for @{after.name} ({after.id})",
+                exc=e,
+            )
+
+    # Listen for reactions added
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        # only available if this is a reaction add event, and in a guild
+        # this doesn't rely on the member cache so this is safe to use
+        if not payload.member:
+            return
+
+        try:
+            await self.handle_event(payload.member, BouncerEventType.REACTION)
+        except Exception as e:
+            await log_error(
+                bot=self.bot,
+                module="Bouncer",
+                guild_id=payload.guild_id,
+                error=f"An unknown error occurred while processing a user update for @{payload.member.name} ({payload.member.id})",
                 exc=e,
             )
 
