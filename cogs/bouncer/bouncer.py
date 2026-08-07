@@ -1,7 +1,7 @@
 import logging
 import re
 import unicodedata
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import discord
@@ -33,7 +33,12 @@ class BouncerMonitorCog(commands.Cog):
         text = unicodedata.normalize("NFKC", text)
         return "".join(char for char in text if unicodedata.category(char) != "Cf")
 
-    async def handle_event(self, member: discord.Member, event_type: BouncerEventType):
+    async def handle_event(
+        self,
+        member: discord.Member,
+        event_type: BouncerEventType,
+        payload_time: datetime | None = None,
+    ):
         self.logger.debug(f"Processing member join/update: {member.id}")
         config = await self.bot.fetch_guild_config(member.guild.id) if member.guild else None
 
@@ -153,8 +158,15 @@ class BouncerMonitorCog(commands.Cog):
                 elif criteria.type == BouncerCriteriaType.AVATAR and not member.avatar:
                     self.logger.debug("No avatar match found")
                     criterion_matched += 1
-                elif criteria.type == BouncerCriteriaType.REACTION and member.joined_at:
-                    if utcnow() - member.joined_at > timedelta(seconds=3):
+                elif (
+                    criteria.type == BouncerCriteriaType.REACTION
+                    and event_type == BouncerEventType.REACTION
+                    and member.joined_at
+                ):
+                    if not payload_time:
+                        continue
+
+                    if payload_time - member.joined_at > timedelta(seconds=3):
                         continue
 
                     self.logger.debug("Suspicious bot reaction behaviour found")
@@ -487,7 +499,8 @@ class BouncerMonitorCog(commands.Cog):
             return
 
         try:
-            await self.handle_event(payload.member, BouncerEventType.REACTION)
+            payload_time = utcnow()
+            await self.handle_event(payload.member, BouncerEventType.REACTION, payload_time)
         except Exception as e:
             await log_error(
                 bot=self.bot,
