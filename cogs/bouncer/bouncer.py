@@ -154,10 +154,6 @@ class BouncerMonitorCog(commands.Cog):
                     self.logger.debug("No avatar match found")
                     criterion_matched += 1
                 elif criteria.type == BouncerCriteriaType.REACTION and member.joined_at:
-                    if event_type != BouncerEventType.REACTION:
-                        criterion_matched += 1
-                        continue
-
                     if utcnow() - member.joined_at > timedelta(seconds=3):
                         continue
 
