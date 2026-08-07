@@ -2,7 +2,6 @@ import asyncio
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import timedelta
 from io import BytesIO
 from textwrap import shorten
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -2957,7 +2956,7 @@ class GuildLogger:
     async def titanium_automod_trigger(
         self,
         rules: list[AutomodRule],
-        actions: list[AutomodAction],
+        successful_actions: list[AutomodAction],
         failed_actions: dict[AutomodAction, str],
         message: discord.Message,
     ) -> None:
@@ -2986,7 +2985,7 @@ class GuildLogger:
 
         embed.add_field(
             name="Successful Actions",
-            value="\n".join([self.__generate_action_str(action) for action in actions]),
+            value="\n".join([self.__generate_action_str(action) for action in successful_actions]),
         )
         embed.add_field(
             name="Failed Actions",
@@ -3009,7 +3008,8 @@ class GuildLogger:
     async def titanium_bouncer_trigger(
         self,
         rules: list[BouncerRule],
-        actions: list[BouncerAction],
+        successful_actions: list[BouncerAction],
+        failed_actions: dict[BouncerAction, str],
         member: discord.Member,
     ) -> None:
         await self._ensure_config()
@@ -3024,39 +3024,31 @@ class GuildLogger:
         )
 
         embed.add_field(
-            name="Triggered Criteria",
+            name="Triggered Rules",
             value="\n".join(
-                f"**{criteria.type.value.capitalize()}**"
-                for rule in rules
-                for criteria in rule.criteria
+                f"- `{escape_markdown(rule.rule_name or f'Rule {i}')}` (`{len(rule.criteria)}` criteria, `{len(rule.actions)}` actions)"
+                for i, rule in enumerate(rules, start=1)
             ),
-            inline=False,
         )
 
         embed.add_field(
-            name="Actions Taken",
+            name="Successful Actions",
+            value="\n".join([self.__generate_action_str(action) for action in successful_actions]),
+        )
+        embed.add_field(
+            name="Failed Actions",
             value="\n".join(
-                "".join(
-                    [
-                        f"**{action.type.value.replace('_', ' ').capitalize()}** (`{naturaldelta(timedelta(seconds=action.duration)) if action.duration else 'permanent'}`)",
-                        (
-                            f": <@{action.role_id}> (`{action.role_id}`)"
-                            if "role" in action.type.value
-                            else f": {shorten(action.reason, width=100, placeholder='...')}"
-                            if action.reason
-                            else ""
-                        ),
-                    ]
-                )
-                for action in actions
+                [
+                    f"{self.__generate_action_str(action)} - `{reason}`"
+                    for action, reason in failed_actions
+                ]
             ),
-            inline=False,
         )
 
         assert self.config is not None and self.config.logging_settings is not None
         await self._send_to_webhook(
             await self._find_webhook(
-                self.config.logging_settings.channels.get("titanium_automod_trigger")
+                self.config.logging_settings.channels.get("titanium_bouncer_trigger")
             ),
             embed=embed,
         )

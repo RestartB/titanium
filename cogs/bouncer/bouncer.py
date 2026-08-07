@@ -438,7 +438,8 @@ class BouncerMonitorCog(commands.Cog):
             guild_logger = GuildLogger(self.bot, member.guild)
             await guild_logger.titanium_bouncer_trigger(
                 rules=triggered_rules,
-                actions=triggered_actions,
+                successful_actions=successful_actions,
+                failed_actions=failed_actions,
                 member=member,
             )
 

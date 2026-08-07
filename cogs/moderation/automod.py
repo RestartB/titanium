@@ -753,7 +753,7 @@ class AutomodMonitorCog(commands.Cog):
 
                 await guild_logger.titanium_automod_trigger(
                     rules=triggered_rules,
-                    actions=successful_actions,
+                    successful_actions=successful_actions,
                     failed_actions=failed_actions,
                     message=message,
                 )
