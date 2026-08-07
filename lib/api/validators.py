@@ -277,7 +277,7 @@ class BouncerActionModel(BaseModel):
     type: BouncerActionType
 
     duration: int | None = Field(None, ge=1, le=1_892_160_000)
-    reason: str | None = None
+    reason: Annotated[str, StringConstraints(max_length=512, strip_whitespace=True)] | None = None
 
     role_ids: list[str] = Field(default_factory=list, max_length=10)
 
