@@ -396,7 +396,7 @@ class AutomodCriteria(Base):
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]"), nullable=False
     )
     match_whole_word: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("false"), nullable=False
+        Boolean, server_default=text("true"), nullable=False
     )
     match_all_words: Mapped[bool] = MappedColumn(
         Boolean, server_default=text("false"), nullable=False
@@ -508,7 +508,7 @@ class BouncerCriteria(Base):
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]"), nullable=False
     )
     match_whole_word: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("false"), nullable=False
+        Boolean, server_default=text("true"), nullable=False
     )
     match_all_words: Mapped[bool] = MappedColumn(
         Boolean, server_default=text("false"), nullable=False
