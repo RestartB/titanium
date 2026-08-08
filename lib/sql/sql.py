@@ -17,6 +17,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -533,7 +534,6 @@ class BouncerAction(Base):
     duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
 
-    role_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     role_ids: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False
     )
@@ -899,13 +899,22 @@ class UserRep(Base):
     )
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger,
+        ForeignKey("guild_rep_settings.guild_id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     rep: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"), nullable=False)
     daily_snapshots: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+
+    rep_history: Mapped[list["RepAddHistory"]] = relationship(
+        "RepAddHistory",
+        back_populates="target_user",
+        passive_deletes=True,
     )
 
 
@@ -913,13 +922,21 @@ class RepAddHistory(Base):
     __tablename__ = "rep_add_history"
     __table_args__ = (
         Index("ix_rep_add_history_guild_user_target", "guild_id", "user_id", "target_id"),
+        ForeignKeyConstraint(
+            ["target_id", "guild_id"],
+            ["user_rep.user_id", "user_rep.guild_id"],
+            ondelete="CASCADE",
+        ),
     )
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
-    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    target_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+
+    target_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    target_user: Mapped[UserRep] = relationship(
+        "UserRep", back_populates="rep_history", uselist=False
+    )
 
     time: Mapped[datetime] = MappedColumn(
         DateTime(timezone=True), server_default=text("NOW()"), nullable=False
