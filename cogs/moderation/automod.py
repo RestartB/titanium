@@ -758,7 +758,9 @@ class AutomodMonitorCog(commands.Cog):
                     message=message,
                 )
 
-            self.logger.debug(f"Processed message from {message.author}: {message.id}")
+            self.logger.debug(
+                f"Finished processing message from {message.guild.id} ({message.author}, {message.author.id}) - {message.id}"
+            )
         except Exception as e:
             await log_error(
                 bot=self.bot,

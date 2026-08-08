@@ -39,7 +39,7 @@ class BouncerMonitorCog(commands.Cog):
         event_type: BouncerEventType,
         payload_time: datetime | None = None,
     ):
-        self.logger.debug(f"Processing member join/update: {member.id}")
+        self.logger.debug(f"Processing bouncer event from {member} ({member.id})")
         config = await self.bot.fetch_guild_config(member.guild.id) if member.guild else None
 
         # Check for server ID in config list
@@ -54,7 +54,7 @@ class BouncerMonitorCog(commands.Cog):
             or not self.bot.user
             or member.id == self.bot.user.id
         ):
-            self.logger.debug("Bouncer initial checks failed, skipping member")
+            self.logger.debug("Bouncer initial checks failed, skipping event")
             return
 
         bouncer_config = config.bouncer_settings
@@ -68,7 +68,7 @@ class BouncerMonitorCog(commands.Cog):
         self.logger.debug(f"Bouncer enabled: {config.bouncer_enabled}")
 
         if not config.bouncer_enabled or not config.moderation_enabled:
-            self.logger.debug("Bouncer is disabled, skipping member")
+            self.logger.debug("Bouncer is disabled, skipping event")
             return
 
         self.logger.debug(f"Will evaluate {len(rules)} rules")
@@ -123,7 +123,7 @@ class BouncerMonitorCog(commands.Cog):
                                 break
 
                         if criteria_met:
-                            self.logger.debug("Username match found")
+                            self.logger.debug(f"({criteria.id}) Username match found")
                             criterion_matched += 1
                 elif criteria.type == BouncerCriteriaType.TAG and member.primary_guild:
                     if not member.primary_guild.tag:
@@ -140,7 +140,7 @@ class BouncerMonitorCog(commands.Cog):
                             matches = re.findall(pattern, member.primary_guild.tag)
 
                         if matches:
-                            self.logger.debug("Tag match found")
+                            self.logger.debug(f"({criteria.id}) Tag match found")
                             criterion_matched += 1
                 elif (
                     criteria.type == BouncerCriteriaType.AGE
@@ -153,24 +153,32 @@ class BouncerMonitorCog(commands.Cog):
                     if (
                         member.joined_at - member.created_at
                     ).total_seconds() <= criteria.account_age:
-                        self.logger.debug("Account age match found")
+                        self.logger.debug(f"({criteria.id}) Account age match found")
                         criterion_matched += 1
                 elif criteria.type == BouncerCriteriaType.AVATAR and not member.avatar:
-                    self.logger.debug("No avatar match found")
+                    self.logger.debug(f"({criteria.id}) No avatar match found")
                     criterion_matched += 1
-                elif (
-                    criteria.type == BouncerCriteriaType.REACTION
-                    and event_type == BouncerEventType.REACTION
-                    and member.joined_at
-                ):
-                    if not payload_time:
+                elif criteria.type == BouncerCriteriaType.REACTION:
+                    if event_type != BouncerEventType.REACTION:
+                        self.logger.debug(
+                            f"({criteria.id}) Not a reaction event, skipping criteria"
+                        )
+                        continue
+
+                    if not payload_time or not member.joined_at:
+                        self.logger.debug(
+                            f"({criteria.id}) Required values for bot reaction behaviour missing"
+                        )
                         continue
 
                     if payload_time - member.joined_at > timedelta(seconds=5):
                         continue
 
-                    self.logger.debug("Suspicious bot reaction behaviour found")
+                    self.logger.debug(f"({criteria.id}) Suspicious bot reaction behaviour found")
                     criterion_matched += 1
+                else:
+                    self.logger.warning(f"({criteria.id}) Unknown rule type: {criteria.type}")
+                    continue
 
             if (rule.match_all_criteria and criterion_matched == len(rule.criteria)) or (
                 not rule.match_all_criteria and criterion_matched > 0
@@ -451,7 +459,9 @@ class BouncerMonitorCog(commands.Cog):
                 member=member,
             )
 
-        self.logger.debug(f"Processed member event from {member.guild.id}: {member.id}")
+        self.logger.debug(
+            f"Finished processing event from {member.guild.id} ({member}, {member.id})"
+        )
 
     # Listen for member joins
     @commands.Cog.listener()
