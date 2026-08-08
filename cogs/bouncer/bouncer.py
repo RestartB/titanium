@@ -241,7 +241,7 @@ class BouncerMonitorCog(commands.Cog):
                             user=member,
                             creator_user=self.bot.user,
                             reason=action.reason,
-                            source=CaseSource.AUTOMOD,
+                            source=CaseSource.BOUNCER,
                         )
                     elif action.type == BouncerActionType.MUTE:
                         # fmt: off
@@ -259,7 +259,7 @@ class BouncerMonitorCog(commands.Cog):
                                 if action.duration and action.duration <= 2419200
                                 else timedelta(seconds=2419200)
                             ),
-                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
                         )
 
                         case, _, _ = await manager.create_case(
@@ -270,7 +270,7 @@ class BouncerMonitorCog(commands.Cog):
                             duration=timedelta(seconds=action.duration)
                             if action.duration
                             else None,
-                            source=CaseSource.AUTOMOD,
+                            source=CaseSource.BOUNCER,
                         )
                     elif action.type == BouncerActionType.KICK:
                         # fmt: off
@@ -287,12 +287,12 @@ class BouncerMonitorCog(commands.Cog):
                             user=member,
                             creator_user=self.bot.user,
                             reason=action.reason,
-                            source=CaseSource.AUTOMOD,
+                            source=CaseSource.BOUNCER,
                         )
 
                         try:
                             await member.kick(
-                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
                             )
                         except Exception:
                             await manager.delete_case(case.id, raise_not_found=False)
@@ -315,13 +315,13 @@ class BouncerMonitorCog(commands.Cog):
                             duration=timedelta(seconds=action.duration)
                             if action.duration
                             else None,
-                            source=CaseSource.AUTOMOD,
+                            source=CaseSource.BOUNCER,
                         )
 
                         try:
                             await member.ban(
                                 delete_message_seconds=config.moderation_settings.ban_days * 86400,
-                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
                             )
                         except Exception:
                             await manager.delete_case(case.id, raise_not_found=False)
@@ -344,7 +344,7 @@ class BouncerMonitorCog(commands.Cog):
 
                         await member.add_roles(
                             *roles,
-                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
                             atomic=False,
                         )
                     elif action.type == BouncerActionType.REMOVE_ROLE:
@@ -365,7 +365,7 @@ class BouncerMonitorCog(commands.Cog):
 
                         await member.remove_roles(
                             *roles,
-                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                            reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
                             atomic=False,
                         )
                     elif action.type == BouncerActionType.TOGGLE_ROLE:
@@ -394,14 +394,14 @@ class BouncerMonitorCog(commands.Cog):
                         if roles_to_add:
                             await member.add_roles(
                                 *roles_to_add,
-                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
                                 atomic=False,
                             )
 
                         if roles_to_remove:
                             await member.remove_roles(
                                 *roles_to_remove,
-                                reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
                                 atomic=False,
                             )
                     else:
@@ -416,7 +416,7 @@ class BouncerMonitorCog(commands.Cog):
                     failed_actions[action] = e.text
                     await log_error(
                         bot=self.bot,
-                        module="Automod",
+                        module="Bouncer",
                         guild_id=member.guild.id,
                         error=f"Titanium was not allowed to perform the {action.type.value} action against @{member.name} ({member.id})",
                         details=e.text,
@@ -426,7 +426,7 @@ class BouncerMonitorCog(commands.Cog):
                     failed_actions[action] = "Unknown Discord error occurred"
                     await log_error(
                         bot=self.bot,
-                        module="Automod",
+                        module="Bouncer",
                         guild_id=member.guild.id,
                         error=f"Unknown Discord error occurred while processing {action.type.value} against @{member.name} ({member.id})",
                         details=e.text,
@@ -436,7 +436,7 @@ class BouncerMonitorCog(commands.Cog):
                     failed_actions[action] = "Unexpected error occurred"
                     await log_error(
                         bot=self.bot,
-                        module="Automod",
+                        module="Bouncer",
                         guild_id=member.guild.id,
                         error=f"Unexpected error occurred while processing {action.type.value} against @{member.name} ({member.id})",
                         exc=e,
