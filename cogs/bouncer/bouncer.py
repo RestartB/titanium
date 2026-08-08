@@ -166,7 +166,7 @@ class BouncerMonitorCog(commands.Cog):
                     if not payload_time:
                         continue
 
-                    if payload_time - member.joined_at > timedelta(seconds=3):
+                    if payload_time - member.joined_at > timedelta(seconds=5):
                         continue
 
                     self.logger.debug("Suspicious bot reaction behaviour found")
@@ -457,6 +457,7 @@ class BouncerMonitorCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         try:
+            self.logger.debug("Received member join event")
             await self.handle_event(member, BouncerEventType.JOIN)
         except Exception as e:
             await log_error(
@@ -480,6 +481,7 @@ class BouncerMonitorCog(commands.Cog):
             return
 
         try:
+            self.logger.debug("Received member update event")
             await self.handle_event(after, BouncerEventType.UPDATE)
         except Exception as e:
             await log_error(
@@ -500,13 +502,14 @@ class BouncerMonitorCog(commands.Cog):
 
         try:
             payload_time = utcnow()
+            self.logger.debug("Received user reaction event")
             await self.handle_event(payload.member, BouncerEventType.REACTION, payload_time)
         except Exception as e:
             await log_error(
                 bot=self.bot,
                 module="Bouncer",
                 guild_id=payload.guild_id,
-                error=f"An unknown error occurred while processing a user update for @{payload.member.name} ({payload.member.id})",
+                error=f"An unknown error occurred while processing a reaction event for @{payload.member.name} ({payload.member.id})",
                 exc=e,
             )
 

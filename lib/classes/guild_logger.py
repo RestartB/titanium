@@ -115,7 +115,7 @@ LOGGING_EVENTS = [
     LoggingType(event="titanium_case_delete", name="Titanium Case Deleted", description="When a moderator deletes a Titanium case.", category="Titanium"),
     LoggingType(event="titanium_case_comment", name="Titanium Case Commented", description="When a moderator comments on a Titanium case.", category="Titanium"),
     LoggingType(event="titanium_automod_trigger", name="Titanium AutoMod Triggered", description="When a message triggers a Titanium AutoMod rule.", category="Titanium"),
-    LoggingType(event="titanium_bouncer_trigger", name="Titanium Bouncer Triggered", description="When a user triggers a Titanium Bouncer action.", category="Titanium"),
+    LoggingType(event="titanium_bouncer_trigger", name="Titanium Bouncer Triggered", description="When a user triggers a Titanium Bouncer rule.", category="Titanium"),
     LoggingType(event="titanium_confession", name="Titanium Confession Posted", description="When a confession is posted using the confessions feature.", category="Titanium"),
     LoggingType(event="titanium_anon_poll", name="Titanium Anonymous Poll Created", description="When a user creates an anonymous poll using the confessions feature.", category="Titanium")
 ]
