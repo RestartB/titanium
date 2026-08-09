@@ -80,6 +80,14 @@ class BouncerMonitorCog(commands.Cog):
                 self.logger.debug(f"({rule.id}) Not evaluating user update")
                 continue
 
+            if event_type == BouncerEventType.REACTION and BouncerCriteriaType.REACTION not in [
+                criteria.type for criteria in rule.criteria
+            ]:
+                self.logger.debug(
+                    f"({rule.id}) Event type is reaction but rule has no reaction criteria, skipping"
+                )
+                continue
+
             criterion_matched = 0
             for criteria in rule.criteria:
                 if criteria.type == BouncerCriteriaType.USERNAME:
