@@ -503,6 +503,10 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
+        guild_config = await self.bot.fetch_guild_config(guild.id)
+        if not guild_config or not guild_config.moderation_enabled:
+            return web.json_response({"error": "moderation module is disabled"}, status=403)
+
         limit = max(min(int(request.query.get("limit", 50)), 100), 1)
         offset = max(int(request.query.get("offset", 0)), 0)
 
@@ -578,6 +582,10 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
+        guild_config = await self.bot.fetch_guild_config(guild.id)
+        if not guild_config or not guild_config.moderation_enabled:
+            return web.json_response({"error": "moderation module is disabled"}, status=403)
+
         async with get_session() as session:
             # Get case from db
             result = await session.execute(
@@ -650,6 +658,10 @@ class APICog(commands.Cog):
         guild = self.bot.get_guild(int(guild_id))
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
+
+        guild_config = await self.bot.fetch_guild_config(guild.id)
+        if not guild_config or not guild_config.moderation_enabled:
+            return web.json_response({"error": "moderation module is disabled"}, status=403)
 
         limit = max(min(int(request.query.get("limit", 50)), 100), 1)
         offset = max(int(request.query.get("offset", 0)), 0)
@@ -724,12 +736,9 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        config = await self.bot.fetch_guild_config(guild.id)
-        if not config:
-            return web.json_response({"error": "failed to get guild config"}, status=500)
-
-        if not config.moderation_enabled:
-            return web.json_response({"error": "moderation is disabled in this server"}, status=403)
+        guild_config = await self.bot.fetch_guild_config(guild.id)
+        if not guild_config or not guild_config.moderation_enabled:
+            return web.json_response({"error": "moderation module is disabled"}, status=403)
 
         try:
             data: dict = await request.json()
@@ -775,12 +784,9 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        config = await self.bot.fetch_guild_config(guild.id)
-        if not config:
-            return web.json_response({"error": "failed to get guild config"}, status=500)
-
-        if not config.moderation_enabled:
-            return web.json_response({"error": "moderation is disabled in this server"}, status=403)
+        guild_config = await self.bot.fetch_guild_config(guild.id)
+        if not guild_config or not guild_config.moderation_enabled:
+            return web.json_response({"error": "moderation module is disabled"}, status=403)
 
         try:
             data: dict = await request.json()
@@ -823,12 +829,9 @@ class APICog(commands.Cog):
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
 
-        config = await self.bot.fetch_guild_config(guild.id)
-        if not config:
-            return web.json_response({"error": "failed to get guild config"}, status=500)
-
-        if not config.moderation_enabled:
-            return web.json_response({"error": "moderation is disabled in this server"}, status=403)
+        guild_config = await self.bot.fetch_guild_config(guild.id)
+        if not guild_config or not guild_config.moderation_enabled:
+            return web.json_response({"error": "moderation module is disabled"}, status=403)
 
         async with get_session() as session:
             manager = GuildModCaseManager(self.bot, guild, session)
