@@ -68,6 +68,19 @@ class BouncerMonitorCog(commands.Cog):
             self.logger.debug("Bouncer is disabled, skipping event")
             return
 
+        is_join = event_type == BouncerEventType.JOIN
+        is_update = event_type == BouncerEventType.UPDATE
+        is_suspicious = False
+
+        if (
+            event_type == BouncerEventType.REACTION
+            and payload_time
+            and member.joined_at
+            and payload_time - member.joined_at <= timedelta(seconds=5)
+        ):
+            self.logger.debug(f"({member.id}) Suspicious reaction detected!")
+            is_suspicious = True
+
         self.logger.debug(f"Will evaluate {len(rules)} rules")
         for rule in rules:
             self.logger.debug(f"({rule.id}) Evaluating...")
@@ -76,37 +89,32 @@ class BouncerMonitorCog(commands.Cog):
                 self.logger.debug(f"({rule.id}) Rule disabled")
                 continue
 
-            if event_type == BouncerEventType.UPDATE and not rule.evaluate_for_existing_members:
-                self.logger.debug(f"({rule.id}) Not evaluating user update")
-                continue
-
-            if event_type == BouncerEventType.REACTION and BouncerCriteriaType.REACTION not in [
-                criteria.type for criteria in rule.criteria
-            ]:
+            if not (
+                (is_join and rule.member_join)
+                or (is_update and rule.member_update)
+                or (is_suspicious and rule.suspicious_reaction)
+            ):
                 self.logger.debug(
-                    f"({rule.id}) Event type is reaction but rule has no reaction criteria, skipping"
+                    f"({rule.id}) Rule triggers do not apply to this event ({event_type})"
                 )
                 continue
 
             criterion_matched = 0
             for criteria in rule.criteria:
                 if criteria.type == BouncerCriteriaType.USERNAME:
+                    contents_to_check: list[str] = [member.name, member.display_name]
+                    if member.global_name:
+                        contents_to_check.append(member.global_name)
+                    if member.nick:
+                        contents_to_check.append(member.nick)
+
+                    criteria_met = False
                     for word in criteria.words:
-                        check_word = word.lower() if not criteria.case_sensitive else word
                         matches = []
-                        contents_to_check: list[str] = [member.name, member.display_name]
-
-                        if member.global_name:
-                            contents_to_check.append(member.global_name)
-
-                        if member.nick:
-                            contents_to_check.append(member.nick)
-
                         for content_to_check in contents_to_check:
                             words_matched = 0
                             for word in criteria.words:
                                 normalised_word = self.normalise_automod_text(word)
-
                                 pattern = r"\b" + re.escape(normalised_word) + r"\b"
                                 if not criteria.match_whole_word:
                                     pattern = pattern.lstrip(r"\b").rstrip(r"\b")
@@ -130,28 +138,37 @@ class BouncerMonitorCog(commands.Cog):
                         if criteria_met:
                             self.logger.debug(f"({criteria.id}) Username match found")
                             criterion_matched += 1
+                            break
                 elif criteria.type == BouncerCriteriaType.TAG and member.primary_guild:
                     if not member.primary_guild.tag:
                         continue
 
+                    normalised_content_to_check = self.normalise_automod_text(
+                        member.primary_guild.tag
+                    )
+                    words_matched = 0
+
                     for word in criteria.words:
-                        check_word = word.lower() if not criteria.case_sensitive else word
+                        normalised_word = self.normalise_automod_text(word)
+                        pattern = r"\b" + re.escape(normalised_word) + r"\b"
+                        if not criteria.match_whole_word:
+                            pattern = pattern.lstrip(r"\b").rstrip(r"\b")
 
-                        if criteria.match_whole_word:
-                            pattern = r"\b" + re.escape(check_word) + r"\b"
-                            matches = re.findall(pattern, member.primary_guild.tag)
-                        else:
-                            pattern = re.escape(check_word)
-                            matches = re.findall(pattern, member.primary_guild.tag)
-
+                        matches = re.findall(
+                            pattern,
+                            normalised_content_to_check,
+                            flags=(0 if criteria.case_sensitive else re.IGNORECASE),
+                        )
                         if matches:
-                            self.logger.debug(f"({criteria.id}) Tag match found")
-                            criterion_matched += 1
-                elif (
-                    criteria.type == BouncerCriteriaType.AGE
-                    and event_type == BouncerEventType.JOIN
-                    and member.joined_at
-                ):
+                            words_matched += 1
+
+                    if (
+                        criteria.match_all_words
+                        and words_matched == len(criteria.words)
+                        or (not criteria.match_all_words and words_matched > 0)
+                    ):
+                        criteria_met = True
+                elif criteria.type == BouncerCriteriaType.AGE and member.joined_at:
                     if not criteria.account_age:
                         continue
 
@@ -163,30 +180,14 @@ class BouncerMonitorCog(commands.Cog):
                 elif criteria.type == BouncerCriteriaType.AVATAR and not member.avatar:
                     self.logger.debug(f"({criteria.id}) No avatar match found")
                     criterion_matched += 1
-                elif criteria.type == BouncerCriteriaType.REACTION:
-                    if event_type != BouncerEventType.REACTION:
-                        self.logger.debug(
-                            f"({criteria.id}) Not a reaction event, skipping criteria"
-                        )
-                        continue
-
-                    if not payload_time or not member.joined_at:
-                        self.logger.debug(
-                            f"({criteria.id}) Required values for bot reaction behaviour missing"
-                        )
-                        continue
-
-                    if payload_time - member.joined_at > timedelta(seconds=5):
-                        continue
-
-                    self.logger.debug(f"({criteria.id}) Suspicious bot reaction behaviour found")
-                    criterion_matched += 1
                 else:
                     self.logger.warning(f"({criteria.id}) Unknown rule type: {criteria.type}")
                     continue
 
-            if (rule.match_all_criteria and criterion_matched == len(rule.criteria)) or (
-                not rule.match_all_criteria and criterion_matched > 0
+            if (
+                not rule.criteria
+                or (rule.match_all_criteria and criterion_matched == len(rule.criteria))
+                or (not rule.match_all_criteria and criterion_matched > 0)
             ):
                 self.logger.debug(f"({rule.id}) Rule met")
                 triggered_rules.append(rule)

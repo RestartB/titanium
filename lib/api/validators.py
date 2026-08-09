@@ -325,6 +325,16 @@ class BouncerRuleModel(BaseModel):
     actions: list[BouncerActionModel]
 
     @model_validator(mode="after")
+    def validate_triggers(self):
+        if not self.member_join and not self.member_update and not self.suspicious_reaction:
+            raise ValueError("At least 1 trigger must be selected")
+
+        if (self.member_join or self.member_update) and len(self.criteria) == 0:
+            raise ValueError("Member join / update triggers require at least 1 criteria")
+
+        return self
+
+    @model_validator(mode="after")
     def validate_unique_criteria_types(self):
         criteria_types = [criterion.type for criterion in self.criteria]
 

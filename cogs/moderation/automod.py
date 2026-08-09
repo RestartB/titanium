@@ -250,7 +250,6 @@ class AutomodMonitorCog(commands.Cog):
                         words_matched = 0
                         for word in criteria.words:
                             normalised_word = self.normalise_automod_text(word)
-
                             pattern = r"\b" + re.escape(normalised_word) + r"\b"
                             if not criteria.match_whole_word:
                                 pattern = pattern.lstrip(r"\b").rstrip(r"\b")
