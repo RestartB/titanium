@@ -86,7 +86,7 @@ class BouncerMonitorCog(commands.Cog):
             self.logger.debug(f"({rule.id}) Evaluating...")
 
             if not rule.enabled:
-                self.logger.debug(f"({rule.id}) Rule disabled")
+                self.logger.debug(f"({rule.id}) Rule disabled, skipping")
                 continue
 
             if not (
@@ -95,7 +95,7 @@ class BouncerMonitorCog(commands.Cog):
                 or (is_suspicious and rule.suspicious_reaction)
             ):
                 self.logger.debug(
-                    f"({rule.id}) Rule triggers do not apply to this event ({event_type})"
+                    f"({rule.id}) Rule triggers do not apply to this event ({event_type}), skipping"
                 )
                 continue
 
