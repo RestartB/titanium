@@ -150,12 +150,6 @@ class RepCog(commands.Cog):
             if user_stats:
                 await session.delete(user_stats)
 
-            stmt = select(RepAddHistory).where(
-                RepAddHistory.guild_id == payload.guild_id,
-                RepAddHistory.target_id == payload.user.id,
-            )
-            await session.execute(stmt)
-
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
         if not ctx.guild:
             return False
@@ -391,14 +385,6 @@ class RepCog(commands.Cog):
             return
 
         async with get_session() as session:
-            session.add(
-                RepAddHistory(
-                    user_id=ctx.author.id,
-                    target_id=member.id,
-                    guild_id=ctx.guild.id,
-                )
-            )
-
             stmt = insert(UserRep).values(
                 guild_id=ctx.guild.id,
                 user_id=member.id,
@@ -412,6 +398,14 @@ class RepCog(commands.Cog):
             ).returning(UserRep)
 
             rep = (await session.execute(stmt)).scalar_one()
+
+            session.add(
+                RepAddHistory(
+                    user_id=ctx.author.id,
+                    target_id=member.id,
+                    guild_id=ctx.guild.id,
+                )
+            )
 
         await ctx.reply(
             ephemeral=ephemeral,

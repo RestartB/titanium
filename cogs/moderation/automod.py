@@ -250,7 +250,6 @@ class AutomodMonitorCog(commands.Cog):
                         words_matched = 0
                         for word in criteria.words:
                             normalised_word = self.normalise_automod_text(word)
-
                             pattern = r"\b" + re.escape(normalised_word) + r"\b"
                             if not criteria.match_whole_word:
                                 pattern = pattern.lstrip(r"\b").rstrip(r"\b")
@@ -753,12 +752,14 @@ class AutomodMonitorCog(commands.Cog):
 
                 await guild_logger.titanium_automod_trigger(
                     rules=triggered_rules,
-                    actions=successful_actions,
+                    successful_actions=successful_actions,
                     failed_actions=failed_actions,
                     message=message,
                 )
 
-            self.logger.debug(f"Processed message from {message.author}: {message.id}")
+            self.logger.debug(
+                f"Finished processing message from {message.guild.id} ({message.author}, {message.author.id}) - {message.id}"
+            )
         except Exception as e:
             await log_error(
                 bot=self.bot,

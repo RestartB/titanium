@@ -97,7 +97,7 @@ def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                             "type": action.type,
                             "duration": action.duration,
                             "reason": action.reason,
-                            "role_ids": action.role_ids,
+                            "role_ids": [str(role) for role in action.role_ids],
                             "message_content": action.message_content,
                             "message_reply": action.message_reply,
                             "message_mention": action.message_mention,
@@ -132,14 +132,21 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
             "rules": [
                 {
                     "id": str(rule.id),
+                    "rule_name": rule.rule_name,
                     "enabled": rule.enabled,
-                    "evaluate_for_existing_members": rule.evaluate_for_existing_members,
+                    "match_all_criteria": rule.match_all_criteria,
+                    "member_join": rule.member_join,
+                    "member_update": rule.member_update,
+                    "suspicious_reaction": rule.suspicious_reaction,
+                    "order": rule.order,
+                    "stop_if_triggered": rule.stop_if_triggered,
                     "criteria": [
                         {
                             "type": criterion.type.value,
                             "account_age": criterion.account_age,
                             "words": criterion.words,
                             "match_whole_word": criterion.match_whole_word,
+                            "match_all_words": criterion.match_all_words,
                             "case_sensitive": criterion.case_sensitive,
                         }
                         for criterion in rule.criteria
@@ -148,7 +155,7 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                         {
                             "type": action.type.value,
                             "duration": action.duration,
-                            "role_id": str(action.role_id) if action.role_id else None,
+                            "role_ids": [str(role) for role in action.role_ids],
                             "reason": action.reason,
                         }
                         for action in rule.actions

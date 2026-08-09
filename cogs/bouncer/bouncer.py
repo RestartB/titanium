@@ -1,25 +1,22 @@
 import logging
 import re
-from datetime import timedelta
+import unicodedata
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
+from discord.utils import utcnow
 
 from lib.classes.case_manager import GuildModCaseManager
 from lib.classes.guild_logger import GuildLogger
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType, BouncerEventType
 from lib.enums.moderation import CaseSource, CaseType
 from lib.helpers.log_error import log_error
-from lib.sql.sql import BouncerAction, BouncerRule, ModCase, get_session
+from lib.sql.sql import BouncerAction, BouncerRule, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
-
-
-# TODO: possible idea
-# get the events from discord manually, but add a lock for the user id
-# then if the lock is active or something like that, ignore the manual event
 
 
 class BouncerMonitorCog(commands.Cog):
@@ -29,8 +26,17 @@ class BouncerMonitorCog(commands.Cog):
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("bouncer")
 
-    async def handle_event(self, member: discord.Member, event_type: BouncerEventType):
-        self.logger.debug(f"Processing member join/update: {member.id}")
+    def normalise_automod_text(self, text: str) -> str:
+        text = unicodedata.normalize("NFKC", text)
+        return "".join(char for char in text if unicodedata.category(char) != "Cf")
+
+    async def handle_event(
+        self,
+        member: discord.Member,
+        event_type: BouncerEventType,
+        payload_time: datetime | None = None,
+    ):
+        self.logger.debug(f"Processing bouncer event from {member} ({member.id})")
         config = await self.bot.fetch_guild_config(member.guild.id) if member.guild else None
 
         # Check for server ID in config list
@@ -45,437 +51,429 @@ class BouncerMonitorCog(commands.Cog):
             or not self.bot.user
             or member.id == self.bot.user.id
         ):
-            self.logger.debug("Bouncer initial checks failed, skipping member")
-            return
-
-        triggers: list[BouncerRule] = []
-        punishments: list[BouncerAction] = []
-
-        self.logger.debug(f"Bouncer enabled: {config.bouncer_enabled}")
-
-        if not config.bouncer_enabled or not config.moderation_enabled:
-            self.logger.debug("Bouncer is disabled, skipping member")
+            self.logger.debug("Bouncer initial checks failed, skipping event")
             return
 
         bouncer_config = config.bouncer_settings
 
-        for rule in bouncer_config.rules:
-            spotted = False
+        triggered_rules: list[BouncerRule] = []
+        triggered_actions: list[BouncerAction] = []
+
+        rules = bouncer_config.rules.copy()
+        rules.sort(key=lambda r: r.order)
+
+        self.logger.debug(f"Bouncer enabled: {config.bouncer_enabled}")
+
+        if not config.bouncer_enabled or not config.moderation_enabled:
+            self.logger.debug("Bouncer is disabled, skipping event")
+            return
+
+        is_join = event_type == BouncerEventType.JOIN
+        is_update = event_type == BouncerEventType.UPDATE
+        is_suspicious = False
+
+        if (
+            event_type == BouncerEventType.REACTION
+            and payload_time
+            and member.joined_at
+            and payload_time - member.joined_at <= timedelta(seconds=5)
+        ):
+            self.logger.debug(f"({member.id}) Suspicious reaction detected!")
+            is_suspicious = True
+
+        self.logger.debug(f"Will evaluate {len(rules)} rules")
+        for rule in rules:
+            self.logger.debug(f"({rule.id}) Evaluating...")
 
             if not rule.enabled:
-                self.logger.debug(f"Bouncer rule {rule.id} is disabled, skipping")
+                self.logger.debug(f"({rule.id}) Rule disabled, skipping")
                 continue
 
-            if event_type == BouncerEventType.UPDATE and not rule.evaluate_for_existing_members:
+            if not (
+                (is_join and rule.member_join)
+                or (is_update and rule.member_update)
+                or (is_suspicious and rule.suspicious_reaction)
+            ):
                 self.logger.debug(
-                    f"Bouncer rule {rule.id} is not set to evaluate existing members, skipping"
+                    f"({rule.id}) Rule triggers do not apply to this event ({event_type}), skipping"
                 )
                 continue
 
+            criterion_matched = 0
             for criteria in rule.criteria:
                 if criteria.type == BouncerCriteriaType.USERNAME:
+                    contents_to_check: list[str] = [member.name, member.display_name]
+                    if member.global_name:
+                        contents_to_check.append(member.global_name)
+                    if member.nick:
+                        contents_to_check.append(member.nick)
+
+                    criteria_met = False
                     for word in criteria.words:
-                        check_word = word.lower() if not criteria.case_sensitive else word
                         matches = []
-                        contents_to_check: list[str] = [member.name, member.display_name]
-
-                        if member.global_name:
-                            contents_to_check.append(member.global_name)
-
-                        if member.nick:
-                            contents_to_check.append(member.nick)
-
                         for content_to_check in contents_to_check:
-                            if not criteria.case_sensitive:
-                                content_to_check = content_to_check.lower()
+                            words_matched = 0
+                            for word in criteria.words:
+                                normalised_word = self.normalise_automod_text(word)
+                                pattern = r"\b" + re.escape(normalised_word) + r"\b"
+                                if not criteria.match_whole_word:
+                                    pattern = pattern.lstrip(r"\b").rstrip(r"\b")
 
-                            if criteria.match_whole_word:
-                                pattern = r"\b" + re.escape(check_word) + r"\b"
-                                matches = re.findall(pattern, content_to_check)
-                            else:
-                                pattern = re.escape(check_word)
-                                matches = re.findall(pattern, content_to_check)
+                                matches = re.findall(
+                                    pattern,
+                                    self.normalise_automod_text(content_to_check),
+                                    flags=(0 if criteria.case_sensitive else re.IGNORECASE),
+                                )
+                                if matches:
+                                    words_matched += 1
 
-                        if matches:
-                            self.logger.debug("Username match found")
-                            spotted = True
+                            if (
+                                criteria.match_all_words
+                                and words_matched == len(criteria.words)
+                                or (not criteria.match_all_words and words_matched > 0)
+                            ):
+                                criteria_met = True
+                                break
+
+                        if criteria_met:
+                            self.logger.debug(f"({criteria.id}) Username match found")
+                            criterion_matched += 1
                             break
                 elif criteria.type == BouncerCriteriaType.TAG and member.primary_guild:
                     if not member.primary_guild.tag:
                         continue
 
+                    normalised_content_to_check = self.normalise_automod_text(
+                        member.primary_guild.tag
+                    )
+                    words_matched = 0
+
                     for word in criteria.words:
-                        check_word = word.lower() if not criteria.case_sensitive else word
+                        normalised_word = self.normalise_automod_text(word)
+                        pattern = r"\b" + re.escape(normalised_word) + r"\b"
+                        if not criteria.match_whole_word:
+                            pattern = pattern.lstrip(r"\b").rstrip(r"\b")
 
-                        if criteria.match_whole_word:
-                            pattern = r"\b" + re.escape(check_word) + r"\b"
-                            matches = re.findall(pattern, member.primary_guild.tag)
-                        else:
-                            pattern = re.escape(check_word)
-                            matches = re.findall(pattern, member.primary_guild.tag)
-
+                        matches = re.findall(
+                            pattern,
+                            normalised_content_to_check,
+                            flags=(0 if criteria.case_sensitive else re.IGNORECASE),
+                        )
                         if matches:
-                            self.logger.debug("Tag match found")
-                            spotted = True
-                            break
-                elif (
-                    criteria.type == BouncerCriteriaType.AGE
-                    and event_type == BouncerEventType.JOIN
-                    and member.joined_at
-                ):
+                            words_matched += 1
+
+                    if (
+                        criteria.match_all_words
+                        and words_matched == len(criteria.words)
+                        or (not criteria.match_all_words and words_matched > 0)
+                    ):
+                        criteria_met = True
+                elif criteria.type == BouncerCriteriaType.AGE and member.joined_at:
                     if not criteria.account_age:
                         continue
 
                     if (
                         member.joined_at - member.created_at
                     ).total_seconds() <= criteria.account_age:
-                        self.logger.debug("Account age match found")
-                        spotted = True
-                        break
+                        self.logger.debug(f"({criteria.id}) Account age match found")
+                        criterion_matched += 1
                 elif criteria.type == BouncerCriteriaType.AVATAR and not member.avatar:
-                    self.logger.debug("No avatar match found")
-                    spotted = True
+                    self.logger.debug(f"({criteria.id}) No avatar match found")
+                    criterion_matched += 1
+                else:
+                    self.logger.warning(f"({criteria.id}) Unknown rule type: {criteria.type}")
+                    continue
+
+            if (
+                not rule.criteria
+                or (rule.match_all_criteria and criterion_matched == len(rule.criteria))
+                or (not rule.match_all_criteria and criterion_matched > 0)
+            ):
+                self.logger.debug(f"({rule.id}) Rule met")
+                triggered_rules.append(rule)
+                triggered_actions.extend(rule.actions)
+
+                if rule.stop_if_triggered:
+                    break
+            else:
+                self.logger.debug(f"({rule.id}) Rule not met")
+
+        processed_actions = [
+            action
+            for action in triggered_actions
+            if action.type
+            not in [BouncerActionType.MUTE, BouncerActionType.KICK, BouncerActionType.BAN]
+        ]
+
+        kicks = [action for action in triggered_actions if action.type == BouncerActionType.KICK]
+        if kicks:
+            processed_actions.append(kicks[0])
+
+        mutes = [action for action in triggered_actions if action.type == BouncerActionType.MUTE]
+        if mutes:
+            mute_added = False
+
+            for mute in mutes:
+                if not mute.duration:
+                    processed_actions.append(mute)
+                    mute_added = True
                     break
 
-            if spotted:
-                triggers.append(rule)
-                for action in rule.actions:
-                    action: BouncerAction
-                    punishments.append(action)
+            if not mute_added:
+                mutes.sort(key=lambda m: m.duration if m.duration else 0, reverse=True)
+                processed_actions.append(mutes[0])
 
-        # Get list of punishment types
-        punishment_types = {action.type for action in punishments}
+        bans = [action for action in triggered_actions if action.type == BouncerActionType.BAN]
+        if bans:
+            ban_added = False
+
+            for ban in bans:
+                if not ban.duration:
+                    processed_actions.append(ban)
+                    ban_added = True
+                    break
+
+            if not ban_added:
+                bans.sort(key=lambda b: b.duration if b.duration else 0, reverse=True)
+                processed_actions.append(bans[0])
+
+        successful_actions: list[BouncerAction] = []
+        failed_actions: dict[BouncerAction, str] = {}
 
         async with get_session() as session:
             manager = GuildModCaseManager(self.bot, member.guild, session)
 
-            for punishment in punishments:
-                if punishment.type == BouncerActionType.RESET_NICK:
-                    if not member.nick:
-                        continue
+            self.logger.debug(f"Will process {len(processed_actions)} actions")
 
-                    if (
-                        not member.guild.me.guild_permissions.manage_nicknames
-                        or member.top_role >= member.guild.me.top_role
-                    ):
-                        continue
+            for action in processed_actions:
+                self.logger.debug(f"({action.id}) Processing {action.type} action...")
 
-                    try:
-                        await member.edit(nick=None, reason=f"Bouncer: {punishment.reason}")
-                    except discord.Forbidden as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Titanium was not allowed to reset the nickname of {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
+                try:
+                    if action.type == BouncerActionType.WARN:
+                        case, _, _ = await manager.create_case(
+                            action=CaseType.WARN,
+                            user=member,
+                            creator_user=self.bot.user,
+                            reason=action.reason,
+                            source=CaseSource.BOUNCER,
                         )
-                    except discord.HTTPException as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Unknown Discord error while resetting nickname of {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
-                elif punishment.type == BouncerActionType.ADD_ROLE:
-                    if not punishment.role_id:
-                        continue
+                    elif action.type == BouncerActionType.MUTE:
+                        # fmt: off
+                        if member.top_role >= member.guild.me.top_role:
+                            failed_actions[action] = "No permission to mute this user (Titanium's role not higher than user's top role)"
+                            continue
+                        elif not member.guild.me.guild_permissions.moderate_members:
+                            failed_actions[action] = "No mute permissions"
+                            continue
+                        # fmt: on
 
-                    role = member.guild.get_role(punishment.role_id)
-                    if not role or role in member.roles:
-                        continue
-
-                    if (
-                        not member.guild.me.guild_permissions.manage_roles
-                        or role >= member.guild.me.top_role
-                    ):
-                        continue
-
-                    try:
-                        await member.add_roles(role, reason=f"Bouncer: {punishment.reason}")
-                    except discord.Forbidden as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Titanium was not allowed to add the {role.name} ({role.id}) role to {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
-                    except discord.HTTPException as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Unknown Discord error while adding role {role.name} ({role.id}) to {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
-                elif punishment.type == BouncerActionType.REMOVE_ROLE:
-                    if not punishment.role_id:
-                        continue
-
-                    role = member.guild.get_role(punishment.role_id)
-                    if not role or role not in member.roles:
-                        continue
-
-                    if (
-                        not member.guild.me.guild_permissions.manage_roles
-                        or role >= member.guild.me.top_role
-                    ):
-                        continue
-
-                    try:
-                        await member.remove_roles(role, reason=f"Bouncer: {punishment.reason}")
-                    except discord.Forbidden as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Titanium was not allowed to remove the {role.name} ({role.id}) role from {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
-                    except discord.HTTPException as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Unknown Discord error while removing role {role.name} ({role.id}) from {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
-                elif punishment.type == BouncerActionType.TOGGLE_ROLE:
-                    if not punishment.role_id:
-                        continue
-
-                    role = member.guild.get_role(punishment.role_id)
-                    if not role:
-                        continue
-
-                    if (
-                        not member.guild.me.guild_permissions.manage_roles
-                        or role >= member.guild.me.top_role
-                    ):
-                        continue
-
-                    try:
-                        if role in member.roles:
-                            await member.remove_roles(role, reason=f"Bouncer: {punishment.reason}")
-                        else:
-                            await member.add_roles(role, reason=f"Bouncer: {punishment.reason}")
-                    except discord.Forbidden as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Titanium was not allowed to toggle the {role.name} ({role.id}) role for {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
-                    except discord.HTTPException as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Unknown Discord error while toggling role {role.name} ({role.id}) for {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
-                elif punishment.type == BouncerActionType.WARN:
-                    await manager.create_case(
-                        action=CaseType.WARN,
-                        user=member,
-                        creator_user=self.bot.user,
-                        reason=f"Bouncer: {punishment.reason}",
-                        source=CaseSource.BOUNCER,
-                    )
-                elif punishment.type == BouncerActionType.MUTE:
-                    # Check if user is already timed out
-                    if member.is_timed_out():
-                        continue
-
-                    if (
-                        not member.guild.me.guild_permissions.moderate_members
-                        or member.top_role >= member.guild.me.top_role
-                    ):
-                        continue
-
-                    # Time out user
-                    try:
                         await member.timeout(
                             (
-                                timedelta(seconds=punishment.duration)
-                                if punishment.duration
-                                and punishment.duration > 0
-                                and timedelta(seconds=punishment.duration).total_seconds()
-                                <= 2419200
+                                timedelta(seconds=action.duration)
+                                if action.duration and action.duration <= 2419200
                                 else timedelta(seconds=2419200)
                             ),
-                            reason=f"Bouncer: {punishment.reason}",
+                            reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
                         )
 
-                        await manager.create_case(
+                        case, _, _ = await manager.create_case(
                             action=CaseType.MUTE,
                             user=member,
                             creator_user=self.bot.user,
-                            reason=f"Bouncer: {punishment.reason}",
-                            duration=(
-                                timedelta(seconds=punishment.duration)
-                                if punishment.duration and punishment.duration > 0
-                                else None
-                            ),
+                            reason=action.reason,
+                            duration=timedelta(seconds=action.duration)
+                            if action.duration
+                            else None,
                             source=CaseSource.BOUNCER,
                         )
-                    except discord.Forbidden as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Titanium was not allowed to mute {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
-                    except discord.HTTPException as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Unknown Discord error while muting {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
-                elif (
-                    punishment.type == BouncerActionType.KICK
-                    and BouncerActionType.BAN not in punishment_types
-                ):
-                    if (
-                        not member.guild.me.guild_permissions.kick_members
-                        or member.top_role >= member.guild.me.top_role
-                    ):
-                        continue
+                    elif action.type == BouncerActionType.KICK:
+                        # fmt: off
+                        if member.top_role >= member.guild.me.top_role:
+                            failed_actions[action] = "No permission to kick this user (Titanium's role not higher than user's top role)"
+                            continue
+                        elif not member.guild.me.guild_permissions.kick_members:
+                            failed_actions[action] = "No kick permissions"
+                            continue
+                        # fmt: on
 
-                    # Kick user
-                    case: ModCase
-                    try:
                         case, _, _ = await manager.create_case(
                             action=CaseType.KICK,
                             user=member,
                             creator_user=self.bot.user,
-                            reason=f"Bouncer: {punishment.reason}",
+                            reason=action.reason,
                             source=CaseSource.BOUNCER,
                         )
-                        await member.kick(
-                            reason=f"Bouncer: {punishment.reason}",
-                        )
-                    except discord.Forbidden as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Titanium was not allowed to kick {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
 
-                        if case:
-                            await manager.delete_case(case.id)
-                    except discord.HTTPException as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Unknown Discord error while kicking {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
+                        try:
+                            await member.kick(
+                                reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
+                            )
+                        except Exception:
+                            await manager.delete_case(case.id, raise_not_found=False)
+                            raise
+                    elif action.type == BouncerActionType.BAN:
+                        # fmt: off
+                        if member.top_role >= member.guild.me.top_role:
+                            failed_actions[action] = "No permission to ban this user (Titanium's role not higher than user's top role)"
+                            continue
+                        elif not member.guild.me.guild_permissions.ban_members:
+                            failed_actions[action] = "No ban permissions"
+                            continue
+                        # fmt: on
 
-                        if case:
-                            await manager.delete_case(case.id)
-                    except Exception:
-                        if case:
-                            await manager.delete_case(case.id)
-                        raise
-                elif punishment.type == BouncerActionType.BAN:
-                    if (
-                        not member.guild.me.guild_permissions.ban_members
-                        or member.top_role >= member.guild.me.top_role
-                    ):
-                        continue
-
-                    # Ban user
-                    case: ModCase
-                    try:
                         case, _, _ = await manager.create_case(
                             action=CaseType.BAN,
                             user=member,
                             creator_user=self.bot.user,
-                            reason=f"Bouncer: {punishment.reason}",
-                            duration=(
-                                timedelta(seconds=punishment.duration)
-                                if punishment.duration and punishment.duration > 0
-                                else None
-                            ),
+                            reason=action.reason,
+                            duration=timedelta(seconds=action.duration)
+                            if action.duration
+                            else None,
                             source=CaseSource.BOUNCER,
                         )
-                        await member.ban(
-                            reason=f"Bouncer: {punishment.reason}",
-                            delete_message_seconds=config.moderation_settings.ban_days * 86400,
-                        )
-                    except discord.Forbidden as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Titanium was not allowed to ban {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
 
-                        if case:
-                            await manager.delete_case(case.id)
-                    except discord.HTTPException as e:
-                        await log_error(
-                            bot=self.bot,
-                            module="Bouncer",
-                            guild_id=member.guild.id,
-                            error=f"Unknown Discord error while banning {member.name} ({member.id})",
-                            details=e.text,
-                            exc=e,
-                        )
+                        try:
+                            await member.ban(
+                                delete_message_seconds=config.moderation_settings.ban_days * 86400,
+                                reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
+                            )
+                        except Exception:
+                            await manager.delete_case(case.id, raise_not_found=False)
+                            raise
+                    elif action.type == BouncerActionType.ADD_ROLE:
+                        # fmt: off
+                        if member.top_role >= member.guild.me.top_role:
+                            failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                            continue
+                        elif not member.guild.me.guild_permissions.manage_roles:
+                            failed_actions[action] = "No manage role permissions"
+                            continue
+                        # fmt: on
 
-                        if case:
-                            await manager.delete_case(case.id)
-                    except Exception:
-                        if case:
-                            await manager.delete_case(case.id)
-                        raise
-                else:
+                        roles: list[discord.Role] = []
+                        for role_id in set(action.role_ids):
+                            role = member.guild.get_role(role_id)
+                            if role and member.guild.me.top_role > role:
+                                roles.append(role)
+
+                        await member.add_roles(
+                            *roles,
+                            reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
+                            atomic=False,
+                        )
+                    elif action.type == BouncerActionType.REMOVE_ROLE:
+                        # fmt: off
+                        if member.top_role >= member.guild.me.top_role:
+                            failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                            continue
+                        elif not member.guild.me.guild_permissions.manage_roles:
+                            failed_actions[action] = "No manage role permissions"
+                            continue
+                        # fmt: on
+
+                        roles: list[discord.Role] = []
+                        for role_id in set(action.role_ids):
+                            role = member.guild.get_role(role_id)
+                            if role and member.guild.me.top_role > role:
+                                roles.append(role)
+
+                        await member.remove_roles(
+                            *roles,
+                            reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
+                            atomic=False,
+                        )
+                    elif action.type == BouncerActionType.TOGGLE_ROLE:
+                        # fmt: off
+                        if member.top_role >= member.guild.me.top_role:
+                            failed_actions[action] = "No permission to manage this user (Titanium's role below user's top role)"
+                            continue
+                        elif not member.guild.me.guild_permissions.manage_roles:
+                            failed_actions[action] = "No manage role permissions"
+                            continue
+                        # fmt: on
+
+                        roles_to_add: list[discord.Role] = []
+                        roles_to_remove: list[discord.Role] = []
+
+                        for role_id in set(action.role_ids):
+                            role = member.guild.get_role(role_id)
+                            if not role or member.guild.me.top_role <= role:
+                                continue
+
+                            if role in member.roles:
+                                roles_to_remove.append(role)
+                            else:
+                                roles_to_add.append(role)
+
+                        if roles_to_add:
+                            await member.add_roles(
+                                *roles_to_add,
+                                reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
+                                atomic=False,
+                            )
+
+                        if roles_to_remove:
+                            await member.remove_roles(
+                                *roles_to_remove,
+                                reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
+                                atomic=False,
+                            )
+                    else:
+                        self.logger.warning(
+                            f"({action.id}) Unknown action type: {action.type.value}"
+                        )
+                        continue
+
+                    successful_actions.append(action)
+                    self.logger.debug(f"({action.id}) Processed.")
+                except discord.Forbidden as e:
+                    failed_actions[action] = e.text
                     await log_error(
                         bot=self.bot,
                         module="Bouncer",
                         guild_id=member.guild.id,
-                        error=f"An internal error occurred while processing bouncer punishments for @{member.name} ({member.id})",
-                        details=f"Punishment action type does not exist: {punishment.type}",
+                        error=f"Titanium was not allowed to perform the {action.type.value} action against @{member.name} ({member.id})",
+                        details=e.text,
+                        exc=e,
+                    )
+                except discord.HTTPException as e:
+                    failed_actions[action] = "Unknown Discord error occurred"
+                    await log_error(
+                        bot=self.bot,
+                        module="Bouncer",
+                        guild_id=member.guild.id,
+                        error=f"Unknown Discord error occurred while processing {action.type.value} against @{member.name} ({member.id})",
+                        details=e.text,
+                        exc=e,
+                    )
+                except Exception as e:
+                    failed_actions[action] = "Unexpected error occurred"
+                    await log_error(
+                        bot=self.bot,
+                        module="Bouncer",
+                        guild_id=member.guild.id,
+                        error=f"Unexpected error occurred while processing {action.type.value} against @{member.name} ({member.id})",
+                        exc=e,
                     )
 
-        if triggers:
+        if triggered_rules:
             guild_logger = GuildLogger(self.bot, member.guild)
             await guild_logger.titanium_bouncer_trigger(
-                rules=triggers,
-                actions=punishments,
+                rules=triggered_rules,
+                successful_actions=successful_actions,
+                failed_actions=failed_actions,
                 member=member,
             )
 
-        self.logger.debug(f"Processed member event from {member.guild.id}: {member.id}")
+        self.logger.debug(
+            f"Finished processing event from {member.guild.id} ({member}, {member.id})"
+        )
 
     # Listen for member joins
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         try:
+            self.logger.debug("Received member join event")
             await self.handle_event(member, BouncerEventType.JOIN)
         except Exception as e:
             await log_error(
@@ -499,6 +497,7 @@ class BouncerMonitorCog(commands.Cog):
             return
 
         try:
+            self.logger.debug("Received member update event")
             await self.handle_event(after, BouncerEventType.UPDATE)
         except Exception as e:
             await log_error(
@@ -506,6 +505,27 @@ class BouncerMonitorCog(commands.Cog):
                 module="Bouncer",
                 guild_id=after.guild.id,
                 error=f"An unknown error occurred while processing a user update for @{after.name} ({after.id})",
+                exc=e,
+            )
+
+    # Listen for reactions added
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        # only available if this is a reaction add event, and in a guild
+        # this doesn't rely on the member cache so this is safe to use
+        if not payload.member:
+            return
+
+        try:
+            payload_time = utcnow()
+            self.logger.debug("Received user reaction event")
+            await self.handle_event(payload.member, BouncerEventType.REACTION, payload_time)
+        except Exception as e:
+            await log_error(
+                bot=self.bot,
+                module="Bouncer",
+                guild_id=payload.guild_id,
+                error=f"An unknown error occurred while processing a reaction event for @{payload.member.name} ({payload.member.id})",
                 exc=e,
             )
 

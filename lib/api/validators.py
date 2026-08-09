@@ -252,17 +252,23 @@ class BouncerCriterionModel(BaseModel):
 
     account_age: int | None = Field(None, ge=1, le=1_892_160_000)
 
-    words: list[str] | None = None
-    match_whole_word: bool = False
-    case_sensitive: bool = False
+    words: list[
+        Annotated[
+            str,
+            StringConstraints(min_length=1, max_length=100),
+        ]
+    ] = Field(default_factory=list)
+    match_whole_word: bool
+    match_all_words: bool
+    case_sensitive: bool
 
-    def to_sqlalchemy(self, rule_id: uuid.UUID) -> BouncerCriteria:
+    def to_sqlalchemy(self) -> BouncerCriteria:
         return BouncerCriteria(
-            rule_id=rule_id,
             type=self.type,
             account_age=self.account_age,
-            words=self.words or [],
+            words=self.words,
             match_whole_word=self.match_whole_word,
+            match_all_words=self.match_all_words,
             case_sensitive=self.case_sensitive,
         )
 
@@ -271,52 +277,62 @@ class BouncerActionModel(BaseModel):
     type: BouncerActionType
 
     duration: int | None = Field(None, ge=1, le=1_892_160_000)
-    reason: str | None = None
+    reason: Annotated[str, StringConstraints(max_length=512, strip_whitespace=True)] | None = None
 
-    role_id: str | None = None
-
-    @model_validator(mode="after")
-    def validate_role_present(self):
-        if (
-            self.type
-            in {
-                BouncerActionType.ADD_ROLE,
-                BouncerActionType.REMOVE_ROLE,
-                BouncerActionType.TOGGLE_ROLE,
-            }
-            and not self.role_id
-        ):
-            raise ValueError("Role ID must be provided for role action")
-        return self
+    role_ids: list[str] = Field(default_factory=list, max_length=10)
 
     @model_validator(mode="after")
-    def validate_role_id(self):
-        if not self.role_id:
+    def validate_role_ids(self):
+        if not self.role_ids:
             return self
 
-        try:
-            int(self.role_id)
-        except Exception:
-            raise ValueError("Invalid role ID")
+        valid_role_ids: list[str] = []
+        for role_id in self.role_ids:
+            if not role_id:
+                raise ValueError(f"Invalid role id: {role_id}")
 
+            try:
+                int(role_id)
+                valid_role_ids.append(role_id)
+            except Exception:
+                raise ValueError(f"Invalid role id: {role_id}")
+
+        self.role_ids = valid_role_ids
         return self
 
-    def to_sqlalchemy(self, rule_id: uuid.UUID) -> BouncerAction:
+    def to_sqlalchemy(self) -> BouncerAction:
         return BouncerAction(
-            rule_id=rule_id,
             type=self.type,
             duration=self.duration,
-            role_id=int(self.role_id) if self.role_id else None,
             reason=self.reason,
+            role_ids=[int(role_id) for role_id in (self.role_ids or [])],
         )
 
 
 class BouncerRuleModel(BaseModel):
+    rule_name: Annotated[str, StringConstraints(max_length=100, strip_whitespace=True)] = ""
     enabled: bool
-    evaluate_for_existing_members: bool
+    match_all_criteria: bool
+
+    order: int
+    stop_if_triggered: bool
+
+    member_join: bool
+    member_update: bool
+    suspicious_reaction: bool
 
     criteria: list[BouncerCriterionModel]
     actions: list[BouncerActionModel]
+
+    @model_validator(mode="after")
+    def validate_triggers(self):
+        if not self.member_join and not self.member_update and not self.suspicious_reaction:
+            raise ValueError("At least 1 trigger must be selected")
+
+        if (self.member_join or self.member_update) and len(self.criteria) == 0:
+            raise ValueError("Member join / update triggers require at least 1 criteria")
+
+        return self
 
     @model_validator(mode="after")
     def validate_unique_criteria_types(self):
@@ -339,14 +355,17 @@ class BouncerRuleModel(BaseModel):
     def to_sqlalchemy(self, guild_id: int) -> BouncerRule:
         rule = BouncerRule(
             guild_id=guild_id,
-            enabled=True,
+            rule_name=self.rule_name,
+            enabled=self.enabled,
+            match_all_criteria=self.match_all_criteria,
+            order=self.order,
+            stop_if_triggered=self.stop_if_triggered,
+            member_join=self.member_join,
+            member_update=self.member_update,
+            suspicious_reaction=self.suspicious_reaction,
+            criteria=[criteria.to_sqlalchemy() for criteria in self.criteria],
+            actions=[action.to_sqlalchemy() for action in self.actions],
         )
-
-        for criterion_model in self.criteria:
-            rule.criteria.append(criterion_model.to_sqlalchemy(rule.id))
-
-        for action_model in self.actions:
-            rule.actions.append(action_model.to_sqlalchemy(rule.id))
 
         return rule
 

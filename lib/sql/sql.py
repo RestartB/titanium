@@ -17,6 +17,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -396,7 +397,7 @@ class AutomodCriteria(Base):
         ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]"), nullable=False
     )
     match_whole_word: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("false"), nullable=False
+        Boolean, server_default=text("true"), nullable=False
     )
     match_all_words: Mapped[bool] = MappedColumn(
         Boolean, server_default=text("false"), nullable=False
@@ -462,9 +463,20 @@ class BouncerRule(Base):
         BigInteger, ForeignKey("guild_bouncer_settings.guild_id", ondelete="CASCADE")
     )
 
-    rule_name: Mapped[str | None] = MappedColumn(String(length=100), nullable=True)
-    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    evaluate_for_existing_members: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    rule_name: Mapped[str] = MappedColumn(String(length=100))
+    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"), nullable=False)
+    match_all_criteria: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("true"), nullable=False
+    )
+
+    member_join: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    member_update: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    suspicious_reaction: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+
+    order: Mapped[int] = MappedColumn(Integer, nullable=False)
+    stop_if_triggered: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("false"), nullable=False
+    )
 
     criteria: Mapped[list["BouncerCriteria"]] = relationship(
         "BouncerCriteria",
@@ -497,10 +509,17 @@ class BouncerCriteria(Base):
     account_age: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
 
     words: Mapped[list[str]] = MappedColumn(
-        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
+        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]"), nullable=False
     )
-    match_whole_word: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
-    case_sensitive: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    match_whole_word: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("true"), nullable=False
+    )
+    match_all_words: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("false"), nullable=False
+    )
+    case_sensitive: Mapped[bool] = MappedColumn(
+        Boolean, server_default=text("false"), nullable=False
+    )
 
     rule: Mapped["BouncerRule"] = relationship(
         "BouncerRule", back_populates="criteria", uselist=False
@@ -515,14 +534,12 @@ class BouncerAction(Base):
     )
     type: Mapped[BouncerActionType] = MappedColumn(Enum(BouncerActionType))
 
-    # Actions with duration
     duration: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
-
-    # Role actions
-    role_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
-
-    # All actions
     reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
+
+    role_ids: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False
+    )
 
     rule: Mapped["BouncerRule"] = relationship(
         "BouncerRule", back_populates="actions", uselist=False
@@ -885,13 +902,22 @@ class UserRep(Base):
     )
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
     user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger,
+        ForeignKey("guild_rep_settings.guild_id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     rep: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"), nullable=False)
     daily_snapshots: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+
+    rep_history: Mapped[list["RepAddHistory"]] = relationship(
+        "RepAddHistory",
+        back_populates="target_user",
+        passive_deletes=True,
     )
 
 
@@ -899,13 +925,21 @@ class RepAddHistory(Base):
     __tablename__ = "rep_add_history"
     __table_args__ = (
         Index("ix_rep_add_history_guild_user_target", "guild_id", "user_id", "target_id"),
+        ForeignKeyConstraint(
+            ["target_id", "guild_id"],
+            ["user_rep.user_id", "user_rep.guild_id"],
+            ondelete="CASCADE",
+        ),
     )
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
-    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    target_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
     guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+
+    target_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    target_user: Mapped[UserRep] = relationship(
+        "UserRep", back_populates="rep_history", uselist=False
+    )
 
     time: Mapped[datetime] = MappedColumn(
         DateTime(timezone=True), server_default=text("NOW()"), nullable=False

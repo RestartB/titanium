@@ -67,15 +67,6 @@ class RepView(View):
             return
 
         async with get_session() as session:
-            session.add(
-                RepAddHistory(
-                    user_id=interaction.user.id,
-                    target_id=self.target_member.id,
-                    guild_id=interaction.guild_id,
-                    time=interaction.created_at,
-                )
-            )
-
             stmt = insert(UserRep).values(
                 guild_id=interaction.guild_id,
                 user_id=self.target_member.id,
@@ -89,6 +80,15 @@ class RepView(View):
             ).returning(UserRep)
 
             rep = (await session.execute(stmt)).scalar_one()
+
+            session.add(
+                RepAddHistory(
+                    user_id=interaction.user.id,
+                    target_id=self.target_member.id,
+                    guild_id=interaction.guild_id,
+                    time=interaction.created_at,
+                )
+            )
 
         await interaction.followup.send(
             embed=discord.Embed(
