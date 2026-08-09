@@ -12,7 +12,6 @@ class BouncerCriteriaType(StrEnum):
     TAG = "tag"
     AGE = "age"
     AVATAR = "avatar"
-    REACTION = "reaction"
 
 
 class BouncerActionType(StrEnum):

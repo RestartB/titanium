@@ -134,8 +134,10 @@ def bouncer_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                     "id": str(rule.id),
                     "rule_name": rule.rule_name,
                     "enabled": rule.enabled,
-                    "evaluate_for_existing_members": rule.evaluate_for_existing_members,
                     "match_all_criteria": rule.match_all_criteria,
+                    "member_join": rule.member_join,
+                    "member_update": rule.member_update,
+                    "suspicious_reaction": rule.suspicious_reaction,
                     "order": rule.order,
                     "stop_if_triggered": rule.stop_if_triggered,
                     "criteria": [

@@ -311,13 +311,15 @@ class BouncerActionModel(BaseModel):
 
 class BouncerRuleModel(BaseModel):
     rule_name: Annotated[str, StringConstraints(max_length=100, strip_whitespace=True)] = ""
-
     enabled: bool
-    evaluate_for_existing_members: bool
     match_all_criteria: bool
 
     order: int
     stop_if_triggered: bool
+
+    member_join: bool
+    member_update: bool
+    suspicious_reaction: bool
 
     criteria: list[BouncerCriterionModel]
     actions: list[BouncerActionModel]
@@ -345,10 +347,12 @@ class BouncerRuleModel(BaseModel):
             guild_id=guild_id,
             rule_name=self.rule_name,
             enabled=self.enabled,
-            evaluate_for_existing_members=self.evaluate_for_existing_members,
             match_all_criteria=self.match_all_criteria,
             order=self.order,
             stop_if_triggered=self.stop_if_triggered,
+            member_join=self.member_join,
+            member_update=self.member_update,
+            suspicious_reaction=self.suspicious_reaction,
             criteria=[criteria.to_sqlalchemy() for criteria in self.criteria],
             actions=[action.to_sqlalchemy() for action in self.actions],
         )

@@ -465,10 +465,13 @@ class BouncerRule(Base):
 
     rule_name: Mapped[str] = MappedColumn(String(length=100))
     enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"), nullable=False)
-    evaluate_for_existing_members: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     match_all_criteria: Mapped[bool] = MappedColumn(
         Boolean, server_default=text("true"), nullable=False
     )
+
+    member_join: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    member_update: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    suspicious_reaction: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
 
     order: Mapped[int] = MappedColumn(Integer, nullable=False)
     stop_if_triggered: Mapped[bool] = MappedColumn(
