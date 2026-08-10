@@ -519,6 +519,7 @@ async def check(ctx: commands.Context["TitaniumBot"]):
 
 @bot.event
 async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands.CommandError):
+    ephemeral = True
     original_error = getattr(error, "original", error)
 
     if isinstance(original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)):
@@ -532,7 +533,7 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             description=description,
             colour=discord.Colour.red(),
         )
-        await ctx.reply(embed=embed)
+        ephemeral = False
     elif isinstance(
         error, (commands.CommandNotFound, commands.NotOwner, adapters.GroupCommandNotFoundException)
     ):
@@ -576,30 +577,27 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
                 name="Did you mean:", value=", ".join([f"`{value[0]}`" for value in did_you_mean])
             )
 
-        await ctx.reply(embed=embed)
+        ephemeral = False
     elif isinstance(error, commands.errors.CommandOnCooldown):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Cooldown",
             description=error,
             colour=discord.Colour.red(),
         )
-        await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, commands.errors.MissingPermissions):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Missing Permissions",
             description=error,
             colour=discord.Colour.red(),
         )
-        await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, commands.errors.BotMissingPermissions):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bot Missing Permissions",
             description=error,
             colour=discord.Colour.red(),
         )
-        await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, commands.errors.NoPrivateMessage):
-        await ctx.reply(embed=guild_only(bot), ephemeral=True)
+        embed = guild_only(bot)
     elif isinstance(error, commands.HybridCommandError) and isinstance(
         error.original, discord.app_commands.TransformerError
     ):
@@ -610,7 +608,7 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             ),
             colour=discord.Colour.red(),
         )
-        await ctx.reply(embed=embed, ephemeral=True)
+
     elif isinstance(
         error,
         (
@@ -624,35 +622,30 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             description=str(error).replace(str(error)[0], str(error)[0].upper(), 1),
             colour=discord.Colour.red(),
         )
-        await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, commands.errors.BadLiteralArgument):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bad Argument",
             description=f"Couldn't find your input for the `{error.param.name}` argument in `{'`, `'.join([str(lit) for lit in error.literals])}`.",
             colour=discord.Colour.red(),
         )
-        await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, commands.errors.MissingRequiredArgument):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Argument Missing",
             description=f"You are missing the `{error.param.name}` argument.",
             colour=discord.Colour.red(),
         )
-        await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, commands.errors.MissingRequiredAttachment):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Attachment Missing",
             description=f"You are missing a required attachment (`{error.param.name}`) for this command.",
             colour=discord.Colour.red(),
         )
-        await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, SlashCommandOnly):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Slash Command Only",
             description="This command is only available as a slash command.",
             colour=discord.Colour.red(),
         )
-        await ctx.reply(embed=embed, ephemeral=True)
     elif isinstance(error, commands.errors.CheckFailure):
         return
     else:
@@ -683,7 +676,10 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             inline=False,
         )
 
-        await ctx.reply(embed=embed, ephemeral=True)
+    try:
+        await ctx.reply(embed=embed, ephemeral=ephemeral)
+    except Exception:
+        await ctx.channel.send(content=ctx.author.mention, embed=embed)
 
     # stop loading reaction
     await adapters._stop_loading(ctx)
