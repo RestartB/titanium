@@ -611,7 +611,14 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         await ctx.reply(embed=embed, ephemeral=True)
-    elif isinstance(error, (commands.errors.BadArgument, commands.errors.ArgumentParsingError)):
+    elif isinstance(
+        error,
+        (
+            commands.errors.BadArgument,
+            commands.errors.BadUnionArgument,
+            commands.errors.ArgumentParsingError,
+        ),
+    ):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bad Argument",
             description=str(error).replace(str(error)[0], str(error)[0].upper(), 1),
