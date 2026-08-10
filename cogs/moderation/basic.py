@@ -1150,19 +1150,6 @@ class ModerationBasicCog(
                     reason=f"Purged by @{ctx.author.name}",
                     check=lambda m: self._purge_check(m, ctx.message.id, user, bot_only),
                 )
-
-                if len(deleted) == 0:
-                    await ctx.reply(
-                        ephemeral=ephemeral,
-                        embed=mod_embeds.none_to_purge(self.bot, ctx.author),
-                        **del_kwargs,
-                    )
-                else:
-                    await ctx.reply(
-                        ephemeral=ephemeral,
-                        embed=mod_embeds.purged(self.bot, ctx.author, len(deleted)),
-                        **del_kwargs,
-                    )
             except discord.Forbidden as e:
                 if not isinstance(
                     ctx.channel,
@@ -1197,6 +1184,19 @@ class ModerationBasicCog(
                 return await ctx.reply(
                     ephemeral=ephemeral,
                     embed=mod_embeds.http_exception(self.bot),
+                    **del_kwargs,
+                )
+
+            if len(deleted) == 0:
+                await ctx.reply(
+                    ephemeral=ephemeral,
+                    embed=mod_embeds.none_to_purge(self.bot, ctx.author),
+                    **del_kwargs,
+                )
+            else:
+                await ctx.reply(
+                    ephemeral=ephemeral,
+                    embed=mod_embeds.purged(self.bot, ctx.author, len(deleted)),
                     **del_kwargs,
                 )
 
