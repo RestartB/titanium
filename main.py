@@ -83,6 +83,19 @@ intents.message_content = True
 intents.members = True
 
 
+class TitaniumContext(commands.Context["TitaniumBot"]):
+    async def reply(
+        self,
+        content: str | None = None,
+        **kwargs: Any,
+    ) -> discord.Message:
+        if self.interaction is not None:
+            return await super().reply(content, **kwargs)
+
+        reference = self.message.to_reference(fail_if_not_exists=False)
+        return await self.send(content, reference=reference, **kwargs)
+
+
 class TitaniumBot(commands.Bot):
     user_installs: int = 0
     guild_installs: int = 0
@@ -127,6 +140,15 @@ class TitaniumBot(commands.Bot):
         self.opt_out: list[int] = []
 
         self.trusted_servers: list[int] = []
+
+    async def get_context(
+        self,
+        origin: discord.Message | discord.Interaction,
+        /,
+        *,
+        cls=TitaniumContext,
+    ):
+        return await super().get_context(origin, cls=cls)
 
     async def refresh_opt_out(self) -> None:
         cache_logger.info("Refreshing opt-out IDs...")
