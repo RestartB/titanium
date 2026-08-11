@@ -46,7 +46,7 @@ class StatsUpdateCog(commands.Cog):
             if app_data.approximate_user_install_count
             else 0
         )
-        self.bot.guild_installs = app_data.approximate_guild_count
+        self.bot.guild_installs = len(self.bot.guilds)
         self.bot.guild_member_count = guild_members
 
     # Status update task
