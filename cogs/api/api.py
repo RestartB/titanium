@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import discord
 from aiohttp import web
 from discord.ext import commands
+from prometheus_client.aiohttp import make_aiohttp_handler
 from pydantic import ValidationError
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
@@ -148,6 +149,8 @@ class APICog(commands.Cog):
     def register_routes(self):
         if self.app is None:
             return
+
+        self.app.router.add_get("/metrics", make_aiohttp_handler())
 
         self.app.router.add_get("/", self.index)
         self.app.router.add_get("/info", self.info)

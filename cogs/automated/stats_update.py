@@ -5,9 +5,18 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands, tasks
 from discord.http import Route
+from prometheus_client import Gauge
 
 if TYPE_CHECKING:
     from main import TitaniumBot
+
+
+ws_latency = Gauge("ws_latency", "Discord Websocket latency")
+api_latency = Gauge("dc_api_latency", "Discord API latency")
+
+user_installs = Gauge("user_installs", "Amount of user installs")
+guild_installs = Gauge("guild_installs", "Amount of guild installs / total guild count")
+guild_member_count = Gauge("guild_member_count", "Amount of members across all guilds")
 
 
 class StatsUpdateCog(commands.Cog):
@@ -48,6 +57,11 @@ class StatsUpdateCog(commands.Cog):
         )
         self.bot.guild_installs = len(self.bot.guilds)
         self.bot.guild_member_count = guild_members
+
+        # Set prometheus
+        user_installs.set(self.bot.user_installs)
+        guild_installs.set(self.bot.guild_installs)
+        guild_member_count.set(self.bot.guild_member_count)
 
     # Status update task
     @tasks.loop(minutes=10)
@@ -102,6 +116,10 @@ class StatsUpdateCog(commands.Cog):
         except Exception as e:
             self.bot.api_latency = 0
             logging.error("Failed to measure API latency", exc_info=e)
+        finally:
+            # Set prometheus
+            ws_latency.set(self.bot.latency * 1000)
+            api_latency.set(self.bot.api_latency * 1000)
 
 
 async def setup(bot: TitaniumBot):
