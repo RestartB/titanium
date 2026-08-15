@@ -98,6 +98,11 @@ class APICog(commands.Cog):
         self.port = int(os.getenv("BOT_API_PORT", "5000"))
         self.api_secret = os.getenv("BOT_API_TOKEN")
 
+        if not self.api_secret:
+            self.logger.warning(
+                "No BOT_API_TOKEN has been provided, this is not a secure configuration!"
+            )
+
     async def cog_load(self) -> None:
         self.logger.info(f"Starting API server on {self.host}:{self.port}")
         self.server_task = asyncio.create_task(self.start_server())
