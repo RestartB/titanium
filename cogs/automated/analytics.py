@@ -21,6 +21,23 @@ class Analytics(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        # set all labels on start
+        # this makes the count more accurate when the bot restarts
+
+        for command in self.bot.tree.walk_commands():
+            commands_counter.labels(
+                name=command.qualified_name,
+                type="app_command",
+            )
+
+        for command in self.bot.walk_commands():
+            commands_counter.labels(
+                name=command.qualified_name,
+                type="prefix",
+            )
+
     async def _send_embed(self, embed: discord.Embed, raw: bool = False) -> None:
         if self.bot.user:
             embed.set_author(
