@@ -29,16 +29,33 @@ Titanium v2 includes many features designed to improve your Discord experience, 
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License in the [licence file](/LICENSE) for more details.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License in the [licence file](/LICENSE) for more details.
 
-## Database Setup
+## API
+
+> [!CAUTION]
+> NEVER publicly expose the internal API. The internal API provides full access to Titanium's data and features, and should only be used for internal communications!
+
+Titanium exposes an internal API, allowing remote control of the bot and access to data / information. This API is designed to be internal only, to communicate with tools such as the Titanium Dashboard. To change the API's settings, change the `BOT_API_` environment variables listed in the `.env.example` file. Also ensure that you set a token via the `BOT_API_TOKEN` environment variable, that blocks access to user/server information and settings API endpoints unless the correct token is provided. If no token is provided, the bot will warn you on startup, but will allow all requests through without authentication.
+
+### Prometheus
+
+Titanium also exposes various Prometheus metrics via the `/metrics` endpoint. These include server and user install counts, command execution totals, error totals, and websocket / API latency. By connecting Prometheus to this endpoint, you can link to tools like Grafana and create custom dashboards, alerting, etc.
+
+## Dashboard
+
+It is recommended to run the [Titanium Dashboard](https://github.com/RestartB/titanium-dashboard) alongside the Titanium bot. This allows you to manage Titanium's settings from a web browser. This is required to manage some features of Titanium, such as the automod and bouncer system.
+
+## Self hosting guide
+
+### Database Setup
 
 1. Create a PostgreSQL 18 database - this can be done with Docker or similar tools
 2. Note down the username and password, add these to the .env file along with the host, port and database name
 3. Download and install the [Atlas CLI](https://atlasgo.io/getting-started#installation) (you may also need to install Docker)
 4. When you run the bot, the bot will automatically create required tables in the database and complete any needed migrations
 
-### Modifying tables
+#### Modifying tables
 
 When developing, you may modify, add or remove tables. To migrate the database to the new schema, follow these steps:
 
@@ -49,11 +66,11 @@ When developing, you may modify, add or remove tables. To migrate the database t
 > [!IMPORTANT]
 > If you have manually modified a migration file, you will need to run `atlas migrate hash`, otherwise the migration process will fail.
 
-### Migrating database
+#### Migrating database
 
 Once you have generated your migration file, or if you have pulled in new migration files from an update, you should now migrate the database. Run the `t!admin migrate-db` command, restart the bot, or use the `--migrate` argument on `main.py`. The database must be running to complete the migration.
 
-## Download Fonts
+### Download Fonts
 
 Titanium requires some fonts to be downloaded to use features such as the image caption feature. To use these features, please download:
 
@@ -63,11 +80,7 @@ Titanium requires some fonts to be downloaded to use features such as the image 
 
 Once required fonts have been downloaded, place them into the `lib/fonts` folder.
 
-## Dashboard
-
-It is recommended to run the [Titanium Dashboard](https://github.com/RestartB/titanium-dashboard) alongside the Titanium bot. This allows you to manage Titanium's settings from a web browser. This is required to manage some features of Titanium, such as the automod and bouncer system.
-
-## Running the bot
+### Running the bot
 
 1. Ensure that you have filled out the .env file with any required information
 2. Install the [`uv` package manager](https://docs.astral.sh/uv/getting-started/installation/) - other package managers may work, but I develop with uv in mind
