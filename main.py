@@ -28,6 +28,7 @@ import discord
 from discord.ext import commands
 from discord.utils import utcnow
 from dotenv import load_dotenv
+from prometheus_client import Counter
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
@@ -63,6 +64,13 @@ from lib.sql.sql import (
 
 # Current Running Path
 path = os.getcwd()
+
+# error counter
+error_counter = Counter(
+    "errors",
+    "Total amount of errors encountered",
+    ["name", "type"],
+)
 
 # setup the logging
 setup_logging()
@@ -431,6 +439,11 @@ class TitaniumBot(commands.Bot):
         if not isinstance(exc, Exception):
             exc = None
 
+        error_counter.labels(
+            name=type(exc).__qualname__ if exc else "Unknown",
+            type="python",
+        ).inc()
+
         try:
             await log_error(
                 bot=self,
@@ -543,6 +556,11 @@ async def check(ctx: commands.Context["TitaniumBot"]):
 async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands.CommandError):
     ephemeral = True
     original_error = getattr(error, "original", error)
+
+    error_counter.labels(
+        name=type(original_error).__qualname__,
+        type="command",
+    ).inc()
 
     if isinstance(original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)):
         description = (
@@ -712,6 +730,11 @@ async def on_app_command_error(
     interaction: discord.Interaction["TitaniumBot"], error: discord.app_commands.AppCommandError
 ):
     original_error = getattr(error, "original", error)
+
+    error_counter.labels(
+        name=type(original_error).__qualname__,
+        type="app_command",
+    ).inc()
 
     if isinstance(original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)):
         description = (

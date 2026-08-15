@@ -5,9 +5,20 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands, tasks
 from discord.http import Route
+from prometheus_client import Gauge, Histogram
 
 if TYPE_CHECKING:
     from main import TitaniumBot
+
+
+ws_latency_now = Gauge("dc_ws_latency_now", "Discord Websocket latency - live")
+api_latency_now = Gauge("dc_api_latency_now", "Discord API latency - live")
+ws_latency = Histogram("dc_ws_latency", "Discord Websocket latency")
+api_latency = Histogram("dc_api_latency", "Discord API latency")
+
+user_installs = Gauge("user_installs", "Amount of user installs")
+guild_installs = Gauge("guild_installs", "Amount of guild installs / total guild count")
+guild_member_count = Gauge("guild_member_count", "Amount of members across all guilds")
 
 
 class StatsUpdateCog(commands.Cog):
@@ -48,6 +59,11 @@ class StatsUpdateCog(commands.Cog):
         )
         self.bot.guild_installs = len(self.bot.guilds)
         self.bot.guild_member_count = guild_members
+
+        # Set prometheus
+        user_installs.set(self.bot.user_installs)
+        guild_installs.set(self.bot.guild_installs)
+        guild_member_count.set(self.bot.guild_member_count)
 
     # Status update task
     @tasks.loop(minutes=10)
@@ -91,6 +107,10 @@ class StatsUpdateCog(commands.Cog):
     # Measure API latency task
     @tasks.loop(minutes=1)
     async def measure_api_latency(self) -> None:
+        if self.bot.latency >= 0:
+            ws_latency_now.set(self.bot.latency)
+            ws_latency.observe(self.bot.latency)
+
         try:
             start = time.perf_counter()
             r = Route("GET", "/users/@me")
@@ -99,6 +119,8 @@ class StatsUpdateCog(commands.Cog):
             delta = time.perf_counter() - start
 
             self.bot.api_latency = delta
+            api_latency_now.set(delta)
+            api_latency.observe(delta)
         except Exception as e:
             self.bot.api_latency = 0
             logging.error("Failed to measure API latency", exc_info=e)

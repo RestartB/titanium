@@ -4,14 +4,39 @@ from typing import TYPE_CHECKING
 import discord
 from discord import Colour, app_commands
 from discord.ext import commands
+from prometheus_client import Counter
 
 if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+commands_counter = Counter(
+    "commands_executed",
+    "Total commands executed",
+    ["name", "type"],
+)
+
+
 class Analytics(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        # set all labels on start
+        # this makes the count more accurate when the bot restarts
+
+        for command in self.bot.tree.walk_commands():
+            commands_counter.labels(
+                name=command.qualified_name,
+                type="app_command",
+            )
+
+        for command in self.bot.walk_commands():
+            commands_counter.labels(
+                name=command.qualified_name,
+                type="prefix",
+            )
 
     async def _send_embed(self, embed: discord.Embed, raw: bool = False) -> None:
         if self.bot.user:
@@ -39,6 +64,12 @@ class Analytics(commands.Cog):
         interaction: discord.Interaction["TitaniumBot"],
         command: app_commands.Command | app_commands.ContextMenu,
     ) -> None:
+        # Set prometheus
+        commands_counter.labels(
+            name=command.qualified_name,
+            type="app_command",
+        ).inc()
+
         if (
             interaction.command
             and command.qualified_name.startswith("anonymous ")
@@ -56,23 +87,17 @@ class Analytics(commands.Cog):
 
         await self._send_embed(embed)
 
-    # Analytics for raw interactions
-    @commands.Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction["TitaniumBot"]):
-        embed = discord.Embed(
-            title=f"`@{interaction.user.name}` started an interaction",
-            description=f"`{interaction.type}`",
-            timestamp=interaction.created_at,
-        )
-        embed.add_field(name="User", value=f"{interaction.user.mention} (`{interaction.user.id}`)")
-
-        await self._send_embed(embed, raw=True)
-
     # Analytics for prefix commands
     @commands.Cog.listener()
-    async def on_command(self, ctx: commands.Context["TitaniumBot"]):
+    async def on_command_completion(self, ctx: commands.Context["TitaniumBot"]):
         if ctx.command is None or ctx.interaction:
             return
+
+        # Set prometheus
+        commands_counter.labels(
+            name=ctx.command.qualified_name,
+            type="prefix",
+        ).inc()
 
         if (
             ctx.command.qualified_name.startswith("anonymous ")
@@ -89,6 +114,40 @@ class Analytics(commands.Cog):
         embed.add_field(name="User", value=f"{ctx.author.mention} (`{ctx.author.id}`)")
 
         await self._send_embed(embed)
+
+    # Analytics for raw interactions
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction: discord.Interaction["TitaniumBot"]):
+        embed = discord.Embed(
+            title=f"`@{interaction.user.name}` started an interaction",
+            description=f"`{interaction.type}`",
+            timestamp=interaction.created_at,
+        )
+        embed.add_field(name="User", value=f"{interaction.user.mention} (`{interaction.user.id}`)")
+
+        await self._send_embed(embed, raw=True)
+
+    # Analytics for raw commands
+    @commands.Cog.listener()
+    async def on_command(self, ctx: commands.Context["TitaniumBot"]):
+        if ctx.command is None or ctx.interaction:
+            return
+
+        if (
+            ctx.command.qualified_name.startswith("anonymous ")
+            and ctx.guild
+            and ctx.guild.id in self.bot.trusted_servers
+        ):
+            return
+
+        embed = discord.Embed(
+            title=f"`@{ctx.author.name}` started a prefix command",
+            description=f"`{ctx.clean_prefix}{ctx.command.qualified_name}`",
+            timestamp=ctx.message.created_at,
+        )
+        embed.add_field(name="User", value=f"{ctx.author.mention} (`{ctx.author.id}`)")
+
+        await self._send_embed(embed, raw=True)
 
     # Analytics for server joins
     @commands.Cog.listener()

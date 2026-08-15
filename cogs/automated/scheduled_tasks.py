@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands, tasks
 from discord.utils import utcnow
+from prometheus_client import Gauge
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -19,6 +20,10 @@ from lib.views.polls import ClosedPollView
 
 if TYPE_CHECKING:
     from main import TitaniumBot
+
+scheduled_tasks_queue_length = Gauge(
+    "scheduled_task_queue_length", "Amount of scheduled tasks in the processing queue"
+)
 
 
 class ScheduledTasksCog(commands.Cog):
@@ -41,9 +46,11 @@ class ScheduledTasksCog(commands.Cog):
             self.bot.loop.create_task(self.queue_worker())
 
         self.task_fetcher.start()
+        self.prometheus_update.start()
 
     async def cog_unload(self) -> None:
         self.task_fetcher.cancel()
+        self.prometheus_update.cancel()
         self.task_queue.shutdown(immediate=True)
 
     async def queue_worker(self):
@@ -482,6 +489,10 @@ class ScheduledTasksCog(commands.Cog):
                     self.logger.debug(f"Adding task {task.id} to queue")
                     self.waiting_tasks.append(task.id)
                 await self.task_queue.put(task)
+
+    @tasks.loop(seconds=1)
+    async def prometheus_update(self) -> None:
+        scheduled_tasks_queue_length.set(self.task_queue.qsize())
 
 
 async def setup(bot: TitaniumBot) -> None:
