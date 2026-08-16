@@ -118,6 +118,14 @@ class Analytics(commands.Cog):
     # Analytics for raw interactions
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction["TitaniumBot"]):
+        if (
+            interaction.command
+            and interaction.command.qualified_name.startswith("anonymous ")
+            and interaction.guild
+            and interaction.guild.id in self.bot.trusted_servers
+        ):
+            return
+
         embed = discord.Embed(
             title=f"`@{interaction.user.name}` started an interaction",
             description=f"`{interaction.type}`",
