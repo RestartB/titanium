@@ -278,6 +278,11 @@ class AutomodMonitorCog(commands.Cog):
                             if link in content_to_check:
                                 criteria_met = True
                                 break
+                    elif type == AutomodCriteriaType.NSFW_LINK:
+                        for link in self.bot.nsfw_links:
+                            if link in content_to_check:
+                                criteria_met = True
+                                break
                     elif type == AutomodCriteriaType.DISCORD_DICE_ROLL:
                         criteria_met = bool(
                             self.DISCORD_DICE_ROLL_RE.search(normalised_content_to_check)

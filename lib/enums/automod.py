@@ -13,6 +13,7 @@ class AutomodCriteriaType(StrEnum):
     ATTACHMENT_SPAM = "attachment_spam"
     EMOJI_SPAM = "emoji_spam"
     DISCORD_DICE_ROLL = "discord_dice_roll"
+    NSFW_LINK = "nsfw_link"
 
 
 class AutomodActionType(StrEnum):
