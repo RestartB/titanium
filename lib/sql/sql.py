@@ -432,6 +432,8 @@ class AutomodAction(Base):
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False
     )
 
+    reaction: Mapped[str | None] = MappedColumn(String(), nullable=True)
+
     rule_id: Mapped[uuid.UUID] = MappedColumn(
         UUID(as_uuid=True), ForeignKey("automod_rules.id", ondelete="CASCADE")
     )

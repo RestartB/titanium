@@ -126,6 +126,8 @@ class AutomodActionModel(BaseModel):
 
     role_ids: list[str] = Field(default_factory=list, max_length=10)
 
+    reaction: str | None = None
+
     message_content: (
         Annotated[str, StringConstraints(max_length=1024, strip_whitespace=True)] | None
     ) = None
@@ -178,6 +180,24 @@ class AutomodActionModel(BaseModel):
         self.role_ids = valid_role_ids
         return self
 
+    @model_validator(mode="after")
+    def validate_reaction(self):
+        if self.type != AutomodActionType.REACTION:
+            return self
+
+        if not self.reaction or self.reaction.strip() == "":
+            raise ValueError("Reaction cannot be empty")
+
+        if self.reaction.isdigit():
+            reaction_id = int(self.reaction)
+            if reaction_id <= 0:
+                raise ValueError("Emoji ID must be a positive integer")
+        else:
+            if not is_emoji(self.reaction):
+                raise ValueError("Emoji must be valid or a positive integer ID")
+
+        return self
+
     def to_sqlalchemy(self) -> AutomodAction:
         return AutomodAction(
             type=self.type,
@@ -189,6 +209,7 @@ class AutomodActionModel(BaseModel):
             message_embed=self.message_embed,
             embed_colour=self.embed_colour,
             role_ids=[int(role_id) for role_id in (self.role_ids or [])],
+            reaction=self.reaction,
         )
 
 

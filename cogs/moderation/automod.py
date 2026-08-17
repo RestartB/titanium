@@ -20,6 +20,9 @@ from lib.sql.sql import AutomodAction, AutomodRule, get_session
 if TYPE_CHECKING:
     from main import TitaniumBot
 
+# TODO: this file has hit pylance's processing limit so adding new features will be much more difficult
+# likely i will need to split the criteria / action parts into separate functions
+
 
 class AutomodMonitorCog(commands.Cog):
     """Monitors new messages for automod triggers and creates cases/punishments"""
@@ -37,6 +40,14 @@ class AutomodMonitorCog(commands.Cog):
     def normalise_automod_text(self, text: str) -> str:
         text = unicodedata.normalize("NFKC", text)
         return "".join(char for char in text if unicodedata.category(char) != "Cf")
+
+    async def add_reaction(self, message: discord.Message, reaction: str) -> None:
+        if emoji.is_emoji(reaction):
+            await message.add_reaction(reaction)
+            return
+
+        custom_emoji = discord.PartialEmoji(name="_", id=int(reaction))
+        await message.add_reaction(custom_emoji)
 
     async def handle_message(
         self, message: discord.Message, event_type: Literal["new", "edit"] = "new"
@@ -64,7 +75,6 @@ class AutomodMonitorCog(commands.Cog):
                 or not isinstance(message.channel, discord.abc.GuildChannel)
                 or not self.bot.user
                 or message.author.id == self.bot.user.id
-                or message.author.guild_permissions.administrator
             ):
                 self.logger.debug("Automod initial checks failed, skipping message")
                 return
@@ -668,6 +678,23 @@ class AutomodMonitorCog(commands.Cog):
                                 )
                             else:
                                 await message.channel.send(**send_kwargs)
+                        elif action.type == AutomodActionType.REACTION:
+                            if not action.reaction:
+                                self.logger.debug(f"{action.id} No reaction provided")
+                                continue
+
+                            if not message.channel.permissions_for(message.guild.me).add_reactions:
+                                failed_actions[action] = (
+                                    "No add reaction permissions in the message channel"
+                                )
+                                continue
+
+                            try:
+                                await self.add_reaction(message, action.reaction)
+                            except discord.NotFound:
+                                failed_actions[action] = "Couldn't find target reaction emoji"
+                            except discord.HTTPException:
+                                failed_actions[action] = "Failed to add reaction to message"
                         else:
                             self.logger.warning(
                                 f"({action.id}) Unknown action type: {action.type.value}"

@@ -26,3 +26,4 @@ class AutomodActionType(StrEnum):
     REMOVE_ROLE = "remove_role"
     TOGGLE_ROLE = "toggle_role"
     SEND_MESSAGE = "send_message"
+    REACTION = "reaction"

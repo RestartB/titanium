@@ -98,6 +98,7 @@ def automod_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
                             "duration": action.duration,
                             "reason": action.reason,
                             "role_ids": [str(role) for role in action.role_ids],
+                            "reaction": action.reaction,
                             "message_content": action.message_content,
                             "message_reply": action.message_reply,
                             "message_mention": action.message_mention,
