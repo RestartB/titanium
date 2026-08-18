@@ -94,7 +94,7 @@ class RepCog(commands.Cog):
             return
 
         matches = []
-        for check_word in ["thank you", "thx", "thanks", "tysm"]:
+        for check_word in ["thank you", "thx", "thanks", "tysm", "ty"]:
             pattern = r"\b" + re.escape(check_word) + r"\b"
             matches.extend(re.findall(pattern, message.content, flags=re.IGNORECASE))
 
