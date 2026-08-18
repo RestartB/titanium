@@ -24,7 +24,7 @@ dependencies = [
     "qrcode[pil]>=8.2",
     "rapidfuzz>=3.14.3",
     "shortuuid>=1.0.13",
-    "sqlalchemy[asyncio]>=2.0.51",
+    "sqlalchemy[asyncio]>=2.0.52",
     "topggpy>=1.4.0",
     "wand>=0.7.2",
 ]
