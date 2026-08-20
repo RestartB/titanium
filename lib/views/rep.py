@@ -4,6 +4,7 @@ import discord
 from discord import ButtonStyle, Colour, Interaction
 from discord.ext.commands import CooldownMapping
 from discord.ui import Button, View, button
+from humanize import naturaldelta
 from sqlalchemy.dialects.postgresql import insert
 
 from lib.sql.sql import RepAddHistory, UserRep, get_session
@@ -71,7 +72,7 @@ class RepView(View):
         if retry_after:
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Cooldown",
-                description=f"Please wait `{retry_after:.2f}s` before giving more rep to this user.",
+                description=f"Please wait `{naturaldelta(retry_after)}` before giving more rep to this user.",
                 colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
@@ -100,6 +101,9 @@ class RepView(View):
                     time=interaction.created_at,
                 )
             )
+
+        if interaction.user.id not in self.given_users:
+            self.given_users.append(interaction.user.id)
 
         embed = discord.Embed(
             description=f"{self.bot.info_emoji} `{len(self.given_users)}` users have given rep using this message",

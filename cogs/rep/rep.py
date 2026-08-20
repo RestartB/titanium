@@ -7,6 +7,7 @@ import discord
 from discord import Colour, app_commands
 from discord.ext import commands, tasks
 from discord.ext.commands import CooldownMapping
+from humanize import naturaldelta
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
@@ -378,7 +379,7 @@ class RepCog(commands.Cog):
         if retry_after:
             embed = discord.Embed(
                 title=f"{ctx.bot.error_emoji} Cooldown",
-                description=f"Please wait `{retry_after:.2f}s` before giving more rep to this user.",
+                description=f"Please wait `{naturaldelta(retry_after)}` before giving more rep to this user.",
                 colour=Colour.red(),
             )
             await ctx.reply(embed=embed, ephemeral=ephemeral)
