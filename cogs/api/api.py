@@ -168,6 +168,7 @@ class APICog(commands.Cog):
         self.app.router.add_post("/user/{user_id}/guilds", self.mutual_guilds)
         self.app.router.add_get("/user/{user_id}/inguild/{guild_id}", self.in_guild)
 
+        self.app.router.add_get("/guild/{guild_id}", self.guild_branding)
         self.app.router.add_get("/guild/{guild_id}/inguild", self.bot_in_guild)
         self.app.router.add_get("/guild/{guild_id}/info", self.guild_info)
         self.app.router.add_get("/guild/{guild_id}/errors", self.guild_errors)
@@ -360,6 +361,26 @@ class APICog(commands.Cog):
 
         return web.json_response({"in_guild": True}, status=200)
 
+    async def guild_branding(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        return web.json_response(
+            {
+                "id": str(guild.id),
+                "name": guild.name,
+                "icon": guild.icon.url if guild.icon else None,
+                "banner": guild.banner.url if guild.banner else None,
+                "splash": guild.discovery_splash.url if guild.discovery_splash else None,
+                "member_count": guild.member_count,
+            }
+        )
+
     async def guild_info(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
         if not guild_id or not guild_id.isdigit():
@@ -371,9 +392,10 @@ class APICog(commands.Cog):
 
         user_id = request.query.get("user", None)
         member = None
-
         if user_id:
             member = await get_or_fetch_member(self.bot, guild, int(user_id))
+        if not member:
+            return web.json_response({"error": "member not found"}, status=404)
 
         config = await self.bot.fetch_guild_config(guild.id)
         if not config:
@@ -385,12 +407,6 @@ class APICog(commands.Cog):
 
         return web.json_response(
             {
-                "id": str(guild.id),
-                "name": guild.name,
-                "icon": guild.icon.url if guild.icon else None,
-                "banner": guild.banner.url if guild.banner else None,
-                "splash": guild.discovery_splash.url if guild.discovery_splash else None,
-                "member_count": guild.member_count,
                 "roles": [
                     {
                         "id": str(role.id),
@@ -418,7 +434,7 @@ class APICog(commands.Cog):
                                         str(channel.category_id) if channel.category_id else None
                                     ),
                                 }
-                                if not member or channel.permissions_for(member).view_channel
+                                if channel.permissions_for(member).view_channel
                                 else {}
                             )
                             for x, channel in enumerate(channels)
