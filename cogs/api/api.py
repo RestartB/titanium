@@ -424,23 +424,25 @@ class APICog(commands.Cog):
                         "name": category.name if category else None,
                         "position": i,
                         "channels": [
-                            (
-                                {
-                                    "id": str(channel.id),
-                                    "name": channel.name,
-                                    "type": str(channel.type),
-                                    "position": x,
-                                    "category": (
-                                        str(channel.category_id) if channel.category_id else None
-                                    ),
-                                }
-                                if channel.permissions_for(member).view_channel
-                                else {}
-                            )
+                            {
+                                "id": str(channel.id),
+                                "name": channel.name,
+                                "type": str(channel.type),
+                                "position": x,
+                                "category": (
+                                    str(channel.category_id) if channel.category_id else None
+                                ),
+                            }
                             for x, channel in enumerate(channels)
+                            if channel.permissions_for(member).view_channel
                         ],
                     }
                     for i, (category, channels) in enumerate(guild.by_category())
+                    if [
+                        channel
+                        for channel in channels
+                        if channel.permissions_for(member).view_channel
+                    ]
                 ],
                 "emojis": [
                     {
