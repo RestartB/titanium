@@ -29,6 +29,8 @@ class RepView(View):
         self.original_message: discord.Message | None = original_message
         self.view_message: discord.Message | None = None
 
+        self.given_users: list[int] = []
+
     @button(label="Give Rep", emoji="➕", style=ButtonStyle.green)
     async def give_rep(self, interaction: Interaction["TitaniumBot"], button: Button):
         if not interaction.guild_id:
@@ -41,6 +43,15 @@ class RepView(View):
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Rep Disabled",
                 description="The rep system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
+                colour=Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        if self.target_member.id in self.bot.opt_out:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} Opted Out",
+                description="This user has opted out of optional data collection and cannot use rep features.",
                 colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
@@ -89,6 +100,12 @@ class RepView(View):
                     time=interaction.created_at,
                 )
             )
+
+        embed = discord.Embed(
+            description=f"{self.bot.info_emoji} `{len(self.given_users)}` users have given rep using this message",
+            colour=Colour.light_grey(),
+        )
+        await interaction.edit_original_response(embed=embed)
 
         await interaction.followup.send(
             embed=discord.Embed(

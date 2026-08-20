@@ -39,6 +39,7 @@ from lib.sql.sql import (
     OptOutIDs,
     Reminder,
     Tag,
+    UserRep,
     get_session,
 )
 from lib.views.confirm import ConfirmView
@@ -1052,6 +1053,7 @@ class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server
             await session.execute(delete(Reminder).where(Reminder.user_id == interaction.user.id))
             await session.execute(delete(ModCaseComment).where(ModCaseComment.user_id == interaction.user.id))
             await session.execute(delete(GameStat).where(GameStat.user_id == interaction.user.id))
+            await session.execute(delete(UserRep).where(UserRep.user_id == interaction.user.id))
             # fmt: on
 
         await view.interaction.edit_original_response(
