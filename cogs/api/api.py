@@ -433,16 +433,22 @@ class APICog(commands.Cog):
                                     str(channel.category_id) if channel.category_id else None
                                 ),
                             }
-                            for x, channel in enumerate(channels)
-                            if channel.permissions_for(member).view_channel
+                            for x, channel in enumerate(
+                                [
+                                    channel
+                                    for channel in channels
+                                    if channel.permissions_for(member).view_channel
+                                ]
+                            )
                         ],
                     }
-                    for i, (category, channels) in enumerate(guild.by_category())
-                    if [
-                        channel
-                        for channel in channels
-                        if channel.permissions_for(member).view_channel
-                    ]
+                    for i, (category, channels) in enumerate(
+                        [
+                            category
+                            for category in guild.by_category()
+                            if not category[0] or category[0].permissions_for(member).view_channel
+                        ]
+                    )
                 ],
                 "emojis": [
                     {
