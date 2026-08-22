@@ -559,6 +559,20 @@ class GuildLoggingSettings(Base):
 
     channels: Mapped[dict[str, int]] = MappedColumn(JSONB, server_default=text("'{}'::jsonb"))
 
+    ignored_creator_role_ids: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    ignored_creator_user_ids: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+
+    ignored_target_role_ids: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    ignored_target_user_ids: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+
 
 class GuildFireboardSettings(Base):
     __tablename__ = "guild_fireboard_settings"
