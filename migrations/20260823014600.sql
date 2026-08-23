@@ -1,0 +1,2 @@
+-- Modify "guild_logging_settings" table
+ALTER TABLE "guild_logging_settings" ADD COLUMN "ignored_creator_role_ids" bigint[] NOT NULL DEFAULT ARRAY[]::bigint[], ADD COLUMN "ignored_creator_user_ids" bigint[] NOT NULL DEFAULT ARRAY[]::bigint[], ADD COLUMN "ignored_target_role_ids" bigint[] NOT NULL DEFAULT ARRAY[]::bigint[], ADD COLUMN "ignored_target_user_ids" bigint[] NOT NULL DEFAULT ARRAY[]::bigint[];

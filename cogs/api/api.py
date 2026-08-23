@@ -1781,6 +1781,19 @@ class APICog(commands.Cog):
                     if value is not None and key in LOGGING_EVENT_MAP
                 }
 
+                db_config.ignored_creator_user_ids = [
+                    int(id) for id in validated_config.ignored_creator_user_ids
+                ]
+                db_config.ignored_creator_role_ids = [
+                    int(id) for id in validated_config.ignored_creator_role_ids
+                ]
+                db_config.ignored_target_user_ids = [
+                    int(id) for id in validated_config.ignored_target_user_ids
+                ]
+                db_config.ignored_target_role_ids = [
+                    int(id) for id in validated_config.ignored_target_role_ids
+                ]
+
                 session.add(db_config)
         elif module_name == "fireboard" and isinstance(validated_config, FireboardConfigModel):
             if len(validated_config.boards) > config.limits.fireboards:
