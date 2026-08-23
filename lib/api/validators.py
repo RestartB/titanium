@@ -1,3 +1,4 @@
+import re
 import uuid
 from typing import Annotated
 
@@ -16,6 +17,17 @@ from lib.sql.sql import (
     BouncerCriteria,
     BouncerRule,
 )
+
+
+def validate_id(id: str) -> bool:
+    return re.fullmatch(r"\d{15,20}", id) is not None
+
+
+DiscordId = Annotated[
+    str,
+    StringConstraints(pattern=r"^[0-9]{15,20}$"),
+]
+
 
 # FIXME: we should probably be validating discord ids
 
@@ -37,8 +49,8 @@ class SettingsModel(BaseModel):
     allow_prefix: bool
     send_not_allowed: bool
     loading_reaction: bool
-    blocked_channels: list[str] = Field(default_factory=list, max_length=100)
-    blocked_roles: list[str] = Field(default_factory=list, max_length=100)
+    blocked_channels: list[DiscordId] = Field(default_factory=list, max_length=100)
+    blocked_roles: list[DiscordId] = Field(default_factory=list, max_length=100)
     delete_after_3_days: bool
 
 
@@ -60,13 +72,13 @@ class GuildSettingsModel(BaseModel):
 
 
 class GuildPermissionsModel(BaseModel):
-    dashboard_managers: list[str] = Field(default_factory=list, max_length=100)
-    case_managers: list[str] = Field(default_factory=list, max_length=100)
+    dashboard_managers: list[DiscordId] = Field(default_factory=list, max_length=100)
+    case_managers: list[DiscordId] = Field(default_factory=list, max_length=100)
 
 
 class ConfessionsConfigModel(BaseModel):
     confessions_in_channel: bool
-    confessions_channel_id: str | None = None
+    confessions_channel_id: DiscordId | None = None
     polls_enabled: bool
     attachments_allowed: bool
 
@@ -126,7 +138,7 @@ class AutomodActionModel(BaseModel):
     duration: int | None = Field(None, ge=1, le=1_892_160_000)
     reason: Annotated[str, StringConstraints(max_length=512, strip_whitespace=True)] | None = None
 
-    role_ids: list[str] = Field(default_factory=list, max_length=10)
+    role_ids: list[DiscordId] = Field(default_factory=list, max_length=10)
 
     reaction: str | None = None
 
@@ -164,25 +176,6 @@ class AutomodActionModel(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def validate_role_ids(self):
-        if not self.role_ids:
-            return self
-
-        valid_role_ids: list[str] = []
-        for role_id in self.role_ids:
-            if not role_id:
-                raise ValueError(f"Invalid role id: {role_id}")
-
-            try:
-                int(role_id)
-                valid_role_ids.append(role_id)
-            except Exception:
-                raise ValueError(f"Invalid role id: {role_id}")
-
-        self.role_ids = valid_role_ids
-        return self
-
-    @model_validator(mode="after")
     def validate_reaction(self):
         if self.type != AutomodActionType.REACTION:
             return self
@@ -190,6 +183,7 @@ class AutomodActionModel(BaseModel):
         if not self.reaction or self.reaction.strip() == "":
             raise ValueError("Reaction cannot be empty")
 
+        # TODO: validate
         if self.reaction.isdigit():
             reaction_id = int(self.reaction)
             if reaction_id <= 0:
@@ -266,8 +260,8 @@ class AutomodConfigModel(BaseModel):
     rules: list[AutomodRuleModel]
     show_outcome_message: bool
 
-    global_ignored_roles: list[str] = Field(default_factory=list, max_length=100)
-    global_ignored_channels: list[str] = Field(default_factory=list, max_length=100)
+    global_ignored_roles: list[DiscordId] = Field(default_factory=list, max_length=100)
+    global_ignored_channels: list[DiscordId] = Field(default_factory=list, max_length=100)
 
 
 class BouncerCriterionModel(BaseModel):
@@ -302,26 +296,7 @@ class BouncerActionModel(BaseModel):
     duration: int | None = Field(None, ge=1, le=1_892_160_000)
     reason: Annotated[str, StringConstraints(max_length=512, strip_whitespace=True)] | None = None
 
-    role_ids: list[str] = Field(default_factory=list, max_length=10)
-
-    @model_validator(mode="after")
-    def validate_role_ids(self):
-        if not self.role_ids:
-            return self
-
-        valid_role_ids: list[str] = []
-        for role_id in self.role_ids:
-            if not role_id:
-                raise ValueError(f"Invalid role id: {role_id}")
-
-            try:
-                int(role_id)
-                valid_role_ids.append(role_id)
-            except Exception:
-                raise ValueError(f"Invalid role id: {role_id}")
-
-        self.role_ids = valid_role_ids
-        return self
+    role_ids: list[DiscordId] = Field(default_factory=list, max_length=10)
 
     def to_sqlalchemy(self) -> BouncerAction:
         return BouncerAction(
@@ -400,10 +375,10 @@ class BouncerConfigModel(BaseModel):
 class LoggingConfigModel(BaseModel):
     channels: dict[str, str | None] = Field(default_factory=dict, max_length=120)
 
-    ignored_creator_role_ids: list[str] = Field(default_factory=list, max_length=100)
-    ignored_creator_user_ids: list[str] = Field(default_factory=list, max_length=100)
-    ignored_target_role_ids: list[str] = Field(default_factory=list, max_length=100)
-    ignored_target_user_ids: list[str] = Field(default_factory=list, max_length=100)
+    ignored_creator_role_ids: list[DiscordId] = Field(default_factory=list, max_length=100)
+    ignored_creator_user_ids: list[DiscordId] = Field(default_factory=list, max_length=100)
+    ignored_target_role_ids: list[DiscordId] = Field(default_factory=list, max_length=100)
+    ignored_target_user_ids: list[DiscordId] = Field(default_factory=list, max_length=100)
 
     @model_validator(mode="after")
     def validate_keys(self):
@@ -415,31 +390,11 @@ class LoggingConfigModel(BaseModel):
 
         return self
 
-    @model_validator(mode="after")
-    def validate_ids(self):
-        ids: list[str] = []
-        ids.extend(self.ignored_creator_role_ids)
-        ids.extend(self.ignored_creator_user_ids)
-        ids.extend(self.ignored_target_role_ids)
-        ids.extend(self.ignored_target_user_ids)
-        if not ids:
-            return self
-
-        for id in ids:
-            if not id:
-                raise ValueError(f"Invalid ID: {id}")
-            try:
-                int(id)
-            except Exception:
-                raise ValueError(f"Invalid ID: {id}")
-
-        return self
-
 
 class FireboardBoardModel(BaseModel):
     id: uuid.UUID | None = None
 
-    channel_id: str
+    channel_id: DiscordId
     reaction: str
     threshold: int
 
@@ -447,14 +402,15 @@ class FireboardBoardModel(BaseModel):
     ignore_self_reactions: bool
     send_notifications: bool
 
-    ignored_roles: list[str] = Field(default_factory=list, max_length=100)
-    ignored_channels: list[str] = Field(default_factory=list, max_length=100)
+    ignored_roles: list[DiscordId] = Field(default_factory=list, max_length=100)
+    ignored_channels: list[DiscordId] = Field(default_factory=list, max_length=100)
 
     @model_validator(mode="after")
     def validate_reaction(self):
         if self.reaction.strip() == "":
             raise ValueError("Reaction cannot be empty")
 
+        # TODO: validate
         if self.reaction.isdigit():
             reaction_id = int(self.reaction)
             if reaction_id <= 0:
@@ -467,11 +423,12 @@ class FireboardBoardModel(BaseModel):
 
 
 class FireboardConfigModel(BaseModel):
-    global_ignored_roles: list[str] = Field(default_factory=list, max_length=100)
-    global_ignored_channels: list[str] = Field(default_factory=list, max_length=100)
+    global_ignored_roles: list[DiscordId] = Field(default_factory=list, max_length=100)
+    global_ignored_channels: list[DiscordId] = Field(default_factory=list, max_length=100)
     boards: list[FireboardBoardModel] = Field(default_factory=list)
 
 
+# TODO: check what this expects
 class ServerCounterChannelModel(BaseModel):
     id: str | None = None
     name: str
@@ -490,7 +447,7 @@ class ServerCountersConfigModel(BaseModel):
 
 class LeaderboardLevelModel(BaseModel):
     xp_required: int
-    reward_roles: list[str] = Field(default_factory=list, max_length=5)
+    reward_roles: list[DiscordId] = Field(default_factory=list, max_length=5)
 
 
 class LeaderboardConfigModel(BaseModel):
@@ -511,8 +468,8 @@ class LeaderboardConfigModel(BaseModel):
     vc_min_xp: int = 15
     vc_max_xp: int = 25
 
-    ignored_roles: list[str] = Field(default_factory=list, max_length=100)
-    ignored_channels: list[str] = Field(default_factory=list, max_length=100)
+    ignored_roles: list[DiscordId] = Field(default_factory=list, max_length=100)
+    ignored_channels: list[DiscordId] = Field(default_factory=list, max_length=100)
 
     bot_message_tracking: bool
     bot_message_xp: bool
@@ -521,7 +478,7 @@ class LeaderboardConfigModel(BaseModel):
 
     levelup_notifications: bool
     notification_ping: bool
-    notification_channel: str | None = None
+    notification_channel: DiscordId | None = None
 
     web_leaderboard_enabled: bool
     web_login_required: bool
@@ -542,14 +499,7 @@ class TagModel(BaseModel):
         ),
     ]
     content: Annotated[str, StringConstraints(min_length=1, max_length=2000, strip_whitespace=True)]
-    user: str
-
-    @field_validator("user")
-    def validate_user(cls, v: str) -> str:
-        if not v.isdigit():
-            raise ValueError("User must be a numeric string ID")
-
-        return v
+    user: DiscordId
 
 
 class RepConfigModel(BaseModel):
@@ -560,5 +510,5 @@ class RepConfigModel(BaseModel):
     web_leaderboard_enabled: bool
     web_login_required: bool
 
-    ignored_roles: list[str] = Field(default_factory=list, max_length=100)
-    ignored_channels: list[str] = Field(default_factory=list, max_length=100)
+    ignored_roles: list[DiscordId] = Field(default_factory=list, max_length=100)
+    ignored_channels: list[DiscordId] = Field(default_factory=list, max_length=100)
