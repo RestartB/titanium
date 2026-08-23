@@ -29,9 +29,6 @@ DiscordId = Annotated[
 ]
 
 
-# FIXME: we should probably be validating discord ids
-
-
 class ModuleModel(BaseModel):
     moderation: bool
     automod: bool
@@ -183,14 +180,12 @@ class AutomodActionModel(BaseModel):
         if not self.reaction or self.reaction.strip() == "":
             raise ValueError("Reaction cannot be empty")
 
-        # TODO: validate
         if self.reaction.isdigit():
-            reaction_id = int(self.reaction)
-            if reaction_id <= 0:
-                raise ValueError("Emoji ID must be a positive integer")
+            if not validate_id(self.reaction):
+                raise ValueError(f"Invalid emoji ID - {self.reaction}")
         else:
             if not is_emoji(self.reaction):
-                raise ValueError("Emoji must be valid or a positive integer ID")
+                raise ValueError(f"Invalid emoji or emoji ID - {self.reaction}")
 
         return self
 
@@ -410,14 +405,12 @@ class FireboardBoardModel(BaseModel):
         if self.reaction.strip() == "":
             raise ValueError("Reaction cannot be empty")
 
-        # TODO: validate
         if self.reaction.isdigit():
-            reaction_id = int(self.reaction)
-            if reaction_id <= 0:
-                raise ValueError("Emoji ID must be a positive integer")
+            if not validate_id(self.reaction):
+                raise ValueError(f"Invalid emoji ID - {self.reaction}")
         else:
             if not is_emoji(self.reaction):
-                raise ValueError("Emoji must be valid or a positive integer ID")
+                raise ValueError(f"Invalid emoji or emoji ID - {self.reaction}")
 
         return self
 
@@ -428,7 +421,8 @@ class FireboardConfigModel(BaseModel):
     boards: list[FireboardBoardModel] = Field(default_factory=list)
 
 
-# TODO: check what this expects
+# FIXME: to be honest i have no idea how the ID works here
+# i will need to pick this up when i redo the update module endpoints
 class ServerCounterChannelModel(BaseModel):
     id: str | None = None
     name: str
