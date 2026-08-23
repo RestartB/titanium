@@ -398,6 +398,11 @@ class BouncerConfigModel(BaseModel):
 class LoggingConfigModel(BaseModel):
     channels: dict[str, str | None] = Field(default_factory=dict, max_length=120)
 
+    ignored_creator_role_ids: list[str] = Field(default_factory=list, max_length=100)
+    ignored_creator_user_ids: list[str] = Field(default_factory=list, max_length=100)
+    ignored_target_role_ids: list[str] = Field(default_factory=list, max_length=100)
+    ignored_target_user_ids: list[str] = Field(default_factory=list, max_length=100)
+
     @model_validator(mode="after")
     def validate_keys(self):
         seen_keys: list[str] = []
@@ -405,6 +410,26 @@ class LoggingConfigModel(BaseModel):
             if key in seen_keys:
                 raise ValueError(f"Duplicate event type: {key}")
             seen_keys.append(key)
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_ids(self):
+        ids: list[str] = []
+        ids.extend(self.ignored_creator_role_ids)
+        ids.extend(self.ignored_creator_user_ids)
+        ids.extend(self.ignored_target_role_ids)
+        ids.extend(self.ignored_target_user_ids)
+        if not ids:
+            return self
+
+        for id in ids:
+            if not id:
+                raise ValueError(f"Invalid ID: {id}")
+            try:
+                int(id)
+            except Exception:
+                raise ValueError(f"Invalid ID: {id}")
 
         return self
 

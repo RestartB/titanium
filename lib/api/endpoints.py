@@ -172,10 +172,34 @@ def logging_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Re
     config = bot.guild_configs[guild.id]
 
     if not config.logging_settings:
-        return web.json_response({"channels": []})
+        return web.json_response(
+            {
+                "channels": [],
+                "ignored_creator_role_ids": [],
+                "ignored_creator_user_ids": [],
+                "ignored_target_role_ids": [],
+                "ignored_target_user_ids": [],
+            }
+        )
 
     return web.json_response(
-        {"channels": {key: str(value) for key, value in config.logging_settings.channels.items()}}
+        {
+            "channels": {
+                key: str(value) for key, value in config.logging_settings.channels.items()
+            },
+            "ignored_creator_role_ids": [
+                str(role_id) for role_id in config.logging_settings.ignored_creator_role_ids
+            ],
+            "ignored_creator_user_ids": [
+                str(user_id) for user_id in config.logging_settings.ignored_creator_user_ids
+            ],
+            "ignored_target_role_ids": [
+                str(role_id) for role_id in config.logging_settings.ignored_target_role_ids
+            ],
+            "ignored_target_user_ids": [
+                str(user_id) for user_id in config.logging_settings.ignored_target_user_ids
+            ],
+        }
     )
 
 
