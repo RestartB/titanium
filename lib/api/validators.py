@@ -17,6 +17,8 @@ from lib.sql.sql import (
     BouncerRule,
 )
 
+# FIXME: we should probably be validating discord ids
+
 
 class ModuleModel(BaseModel):
     moderation: bool
@@ -134,7 +136,7 @@ class AutomodActionModel(BaseModel):
     message_reply: bool
     message_mention: bool
     message_embed: bool
-    # TODO: validate hex code
+    # FIXME: validate hex code
     embed_colour: Annotated[str, StringConstraints(max_length=7, strip_whitespace=True)] | None = (
         None
     )

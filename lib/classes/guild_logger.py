@@ -2414,7 +2414,7 @@ class GuildLogger:
             embed,
         )
 
-    # TODO: get user who deleted thread
+    # FIXME: get user who deleted thread
     async def thread_delete(self, payload: discord.RawThreadDeleteEvent) -> None:
         await self._ensure_config()
         if not self._exists_and_enabled("thread_delete"):
