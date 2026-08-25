@@ -191,10 +191,11 @@ class GuildLogger:
         ):
             raise UserIgnoredException
 
-    def _ignored_target(
+    async def _ignored_target(
         self,
         member: discord.Member | discord.User | discord.ClientUser | int | None,
         member_id: int | None = None,
+        resolve_member: bool = True,
     ) -> None:
         if not self.config or not self.config.logging_settings:
             return
@@ -208,6 +209,20 @@ class GuildLogger:
             raise UserIgnoredException
         elif not member:
             return
+
+        # convert client to member, and resolve member if enabled and required
+        if isinstance(member, discord.ClientUser) and isinstance(self.guild, discord.Guild):
+            member = self.guild.me
+        elif (
+            not isinstance(member, discord.Member)
+            and isinstance(self.guild, discord.Guild)
+            and resolve_member
+        ):
+            fetched_member = await get_or_fetch_member(
+                self.bot, self.guild, (member if isinstance(member, int) else member.id)
+            )
+            if fetched_member:
+                member = fetched_member
 
         # only id is available
         if isinstance(member, int):
@@ -1206,7 +1221,7 @@ class GuildLogger:
 
     async def member_join(self, member: discord.Member) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member)
         if not self._exists_and_enabled("member_join"):
             return
 
@@ -1228,7 +1243,7 @@ class GuildLogger:
 
     async def member_leave(self, member: discord.User | discord.Member) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member, resolve_member=False)
         if not self._exists_and_enabled("member_leave"):
             return
 
@@ -1250,7 +1265,7 @@ class GuildLogger:
 
     async def member_nickname_update(self, before: discord.Member, after: discord.Member) -> None:
         await self._ensure_config()
-        self._ignored_target(after)
+        await self._ignored_target(after)
         if not self._exists_and_enabled("member_nickname_update"):
             return
 
@@ -1281,7 +1296,7 @@ class GuildLogger:
 
     async def member_roles_update(self, before: discord.Member, after: discord.Member) -> None:
         await self._ensure_config()
-        self._ignored_target(after)
+        await self._ignored_target(after)
         if not self._exists_and_enabled("member_roles_update"):
             return
 
@@ -1330,7 +1345,7 @@ class GuildLogger:
 
     async def member_user_pfp_update(self, before: discord.User, after: discord.User) -> None:
         await self._ensure_config()
-        self._ignored_target(after)
+        await self._ignored_target(after)
         if not self._exists_and_enabled("member_user_pfp_update"):
             return
 
@@ -1369,7 +1384,7 @@ class GuildLogger:
 
     async def member_server_pfp_update(self, before: discord.Member, after: discord.Member) -> None:
         await self._ensure_config()
-        self._ignored_target(after)
+        await self._ignored_target(after)
         if not self._exists_and_enabled("member_server_pfp_update"):
             return
 
@@ -1411,7 +1426,7 @@ class GuildLogger:
 
     async def member_ban(self, member: discord.User | discord.Member) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member, resolve_member=False)
         if not self._exists_and_enabled("member_ban"):
             return
 
@@ -1437,7 +1452,7 @@ class GuildLogger:
 
     async def member_unban(self, member: discord.User | discord.Member) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member, resolve_member=False)
         if not self._exists_and_enabled("member_unban"):
             return
 
@@ -1480,7 +1495,7 @@ class GuildLogger:
 
         if not entry.target:
             return
-        self._ignored_target(entry.target)
+        await self._ignored_target(entry.target, resolve_member=False)
 
         embed = discord.Embed(
             title="Member Kicked",
@@ -1502,7 +1517,7 @@ class GuildLogger:
 
     async def member_timeout(self, before: discord.Member, after: discord.Member) -> None:
         await self._ensure_config()
-        self._ignored_target(after)
+        await self._ignored_target(after)
         if not self._exists_and_enabled("member_timeout"):
             return
 
@@ -1535,7 +1550,7 @@ class GuildLogger:
 
     async def member_untimeout(self, before: discord.Member, after: discord.Member) -> None:
         await self._ensure_config()
-        self._ignored_target(after)
+        await self._ignored_target(after)
         if not self._exists_and_enabled("member_untimeout"):
             return
 
@@ -1564,7 +1579,7 @@ class GuildLogger:
 
     async def message_edit(self, event: discord.RawMessageUpdateEvent) -> None:
         await self._ensure_config()
-        self._ignored_target(event.message.author)
+        await self._ignored_target(event.message.author)
         if not self._exists_and_enabled("message_edit"):
             return
 
@@ -1623,7 +1638,7 @@ class GuildLogger:
         )
 
         if event.cached_message:
-            self._ignored_target(event.cached_message.author)
+            await self._ignored_target(event.cached_message.author)
 
         if event.cached_message and event.cached_message.poll:
             return
@@ -1817,7 +1832,7 @@ class GuildLogger:
         ):
             return
 
-        self._ignored_target(event.cached_message.author)
+        await self._ignored_target(event.cached_message.author)
 
         embed = discord.Embed(
             title="Poll Deleted",
@@ -1857,7 +1872,7 @@ class GuildLogger:
         self, message: discord.Message, reactions: list[discord.Reaction]
     ) -> None:
         await self._ensure_config()
-        self._ignored_target(message.author)
+        await self._ignored_target(message.author)
         if not self._exists_and_enabled("reaction_clear"):
             return
 
@@ -1893,7 +1908,7 @@ class GuildLogger:
 
     async def reaction_clear_emoji(self, reaction: discord.Reaction) -> None:
         await self._ensure_config()
-        self._ignored_target(reaction.message.author)
+        await self._ignored_target(reaction.message.author)
         if not self._exists_and_enabled("reaction_clear_emoji"):
             return
 
@@ -2329,7 +2344,7 @@ class GuildLogger:
 
     async def thread_create(self, thread: discord.Thread) -> None:
         await self._ensure_config()
-        self._ignored_target(thread.owner, thread.owner_id)
+        await self._ignored_target(thread.owner, thread.owner_id)
         if not self._exists_and_enabled("thread_create"):
             return
 
@@ -2363,7 +2378,7 @@ class GuildLogger:
 
     async def thread_update(self, before: discord.Thread, after: discord.Thread) -> None:
         await self._ensure_config()
-        self._ignored_target(after.owner, after.owner_id)
+        await self._ignored_target(after.owner, after.owner_id)
         if not self._exists_and_enabled("thread_update"):
             return
 
@@ -2435,7 +2450,7 @@ class GuildLogger:
             )
 
             if payload.thread.owner:
-                self._ignored_target(payload.thread.owner, payload.thread.owner_id)
+                await self._ignored_target(payload.thread.owner, payload.thread.owner_id)
                 embed.set_author(
                     name=f"@{payload.thread.owner.name}",
                     icon_url=payload.thread.owner.display_avatar.url,
@@ -2464,7 +2479,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member)
         if not self._exists_and_enabled("voice_join"):
             return
 
@@ -2495,7 +2510,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member)
         if not self._exists_and_enabled("voice_leave"):
             return
 
@@ -2526,7 +2541,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member)
         if not self._exists_and_enabled("voice_move"):
             return
 
@@ -2561,7 +2576,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member)
         if not self._exists_and_enabled("voice_mute"):
             return
 
@@ -2601,7 +2616,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member)
         if not self._exists_and_enabled("voice_unmute"):
             return
 
@@ -2641,7 +2656,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member)
         if not self._exists_and_enabled("voice_deafen"):
             return
 
@@ -2681,7 +2696,7 @@ class GuildLogger:
         after: discord.VoiceState,
     ) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member)
         if not self._exists_and_enabled("voice_undeafen"):
             return
 
@@ -2897,8 +2912,9 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
+        await self._ignored_target(target)
         self._ignored_creator(creator)
-        self._ignored_target(target)
+
         if not self._exists_and_enabled("titanium_warn"):
             return
 
@@ -2917,8 +2933,9 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
+        await self._ignored_target(target)
         self._ignored_creator(creator)
-        self._ignored_target(target)
+
         if not self._exists_and_enabled("titanium_mute"):
             return
 
@@ -2937,8 +2954,9 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
+        await self._ignored_target(target)
         self._ignored_creator(creator)
-        self._ignored_target(target)
+
         if not self._exists_and_enabled("titanium_unmute"):
             return
 
@@ -2957,8 +2975,9 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
+        await self._ignored_target(target, resolve_member=False)
         self._ignored_creator(creator)
-        self._ignored_target(target)
+
         if not self._exists_and_enabled("titanium_kick"):
             return
 
@@ -2977,8 +2996,9 @@ class GuildLogger:
         dm_error: str,
     ) -> None:
         await self._ensure_config()
+        await self._ignored_target(target, resolve_member=False)
         self._ignored_creator(creator)
-        self._ignored_target(target)
+
         if not self._exists_and_enabled("titanium_ban"):
             return
 
@@ -2995,8 +3015,9 @@ class GuildLogger:
         case: ModCase,
     ) -> None:
         await self._ensure_config()
+        await self._ignored_target(target, resolve_member=False)
         self._ignored_creator(creator)
-        self._ignored_target(target)
+
         if not self._exists_and_enabled("titanium_unban"):
             return
 
@@ -3086,7 +3107,7 @@ class GuildLogger:
         message: discord.Message,
     ) -> None:
         await self._ensure_config()
-        self._ignored_target(message.author)
+        await self._ignored_target(message.author)
         if not self._exists_and_enabled("titanium_automod_trigger"):
             return
 
@@ -3139,7 +3160,7 @@ class GuildLogger:
         member: discord.Member,
     ) -> None:
         await self._ensure_config()
-        self._ignored_target(member)
+        await self._ignored_target(member)
         if not self._exists_and_enabled("titanium_bouncer_trigger"):
             return
 

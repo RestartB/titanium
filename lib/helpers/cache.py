@@ -63,10 +63,13 @@ async def get_or_fetch_member(
         )
         return member
 
-    # If not in cache, fetch from API
+    # If not in cache, fetch from API and cache
     try:
         LOGGER.debug(f"Fetching member from Discord (guild: {guild.id}, user: {user_id})")
         member = await guild.fetch_member(user_id)
+        guild._add_member(member)
+        LOGGER.debug(f"Cached member (guild: {guild.id}, user: {user_id})")
+
         return member
     except discord.NotFound:
         if not user_fallback:
