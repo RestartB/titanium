@@ -1,4 +1,6 @@
 import asyncio
+import functools
+import inspect
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -127,7 +129,28 @@ class UserIgnoredException(Exception):
     pass
 
 
-class GuildLogger:
+# adapted from https://stackoverflow.com/a/24025335
+def suppress_ignored(func):
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except UserIgnoredException:
+            return None
+
+    return wrapper
+
+
+class Meta(type):
+    def __new__(cls, name, bases, attrs):
+        for attr_name, value in attrs.items():
+            if inspect.iscoroutinefunction(value) and not attr_name.startswith("_"):
+                attrs[attr_name] = suppress_ignored(value)
+
+        return super().__new__(cls, name, bases, attrs)
+
+
+class GuildLogger(metaclass=Meta):
     """Server logging class, used to log Discord events to server webhooks"""
 
     _channel_locks: ClassVar[dict[int, asyncio.Lock]] = {}
