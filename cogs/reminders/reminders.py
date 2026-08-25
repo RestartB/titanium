@@ -141,6 +141,27 @@ class TemplateCog(commands.Cog, description="Create reminders."):
             message_id=ctx.message.id if not dm and not ctx.interaction else None,
         )
 
+        if dm:
+            dm_embed = discord.Embed(
+                title=f"{self.bot.success_emoji} Reminder Created • `{reminder.id}`",
+                description=f"I will remind you **here** {format_dt(time_scheduled, style='R')} ({format_dt(time_scheduled, style='S')}).",
+                colour=Colour.green(),
+            )
+            dm_embed.add_field(name="Content", value=shorten_preserve(content, width=1024))
+            dm_embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+            try:
+                await ctx.author.send(embed=dm_embed)
+            except discord.Forbidden:
+                await reminder.delete()
+                embed = discord.Embed(
+                    title=f"{self.bot.error_emoji} Error",
+                    description="Titanium does not have permission to send you DMs. Please ensure Titanium is not blocked and that the bot is able to DM you, or that Titanium is added to your account as an app.",
+                    colour=Colour.red(),
+                )
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return
+
         embed = discord.Embed(
             title=f"{self.bot.success_emoji} Created • `{reminder.id}`",
             description=f"I will remind you **{'in DMs' if dm else 'here'}** {format_dt(time_scheduled, style='R')} ({format_dt(time_scheduled, style='S')}).",

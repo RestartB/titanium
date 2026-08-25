@@ -371,7 +371,7 @@ class ScheduledTasksCog(commands.Cog):
                         return
 
                     member_permissions = channel.permissions_for(member)
-                    if not member_permissions.view_channel:
+                    if not member_permissions.view_channel or not member_permissions.send_messages:
                         retry = False
                         return
 
