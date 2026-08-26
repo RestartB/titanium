@@ -1,11 +1,11 @@
 import os
 import random
 from io import BytesIO
-from typing import TYPE_CHECKING, ClassVar, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 import aiohttp
 import discord
-from discord import Attachment, Colour, app_commands
+from discord import Attachment, ButtonStyle, Colour, app_commands
 from discord.ext import commands
 
 from lib.classes import img_tools
@@ -15,10 +15,12 @@ from lib.helpers.hybrid import defer, handle_group_command_not_found
 if TYPE_CHECKING:
     from main import TitaniumBot
 
+STANDARD_QUALITY = 95
+
 
 class ImageFormatPicker(discord.ui.View):
     def __init__(self, message: discord.Message, quality: int):
-        super().__init__(timeout=120)
+        super().__init__(timeout=60)
 
         self.message: discord.Message = message
         self.quality = quality
@@ -58,8 +60,533 @@ class ImageFormatPicker(discord.ui.View):
         await interaction.edit_original_response(view=None, attachments=files)
 
 
+class BaseModal(discord.ui.Modal):
+    # TODO: maybe switch to a dropdown
+    output_format = discord.ui.Label(
+        text="Output Format",
+        description="Select the image format to output to.",
+        component=discord.ui.RadioGroup(
+            options=[
+                discord.RadioGroupOption(
+                    label=image_format.value,
+                )
+                for image_format in ImageFormats
+            ],
+        ),
+    )
+
+    def __init__(self, title: str, message: discord.Message, timeout: float | None = None):
+        super().__init__(title=title, timeout=timeout)
+        self.images: list[discord.File] = []
+        self.message = message
+
+
+class ResizeModal(BaseModal):
+    width = discord.ui.Label(
+        text="Width",
+        description="Enter the new width of the image.",
+        component=discord.ui.TextInput(
+            style=discord.TextStyle.short,
+            min_length=1,
+            max_length=4,
+        ),
+    )
+
+    height = discord.ui.Label(
+        text="Height",
+        description="Enter the new height of the image.",
+        component=discord.ui.TextInput(
+            style=discord.TextStyle.short,
+            min_length=1,
+            max_length=4,
+        ),
+    )
+
+    async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
+        assert self.output_format.component.value is not None
+
+        assert isinstance(self.width.component, discord.ui.TextInput)
+        assert isinstance(self.height.component, discord.ui.TextInput)
+
+        try:
+            width = int(self.width.component.value)
+            height = int(self.width.component.value)
+
+            if width > 5000 or height > 5000 or width < 1 or height < 1:
+                raise ValueError("Size invalid")
+        except ValueError:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Sizes",
+                description="Please ensure your width and height are values between `1` and `5000`.",
+                colour=Colour.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        for attachment in self.message.attachments:
+            if not attachment.content_type or not attachment.content_type.startswith("image/"):
+                continue
+
+            converter = img_tools.ImageTools(attachment)
+            self.images.append(
+                await converter.resize(
+                    ImageFormats[self.output_format.component.value], width, height
+                )
+            )
+
+        await interaction.edit_original_response(attachments=self.images)
+
+
+class DeepfryModal(BaseModal):
+    intensity = discord.ui.Label(
+        text="Intensity",
+        description="Enter the intensity of the deepfry, between 0 and 100.",
+        component=discord.ui.TextInput(
+            style=discord.TextStyle.short, min_length=1, max_length=3, default="100"
+        ),
+    )
+
+    filter = discord.ui.Label(
+        text="Red Filter",
+        description="Whether to add a red filter to the image.",
+        component=discord.ui.Checkbox(default=True),
+    )
+
+    async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
+        assert self.output_format.component.value is not None
+
+        assert isinstance(self.intensity.component, discord.ui.TextInput)
+        assert isinstance(self.filter.component, discord.ui.Checkbox)
+
+        try:
+            intensity = int(self.intensity.component.value)
+
+            if intensity > 100 or intensity < 0:
+                raise ValueError("Intensity invalid")
+        except ValueError:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Intensity",
+                description="Please ensure your intensity is a number between `0` and `100`.",
+                colour=Colour.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        intensity /= 100.0
+        for attachment in self.message.attachments:
+            if not attachment.content_type or not attachment.content_type.startswith("image/"):
+                continue
+
+            converter = img_tools.ImageTools(attachment)
+            self.images.append(
+                await converter.deepfry(
+                    ImageFormats[self.output_format.component.value],
+                    intensity,
+                    self.filter.component.value,
+                )
+            )
+
+        await interaction.edit_original_response(attachments=self.images)
+
+
+class InvertModal(BaseModal):
+    async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
+        assert self.output_format.component.value is not None
+
+        await interaction.response.defer(ephemeral=True)
+        for attachment in self.message.attachments:
+            if not attachment.content_type or not attachment.content_type.startswith("image/"):
+                continue
+
+            converter = img_tools.ImageTools(attachment)
+            self.images.append(
+                await converter.invert(ImageFormats[self.output_format.component.value])
+            )
+
+        await interaction.edit_original_response(attachments=self.images)
+
+
+class GreyscaleModal(BaseModal):
+    async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
+        assert self.output_format.component.value is not None
+
+        await interaction.response.defer(ephemeral=True)
+        for attachment in self.message.attachments:
+            if not attachment.content_type or not attachment.content_type.startswith("image/"):
+                continue
+
+            converter = img_tools.ImageTools(attachment)
+            self.images.append(
+                await converter.grayscale(ImageFormats[self.output_format.component.value])
+            )
+
+        await interaction.edit_original_response(attachments=self.images)
+
+
+class RotateModal(BaseModal):
+    angle = discord.ui.Label(
+        text="Angle",
+        description="Enter the angle to rotate by.",
+        component=discord.ui.TextInput(
+            style=discord.TextStyle.short,
+            min_length=1,
+            max_length=5,
+        ),
+    )
+
+    async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
+        assert self.output_format.component.value is not None
+
+        assert isinstance(self.angle.component, discord.ui.TextInput)
+
+        try:
+            angle = int(self.angle.component.value)
+            if angle > 9999 or angle < -9999:
+                raise ValueError("Angle invalid")
+        except ValueError:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Angle",
+                description="Please ensure the provided angle is a valid number between `-9999` and `9999`.",
+                colour=Colour.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        for attachment in self.message.attachments:
+            if not attachment.content_type or not attachment.content_type.startswith("image/"):
+                continue
+
+            converter = img_tools.ImageTools(attachment)
+            self.images.append(
+                await converter.rotate(ImageFormats[self.output_format.component.value], angle)
+            )
+
+        await interaction.edit_original_response(attachments=self.images)
+
+
+class SpeechBubbleModal(BaseModal):
+    direction = discord.ui.Label(
+        text="Direction",
+        description="Select the direction that the bubble will point to.",
+        component=discord.ui.RadioGroup(
+            options=[
+                discord.RadioGroupOption(label="Left", value="left"),
+                discord.RadioGroupOption(label="Right", value="right"),
+            ],
+        ),
+    )
+
+    colour = discord.ui.Label(
+        text="Colour",
+        description="Select the colour of the speech bubble.",
+        component=discord.ui.RadioGroup(
+            options=[
+                discord.RadioGroupOption(label="White", value="white"),
+                discord.RadioGroupOption(label="Black", value="black"),
+                discord.RadioGroupOption(label="Transparent", value="transparent"),
+            ],
+        ),
+    )
+
+    async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
+        assert self.output_format.component.value is not None
+
+        assert isinstance(self.direction.component, discord.ui.RadioGroup)
+        assert isinstance(self.colour.component, discord.ui.RadioGroup)
+
+        direction = self.direction.component.value
+        colour = self.colour.component.value
+        assert direction in ("left", "right")
+        assert colour in ("white", "black", "transparent")
+
+        bubble_direction = cast(Literal["left", "right"], direction)
+        bubble_colour = cast(Literal["black", "white", "transparent"], colour)
+
+        await interaction.response.defer(ephemeral=True)
+
+        for attachment in self.message.attachments:
+            if not attachment.content_type or not attachment.content_type.startswith("image/"):
+                continue
+
+            converter = img_tools.ImageTools(attachment)
+            self.images.append(
+                await converter.speech_bubble(
+                    ImageFormats[self.output_format.component.value],
+                    bubble_direction,
+                    bubble_colour,
+                )
+            )
+
+        await interaction.edit_original_response(attachments=self.images)
+
+
+class CaptionModel(BaseModal):
+    content = discord.ui.Label(
+        text="Content",
+        description="Enter the content of the caption.",
+        component=discord.ui.TextInput(
+            style=discord.TextStyle.long,
+            min_length=1,
+            max_length=500,
+        ),
+    )
+
+    position = discord.ui.Label(
+        text="Position",
+        description="Select the position of the caption.",
+        component=discord.ui.RadioGroup(
+            options=[
+                discord.RadioGroupOption(label="Top", value="top", default=True),
+                discord.RadioGroupOption(label="Bottom", value="bottom"),
+            ],
+        ),
+    )
+
+    font = discord.ui.Label(
+        text="Font",
+        description="Select the font to use for the caption.",
+        component=discord.ui.RadioGroup(
+            options=[
+                discord.RadioGroupOption(label="Futura Condensed", value="futura", default=True),
+                discord.RadioGroupOption(label="Impact", value="impact"),
+                discord.RadioGroupOption(label="Figtree", value="figtree"),
+            ],
+        ),
+    )
+
+    async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
+        assert self.output_format.component.value is not None
+
+        assert isinstance(self.content.component, discord.ui.TextInput)
+        assert isinstance(self.position.component, discord.ui.RadioGroup)
+        assert isinstance(self.font.component, discord.ui.RadioGroup)
+
+        position = self.position.component.value
+        font = self.font.component.value
+        assert position in ("top", "bottom")
+        assert font in ("futura", "impact", "figtree")
+
+        position = cast(Literal["top", "bottom"], position)
+        font = cast(Literal["futura", "impact", "figtree"], font)
+
+        await interaction.response.defer(ephemeral=True)
+
+        if font == "futura":
+            selected_font = os.path.join("lib", "fonts", "futura.otf")
+        else:
+            selected_font = os.path.join("lib", "fonts", f"{font}.ttf")
+
+        for attachment in self.message.attachments:
+            if not attachment.content_type or not attachment.content_type.startswith("image/"):
+                continue
+
+            converter = img_tools.ImageTools(attachment)
+            self.images.append(
+                await converter.caption(
+                    ImageFormats[self.output_format.component.value],
+                    self.content.component.value,
+                    selected_font,
+                    interaction.client.browser_renderer,
+                    position,
+                )
+            )
+
+        await interaction.edit_original_response(attachments=self.images)
+
+
+class OverlayModal(BaseModal):
+    # TODO: add client side file format filter when discord.py implements this
+    overlay = discord.ui.Label(
+        text="Content",
+        description="The image to overlay on top of the source.",
+        component=discord.ui.FileUpload(max_values=1),
+    )
+
+    opacity = discord.ui.Label(
+        text="Opacity",
+        description="Enter the opacity of the overlay, between 1 and 100.",
+        component=discord.ui.TextInput(style=discord.TextStyle.short, min_length=1, max_length=3),
+    )
+
+    async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
+        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
+        assert self.output_format.component.value is not None
+
+        assert isinstance(self.overlay.component, discord.ui.FileUpload)
+        assert isinstance(self.opacity.component, discord.ui.TextInput)
+
+        try:
+            opacity = int(self.opacity.component.value)
+            if opacity > 100 or opacity < 1:
+                raise ValueError("Opacity invalid")
+        except ValueError:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Opacity",
+                description="Please ensure the provided opacity is a valid number between `1` and `100`.",
+                colour=Colour.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        overlay = self.overlay.component.values[0]
+        if not overlay.content_type or not overlay.content_type.startswith("image/"):
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Overlay File",
+                description="Please ensure the overlay file is a valid image.",
+                colour=Colour.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        if overlay.size > 5_000_000:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Overlay File",
+                description="Please ensure the overlay file is `5MB` or lower.",
+                colour=Colour.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        overlay_bytes = BytesIO()
+        await self.overlay.component.values[0].save(overlay_bytes)
+
+        for attachment in self.message.attachments:
+            if not attachment.content_type or not attachment.content_type.startswith("image/"):
+                continue
+
+            converter = img_tools.ImageTools(attachment)
+            self.images.append(
+                await converter.overlay(
+                    overlay_bytes,
+                    opacity,
+                    ImageFormats[self.output_format.component.value],
+                )
+            )
+
+        await interaction.edit_original_response(attachments=self.images)
+
+
+class MoreImageToolsView(discord.ui.View):
+    def __init__(self, message: discord.Message, initiator: discord.User | discord.Member):
+        super().__init__(timeout=60)
+
+        self.message: discord.Message = message
+        self.initiator = initiator
+        self.interaction: discord.Interaction["TitaniumBot"] | None = None
+
+    async def on_timeout(self) -> None:
+        if self.interaction:
+            await self.interaction.delete_original_response()
+
+    async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
+        if interaction.user.id == self.initiator.id:
+            return True
+
+        embed = discord.Embed(
+            title=f"{interaction.client.error_emoji} Not Allowed",
+            description="Only the original sender of this panel can control it.",
+            colour=Colour.red(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return False
+
+    @discord.ui.button(label="Resize")
+    async def resize(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ) -> None:
+        self.stop()
+        await interaction.response.send_modal(
+            ResizeModal(title="Resize Options", message=self.message)
+        )
+
+    @discord.ui.button(label="Deepfry")
+    async def deepfry(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ) -> None:
+        self.stop()
+        await interaction.response.send_modal(
+            DeepfryModal(title="Deepfry Options", message=self.message)
+        )
+
+    @discord.ui.button(label="Invert")
+    async def invert(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ) -> None:
+        self.stop()
+        await interaction.response.send_modal(
+            InvertModal(title="Invert Options", message=self.message)
+        )
+
+    @discord.ui.button(label="Greyscale")
+    async def greyscale(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ) -> None:
+        self.stop()
+        await interaction.response.send_modal(
+            GreyscaleModal(title="Greyscale Options", message=self.message)
+        )
+
+    @discord.ui.button(label="Rotate")
+    async def rotate(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ) -> None:
+        self.stop()
+        await interaction.response.send_modal(
+            RotateModal(title="Rotate Options", message=self.message)
+        )
+
+    @discord.ui.button(label="Speech Bubble")
+    async def speech_bubble(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ) -> None:
+        self.stop()
+        await interaction.response.send_modal(
+            SpeechBubbleModal(title="Speech Bubble Options", message=self.message)
+        )
+
+    @discord.ui.button(label="Caption")
+    async def caption(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ) -> None:
+        self.stop()
+        await interaction.response.send_modal(
+            CaptionModel(title="Caption Options", message=self.message)
+        )
+
+    @discord.ui.button(label="Overlay")
+    async def overlay(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ) -> None:
+        self.stop()
+        await interaction.response.send_modal(
+            OverlayModal(title="Overlay Options", message=self.message)
+        )
+
+    @discord.ui.button(label="Close", emoji="❌", style=ButtonStyle.red)
+    async def close(
+        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
+    ) -> None:
+        self.stop()
+        await interaction.response.defer(ephemeral=True)
+        await interaction.delete_original_response()
+
+
 class ImageCog(commands.Cog, name="Images", description="Image processing commands."):
-    STANDARD_QUALITY = 95
     NASA_NUMBER_OF: ClassVar = {
         "A": [0, 1, 2, 3, 4],
         "B": [0, 1],
@@ -92,16 +619,25 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
 
-        self.quote_ctx = app_commands.ContextMenu(
-            name="Convert Images",
+        self.convert_ctx = app_commands.ContextMenu(
+            name="Images - Convert",
             callback=self.convert_images_callback,
             allowed_contexts=discord.app_commands.AppCommandContext(
                 guild=True, dm_channel=True, private_channel=True
             ),
             allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True),
         )
+        self.more_tools_ctx = app_commands.ContextMenu(
+            name="Images - More Tools",
+            callback=self.more_tools_callback,
+            allowed_contexts=discord.app_commands.AppCommandContext(
+                guild=True, dm_channel=True, private_channel=True
+            ),
+            allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True),
+        )
 
-        self.bot.tree.add_command(self.quote_ctx)
+        self.bot.tree.add_command(self.convert_ctx)
+        self.bot.tree.add_command(self.more_tools_ctx)
 
     @app_commands.checks.cooldown(1, 5)
     async def convert_images_callback(
@@ -118,7 +654,26 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
             await interaction.followup.send(embed=embed)
             return
 
-        view = ImageFormatPicker(message=message, quality=self.STANDARD_QUALITY)
+        view = ImageFormatPicker(message=message, quality=STANDARD_QUALITY)
+        await interaction.followup.send(view=view)
+        view.interaction = interaction
+
+    @app_commands.checks.cooldown(1, 5)
+    async def more_tools_callback(
+        self, interaction: discord.Interaction["TitaniumBot"], message: discord.Message
+    ) -> None:
+        await interaction.response.defer()
+
+        if not message.attachments:
+            embed = discord.Embed(
+                title=f"{self.bot.error_emoji} No Attachments",
+                description="Titanium can't see any attachments on this message. Make sure the images are actual attachments (not links), then try again.",
+                colour=Colour.red(),
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        view = MoreImageToolsView(message=message, initiator=interaction.user)
         await interaction.followup.send(view=view)
         view.interaction = interaction
 
@@ -152,7 +707,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         """Convert a image to various formats."""
         async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(image)
-            file = await converter.convert(output_format, self.STANDARD_QUALITY)
+            file = await converter.convert(output_format, STANDARD_QUALITY)
 
             await ctx.reply(file=file, ephemeral=ephemeral)
 
@@ -172,7 +727,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         """Convert a image to GIF."""
         async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(image)
-            file = await converter.convert(ImageFormats.GIF, self.STANDARD_QUALITY)
+            file = await converter.convert(ImageFormats.GIF, STANDARD_QUALITY)
 
             await ctx.reply(file=file, ephemeral=ephemeral)
 
@@ -261,22 +816,22 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
 
     @image_group.command(
         name="grayscale",
-        description="Convert an uploaded image to grayscale.",
+        description="Convert an uploaded image to greyscale.",
     )
     @app_commands.describe(
-        image="The image to convert to grayscale.",
+        image="The image to convert to greyscale.",
         output_format="Optional: the format to output to. Defaults to PNG.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
-    async def grayscale_image(
+    async def greyscale_image(
         self,
         ctx: commands.Context["TitaniumBot"],
         image: Attachment,
         output_format: ImageFormats = ImageFormats.PNG,
         ephemeral: bool = False,
     ) -> None:
-        """Convert an image to grayscale."""
+        """Convert an image to greyscale."""
         async with defer(ctx, ephemeral=ephemeral):
             converter = img_tools.ImageTools(image)
             file = await converter.grayscale(output_format)
@@ -298,7 +853,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         self,
         ctx: commands.Context["TitaniumBot"],
         image: Attachment,
-        angle: int,
+        angle: commands.Range[int, -9999, 9999],
         output_format: ImageFormats = ImageFormats.PNG,
         ephemeral: bool = False,
     ) -> None:
@@ -377,7 +932,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         ctx: commands.Context["TitaniumBot"],
         image: Attachment,
         caption: commands.Range[str, 1, 500],
-        font: Literal["futura", "impact", "figtree"] = "figtree",
+        font: Literal["futura", "impact", "figtree"] = "futura",
         position: Literal["top", "bottom"] = "top",
         output_format: ImageFormats = ImageFormats.GIF,
         ephemeral: bool = False,
@@ -404,7 +959,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         source="The source image.",
         overlay="The image to overlay.",
         opacity="The percentage opacity of the overlay image.",
-        output_format="Optional: the format to output to. Defaults to GIF.",
+        output_format="Optional: the format to output to. Defaults to PNG.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
@@ -414,11 +969,29 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         source: Attachment,
         overlay: Attachment,
         opacity: commands.Range[int, 1, 100],
-        output_format: ImageFormats = ImageFormats.GIF,
+        output_format: ImageFormats = ImageFormats.PNG,
         ephemeral: bool = False,
     ) -> None:
         """Overlay a static image onto another static image."""
         async with defer(ctx, ephemeral=ephemeral):
+            if not overlay.content_type or not overlay.content_type.startswith("image/"):
+                embed = discord.Embed(
+                    title=f"{ctx.bot.error_emoji} Invalid Overlay File",
+                    description="Please ensure the overlay file is a valid image.",
+                    colour=Colour.red(),
+                )
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return
+
+            if overlay.size > 5_000_000:
+                embed = discord.Embed(
+                    title=f"{ctx.bot.error_emoji} Invalid Overlay File",
+                    description="Please ensure the overlay file is `5MB` or lower.",
+                    colour=Colour.red(),
+                )
+                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return
+
             converter = img_tools.ImageTools(source)
             file = await converter.overlay(overlay, opacity, output_format)
             await ctx.reply(file=file, ephemeral=ephemeral)

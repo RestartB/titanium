@@ -707,9 +707,15 @@ class ImageTools:
         source.paste(overlay, mask=mask)
         return source
 
-    async def overlay(self, overlay: Attachment, opacity: int, output_format: ImageFormats) -> File:
+    async def overlay(
+        self, overlay: Attachment | BytesIO, opacity: int, output_format: ImageFormats
+    ) -> File:
         img = await self._load_image()
-        overlay_img = await self._load_image(overlay)
+
+        if isinstance(overlay, Attachment):
+            overlay_img = await self._load_image(overlay)
+        else:
+            overlay_img = Image.open(overlay)
 
         output_img = await asyncio.to_thread(self._overlay_sync, img, overlay_img, opacity)
         buffer = await asyncio.to_thread(self._save_sync, output_img, output_format, 95)
