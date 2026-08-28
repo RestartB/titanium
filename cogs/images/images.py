@@ -11,6 +11,7 @@ from discord.ext import commands
 from lib.classes import img_tools
 from lib.enums.images import ImageFormats
 from lib.helpers.hybrid import defer, handle_group_command_not_found
+from lib.helpers.log_error import log_error
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -65,9 +66,9 @@ class BaseModal(discord.ui.Modal):
     output_format = discord.ui.Label(
         text="Output Format",
         description="Select the image format to output to.",
-        component=discord.ui.RadioGroup(
+        component=discord.ui.Select(
             options=[
-                discord.RadioGroupOption(
+                discord.SelectOption(
                     label=image_format.value,
                 )
                 for image_format in ImageFormats
@@ -75,10 +76,61 @@ class BaseModal(discord.ui.Modal):
         ),
     )
 
-    def __init__(self, title: str, message: discord.Message, timeout: float | None = None):
-        super().__init__(title=title, timeout=timeout)
+    def __init__(
+        self,
+        title: str,
+        message: discord.Message,
+        interaction: discord.Interaction | None,
+        loading: discord.Embed,
+        expired: discord.Embed,
+    ):
+        super().__init__(title=title, timeout=600)
         self.images: list[discord.File] = []
         self.message = message
+        self.interaction = interaction
+        self.loading = loading
+        self.expired = expired
+
+    async def on_timeout(self) -> None:
+        if self.interaction:
+            await self.interaction.edit_original_response(embed=self.expired)
+
+    async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
+        self.stop()
+        if self.interaction:
+            await self.interaction.edit_original_response(embed=self.loading)
+        return True
+
+    async def on_error(
+        self, interaction: discord.Interaction["TitaniumBot"], error: Exception
+    ) -> None:
+        self.stop()
+
+        error_id = await log_error(
+            interaction.client,
+            module="Images",
+            guild_id=None,
+            error="Unexpected error when manipulating image",
+            details=f"User ID: {interaction.user.id}",
+            exc=error,
+            store_err=False,
+        )
+
+        embed = discord.Embed(
+            title=f"{interaction.client.error_emoji} Error",
+            description="An error occurred when processing your image. Please try again later.",
+            colour=Colour.red(),
+        )
+        embed.add_field(
+            name="Error ID",
+            value=f"`{error_id}`",
+            inline=False,
+        )
+
+        if self.interaction:
+            await interaction.edit_original_response(embed=embed)
+        else:
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 class ResizeModal(BaseModal):
@@ -103,9 +155,7 @@ class ResizeModal(BaseModal):
     )
 
     async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
-        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
-        assert self.output_format.component.value is not None
-
+        assert isinstance(self.output_format.component, discord.ui.Select)
         assert isinstance(self.width.component, discord.ui.TextInput)
         assert isinstance(self.height.component, discord.ui.TextInput)
 
@@ -122,6 +172,8 @@ class ResizeModal(BaseModal):
                 colour=Colour.red(),
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
+            if self.interaction:
+                await self.interaction.delete_original_response()
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -133,11 +185,11 @@ class ResizeModal(BaseModal):
             converter = img_tools.ImageTools(attachment)
             self.images.append(
                 await converter.resize(
-                    ImageFormats[self.output_format.component.value], width, height
+                    ImageFormats[self.output_format.component.values[0]], width, height
                 )
             )
 
-        await interaction.edit_original_response(attachments=self.images)
+        await interaction.edit_original_response(attachments=self.images, embed=None)
 
 
 class DeepfryModal(BaseModal):
@@ -156,9 +208,7 @@ class DeepfryModal(BaseModal):
     )
 
     async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
-        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
-        assert self.output_format.component.value is not None
-
+        assert isinstance(self.output_format.component, discord.ui.Select)
         assert isinstance(self.intensity.component, discord.ui.TextInput)
         assert isinstance(self.filter.component, discord.ui.Checkbox)
 
@@ -174,6 +224,8 @@ class DeepfryModal(BaseModal):
                 colour=Colour.red(),
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
+            if self.interaction:
+                await self.interaction.delete_original_response()
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -186,19 +238,18 @@ class DeepfryModal(BaseModal):
             converter = img_tools.ImageTools(attachment)
             self.images.append(
                 await converter.deepfry(
-                    ImageFormats[self.output_format.component.value],
+                    ImageFormats[self.output_format.component.values[0]],
                     intensity,
                     self.filter.component.value,
                 )
             )
 
-        await interaction.edit_original_response(attachments=self.images)
+        await interaction.edit_original_response(attachments=self.images, embed=None)
 
 
 class InvertModal(BaseModal):
     async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
-        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
-        assert self.output_format.component.value is not None
+        assert isinstance(self.output_format.component, discord.ui.Select)
 
         await interaction.response.defer(ephemeral=True)
         for attachment in self.message.attachments:
@@ -207,16 +258,15 @@ class InvertModal(BaseModal):
 
             converter = img_tools.ImageTools(attachment)
             self.images.append(
-                await converter.invert(ImageFormats[self.output_format.component.value])
+                await converter.invert(ImageFormats[self.output_format.component.values[0]])
             )
 
-        await interaction.edit_original_response(attachments=self.images)
+        await interaction.edit_original_response(attachments=self.images, embed=None)
 
 
 class GreyscaleModal(BaseModal):
     async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
-        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
-        assert self.output_format.component.value is not None
+        assert isinstance(self.output_format.component, discord.ui.Select)
 
         await interaction.response.defer(ephemeral=True)
         for attachment in self.message.attachments:
@@ -225,10 +275,10 @@ class GreyscaleModal(BaseModal):
 
             converter = img_tools.ImageTools(attachment)
             self.images.append(
-                await converter.grayscale(ImageFormats[self.output_format.component.value])
+                await converter.grayscale(ImageFormats[self.output_format.component.values[0]])
             )
 
-        await interaction.edit_original_response(attachments=self.images)
+        await interaction.edit_original_response(attachments=self.images, embed=None)
 
 
 class RotateModal(BaseModal):
@@ -243,9 +293,7 @@ class RotateModal(BaseModal):
     )
 
     async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
-        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
-        assert self.output_format.component.value is not None
-
+        assert isinstance(self.output_format.component, discord.ui.Select)
         assert isinstance(self.angle.component, discord.ui.TextInput)
 
         try:
@@ -259,6 +307,8 @@ class RotateModal(BaseModal):
                 colour=Colour.red(),
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
+            if self.interaction:
+                await self.interaction.delete_original_response()
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -269,10 +319,10 @@ class RotateModal(BaseModal):
 
             converter = img_tools.ImageTools(attachment)
             self.images.append(
-                await converter.rotate(ImageFormats[self.output_format.component.value], angle)
+                await converter.rotate(ImageFormats[self.output_format.component.values[0]], angle)
             )
 
-        await interaction.edit_original_response(attachments=self.images)
+        await interaction.edit_original_response(attachments=self.images, embed=None)
 
 
 class SpeechBubbleModal(BaseModal):
@@ -300,9 +350,7 @@ class SpeechBubbleModal(BaseModal):
     )
 
     async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
-        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
-        assert self.output_format.component.value is not None
-
+        assert isinstance(self.output_format.component, discord.ui.Select)
         assert isinstance(self.direction.component, discord.ui.RadioGroup)
         assert isinstance(self.colour.component, discord.ui.RadioGroup)
 
@@ -323,13 +371,13 @@ class SpeechBubbleModal(BaseModal):
             converter = img_tools.ImageTools(attachment)
             self.images.append(
                 await converter.speech_bubble(
-                    ImageFormats[self.output_format.component.value],
+                    ImageFormats[self.output_format.component.values[0]],
                     bubble_direction,
                     bubble_colour,
                 )
             )
 
-        await interaction.edit_original_response(attachments=self.images)
+        await interaction.edit_original_response(attachments=self.images, embed=None)
 
 
 class CaptionModel(BaseModal):
@@ -367,9 +415,7 @@ class CaptionModel(BaseModal):
     )
 
     async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
-        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
-        assert self.output_format.component.value is not None
-
+        assert isinstance(self.output_format.component, discord.ui.Select)
         assert isinstance(self.content.component, discord.ui.TextInput)
         assert isinstance(self.position.component, discord.ui.RadioGroup)
         assert isinstance(self.font.component, discord.ui.RadioGroup)
@@ -396,7 +442,7 @@ class CaptionModel(BaseModal):
             converter = img_tools.ImageTools(attachment)
             self.images.append(
                 await converter.caption(
-                    ImageFormats[self.output_format.component.value],
+                    ImageFormats[self.output_format.component.values[0]],
                     self.content.component.value,
                     selected_font,
                     interaction.client.browser_renderer,
@@ -404,7 +450,7 @@ class CaptionModel(BaseModal):
                 )
             )
 
-        await interaction.edit_original_response(attachments=self.images)
+        await interaction.edit_original_response(attachments=self.images, embed=None)
 
 
 class OverlayModal(BaseModal):
@@ -422,9 +468,7 @@ class OverlayModal(BaseModal):
     )
 
     async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
-        assert isinstance(self.output_format.component, discord.ui.RadioGroup)
-        assert self.output_format.component.value is not None
-
+        assert isinstance(self.output_format.component, discord.ui.Select)
         assert isinstance(self.overlay.component, discord.ui.FileUpload)
         assert isinstance(self.opacity.component, discord.ui.TextInput)
 
@@ -439,6 +483,8 @@ class OverlayModal(BaseModal):
                 colour=Colour.red(),
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
+            if self.interaction:
+                await self.interaction.delete_original_response()
             return
 
         overlay = self.overlay.component.values[0]
@@ -449,6 +495,8 @@ class OverlayModal(BaseModal):
                 colour=Colour.red(),
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
+            if self.interaction:
+                await self.interaction.delete_original_response()
             return
 
         if overlay.size > 5_000_000:
@@ -458,6 +506,8 @@ class OverlayModal(BaseModal):
                 colour=Colour.red(),
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
+            if self.interaction:
+                await self.interaction.delete_original_response()
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -474,19 +524,27 @@ class OverlayModal(BaseModal):
                 await converter.overlay(
                     overlay_bytes,
                     opacity,
-                    ImageFormats[self.output_format.component.value],
+                    ImageFormats[self.output_format.component.values[0]],
                 )
             )
 
-        await interaction.edit_original_response(attachments=self.images)
+        await interaction.edit_original_response(attachments=self.images, embed=None)
 
 
 class MoreImageToolsView(discord.ui.View):
-    def __init__(self, message: discord.Message, initiator: discord.User | discord.Member):
+    def __init__(
+        self,
+        message: discord.Message,
+        waiting: discord.Embed,
+        loading: discord.Embed,
+        expired: discord.Embed,
+    ):
         super().__init__(timeout=60)
 
         self.message: discord.Message = message
-        self.initiator = initiator
+        self.waiting: discord.Embed = waiting
+        self.loading: discord.Embed = loading
+        self.expired: discord.Embed = expired
         self.interaction: discord.Interaction["TitaniumBot"] | None = None
 
     async def on_timeout(self) -> None:
@@ -494,7 +552,9 @@ class MoreImageToolsView(discord.ui.View):
             await self.interaction.delete_original_response()
 
     async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
-        if interaction.user.id == self.initiator.id:
+        if self.interaction and interaction.user.id == self.interaction.user.id:
+            if interaction.custom_id != self.close.custom_id:
+                await self.interaction.edit_original_response(embed=self.waiting, view=None)
             return True
 
         embed = discord.Embed(
@@ -511,7 +571,13 @@ class MoreImageToolsView(discord.ui.View):
     ) -> None:
         self.stop()
         await interaction.response.send_modal(
-            ResizeModal(title="Resize Options", message=self.message)
+            ResizeModal(
+                title="Resize Options",
+                message=self.message,
+                interaction=interaction,
+                loading=self.loading,
+                expired=self.expired,
+            )
         )
 
     @discord.ui.button(label="Deepfry")
@@ -520,7 +586,13 @@ class MoreImageToolsView(discord.ui.View):
     ) -> None:
         self.stop()
         await interaction.response.send_modal(
-            DeepfryModal(title="Deepfry Options", message=self.message)
+            DeepfryModal(
+                title="Deepfry Options",
+                message=self.message,
+                interaction=interaction,
+                loading=self.loading,
+                expired=self.expired,
+            )
         )
 
     @discord.ui.button(label="Invert")
@@ -529,7 +601,13 @@ class MoreImageToolsView(discord.ui.View):
     ) -> None:
         self.stop()
         await interaction.response.send_modal(
-            InvertModal(title="Invert Options", message=self.message)
+            InvertModal(
+                title="Invert Options",
+                message=self.message,
+                interaction=interaction,
+                loading=self.loading,
+                expired=self.expired,
+            )
         )
 
     @discord.ui.button(label="Greyscale")
@@ -538,7 +616,13 @@ class MoreImageToolsView(discord.ui.View):
     ) -> None:
         self.stop()
         await interaction.response.send_modal(
-            GreyscaleModal(title="Greyscale Options", message=self.message)
+            GreyscaleModal(
+                title="Greyscale Options",
+                message=self.message,
+                interaction=interaction,
+                loading=self.loading,
+                expired=self.expired,
+            )
         )
 
     @discord.ui.button(label="Rotate")
@@ -547,7 +631,13 @@ class MoreImageToolsView(discord.ui.View):
     ) -> None:
         self.stop()
         await interaction.response.send_modal(
-            RotateModal(title="Rotate Options", message=self.message)
+            RotateModal(
+                title="Rotate Options",
+                message=self.message,
+                interaction=interaction,
+                loading=self.loading,
+                expired=self.expired,
+            )
         )
 
     @discord.ui.button(label="Speech Bubble")
@@ -556,7 +646,13 @@ class MoreImageToolsView(discord.ui.View):
     ) -> None:
         self.stop()
         await interaction.response.send_modal(
-            SpeechBubbleModal(title="Speech Bubble Options", message=self.message)
+            SpeechBubbleModal(
+                title="Speech Bubble Options",
+                message=self.message,
+                interaction=interaction,
+                loading=self.loading,
+                expired=self.expired,
+            )
         )
 
     @discord.ui.button(label="Caption")
@@ -565,7 +661,13 @@ class MoreImageToolsView(discord.ui.View):
     ) -> None:
         self.stop()
         await interaction.response.send_modal(
-            CaptionModel(title="Caption Options", message=self.message)
+            CaptionModel(
+                title="Caption Options",
+                message=self.message,
+                interaction=interaction,
+                loading=self.loading,
+                expired=self.expired,
+            )
         )
 
     @discord.ui.button(label="Overlay")
@@ -574,7 +676,13 @@ class MoreImageToolsView(discord.ui.View):
     ) -> None:
         self.stop()
         await interaction.response.send_modal(
-            OverlayModal(title="Overlay Options", message=self.message)
+            OverlayModal(
+                title="Overlay Options",
+                message=self.message,
+                interaction=interaction,
+                loading=self.loading,
+                expired=self.expired,
+            )
         )
 
     @discord.ui.button(label="Close", emoji="❌", style=ButtonStyle.red)
@@ -582,8 +690,8 @@ class MoreImageToolsView(discord.ui.View):
         self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
     ) -> None:
         self.stop()
-        await interaction.response.defer(ephemeral=True)
-        await interaction.delete_original_response()
+        if self.interaction:
+            await self.interaction.delete_original_response()
 
 
 class ImageCog(commands.Cog, name="Images", description="Image processing commands."):
@@ -619,8 +727,23 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
 
+        self.WAITING_EMBED = discord.Embed(
+            title=f"{self.bot.loading_emoji} Waiting for input...",
+            description="Please complete the questions in the popup displayed.",
+            colour=Colour.light_grey(),
+        )
+        self.LOADING_EMBED = discord.Embed(
+            title=f"{self.bot.loading_emoji} Generating...",
+            colour=Colour.light_grey(),
+        )
+        self.EXPIRED_EMBED = discord.Embed(
+            title=f"{self.bot.error_emoji} Expired",
+            description="You cancelled the prompt or didn't respond within 10 minutes.",
+            colour=Colour.red(),
+        )
+
         self.convert_ctx = app_commands.ContextMenu(
-            name="Images - Convert",
+            name="Convert Images",
             callback=self.convert_images_callback,
             allowed_contexts=discord.app_commands.AppCommandContext(
                 guild=True, dm_channel=True, private_channel=True
@@ -628,7 +751,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
             allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True),
         )
         self.more_tools_ctx = app_commands.ContextMenu(
-            name="Images - More Tools",
+            name="Edit Images",
             callback=self.more_tools_callback,
             allowed_contexts=discord.app_commands.AppCommandContext(
                 guild=True, dm_channel=True, private_channel=True
@@ -673,7 +796,12 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
             await interaction.followup.send(embed=embed)
             return
 
-        view = MoreImageToolsView(message=message, initiator=interaction.user)
+        view = MoreImageToolsView(
+            message=message,
+            waiting=self.WAITING_EMBED,
+            loading=self.LOADING_EMBED,
+            expired=self.EXPIRED_EMBED,
+        )
         await interaction.followup.send(view=view)
         view.interaction = interaction
 
