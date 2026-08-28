@@ -6,7 +6,7 @@ import os
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
 
 import aiohttp
 import jinja2
@@ -210,6 +210,8 @@ class ImageTools:
     Handle image manipulation tasks.
     """
 
+    ANIMATED_FORMATS: ClassVar = {"GIF", "WEBP", "PNG", "AVIF"}
+
     def __init__(self, image: Attachment | None = None) -> None:
         self.image: Attachment | None = image
 
@@ -249,8 +251,7 @@ class ImageTools:
 
     def _save_sync(self, img: Image.Image, output_format: ImageFormats, quality: int) -> BytesIO:
         if output_format == ImageFormats.GIF:
-            is_animated = getattr(img, "n_frames", 1) > 1
-
+            is_animated = img.format in self.ANIMATED_FORMATS and getattr(img, "n_frames", 1) > 1
             if is_animated:
                 # animation, use pillow
                 buffer = BytesIO()
@@ -571,8 +572,7 @@ class ImageTools:
         )
         screenshot = Image.open(BytesIO(screenshot_bytes))
 
-        is_animated = getattr(img, "n_frames", 1) > 1
-
+        is_animated = img.format in self.ANIMATED_FORMATS and getattr(img, "n_frames", 1) > 1
         if is_animated:
             frames: list[Image.Image] = []
 
