@@ -685,7 +685,15 @@ class MoreImageToolsView(discord.ui.View):
             )
         )
 
-    @discord.ui.button(label="Close", style=ButtonStyle.red)
+    @discord.ui.button(
+        label="Close",
+        emoji=(
+            discord.PartialEmoji(name="", id=int(emoji_id.strip()))
+            if (emoji_id := os.getenv("ERROR_EMOJI"))
+            else None
+        ),
+        style=ButtonStyle.red,
+    )
     async def close(
         self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
     ) -> None:
