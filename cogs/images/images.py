@@ -1046,7 +1046,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     @app_commands.describe(
         image="The image to caption.",
         caption="The caption text to add to the image. Note: custom emojis are not supported.",
-        font="Optional: the font to use for the caption. Defaults to Figtree.",
+        font="Optional: the font to use for the caption. Defaults to Futura.",
         position="Optional: the position to place the text in. Defaults to top.",
         output_format="Optional: the format to output to. Defaults to GIF.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
