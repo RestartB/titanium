@@ -222,7 +222,7 @@ class BasicCommandsCog(
 
         for i, prefix in enumerate(config.prefixes):
             if i == 0:
-                prefix_str = f"`{prefix}`"
+                prefix_str += f"`{prefix}`"
                 continue
 
             prefix_str += f", `{prefix}`"
