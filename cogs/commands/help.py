@@ -65,7 +65,9 @@ class HelpCommandCog(commands.Cog):
                         value = self.bot.user.mention
 
                     embed.add_field(
-                        name=f"Prefixes for {ctx.guild.name}", value=value, inline=False
+                        name=f"Prefixes for {ctx.guild.name} (will be removed mid-end of September)",
+                        value=value,
+                        inline=False,
                     )
 
             if (

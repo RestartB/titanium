@@ -180,7 +180,9 @@ class BasicCommandsCog(
         await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @commands.hybrid_command(
-        name="prefixes", aliases=["prefix"], description="Get the bot's command prefixes."
+        name="prefixes",
+        aliases=["prefix"],
+        description="Get the bot's command prefixes. Prefix commands will be removed mid-end of September.",
     )
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
@@ -198,7 +200,7 @@ class BasicCommandsCog(
 
         await ctx.defer(ephemeral=ephemeral)
 
-        prefix_str = ""
+        prefix_str = f"{ctx.bot.warn_emoji} Please note that prefix commands will be removed mid-end of September due to Discord restrictions.\n\n"
         config = await self.bot.fetch_guild_config(ctx.guild.id)
         if not config:
             raise ValueError("No guild config found")

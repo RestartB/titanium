@@ -750,6 +750,9 @@ class PrefixView(LayoutView):
 
         container = Container(
             top_section,
+            TextDisplay(
+                content=f"{bot.warn_emoji} Please note that prefix commands will be **removed in mid-end of September** due to Discord restrictions."
+            ),
             Separator(spacing=SeparatorSpacing.large),
             allow_prefix,
             not_allowed,
@@ -917,7 +920,7 @@ class SettingsView(LayoutView):
             )
             prefixes_section = Section(
                 TextDisplay(
-                    "### Prefixes\nManage the prefixes that Titanium will respond to in this server."
+                    "### Prefixes\nManage the prefixes that Titanium will respond to in this server (will be removed mid-end September)."
                 ),
                 accessory=OpenPageButton(
                     target_view=PrefixView(bot=bot, settings=settings, previous_view=self),
