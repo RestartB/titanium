@@ -28,7 +28,6 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm.attributes import flag_modified
 
 from lib.embeds.general import cancelled
-from lib.helpers.hybrid import SlashCommandOnly
 from lib.helpers.strings import dashboard_url
 from lib.helpers.validation import is_valid_uuid
 from lib.sql.sql import (
@@ -960,10 +959,6 @@ class SettingsView(LayoutView):
 class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server settings."):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-
-    @commands.command(name="settings", description="Please use the slash command version instead.")
-    async def settings_prefix(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        raise SlashCommandOnly
 
     @app_commands.command(
         name="settings",
