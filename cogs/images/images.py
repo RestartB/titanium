@@ -813,11 +813,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         await interaction.followup.send(view=view)
         view.interaction = interaction
 
-    @commands.hybrid_group(
-        name="image",
-        aliases=["images", "photo", "photos"],
-        description="Image processing commands.",
-    )
+    @commands.hybrid_group(name="image", description="Image processing commands.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def image_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
@@ -850,7 +846,6 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
     @image_group.command(
         name="gif",
         description="Convert an image to GIF. For more formats, use the /image format command.",
-        aliases=["to-gif", "togif"],
     )
     @app_commands.describe(
         image="The image to convert.",

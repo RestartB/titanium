@@ -262,9 +262,7 @@ class TagCommandsCog(commands.Cog):
         )
 
     # Use tag command
-    @commands.hybrid_group(
-        name="tag", aliases=["tags"], fallback="use", description="Send a server or user tag."
-    )
+    @commands.hybrid_group(name="tag", fallback="use", description="Send a server or user tag.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
@@ -396,9 +394,7 @@ class TagCommandsCog(commands.Cog):
             await self.push_tag_usage(tag_data)
 
     # List tags command
-    @tags_group.command(
-        name="list", aliases=["viewall"], description="View a list of all server or user tags."
-    )
+    @tags_group.command(name="list", description="View a list of all server or user tags.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(

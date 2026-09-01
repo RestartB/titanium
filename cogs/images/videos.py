@@ -28,21 +28,13 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
         )
         return f"titanium_{filename}.{output_format.lower()}"
 
-    @commands.hybrid_group(
-        name="video",
-        aliases=["videos"],
-        description="Video processing commands.",
-    )
+    @commands.hybrid_group(name="video", description="Video processing commands.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def video_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
         handle_group_command_not_found(ctx)
 
-    @video_group.command(
-        name="gif",
-        description="Convert a video to GIF. Max 20MB, 10s, 15 FPS.",
-        aliases=["to-gif", "togif"],
-    )
+    @video_group.command(name="gif", description="Convert a video to GIF. Max 20MB, 10s, 15 FPS.")
     @app_commands.describe(
         video="The video to convert to GIF.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -133,11 +125,7 @@ class VideoCog(commands.Cog, name="Videos", description="Video processing comman
             )
             await ctx.reply(file=file, ephemeral=ephemeral)
 
-    @video_group.command(
-        name="webp",
-        description="Convert a video to WebP. Max 20MB, 20s, 30 FPS.",
-        aliases=["to-webp", "towebp"],
-    )
+    @video_group.command(name="webp", description="Convert a video to WebP. Max 20MB, 20s, 30 FPS.")
     @app_commands.describe(
         video="The video to convert to WebP.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",

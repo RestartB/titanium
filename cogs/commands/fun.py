@@ -22,9 +22,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
         self.bot = bot
 
     # 8 ball command
-    @commands.hybrid_command(
-        name="8ball", aliases=["8-ball"], description="Consult the mystical magic 8 ball."
-    )
+    @commands.hybrid_command(name="8ball", description="Consult the mystical magic 8 ball.")
     @app_commands.describe(
         question="Optional: your question.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -93,11 +91,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
         await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Random number command
-    @commands.hybrid_command(
-        name="random-number",
-        aliases=["randomnumber", "randomnum", "random-num"],
-        description="Generate a random number.",
-    )
+    @commands.hybrid_command(name="random-number", description="Generate a random number.")
     @app_commands.describe(
         minimum="The minimum number that can be generated.",
         maximum="The maximum number that can be generated.",
@@ -359,11 +353,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
             ephemeral=ephemeral,
         )
 
-    @commands.command(
-        name="freaky",
-        aliases=["freakytext", "freaky-text"],
-        description="Convert normal text to freaky text.",
-    )
+    @commands.command(name="freaky", description="Convert normal text to freaky text.")
     async def freaky_prefix(self, ctx: commands.Context["TitaniumBot"], *, text: str) -> None:
         for char in self.freaky_map:
             text = text.replace(char, self.freaky_map[char])
@@ -373,7 +363,6 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
     # GitHub Roast command
     @commands.hybrid_command(
         name="github-roast",
-        aliases=["githubroast", "gh-roast", "ghroast"],
         description="Generate a random GitHub account roast. - https://githubroast.mgytr.top",
     )
     @app_commands.describe(

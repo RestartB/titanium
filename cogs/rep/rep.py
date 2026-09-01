@@ -259,11 +259,7 @@ class RepCog(commands.Cog):
             await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Leaderboard command
-    @rep_group.command(
-        name="leaderboard",
-        aliases=["lb", "top"],
-        description="View the rep leaderboard for this server.",
-    )
+    @rep_group.command(name="leaderboard", description="View the rep leaderboard for this server.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
@@ -320,9 +316,7 @@ class RepCog(commands.Cog):
             view = RepReloadPageView(embeds=pages, timeout=240, title="Rep Leaderboard")
             await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
 
-    @rep_group.command(
-        name="add", aliases=["give", "plus", "+"], description="Give a rep point to a user."
-    )
+    @rep_group.command(name="add", description="Give a rep point to a user.")
     @global_alias("addrep")
     @global_alias("giverep")
     @global_alias("plusrep")
@@ -417,11 +411,7 @@ class RepCog(commands.Cog):
             ),
         )
 
-    @rep_group.command(
-        name="remove",
-        aliases=["take", "minus", "-"],
-        description="Take away rep points that you gave to a user.",
-    )
+    @rep_group.command(name="remove", description="Take away rep points that you gave to a user.")
     @global_alias("removerep")
     @global_alias("takerep")
     @global_alias("minusrep")

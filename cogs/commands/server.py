@@ -26,10 +26,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         self.bot = bot
 
     @commands.hybrid_group(
-        name="server",
-        fallback="info",
-        aliases=["serverinfo", "server-info"],
-        description="Get information about the server.",
+        name="server", fallback="info", description="Get information about the server."
     )
     @commands.guild_only()
     @app_commands.allowed_installs(guilds=True, users=False)
@@ -167,9 +164,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
         )
         await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
 
-    @server_group.command(
-        name="boosts", aliases=["boostinfo"], description="Get the server's boost information."
-    )
+    @server_group.command(name="boosts", description="Get the server's boost information.")
     @commands.guild_only()
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
@@ -442,9 +437,7 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
 
     # VC leaderboard command
     @server_group.command(
-        name="vc",
-        aliases=["voice", "voice-chat"],
-        description="Get the amount of time that users have spent in VC in the server.",
+        name="vc", description="Get the amount of time that users have spent in VC in the server."
     )
     @commands.guild_only()
     @app_commands.describe(
@@ -608,7 +601,6 @@ class ServerCommandsCog(commands.Cog, name="Server", description="Get server inf
     # First Message command
     @server_group.command(
         name="first-message",
-        aliases=["firstmessage"],
         description="Get the first message in a channel, uses current channel by default.",
     )
     @commands.guild_only()
