@@ -15,7 +15,6 @@ from discord.utils import escape_markdown
 
 import lib.embeds.spotify as elements
 from lib.classes.spotify import TitaniumSpotifyClient
-from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.helpers.hybrid import defer, handle_group_command_not_found
 from lib.helpers.log_error import log_error
 from lib.views.spotify import SongLyricSelection
@@ -36,10 +35,6 @@ class MusicCommandsCog(
     def __init__(self, bot: TitaniumBot, client_id: str, client_secret: str) -> None:
         self.bot: TitaniumBot = bot
         self.sp = TitaniumSpotifyClient(client_id=client_id, client_secret=client_secret)
-        add_global_aliases(self, bot)
-
-    async def cog_unload(self) -> None:
-        remove_global_aliases(self, self.bot)
 
     @commands.hybrid_group(
         name="spotify", description="Search Spotify for songs, artists, albums and more."
@@ -142,8 +137,6 @@ class MusicCommandsCog(
 
     # Spotify Song Search command
     @spotify_group.command(name="song", description="Search for a song on Spotify.")
-    @global_alias("song")
-    @global_alias("track")
     @app_commands.describe(
         search="What you are searching for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -316,7 +309,6 @@ class MusicCommandsCog(
 
     # Spotify Artist Search command
     @spotify_group.command(name="artist", description="Search for an artist on Spotify.")
-    @global_alias("artist")
     @app_commands.describe(
         search="What you are searching for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -501,7 +493,6 @@ class MusicCommandsCog(
 
     # Spotify Album Search command
     @spotify_group.command(name="album", description="Search for an album on Spotify.")
-    @global_alias("album")
     @app_commands.describe(
         search="What you are searching for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -603,9 +594,6 @@ class MusicCommandsCog(
         name="url",
         description="Get information about a Spotify track, album or artist link.",
     )
-    @global_alias("spotifyurl")
-    @global_alias("song-url")
-    @global_alias("songurl")
     @app_commands.describe(
         url="The Spoptify link to get information for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
