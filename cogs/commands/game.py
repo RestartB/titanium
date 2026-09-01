@@ -56,7 +56,7 @@ class GameCog(commands.GroupCog, group_name="game", description="Game related co
                 description="This user has opted out of optional data collection and cannot use game statistic tracking.",
                 colour=Colour.red(),
             )
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
@@ -78,7 +78,7 @@ class GameCog(commands.GroupCog, group_name="game", description="Game related co
             text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
         )
 
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     @app_commands.command(name="dice", description="Roll a dice and guess the number.")
     @app_commands.describe(

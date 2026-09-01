@@ -117,7 +117,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
             icon_url=interaction.user.display_avatar.url,
         )
 
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Dice command
     @app_commands.command(
