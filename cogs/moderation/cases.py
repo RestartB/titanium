@@ -8,7 +8,6 @@ from discord.ui import Button, View
 import lib.embeds.cases as case_embeds
 from lib.classes.case_manager import CaseNotFoundException, GuildModCaseManager
 from lib.embeds.general import cancelled, guild_only
-from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.helpers.hybrid import _defer, _stop_loading, defer
 from lib.sql.sql import ModCase, get_session
 from lib.views.cases import CommentPageContainer, ViewCommentsButton
@@ -24,10 +23,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-        add_global_aliases(self, bot)
-
-    async def cog_unload(self) -> None:
-        remove_global_aliases(self, self.bot)
 
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
         ephemeral = bool(ctx.interaction and getattr(ctx.interaction.namespace, "ephemeral", False))
@@ -332,7 +327,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             await ctx.reply(ephemeral=ephemeral, embed=embed)
 
     @case_group.command(name="delete", description="Delete a case by its ID.")
-    @global_alias("deletecase")
     @commands.guild_only()
     @commands.check_any(
         commands.has_permissions(kick_members=True),
@@ -410,8 +404,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             await msg.edit(embed=case_embeds.case_deleted(self.bot, case_id), view=None)
 
     @case_group.command(name="clean", description="Delete all resolved cases for a user.")
-    @global_alias("cleancases")
-    @global_alias("deletecases")
     @commands.guild_only()
     @commands.check_any(
         commands.has_permissions(kick_members=True),
@@ -468,7 +460,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         await msg.edit(embed=embed, view=None)
 
     @case_group.command(name="delete-all", description="Delete all resolved cases for the server.")
-    @global_alias("deleteallcases")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     @app_commands.describe(

@@ -17,7 +17,6 @@ from sqlalchemy.dialects.postgresql import insert
 from lib.embeds.leaderboard import generate_lb_embeds
 from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
 from lib.helpers.cache import get_or_fetch_member
-from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.helpers.hybrid import handle_group_command_not_found
 from lib.helpers.log_error import log_error
 from lib.sql.sql import GuildLeaderboardSettings, LeaderboardUserStats, get_session
@@ -50,14 +49,12 @@ class LeaderboardCog(commands.Cog):
     async def cog_load(self) -> None:
         self.take_daily_snapshots.start()
         self.check_voice.start()
-        add_global_aliases(self, self.bot)
 
         self.initial_vc_state_task = asyncio.create_task(self.get_initial_vc_state())
 
     async def cog_unload(self) -> None:
         self.take_daily_snapshots.cancel()
         self.check_voice.cancel()
-        remove_global_aliases(self, self.bot)
 
         if self.initial_vc_state_task:
             self.initial_vc_state_task.cancel()
@@ -794,7 +791,6 @@ class LeaderboardCog(commands.Cog):
         handle_group_command_not_found(ctx)
 
     @xp_group.command(name="set", description="Set the XP of a user.")
-    @global_alias("setxp")
     @commands.has_permissions(manage_guild=True)
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
@@ -865,7 +861,6 @@ class LeaderboardCog(commands.Cog):
         await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @xp_group.command(name="add", description="Add XP to a user.")
-    @global_alias("addxp")
     @commands.has_permissions(manage_guild=True)
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
@@ -940,8 +935,6 @@ class LeaderboardCog(commands.Cog):
         await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @xp_group.command(name="remove", description="Remove XP from a user.")
-    @global_alias("removexp")
-    @global_alias("deductxp")
     @commands.has_permissions(manage_guild=True)
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."

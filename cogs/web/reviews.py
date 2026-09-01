@@ -6,7 +6,6 @@ import discord
 from discord import Colour, app_commands
 from discord.ext import commands
 
-from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
@@ -20,10 +19,6 @@ class ReviewsCommandsCog(commands.Cog):
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-        add_global_aliases(self, bot)
-
-    async def cog_unload(self) -> None:
-        remove_global_aliases(self, self.bot)
 
     @commands.hybrid_group(name="reviews", description="Get reviews for a user.", fallback="user")
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -125,8 +120,6 @@ class ReviewsCommandsCog(commands.Cog):
 
     # Server reviews command
     @reviews_group.command(name="server", description="Get reviews for the server.")
-    @global_alias("serverreviews")
-    @global_alias("server-reviews")
     @commands.guild_only()
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
