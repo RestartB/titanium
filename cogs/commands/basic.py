@@ -77,6 +77,8 @@ class BasicCommandsCog(
     async def info(
         self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
     ) -> None:
+        await interaction.response.defer(ephemeral=ephemeral)
+
         embed = Embed(
             title="About",
             description="Titanium is **your** multipurpose, open source Discord bot developed by **Restart**. "
@@ -116,6 +118,8 @@ class BasicCommandsCog(
     ):
         if not interaction.client.user:
             raise ValueError("Bot user info is unavailable")
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         embed = Embed(
             title=f"{interaction.client.info_emoji} Invite",

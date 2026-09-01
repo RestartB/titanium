@@ -105,7 +105,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
         )
 
         # Send Embed
-        await interaction.followup.send(embed=embed, view=view)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
     @app_commands.command(name="pfp", description="Get a user's profile picture.")
     @app_commands.allowed_installs(guilds=True, users=True)
