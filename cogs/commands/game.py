@@ -2,12 +2,12 @@ import logging
 import random
 from typing import TYPE_CHECKING, Literal
 
+import discord
 from discord import Colour, Embed, Member, User, app_commands
 from discord.ext import commands
 from sqlalchemy import select
 
 from lib.enums.games import GameTypes
-from lib.helpers.hybrid import handle_group_command_not_found
 from lib.sql.sql import GameStat, get_session
 
 if TYPE_CHECKING:
@@ -16,38 +16,47 @@ if TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger("games")
 
 
-class GameCog(commands.Cog, name="Games", description="Play various simple games."):
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+class GameCog(commands.GroupCog, group_name="game", description="Game related commands."):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
 
-    @commands.hybrid_group(name="game", description="Game related commands.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def game_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        handle_group_command_not_found(ctx)
+    async def __update_stats(
+        self, interaction: discord.Interaction, game: Literal["dice", "coin"], won: bool
+    ) -> None:
+        async with get_session() as session:
+            session.add(
+                GameStat(
+                    user_id=interaction.user.id,
+                    game=GameTypes.DICE if game == "dice" else GameTypes.COIN,
+                    won=won,
+                )
+            )
 
-    @game_group.command(name="stats", description="Get stats for games that you've played.")
+    # TODO: check that commands.Author works here
+    @app_commands.command(name="stats", description="Get stats for games that you've played.")
     @app_commands.describe(
         user="The user to get game stats for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def game_stats(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         user: Member | User = commands.Author,
         ephemeral: bool = False,
     ) -> None:
         """Get the all games stats, How many times they played, and win"""
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-        if ctx.author.id in self.bot.opt_out:
+        if interaction.user.id in self.bot.opt_out:
             embed = Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="This user has opted out of optional data collection and cannot use game statistic tracking.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed)
+            await interaction.followup.send(embed=embed)
             return
 
         async with get_session() as session:
@@ -65,29 +74,31 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
             colour=Colour.light_grey(),
         )
         embed.set_author(name=f"@{user.name}", icon_url=user.display_avatar)
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+        embed.set_footer(
+            text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
+        )
 
-        await ctx.reply(embed=embed)
+        await interaction.followup.send(embed=embed)
 
-    @game_group.command(name="dice", description="Roll a dice and guess the number.")
+    @app_commands.command(name="dice", description="Roll a dice and guess the number.")
     @app_commands.describe(
         guess="Your guess, between 1 and 6.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def dice_game(
         self,
-        ctx: commands.Context["TitaniumBot"],
-        guess: commands.Range[int, 1, 6],
+        interaction: discord.Interaction["TitaniumBot"],
+        guess: app_commands.Range[int, 1, 6],
         ephemeral: bool = False,
     ) -> None:
         """Dice roll game."""
 
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         roll = random.randint(1, 6)
         win = roll == guess
-        setattr(ctx, "win", win)  # noqa: B010
+        await self.__update_stats(interaction, "dice", win)
 
         if win:
             embed = Embed(
@@ -102,10 +113,12 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
                 description=f"🎲 You guessed `{guess}`, but rolled `{roll}`!",
             )
 
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        embed.set_footer(
+            text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
+        )
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
-    @game_group.command(name="coin-flip", description="Flip a coin and guess the side.")
+    @app_commands.command(name="coin-flip", description="Flip a coin and guess the side.")
     @app_commands.describe(
         choice="Your guess between heads and tails.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -116,19 +129,19 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
             app_commands.Choice(name="Tails", value="tails"),
         ],
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def coin_flip_game(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         choice: Literal["heads", "tails"],
         ephemeral: bool = False,
     ) -> None:
         """Coin flip game."""
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         flip_result = random.choice(["heads", "tails"])
         win = choice == flip_result
-        setattr(ctx, "win", win)  # noqa: B010
+        await self.__update_stats(interaction, "coin", win)
 
         if win:
             embed = Embed(
@@ -143,26 +156,10 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
                 description=f"🪙 You chose **{choice}**, but the coin landed on **{flip_result}**!",
             )
 
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
-
-    @dice_game.after_invoke
-    @coin_flip_game.after_invoke
-    async def game_after_execute(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        """Update stats after the game finishes."""
-        win = getattr(ctx, "win", False)
-
-        if not ctx.command or ctx.author.id in self.bot.opt_out:
-            return
-
-        async with get_session() as session:
-            session.add(
-                GameStat(
-                    user_id=ctx.author.id,
-                    game=GameTypes.DICE if ctx.command.name == "dice" else GameTypes.COIN,
-                    won=win,
-                )
-            )
+        embed.set_footer(
+            text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
+        )
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

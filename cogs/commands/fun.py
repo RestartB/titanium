@@ -6,7 +6,6 @@ import discord
 from discord import Colour, Embed, app_commands
 from discord.ext import commands
 
-from lib.helpers.hybrid import defer
 from lib.helpers.shorten import shorten_preserve
 
 if TYPE_CHECKING:
@@ -22,15 +21,18 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
         self.bot = bot
 
     # 8 ball command
-    @commands.hybrid_command(name="8ball", description="Consult the mystical magic 8 ball.")
+    @app_commands.command(name="8ball", description="Consult the mystical magic 8 ball.")
     @app_commands.describe(
         question="Optional: your question.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     async def eight_ball(
-        self, ctx: commands.Context["TitaniumBot"], *, question: str = "", ephemeral: bool = False
+        self,
+        interaction: discord.Interaction["TitaniumBot"],
+        question: str = "",
+        ephemeral: bool = False,
     ) -> None:
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         good_responses = [
             "It is certain.",
@@ -78,8 +80,8 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
             colour=colour,
         )
         embed.set_footer(
-            text=f"@{ctx.author.name}",
-            icon_url=ctx.author.display_avatar.url,
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
         )
 
         if question:
@@ -88,10 +90,10 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
                 value=shorten_preserve(question, width=1024),
             )
 
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Random number command
-    @commands.hybrid_command(name="random-number", description="Generate a random number.")
+    @app_commands.command(name="random-number", description="Generate a random number.")
     @app_commands.describe(
         minimum="The minimum number that can be generated.",
         maximum="The maximum number that can be generated.",
@@ -99,26 +101,26 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
     )
     async def random_number(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         minimum: int,
         maximum: int,
         ephemeral: bool = False,
     ) -> None:
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         embed = Embed(
             title=f"{random.randint(minimum, maximum):,}",
             colour=Colour.light_grey(),
         )
         embed.set_footer(
-            text=f"@{ctx.author.name}",
-            icon_url=ctx.author.display_avatar.url,
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed)
+        await interaction.followup.send(embed=embed)
 
     # Dice command
-    @commands.hybrid_command(
+    @app_commands.command(
         name="dice",
         description="Roll the dice.",
     )
@@ -128,25 +130,25 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
     )
     async def dice(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         sides: Literal[4, 6, 8, 10, 12, 20, 100] = 6,
         ephemeral: bool = False,
     ) -> None:
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         embed = Embed(
             title=f"🎲 Rolled a {random.randint(1, sides):,}",
             colour=Colour.light_grey(),
         )
         embed.set_footer(
-            text=f"@{ctx.author.name}",
-            icon_url=ctx.author.display_avatar.url,
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Insult command
-    @commands.hybrid_command(
+    @app_commands.command(
         name="insult",
         description="Generate a savage insult for the user of your selection.",
     )
@@ -155,9 +157,12 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     async def insult(
-        self, ctx: commands.Context["TitaniumBot"], user: discord.User, ephemeral: bool = False
+        self,
+        interaction: discord.Interaction["TitaniumBot"],
+        user: discord.User,
+        ephemeral: bool = False,
     ):
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         # First parts of insult
         first = [
@@ -261,11 +266,11 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
             icon_url=user.display_avatar.url,
         )
         embed.set_footer(
-            text=f"@{ctx.author.name}",
-            icon_url=ctx.author.display_avatar.url,
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     freaky_map: ClassVar = {
         "q": "𝓺",
@@ -353,15 +358,8 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
             ephemeral=ephemeral,
         )
 
-    @commands.command(name="freaky", description="Convert normal text to freaky text.")
-    async def freaky_prefix(self, ctx: commands.Context["TitaniumBot"], *, text: str) -> None:
-        for char in self.freaky_map:
-            text = text.replace(char, self.freaky_map[char])
-
-        await ctx.reply(content=text, allowed_mentions=discord.AllowedMentions.none())
-
     # GitHub Roast command
-    @commands.hybrid_command(
+    @app_commands.command(
         name="github-roast",
         description="Generate a random GitHub account roast. - https://githubroast.mgytr.top",
     )
@@ -369,42 +367,46 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
         username="The GitHub account to roast.",
         ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 10)
+    @app_commands.checks.cooldown(1, 10)
     async def gh_roast(
-        self, ctx: commands.Context["TitaniumBot"], username: str, ephemeral: bool = False
+        self,
+        interaction: discord.Interaction["TitaniumBot"],
+        username: str,
+        ephemeral: bool = False,
     ):
-        async with defer(ctx, ephemeral=ephemeral):
-            try:
-                async with (
-                    aiohttp.ClientSession() as session,
-                    session.post(
-                        url="https://githubroast.mgytr.top/llama",
-                        json={"username": username, "language": "english"},
-                    ) as request,
-                ):
-                    request.raise_for_status()
-                    response = await request.json()
-            except aiohttp.ClientResponseError as e:
-                embed = discord.Embed(
-                    title=f"{self.bot.error_emoji} Error",
-                    description=f"The roast API returned an error (`{e.status}`). Please try again later.",
-                    colour=Colour.red(),
-                )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
-                return
+        await interaction.response.defer(ephemeral=ephemeral)
 
+        try:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(
+                    url="https://githubroast.mgytr.top/llama",
+                    json={"username": username, "language": "english"},
+                ) as request,
+            ):
+                request.raise_for_status()
+                response = await request.json()
+        except aiohttp.ClientResponseError as e:
             embed = discord.Embed(
-                title="AI GitHub Roast",
-                description=shorten_preserve(response["roast"], width=4096),
-                colour=Colour.light_grey(),
+                title=f"{self.bot.error_emoji} Error",
+                description=f"The roast API returned an error (`{e.status}`). Please try again later.",
+                colour=Colour.red(),
             )
-            embed.set_footer(
-                text=f"@{ctx.author.name} - https://githubroast.mgytr.top",
-                icon_url=ctx.author.display_avatar.url,
-            )
-            embed.set_author(name=username)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
 
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+        embed = discord.Embed(
+            title="AI GitHub Roast",
+            description=shorten_preserve(response["roast"], width=4096),
+            colour=Colour.light_grey(),
+        )
+        embed.set_footer(
+            text=f"@{interaction.user.name} - https://githubroast.mgytr.top",
+            icon_url=interaction.user.display_avatar.url,
+        )
+        embed.set_author(name=username)
+
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:
