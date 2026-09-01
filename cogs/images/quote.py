@@ -9,7 +9,6 @@ from discord.ext import commands
 from lib.classes.quote_config import QuoteData
 from lib.enums.images import ImageFormats
 from lib.helpers.cache import get_or_fetch_member
-from lib.helpers.hybrid import defer
 from lib.logic.quote import create_quote_image
 from lib.views.quote import QuoteView
 
@@ -106,7 +105,7 @@ class QuoteCommandsCog(
 
         await interaction.followup.send(file=file, view=view, **data)
 
-    @commands.hybrid_command(
+    @app_commands.command(
         name="quote",
         description="Create a quote image. To quote messages, right click the message, click apps, then Quote This.",
     )
@@ -123,12 +122,11 @@ class QuoteCommandsCog(
     )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def custom_quote(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         user: discord.User | discord.Member,
-        *,
         content: str,
         output_format: ImageFormats | None = None,
         fade: bool = True,
@@ -138,73 +136,74 @@ class QuoteCommandsCog(
         spoiler: bool = False,
         ephemeral: bool = False,
     ):
-        async with defer(ctx, ephemeral=ephemeral):
-            pfp_data = BytesIO()
-            await user.display_avatar.with_format("png").save(pfp_data)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            data = QuoteData(
-                content=content,
-                user=user,
-                runner_user=ctx.author,
-                output_format=output_format if output_format else ImageFormats.GIF,
-                pfp_data=pfp_data,
-                nickname=nickname,
-                fade=fade,
-                light_mode=light_mode,
-                bw_mode=bw_mode,
-                spoiler=spoiler,
-                custom_quote=True,
-            )
+        pfp_data = BytesIO()
+        await user.display_avatar.with_format("png").save(pfp_data)
 
-            # adapted from built in discord.py message.clean_content
-            guild = ctx.guild
-            if guild:
+        data = QuoteData(
+            content=content,
+            user=user,
+            runner_user=interaction.user,
+            output_format=output_format if output_format else ImageFormats.GIF,
+            pfp_data=pfp_data,
+            nickname=nickname,
+            fade=fade,
+            light_mode=light_mode,
+            bw_mode=bw_mode,
+            spoiler=spoiler,
+            custom_quote=True,
+        )
 
-                def resolve_member(id: int) -> str:
-                    member = guild.get_member(id)
-                    return f"@{member.display_name if member else 'unknown-user'}"
+        # adapted from built in discord.py message.clean_content
+        guild = interaction.guild
+        if guild:
 
-                def resolve_channel(id: int) -> str:
-                    channel = guild.get_channel(id)
-                    return f"#{channel.name if channel else 'deleted-channel'}"
+            def resolve_member(id: int) -> str:
+                member = guild.get_member(id)
+                return f"@{member.display_name if member else 'unknown-user'}"
 
-                def resolve_role(id: int) -> str:
-                    role = guild.get_role(id)
-                    return f"@{role.name if role else 'deleted-role'}"
-            else:
+            def resolve_channel(id: int) -> str:
+                channel = guild.get_channel(id)
+                return f"#{channel.name if channel else 'deleted-channel'}"
 
-                def resolve_member(id: int) -> str:
-                    user = self.bot.get_user(id)
-                    return f"@{user.name if user else 'unknown-user'}"
+            def resolve_role(id: int) -> str:
+                role = guild.get_role(id)
+                return f"@{role.name if role else 'deleted-role'}"
+        else:
 
-                def resolve_channel(id: int) -> str:
-                    return "#unknown-channel"
+            def resolve_member(id: int) -> str:
+                user = self.bot.get_user(id)
+                return f"@{user.name if user else 'unknown-user'}"
 
-                def resolve_role(id: int) -> str:
-                    return "@unknown-role"
+            def resolve_channel(id: int) -> str:
+                return "#unknown-channel"
 
-            transforms = {
-                "@": resolve_member,
-                "@!": resolve_member,
-                "#": resolve_channel,
-                "@&": resolve_role,
-            }
+            def resolve_role(id: int) -> str:
+                return "@unknown-role"
 
-            def repl(match: re.Match) -> str:
-                type = match[1]
-                id = int(match[2])
-                transformed = transforms[type](id)
-                return transformed
+        transforms = {
+            "@": resolve_member,
+            "@!": resolve_member,
+            "#": resolve_channel,
+            "@&": resolve_role,
+        }
 
-            data.content = re.sub(r"<(@[!&]?|#)([0-9]{15,20})>", repl, data.content)
+        def repl(match: re.Match) -> str:
+            type = match[1]
+            id = int(match[2])
+            transformed = transforms[type](id)
+            return transformed
 
-            file = await create_quote_image(data, renderer=self.bot.browser_renderer)
-            view = QuoteView(bot=self.bot, data=data)
+        data.content = re.sub(r"<(@[!&]?|#)([0-9]{15,20})>", repl, data.content)
 
-            if output_format:
-                view.remove_item(view.png_button)
+        file = await create_quote_image(data, renderer=self.bot.browser_renderer)
+        view = QuoteView(bot=self.bot, data=data)
 
-            await ctx.reply(file=file, view=view, ephemeral=ephemeral)
+        if output_format:
+            view.remove_item(view.png_button)
+
+        await interaction.followup.send(file=file, view=view, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:
