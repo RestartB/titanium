@@ -10,7 +10,6 @@ from discord.utils import format_dt
 
 from lib.embeds.general import invalid_duration
 from lib.helpers.duration import DurationConverter
-from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.helpers.shorten import shorten_preserve
 from lib.logic.reminders import create_reminder, get_all_reminders, get_reminder_count
 from lib.views.pagination import PaginationV2View
@@ -29,12 +28,6 @@ class TemplateCog(commands.Cog, description="Create reminders."):
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
-
-    async def cog_load(self) -> None:
-        add_global_aliases(self, self.bot)
-
-    async def cog_unload(self) -> None:
-        remove_global_aliases(self, self.bot)
 
     async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
         if ctx.author.id not in self.bot.opt_out:
@@ -173,7 +166,6 @@ class TemplateCog(commands.Cog, description="Create reminders."):
         await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     @reminder_group.command(name="list", description="View and manage your created reminders.")
-    @global_alias("reminders")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
