@@ -70,9 +70,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             for page in range(1, total_pages + 1)
         ]
 
-    @commands.hybrid_command(
-        name="cases", aliases=["warns", "strikes"], description="View your moderation cases."
-    )
+    @commands.hybrid_command(name="cases", description="View your moderation cases.")
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @commands.guild_only()
@@ -469,11 +467,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
 
         await msg.edit(embed=embed, view=None)
 
-    @case_group.command(
-        name="delete-all",
-        description="Delete all resolved cases for the server.",
-        aliases=["deleteall"],
-    )
+    @case_group.command(name="delete-all", description="Delete all resolved cases for the server.")
     @global_alias("deleteallcases")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)

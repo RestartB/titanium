@@ -26,9 +26,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
     async def game_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
         handle_group_command_not_found(ctx)
 
-    @game_group.command(
-        name="stats", aliases=["stat"], description="Get stats for games that you've played."
-    )
+    @game_group.command(name="stats", description="Get stats for games that you've played.")
     @app_commands.describe(
         user="The user to get game stats for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -107,9 +105,7 @@ class GameCog(commands.Cog, name="Games", description="Play various simple games
         embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
         await ctx.reply(embed=embed, ephemeral=ephemeral)
 
-    @game_group.command(
-        name="coin-flip", aliases=["coinflip"], description="Flip a coin and guess the side."
-    )
+    @game_group.command(name="coin-flip", description="Flip a coin and guess the side.")
     @app_commands.describe(
         choice="Your guess between heads and tails.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",

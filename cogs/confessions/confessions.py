@@ -25,11 +25,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
     async def cog_load(self) -> None:
         self.bot.add_dynamic_items(VoteButton, CloseNowButton, DeletePollButton)
 
-    @commands.command(
-        name="anonymous",
-        aliases=["confession"],
-        description="Please use the slash command version instead.",
-    )
+    @commands.command(name="anonymous", description="Please use the slash command version instead.")
     async def confession_prefix(self, ctx: commands.Context["TitaniumBot"]) -> None:
         raise SlashCommandOnly
 

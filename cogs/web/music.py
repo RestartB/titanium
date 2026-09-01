@@ -141,9 +141,7 @@ class MusicCommandsCog(
             ]
 
     # Spotify Song Search command
-    @spotify_group.command(
-        name="song", aliases=["track"], description="Search for a song on Spotify."
-    )
+    @spotify_group.command(name="song", description="Search for a song on Spotify.")
     @global_alias("song")
     @global_alias("track")
     @app_commands.describe(
