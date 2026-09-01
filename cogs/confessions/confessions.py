@@ -10,7 +10,6 @@ from discord.utils import format_dt
 from lib.classes.guild_logger import GuildLogger
 from lib.embeds.general import guild_only, invalid_duration
 from lib.helpers.duration import DurationTransformer
-from lib.helpers.hybrid import SlashCommandOnly
 from lib.logic.polls import create_anonymous_poll
 from lib.views.polls import CloseNowButton, DeletePollButton, VoteButton
 
@@ -18,29 +17,16 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class ConfessionCog(commands.Cog, name="Confession", description="Anonymous message commands."):
+@app_commands.allowed_installs(guilds=True, users=False)
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+class ConfessionCog(
+    commands.GroupCog, group_name="anonymous", description="Create anonymous confessions and polls."
+):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot: TitaniumBot = bot
 
     async def cog_load(self) -> None:
         self.bot.add_dynamic_items(VoteButton, CloseNowButton, DeletePollButton)
-
-    @commands.command(name="anonymous", description="Please use the slash command version instead.")
-    async def confession_prefix(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        raise SlashCommandOnly
-
-    context = discord.app_commands.AppCommandContext(
-        guild=True, dm_channel=False, private_channel=False
-    )
-    installs = discord.app_commands.AppInstallationType(guild=True, user=False)
-    default_permissions = discord.Permissions(view_channel=True, send_messages=True)
-    confession_group = app_commands.Group(
-        name="anonymous",
-        description="Create anonymous confessions and polls.",
-        allowed_contexts=context,
-        allowed_installs=installs,
-        default_permissions=default_permissions,
-    )
 
     async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
         if not interaction.guild:
@@ -60,8 +46,7 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
 
         return True
 
-    @confession_group.command(name="confession", description="Send an anonymous confession.")
-    @app_commands.guild_only()
+    @app_commands.command(name="confession", description="Send an anonymous confession.")
     @app_commands.checks.has_permissions(view_channel=True, send_messages=True)
     @app_commands.checks.bot_has_permissions(view_channel=True, send_messages=True)
     @app_commands.describe(
@@ -198,10 +183,9 @@ class ConfessionCog(commands.Cog, name="Confession", description="Anonymous mess
             ephemeral=True,
         )
 
-    @confession_group.command(
+    @app_commands.command(
         name="poll", description="Send an anonymous poll with up to 5 options, and an image."
     )
-    @app_commands.guild_only()
     @app_commands.checks.has_permissions(view_channel=True, send_messages=True, send_polls=True)
     @app_commands.checks.bot_has_permissions(view_channel=True, send_messages=True)
     @app_commands.describe(
