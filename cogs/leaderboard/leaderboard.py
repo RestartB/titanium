@@ -606,7 +606,7 @@ class LeaderboardCog(commands.Cog):
                 await session.delete(user_stats)
 
     # Leaderboard command
-    @commands.hybrid_command(name="leaderboard", aliases=["lb", "top"])
+    @commands.hybrid_command(name="leaderboard")
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @commands.guild_only()
@@ -683,7 +683,7 @@ class LeaderboardCog(commands.Cog):
             await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
 
     # Level command
-    @commands.hybrid_command(name="level", aliases=["lvl"])
+    @commands.hybrid_command(name="level")
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @commands.guild_only()
@@ -939,7 +939,7 @@ class LeaderboardCog(commands.Cog):
         )
         await ctx.reply(embed=embed, ephemeral=ephemeral)
 
-    @xp_group.command(name="remove", aliases=["deduct"], description="Remove XP from a user.")
+    @xp_group.command(name="remove", description="Remove XP from a user.")
     @global_alias("removexp")
     @global_alias("deductxp")
     @commands.has_permissions(manage_guild=True)

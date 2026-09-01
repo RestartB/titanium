@@ -16,9 +16,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
-    @commands.hybrid_command(
-        name="user", aliases=["userinfo"], description="Get information about a user."
-    )
+    @commands.hybrid_command(name="user", description="Get information about a user.")
     @app_commands.describe(
         user="Optional: the user to get information about. Defaults to yourself.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -139,11 +137,7 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
         view = View().add_item(Button(label="Open in Browser", style=ButtonStyle.link, url=url))
         await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
 
-    @commands.hybrid_command(
-        name="server-pfp",
-        aliases=["serverpfp", "guildpfp", "guild-pfp"],
-        description="Get a user's server profile picture.",
-    )
+    @commands.hybrid_command(name="server-pfp", description="Get a user's server profile picture.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @commands.guild_only()

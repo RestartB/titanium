@@ -513,11 +513,7 @@ class ModerationBasicCog(
                     **del_kwargs,
                 )
 
-    @commands.hybrid_command(
-        name="mute",
-        aliases=["timeout"],
-        description="Mute a member for a specified duration.",
-    )
+    @commands.hybrid_command(name="mute", description="Mute a member for a specified duration.")
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
     @app_commands.describe(
@@ -614,11 +610,7 @@ class ModerationBasicCog(
                     **del_kwargs,
                 )
 
-    @commands.hybrid_command(
-        name="unmute",
-        aliases=["untimeout"],
-        description="Unmute a member.",
-    )
+    @commands.hybrid_command(name="unmute", description="Unmute a member.")
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
     @app_commands.describe(
@@ -1097,9 +1089,7 @@ class ModerationBasicCog(
                     self.bot.punishing[ctx.guild.id].remove(user.id)
 
     @commands.hybrid_command(
-        name="purge",
-        description="Purge up to 300 messages up to 14 days old from a channel.",
-        aliases=["clear", "clean", "scrub"],
+        name="purge", description="Purge up to 300 messages up to 14 days old from a channel."
     )
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
@@ -1201,11 +1191,7 @@ class ModerationBasicCog(
                 )
 
     ### MASS PUNISHMENTS ###
-    @commands.hybrid_command(
-        name="masswarn",
-        aliases=["mass-warn", "bulkwarn", "bulk-warn"],
-        description="Warn members for a specified reason.",
-    )
+    @commands.hybrid_command(name="masswarn", description="Warn members for a specified reason.")
     @commands.check_any(
         commands.has_permissions(kick_members=True),
         commands.has_permissions(ban_members=True),
@@ -1288,18 +1274,7 @@ class ModerationBasicCog(
             )
             await ctx.reply(embed=embed, ephemeral=ephemeral)
 
-    @commands.hybrid_command(
-        name="massmute",
-        aliases=[
-            "masstimeout",
-            "mass-timeout",
-            "bulktimeout",
-            "bulk-timeout",
-            "bulkmute",
-            "bulk-mute",
-        ],
-        description="Mute members for a specified duration.",
-    )
+    @commands.hybrid_command(name="massmute", description="Mute members for a specified duration.")
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
     @app_commands.describe(
@@ -1400,11 +1375,7 @@ class ModerationBasicCog(
             )
             await ctx.reply(embed=embed, ephemeral=ephemeral)
 
-    @commands.hybrid_command(
-        name="masskick",
-        aliases=["mass-kick", "bulkkick", "bulk-kick"],
-        description="Kick members from the server.",
-    )
+    @commands.hybrid_command(name="masskick", description="Kick members from the server.")
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     @app_commands.describe(
@@ -1488,11 +1459,7 @@ class ModerationBasicCog(
             )
             await ctx.reply(embed=embed, ephemeral=ephemeral)
 
-    @commands.hybrid_command(
-        name="massban",
-        aliases=["mass-ban", "bulkban", "bulk-ban"],
-        description="Ban users from the server.",
-    )
+    @commands.hybrid_command(name="massban", description="Ban users from the server.")
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True, manage_guild=True)
     @app_commands.describe(

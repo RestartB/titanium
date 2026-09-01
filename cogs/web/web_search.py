@@ -48,7 +48,6 @@ class WebSearchCommandsCog(
     @commands.hybrid_command(
         name="urban-dictionary",
         description="Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!",
-        aliases=["ud", "urbandictionary"],
     )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -129,9 +128,7 @@ class WebSearchCommandsCog(
             await ctx.reply(embed=embed, ephemeral=ephemeral)
 
     # Wikipedia command
-    @commands.hybrid_command(
-        name="wikipedia", description="Search Wikipedia for information.", aliases=["wiki"]
-    )
+    @commands.hybrid_command(name="wikipedia", description="Search Wikipedia for information.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(

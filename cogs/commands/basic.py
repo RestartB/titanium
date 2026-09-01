@@ -67,9 +67,7 @@ class BasicCommandsCog(
 
         await ctx.reply(embed=embed, ephemeral=ephemeral)
 
-    @commands.hybrid_command(
-        name="info", description="Get information about the bot.", aliases=["about"]
-    )
+    @commands.hybrid_command(name="info", description="Get information about the bot.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
@@ -128,9 +126,7 @@ class BasicCommandsCog(
         await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
 
     # Host Info command
-    @commands.hybrid_command(
-        name="host-info", aliases=["hostinfo"], description="Info about the bot host."
-    )
+    @commands.hybrid_command(name="host-info", description="Info about the bot host.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
@@ -181,7 +177,6 @@ class BasicCommandsCog(
 
     @commands.hybrid_command(
         name="prefixes",
-        aliases=["prefix"],
         description="Get the bot's command prefixes. Prefix commands will be removed mid-end of September.",
     )
     @app_commands.describe(
