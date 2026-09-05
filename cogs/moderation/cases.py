@@ -223,7 +223,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         )
 
     @case_group.command(name="comments", description="View comments on a case.")
-    @commands.guild_only()
     @commands.check_any(
         commands.has_permissions(kick_members=True),
         commands.has_permissions(ban_members=True),
@@ -275,8 +274,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
             ephemeral=ephemeral, view=layout, allowed_mentions=AllowedMentions.none()
         )
 
-    @case_group.command(name="addcomment", description="Add a comment to a case.")
-    @commands.guild_only()
+    @case_group.command(name="add-comment", description="Add a comment to a case.")
     @commands.check_any(
         commands.has_permissions(kick_members=True),
         commands.has_permissions(ban_members=True),
@@ -328,7 +326,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         await interaction.followup.send(ephemeral=ephemeral, embed=embed)
 
     @case_group.command(name="delete", description="Delete a case by its ID.")
-    @commands.guild_only()
     @commands.check_any(
         commands.has_permissions(kick_members=True),
         commands.has_permissions(ban_members=True),
@@ -401,7 +398,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         await msg.edit(embed=case_embeds.case_deleted(self.bot, case_id), view=None)
 
     @case_group.command(name="clean", description="Delete all resolved cases for a user.")
-    @commands.guild_only()
     @commands.check_any(
         commands.has_permissions(kick_members=True),
         commands.has_permissions(ban_members=True),
@@ -454,7 +450,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         await msg.edit(embed=embed, view=None)
 
     @case_group.command(name="delete-all", description="Delete all resolved cases for the server.")
-    @commands.guild_only()
     @commands.has_permissions(administrator=True)
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
