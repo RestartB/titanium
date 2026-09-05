@@ -150,13 +150,13 @@ class RepCog(
             if user_stats:
                 await session.delete(user_stats)
 
-    async def cog_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
         if not interaction.guild:
             return False
 
         config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.rep_enabled or not config.rep_settings:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 embed=discord.Embed(
                     colour=discord.Colour.red(),
                     title=f"{self.bot.error_emoji} Rep Disabled",

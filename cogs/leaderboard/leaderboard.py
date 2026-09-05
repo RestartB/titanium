@@ -783,9 +783,9 @@ class LeaderboardCog(commands.Cog):
         name="xp",
         description="Set, add and remove XP from users.",
         allowed_contexts=discord.app_commands.AppCommandContext(
-            guild=True, dm_channel=True, private_channel=True
+            guild=True, dm_channel=False, private_channel=False
         ),
-        allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True),
+        allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=False),
         default_permissions=discord.Permissions(manage_guild=True),
     )
 
