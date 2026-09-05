@@ -17,7 +17,6 @@ from sqlalchemy.dialects.postgresql import insert
 from lib.embeds.leaderboard import generate_lb_embeds
 from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
 from lib.helpers.cache import get_or_fetch_member
-from lib.helpers.hybrid import handle_group_command_not_found
 from lib.helpers.log_error import log_error
 from lib.sql.sql import GuildLeaderboardSettings, LeaderboardUserStats, get_session
 from lib.views.pagination import LeaderboardReloadPageView
@@ -603,7 +602,7 @@ class LeaderboardCog(commands.Cog):
                 await session.delete(user_stats)
 
     # Leaderboard command
-    @commands.hybrid_command(name="leaderboard")
+    @app_commands.command(name="leaderboard")
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @commands.guild_only()
@@ -612,15 +611,15 @@ class LeaderboardCog(commands.Cog):
     )
     @commands.cooldown(1, 5)
     async def leaderboard_command(
-        self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False
+        self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
     ):
         """Gets the leaderboard for the server."""
-        if not ctx.guild:
+        if not interaction.guild:
             return
 
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+        guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -631,13 +630,13 @@ class LeaderboardCog(commands.Cog):
                 description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
             stmt = (
                 select(LeaderboardUserStats)
-                .where(LeaderboardUserStats.guild_id == ctx.guild.id, LeaderboardUserStats.xp != 0)
+                .where(LeaderboardUserStats.guild_id == interaction.guild.id, LeaderboardUserStats.xp != 0)
                 .order_by(LeaderboardUserStats.xp.desc())
                 .limit(1000)
             )
@@ -650,21 +649,21 @@ class LeaderboardCog(commands.Cog):
                     description="No users have recorded XP or levels yet.",
                     colour=discord.Colour.red(),
                 )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
 
             pages = generate_lb_embeds(
-                guild=ctx.guild,
-                author=ctx.author,
+                guild=interaction.guild,
+                author=interaction.user,
                 top_users=top_users,
                 title="Leaderboard",
                 attr="xp",
             )
             pages[0].set_footer(
-                text=f"Controlling: @{ctx.author.name}"
+                text=f"Controlling: @{interaction.user.name}"
                 if len(pages) > 1
-                else f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
+                else f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
             )
 
             view = LeaderboardReloadPageView(
@@ -677,10 +676,10 @@ class LeaderboardCog(commands.Cog):
                 error_emoji=str(self.bot.error_emoji),
             )
 
-            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
+            await interaction.followup.send(embed=pages[0], view=view, ephemeral=ephemeral)
 
     # Level command
-    @commands.hybrid_command(name="level")
+    @app_commands.command(name="level")
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @commands.guild_only()
@@ -691,17 +690,17 @@ class LeaderboardCog(commands.Cog):
     @commands.cooldown(1, 3)
     async def level_command(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         member: discord.Member | None = None,
         ephemeral: bool = False,
     ):
         """Check your level and XP or another member's level and XP."""
-        if not ctx.guild:
+        if not interaction.guild:
             return
 
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-        user = member or ctx.author
+        user = member or interaction.user
 
         if user.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -709,10 +708,10 @@ class LeaderboardCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use leaderboard features.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
-        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+        guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -723,14 +722,14 @@ class LeaderboardCog(commands.Cog):
                 description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
             stmt = (
                 select(LeaderboardUserStats)
                 .where(
-                    LeaderboardUserStats.guild_id == ctx.guild.id,
+                    LeaderboardUserStats.guild_id == interaction.guild.id,
                     LeaderboardUserStats.user_id == user.id,
                 )
                 .limit(1)
@@ -744,7 +743,7 @@ class LeaderboardCog(commands.Cog):
                     description=f"**{user.display_name}** has no recorded XP or level.",
                     colour=discord.Colour.red(),
                 )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
 
             blocked_roles: list[str] = []
@@ -773,40 +772,41 @@ class LeaderboardCog(commands.Cog):
                 icon_url=user.display_avatar.url,
             )
             embed.set_footer(
-                text=f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
             )
             embed.set_thumbnail(
                 url=user.display_avatar.url,
             )
 
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
-    @commands.hybrid_group(name="xp", description="Set, add and remove XP from users.")
-    @app_commands.allowed_installs(guilds=True, users=False)
-    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    async def xp_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        handle_group_command_not_found(ctx)
+    xp_group = app_commands.Group(
+        name="xp",
+        description="Set, add and remove XP from users.",
+        allowed_contexts=discord.app_commands.AppCommandContext(
+            guild=True, dm_channel=True, private_channel=True
+        ),
+        allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True),
+        default_permissions=discord.Permissions(manage_guild=True),
+    )
 
     @xp_group.command(name="set", description="Set the XP of a user.")
-    @commands.has_permissions(manage_guild=True)
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
     @commands.cooldown(1, 3)
     async def set_xp(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         user: discord.Member,
         xp: int,
         ephemeral: bool = False,
     ) -> None:
-        if not ctx.guild:
+        if not interaction.guild:
             return
 
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         if user.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -814,10 +814,10 @@ class LeaderboardCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use leaderboard features.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
-        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+        guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -828,19 +828,19 @@ class LeaderboardCog(commands.Cog):
                 description="The leaderboard system is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
             stmt = select(LeaderboardUserStats).where(
-                LeaderboardUserStats.guild_id == ctx.guild.id,
+                LeaderboardUserStats.guild_id == interaction.guild.id,
                 LeaderboardUserStats.user_id == user.id,
             )
             user_stats = (await session.execute(stmt)).scalar_one_or_none()
 
             if not user_stats:
                 user_stats = LeaderboardUserStats(
-                    guild_id=ctx.guild.id,
+                    guild_id=interaction.guild.id,
                     user_id=user.id,
                     xp=max(min(xp, POSTGRES_MAX_INT), POSTGRES_MIN_INT),
                 )
@@ -858,25 +858,24 @@ class LeaderboardCog(commands.Cog):
             description=f"Set {user.mention}'s XP to `{user_stats.xp:,}`.",
             colour=discord.Colour.green(),
         )
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     @xp_group.command(name="add", description="Add XP to a user.")
-    @commands.has_permissions(manage_guild=True)
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
     @commands.cooldown(1, 3)
     async def add_xp(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         user: discord.Member,
         xp: int,
         ephemeral: bool = False,
     ) -> None:
-        if not ctx.guild:
+        if not interaction.guild:
             return
 
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         if user.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -884,10 +883,10 @@ class LeaderboardCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use leaderboard features.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
-        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+        guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -899,12 +898,12 @@ class LeaderboardCog(commands.Cog):
                 colour=discord.Colour.red(),
             )
 
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
             stmt = select(LeaderboardUserStats).where(
-                LeaderboardUserStats.guild_id == ctx.guild.id,
+                LeaderboardUserStats.guild_id == interaction.guild.id,
                 LeaderboardUserStats.user_id == user.id,
             )
             user_stats = (await session.execute(stmt)).scalar_one_or_none()
@@ -916,7 +915,7 @@ class LeaderboardCog(commands.Cog):
                     colour=discord.Colour.red(),
                 )
 
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
 
             old_xp = user_stats.xp
@@ -932,25 +931,24 @@ class LeaderboardCog(commands.Cog):
             description=f"Added `{(user_stats.xp - old_xp):,}` XP to {user.mention}.",
             colour=discord.Colour.green(),
         )
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     @xp_group.command(name="remove", description="Remove XP from a user.")
-    @commands.has_permissions(manage_guild=True)
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
     @commands.cooldown(1, 3)
     async def remove_xp(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         user: discord.Member,
         xp: int,
         ephemeral: bool = False,
     ) -> None:
-        if not ctx.guild:
+        if not interaction.guild:
             return
 
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         if user.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -958,10 +956,10 @@ class LeaderboardCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use leaderboard features.",
                 colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
-        guild_settings = await self.bot.fetch_guild_config(ctx.guild.id)
+        guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
         if (
             not guild_settings
             or not guild_settings.leaderboard_settings
@@ -973,12 +971,12 @@ class LeaderboardCog(commands.Cog):
                 colour=discord.Colour.red(),
             )
 
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
             stmt = select(LeaderboardUserStats).where(
-                LeaderboardUserStats.guild_id == ctx.guild.id,
+                LeaderboardUserStats.guild_id == interaction.guild.id,
                 LeaderboardUserStats.user_id == user.id,
             )
             user_stats = (await session.execute(stmt)).scalar_one_or_none()
@@ -990,7 +988,7 @@ class LeaderboardCog(commands.Cog):
                     colour=discord.Colour.red(),
                 )
 
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
 
             old_xp = user_stats.xp
@@ -1006,7 +1004,7 @@ class LeaderboardCog(commands.Cog):
             description=f"Removed `{(old_xp - user_stats.xp):,}` XP from {user.mention}.",
             colour=discord.Colour.green(),
         )
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

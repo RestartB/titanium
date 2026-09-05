@@ -32,15 +32,13 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         modal = FeedbackModal()
         await interaction.response.send_modal(modal)
 
-    context = discord.app_commands.AppCommandContext(
-        guild=True, dm_channel=True, private_channel=True
-    )
-    installs = discord.app_commands.AppInstallationType(guild=True, user=True)
     base64_group = app_commands.Group(
         name="base64",
         description="Convert text to and from Base64.",
-        allowed_contexts=context,
-        allowed_installs=installs,
+        allowed_contexts=discord.app_commands.AppCommandContext(
+            guild=True, dm_channel=True, private_channel=True
+        ),
+        allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True),
     )
 
     @base64_group.command(name="encode", description="Convert text to Base64.")

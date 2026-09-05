@@ -13,6 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License or the LICENCE file for more details.
 
+# TODO: check if cooldowns work group wide
 
 # Imports
 import asyncio

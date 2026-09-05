@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class ReviewsCommandsCog(commands.Cog):
+class ReviewsCommandsCog(commands.GroupCog):
     REQUEST_HEADERS: ClassVar = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
     }
@@ -20,7 +20,7 @@ class ReviewsCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
-    @commands.hybrid_group(name="reviews", description="Get reviews for a user.", fallback="user")
+    @app_commands.command(name="user", description="Get reviews for a user.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
@@ -28,14 +28,14 @@ class ReviewsCommandsCog(commands.Cog):
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @commands.cooldown(1, 5)
-    async def reviews_group(
+    async def user_reviews(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         user: discord.User | discord.Member | None,
         ephemeral: bool = False,
     ) -> None:
         if user is None:
-            user = ctx.author
+            user = interaction.user
 
         # Send request to ReviewDB
         async with (
@@ -56,7 +56,7 @@ class ReviewsCommandsCog(commands.Cog):
                     description="ReviewDB has encountered an error. Please try again later.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
                 return
             else:
@@ -108,34 +108,37 @@ class ReviewsCommandsCog(commands.Cog):
                 )
 
         pages[0].set_footer(
-            text=f"Controlling: @{ctx.author.name}" if len(pages) > 1 else f"@{ctx.author.name}",
-            icon_url=ctx.author.display_avatar.url,
+            text=f"Controlling: @{interaction.user.name}"
+            if len(pages) > 1
+            else f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
         )
 
         if len(pages) > 1:
             view = PaginationView(embeds=pages, timeout=300)
-            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
+            await interaction.followup.send(embed=pages[0], view=view, ephemeral=ephemeral)
         else:
-            await ctx.reply(embed=pages[0], ephemeral=ephemeral)
+            await interaction.followup.send(embed=pages[0], ephemeral=ephemeral)
 
     # Server reviews command
-    @reviews_group.command(name="server", description="Get reviews for the server.")
+    @app_commands.command(name="server", description="Get reviews for the server.")
     @commands.guild_only()
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
     @commands.cooldown(1, 5)
-    async def server_reviews(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
-        await ctx.defer(ephemeral=ephemeral)
-
-        if not ctx.guild:
-            raise commands.NoPrivateMessage
+    async def server_reviews(
+        self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
+    ):
+        if not interaction.guild:
+            raise ValueError("Guild is missing")
+        await interaction.response.defer(ephemeral=ephemeral)
 
         # Send request to ReviewDB
         async with (
             aiohttp.ClientSession() as session,
             session.get(
-                f"https://manti.vendicated.dev/api/reviewdb/users/{ctx.guild.id}/reviews?offset=0",
+                f"https://manti.vendicated.dev/api/reviewdb/users/{interaction.guild.id}/reviews?offset=0",
                 headers=self.REQUEST_HEADERS,
             ) as request,
         ):
@@ -151,7 +154,7 @@ class ReviewsCommandsCog(commands.Cog):
                     colour=Colour.red(),
                 )
 
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
             else:
                 if review_response["hasNextPage"]:
@@ -159,7 +162,7 @@ class ReviewsCommandsCog(commands.Cog):
                     async with (
                         aiohttp.ClientSession() as session,
                         session.get(
-                            f"https://manti.vendicated.dev/api/reviewdb/users/{ctx.guild.id}/reviews?offset={len(review_list)}",
+                            f"https://manti.vendicated.dev/api/reviewdb/users/{interaction.guild.id}/reviews?offset={len(review_list)}",
                             headers=self.REQUEST_HEADERS,
                         ) as request,
                     ):
@@ -178,8 +181,8 @@ class ReviewsCommandsCog(commands.Cog):
             colour=Colour.light_grey(),
         )
         page.set_author(
-            name=ctx.guild.name,
-            icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+            name=interaction.guild.name,
+            icon_url=interaction.guild.icon.url if interaction.guild.icon else None,
         )
 
         for i, review in enumerate(review_list, start=1):
@@ -197,20 +200,22 @@ class ReviewsCommandsCog(commands.Cog):
                     colour=Colour.light_grey(),
                 )
                 page.set_author(
-                    name=ctx.guild.name,
-                    icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+                    name=interaction.guild.name,
+                    icon_url=interaction.guild.icon.url if interaction.guild.icon else None,
                 )
 
         pages[0].set_footer(
-            text=f"Controlling: @{ctx.author.name}" if len(pages) > 1 else f"@{ctx.author.name}",
-            icon_url=ctx.author.display_avatar.url,
+            text=f"Controlling: @{interaction.user.name}"
+            if len(pages) > 1
+            else f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
         )
 
         if len(pages) > 1:
             view = PaginationView(embeds=pages, timeout=300)
-            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
+            await interaction.followup.send(embed=pages[0], view=view, ephemeral=ephemeral)
         else:
-            await ctx.reply(embed=pages[0], ephemeral=ephemeral)
+            await interaction.followup.send(embed=pages[0], ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:
