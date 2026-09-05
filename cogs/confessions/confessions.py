@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 @app_commands.allowed_installs(guilds=True, users=False)
 @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+@app_commands.default_permissions(view_channel=True, send_messages=True)
 class ConfessionCog(
     commands.GroupCog, group_name="anonymous", description="Create anonymous confessions and polls."
 ):
@@ -32,11 +33,9 @@ class ConfessionCog(
         if not interaction.guild:
             raise ValueError("Guild only command but no guild available")
 
-        await interaction.response.defer(ephemeral=True)
-
         guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
         if not guild_settings or not guild_settings.confessions_enabled:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 embed=Embed(
                     colour=Colour.red(),
                     title=f"{self.bot.error_emoji} Confessions Disabled",
@@ -62,8 +61,10 @@ class ConfessionCog(
         message: str,
         image: discord.Attachment | None = None,
     ) -> None:
+        await interaction.response.defer(ephemeral=True)
+
         if interaction.guild is None or not interaction.is_guild_integration():
-            return
+            raise ValueError("Guild is missing, or not running in guild mode")
 
         if image and (not image.content_type or not image.content_type.startswith("image/")):
             await interaction.followup.send(
@@ -209,6 +210,8 @@ class ConfessionCog(
         image_or_video: discord.Attachment | None = None,
         show_live_results: bool = True,
     ) -> None:
+        await interaction.response.defer(ephemeral=True)
+
         if interaction.user.id in self.bot.opt_out:
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",

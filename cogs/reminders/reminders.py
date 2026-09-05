@@ -39,7 +39,7 @@ class TemplateCog(commands.GroupCog, group_name="reminder", description="Create 
             description="You have opted out of data collection and cannot use reminder features.",
             colour=discord.Colour.red(),
         )
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return False
 
     @app_commands.command(name="create", description="Create a new reminder.")

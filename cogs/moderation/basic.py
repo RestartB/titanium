@@ -45,21 +45,18 @@ class ModerationBasicCog(
         self.bot = bot
 
     async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
-        ephemeral = bool(getattr(interaction.namespace, "ephemeral", False))
-        await interaction.response.defer(ephemeral=ephemeral)
-
         if not interaction.guild:
             return False
 
         config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.moderation_enabled or not config.moderation_settings:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 embed=discord.Embed(
                     colour=discord.Colour.red(),
                     title=f"{self.bot.error_emoji} Moderation Disabled",
                     description="The moderation module is disabled in this server. Ask a server admin to turn it on using the `/settings` command or the Titanium Dashboard.",
                 ),
-                ephemeral=ephemeral,
+                ephemeral=True,
             )
             return False
 
@@ -486,6 +483,8 @@ class ModerationBasicCog(
         ):
             return
 
+        await interaction.response.defer(ephemeral=ephemeral)
+
         config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
@@ -560,6 +559,8 @@ class ModerationBasicCog(
             or not isinstance(interaction.user, discord.Member)
         ):
             return
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.moderation_settings:
@@ -655,6 +656,8 @@ class ModerationBasicCog(
             or not isinstance(interaction.user, discord.Member)
         ):
             return
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.moderation_settings:
@@ -821,6 +824,8 @@ class ModerationBasicCog(
         ):
             return
 
+        await interaction.response.defer(ephemeral=ephemeral)
+
         config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
@@ -917,6 +922,8 @@ class ModerationBasicCog(
         ):
             return
 
+        await interaction.response.defer(ephemeral=ephemeral)
+
         config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
@@ -1011,6 +1018,8 @@ class ModerationBasicCog(
     ) -> None | Message:
         if not interaction.guild or not self.bot.user:
             return
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.moderation_settings:
@@ -1139,6 +1148,8 @@ class ModerationBasicCog(
         if not interaction.guild or not self.bot.user:
             return
 
+        await interaction.response.defer(ephemeral=ephemeral)
+
         config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
@@ -1262,6 +1273,8 @@ class ModerationBasicCog(
         ):
             return
 
+        await interaction.response.defer(ephemeral=ephemeral)
+
         successful_warns: list[tuple[discord.Member, str]] = []
         failed_warns: list[tuple[discord.Member, str]] = []
 
@@ -1343,6 +1356,8 @@ class ModerationBasicCog(
             or not isinstance(interaction.user, discord.Member)
         ):
             return
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         successful_mutes: list[tuple[discord.Member, str]] = []
         failed_mutes: list[tuple[discord.Member, str]] = []
@@ -1442,6 +1457,8 @@ class ModerationBasicCog(
             or not isinstance(interaction.user, discord.Member)
         ):
             return
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         successful_kicks: list[tuple[discord.Member, str]] = []
         failed_kicks: list[tuple[discord.Member, str]] = []
@@ -1543,6 +1560,8 @@ class ModerationBasicCog(
             or not isinstance(interaction.user, discord.Member)
         ):
             return
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         # Check if guild for type checking
         if not interaction.guild:
