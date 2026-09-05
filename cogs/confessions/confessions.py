@@ -32,9 +32,11 @@ class ConfessionCog(
         if not interaction.guild:
             raise ValueError("Guild only command but no guild available")
 
+        await interaction.response.defer(ephemeral=True)
+
         guild_settings = await self.bot.fetch_guild_config(interaction.guild.id)
         if not guild_settings or not guild_settings.confessions_enabled:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=Embed(
                     colour=Colour.red(),
                     title=f"{self.bot.error_emoji} Confessions Disabled",
@@ -60,8 +62,6 @@ class ConfessionCog(
         message: str,
         image: discord.Attachment | None = None,
     ) -> None:
-        await interaction.response.defer(ephemeral=True)
-
         if interaction.guild is None or not interaction.is_guild_integration():
             return
 
@@ -209,8 +209,6 @@ class ConfessionCog(
         image_or_video: discord.Attachment | None = None,
         show_live_results: bool = True,
     ) -> None:
-        await interaction.response.defer(ephemeral=True)
-
         if interaction.user.id in self.bot.opt_out:
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} Opted Out",

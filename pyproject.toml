@@ -46,4 +46,3 @@ ignore = ["LOG015", "UP037", "BLE001"]
 typeCheckingMode = "basic"
 venvPath = "."
 venv = ".venv"
-reportUndefinedVariable = "none"
