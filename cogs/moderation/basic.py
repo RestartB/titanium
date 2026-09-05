@@ -1,6 +1,6 @@
 from datetime import timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import discord
 from discord import Message, app_commands
@@ -489,12 +489,6 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         result, case, dm_success, dm_error = await self._warn_member(interaction, member, reason)
 
         if (
@@ -512,27 +506,22 @@ class ModerationBasicCog(
                     dm_success=dm_success,
                     dm_error=dm_error,
                 ),
-                **del_kwargs,
             )
         elif result == PunishmentResult.NOT_IN_GUILD:
             await interaction.followup.send(
-                ephemeral=ephemeral, embed=not_in_guild(self.bot, member), **del_kwargs
+                ephemeral=ephemeral, embed=not_in_guild(self.bot, member)
             )
         elif result == PunishmentResult.CANT_MOD_SELF:
             await interaction.followup.send(
-                ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot)
             )
         elif result == PunishmentResult.NOT_ALLOWED:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.not_allowed(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.not_allowed(self.bot, member)
             )
         elif result == PunishmentResult.ALREADY_PUNISHING:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.already_punishing(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.already_punishing(self.bot, member)
             )
 
     @app_commands.command(name="mute", description="Mute a member for a specified duration.")
@@ -566,12 +555,6 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         result, case, dm_success, dm_error = await self._mute_member(
             interaction, member, duration, reason
         )
@@ -591,49 +574,38 @@ class ModerationBasicCog(
                     dm_success=dm_success,
                     dm_error=dm_error,
                 ),
-                **del_kwargs,
             )
         elif result == PunishmentResult.NOT_IN_GUILD:
             await interaction.followup.send(
-                ephemeral=ephemeral, embed=not_in_guild(self.bot, member), **del_kwargs
+                ephemeral=ephemeral, embed=not_in_guild(self.bot, member)
             )
         elif result == PunishmentResult.CANT_MOD_SELF:
             await interaction.followup.send(
-                ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot)
             )
         elif result == PunishmentResult.NOT_ALLOWED:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.not_allowed(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.not_allowed(self.bot, member)
             )
         elif result == PunishmentResult.BOT_NOT_ALLOWED:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.titanium_not_allowed(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.titanium_not_allowed(self.bot, member)
             )
         elif result == PunishmentResult.ALREADY_PUNISHED:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.already_muted(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.already_muted(self.bot, member)
             )
         elif result == PunishmentResult.ALREADY_PUNISHING:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.already_punishing(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.already_punishing(self.bot, member)
             )
         elif result == PunishmentResult.FORBIDDEN:
             return await interaction.followup.send(
-                ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot)
             )
         elif result == PunishmentResult.UNKNOWN:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.http_exception(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.http_exception(self.bot, member)
             )
 
     @app_commands.command(name="unmute", description="Unmute a member.")
@@ -663,12 +635,6 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         try:
             # Check if guild for type checking
             if not interaction.guild:
@@ -677,37 +643,31 @@ class ModerationBasicCog(
             # Check if member is in guild
             if member.guild.id != interaction.guild.id:
                 return await interaction.followup.send(
-                    ephemeral=ephemeral, embed=not_in_guild(self.bot, member), **del_kwargs
+                    ephemeral=ephemeral, embed=not_in_guild(self.bot, member)
                 )
 
             # Check if moderating self
             if member.id == interaction.user.id:
                 return await interaction.followup.send(
-                    ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot)
                 )
 
             # Check if target doesn't have higher role
             if not self._hierarchy_check(member, interaction.user, interaction):
                 return await interaction.followup.send(
-                    ephemeral=ephemeral,
-                    embed=mod_embeds.not_allowed(self.bot, member),
-                    **del_kwargs,
+                    ephemeral=ephemeral, embed=mod_embeds.not_allowed(self.bot, member)
                 )
 
             # Check if Titanium can punish target
             if not self._bot_perms_check(member, interaction):
                 return await interaction.followup.send(
-                    ephemeral=ephemeral,
-                    embed=mod_embeds.titanium_not_allowed(self.bot, member),
-                    **del_kwargs,
+                    ephemeral=ephemeral, embed=mod_embeds.titanium_not_allowed(self.bot, member)
                 )
 
             # Check if user is not muted
             if not member.is_timed_out():
                 return await interaction.followup.send(
-                    ephemeral=ephemeral,
-                    embed=mod_embeds.already_unmuted(self.bot, member),
-                    **del_kwargs,
+                    ephemeral=ephemeral, embed=mod_embeds.already_unmuted(self.bot, member)
                 )
 
             # Check if member is already being punished
@@ -716,9 +676,7 @@ class ModerationBasicCog(
                 and member.id in self.bot.punishing[interaction.guild.id]
             ):
                 return await interaction.followup.send(
-                    ephemeral=ephemeral,
-                    embed=mod_embeds.already_punishing(self.bot, member),
-                    **del_kwargs,
+                    ephemeral=ephemeral, embed=mod_embeds.already_punishing(self.bot, member)
                 )
 
             # Add member to punishing list
@@ -738,7 +696,7 @@ class ModerationBasicCog(
                 )
 
                 return await interaction.followup.send(
-                    ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot)
                 )
             except discord.HTTPException as e:
                 await log_error(
@@ -751,9 +709,7 @@ class ModerationBasicCog(
                 )
 
                 return await interaction.followup.send(
-                    ephemeral=ephemeral,
-                    embed=mod_embeds.http_exception(self.bot, member),
-                    **del_kwargs,
+                    ephemeral=ephemeral, embed=mod_embeds.http_exception(self.bot, member)
                 )
 
             # Get last ummute case
@@ -791,7 +747,6 @@ class ModerationBasicCog(
                     dm_success=dm_success,
                     dm_error=dm_error,
                 ),
-                **del_kwargs,
             )
         finally:
             # Remove member from punishing list
@@ -830,12 +785,6 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         result, case, dm_success, dm_error = await self._kick_member(interaction, member, reason)
 
         if (
@@ -853,43 +802,34 @@ class ModerationBasicCog(
                     dm_success=dm_success,
                     dm_error=dm_error,
                 ),
-                **del_kwargs,
             )
         elif result == PunishmentResult.NOT_IN_GUILD:
             await interaction.followup.send(
-                ephemeral=ephemeral, embed=not_in_guild(self.bot, member), **del_kwargs
+                ephemeral=ephemeral, embed=not_in_guild(self.bot, member)
             )
         elif result == PunishmentResult.CANT_MOD_SELF:
             await interaction.followup.send(
-                ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot)
             )
         elif result == PunishmentResult.NOT_ALLOWED:
             await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.not_allowed(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.not_allowed(self.bot, member)
             )
         elif result == PunishmentResult.BOT_NOT_ALLOWED:
             await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.titanium_not_allowed(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.titanium_not_allowed(self.bot, member)
             )
         elif result == PunishmentResult.ALREADY_PUNISHING:
             await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.already_punishing(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.already_punishing(self.bot, member)
             )
         elif result == PunishmentResult.FORBIDDEN:
             await interaction.followup.send(
-                ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot)
             )
         elif result == PunishmentResult.UNKNOWN:
             await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.http_exception(self.bot, member),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.http_exception(self.bot, member)
             )
 
     @app_commands.command(name="ban", description="Ban a user from the server.")
@@ -928,12 +868,6 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         result, case, dm_success, dm_error = await self._ban_member(
             interaction,
             user,
@@ -959,47 +893,36 @@ class ModerationBasicCog(
                     dm_success=dm_success,
                     dm_error=dm_error,
                 ),
-                **del_kwargs,
             )
         elif result == PunishmentResult.NOT_IN_GUILD:
-            await interaction.followup.send(
-                ephemeral=ephemeral, embed=not_in_guild(self.bot, user), **del_kwargs
-            )
+            await interaction.followup.send(ephemeral=ephemeral, embed=not_in_guild(self.bot, user))
         elif result == PunishmentResult.CANT_MOD_SELF:
             await interaction.followup.send(
-                ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot)
             )
         elif result == PunishmentResult.NOT_ALLOWED:
             return await interaction.followup.send(
-                ephemeral=ephemeral, embed=mod_embeds.not_allowed(self.bot, user), **del_kwargs
+                ephemeral=ephemeral, embed=mod_embeds.not_allowed(self.bot, user)
             )
         elif result == PunishmentResult.BOT_NOT_ALLOWED:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.titanium_not_allowed(self.bot, user),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.titanium_not_allowed(self.bot, user)
             )
         elif result == PunishmentResult.ALREADY_PUNISHED:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.already_muted(self.bot, user),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.already_muted(self.bot, user)
             )
         elif result == PunishmentResult.ALREADY_PUNISHING:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.already_punishing(self.bot, user),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.already_punishing(self.bot, user)
             )
         elif result == PunishmentResult.FORBIDDEN:
             return await interaction.followup.send(
-                ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot)
             )
         elif result == PunishmentResult.UNKNOWN:
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.http_exception(self.bot, user),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.http_exception(self.bot, user)
             )
 
     @app_commands.command(name="unban", description="Unban a user from the server.")
@@ -1025,12 +948,6 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         try:
             # Check if guild for type checking
             if not interaction.guild:
@@ -1039,7 +956,7 @@ class ModerationBasicCog(
             # Check if moderating self
             if user.id == interaction.user.id:
                 return await interaction.followup.send(
-                    ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.cant_mod_self(self.bot)
                 )
 
             # Check if user is already being punished
@@ -1059,9 +976,7 @@ class ModerationBasicCog(
                 await interaction.guild.fetch_ban(user)
             except discord.NotFound:
                 return await interaction.followup.send(
-                    ephemeral=ephemeral,
-                    embed=mod_embeds.already_unbanned(self.bot, user),
-                    **del_kwargs,
+                    ephemeral=ephemeral, embed=mod_embeds.already_unbanned(self.bot, user)
                 )
 
             # Unban user
@@ -1078,7 +993,7 @@ class ModerationBasicCog(
                 )
 
                 return await interaction.followup.send(
-                    ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot)
                 )
             except discord.HTTPException as e:
                 await log_error(
@@ -1091,9 +1006,7 @@ class ModerationBasicCog(
                 )
 
                 return await interaction.followup.send(
-                    ephemeral=ephemeral,
-                    embed=mod_embeds.http_exception(self.bot, user),
-                    **del_kwargs,
+                    ephemeral=ephemeral, embed=mod_embeds.http_exception(self.bot, user)
                 )
 
             # Get last ban case
@@ -1115,7 +1028,6 @@ class ModerationBasicCog(
                     creator=interaction.user,
                     case=case,
                 ),
-                **del_kwargs,
             )
         finally:
             # Remove user from punishing list
@@ -1154,12 +1066,6 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         try:
             if (
                 isinstance(
@@ -1175,7 +1081,7 @@ class ModerationBasicCog(
                 or interaction.channel is None
             ):
                 await interaction.followup.send(
-                    ephemeral=ephemeral, embed=mod_embeds.cannot_purge(self.bot), **del_kwargs
+                    ephemeral=ephemeral, embed=mod_embeds.cannot_purge(self.bot)
                 )
                 return
 
@@ -1201,7 +1107,7 @@ class ModerationBasicCog(
                 )
 
             return await interaction.followup.send(
-                ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot), **del_kwargs
+                ephemeral=ephemeral, embed=mod_embeds.forbidden(self.bot)
             )
         except discord.HTTPException as e:
             if not isinstance(
@@ -1218,22 +1124,17 @@ class ModerationBasicCog(
                 )
 
             return await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.http_exception(self.bot),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.http_exception(self.bot)
             )
 
         if len(deleted) == 0:
             await interaction.followup.send(
-                ephemeral=ephemeral,
-                embed=mod_embeds.none_to_purge(self.bot, interaction.user),
-                **del_kwargs,
+                ephemeral=ephemeral, embed=mod_embeds.none_to_purge(self.bot, interaction.user)
             )
         else:
             await interaction.followup.send(
                 ephemeral=ephemeral,
                 embed=mod_embeds.purged(self.bot, interaction.user, len(deleted)),
-                **del_kwargs,
             )
 
     ### MASS PUNISHMENTS ###
@@ -1285,17 +1186,11 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         if not valid_users:
             embed = mod_embeds.mass_warned(
                 self.bot, successful_warns, failed_warns, interaction.user, reason
             )
-            return await interaction.followup.send(ephemeral=ephemeral, embed=embed, **del_kwargs)
+            return await interaction.followup.send(ephemeral=ephemeral, embed=embed)
 
         for user in valid_users:
             status, _, dm_success, dm_error = await self._warn_member(
@@ -1369,12 +1264,6 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         # Process duration
         processed_duration = await DurationTransformer().transform(interaction, duration)
         processed_reason = reason
@@ -1391,7 +1280,7 @@ class ModerationBasicCog(
                 processed_reason,
                 processed_duration,
             )
-            return await interaction.followup.send(ephemeral=ephemeral, embed=embed, **del_kwargs)
+            return await interaction.followup.send(ephemeral=ephemeral, embed=embed)
 
         for user in valid_users:
             status, _, dm_success, dm_error = await self._mute_member(
@@ -1470,17 +1359,11 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         if not valid_users:
             embed = mod_embeds.mass_kicked(
                 self.bot, successful_kicks, failed_kicks, interaction.user, reason
             )
-            return await interaction.followup.send(ephemeral=ephemeral, embed=embed, **del_kwargs)
+            return await interaction.followup.send(ephemeral=ephemeral, embed=embed)
 
         for user in valid_users:
             status, _, dm_success, dm_error = await self._kick_member(
@@ -1599,12 +1482,6 @@ class ModerationBasicCog(
         if not config or not config.moderation_settings:
             raise ValueError("Config not returned")
 
-        del_kwargs: dict[str, Any] = (
-            {"delete_after": 5.0}
-            if config and config.moderation_settings.delete_confirmation
-            else {}
-        )
-
         # Process duration
         processed_duration = await DurationTransformer().transform(interaction, duration)
         processed_reason = reason
@@ -1621,7 +1498,7 @@ class ModerationBasicCog(
                 processed_reason,
                 processed_duration,
             )
-            return await interaction.followup.send(ephemeral=ephemeral, embed=embed, **del_kwargs)
+            return await interaction.followup.send(ephemeral=ephemeral, embed=embed)
 
         cases: dict[int, tuple[ModCase, bool, str]] = {}
         async with get_session() as session:
@@ -1679,9 +1556,7 @@ class ModerationBasicCog(
                     processed_reason,
                     processed_duration,
                 )
-                return await interaction.followup.send(
-                    ephemeral=ephemeral, embed=embed, **del_kwargs
-                )
+                return await interaction.followup.send(ephemeral=ephemeral, embed=embed)
             except (discord.Forbidden, discord.HTTPException) as e:
                 error_msg = (
                     "Titanium was not allowed to massban members"
@@ -1706,9 +1581,7 @@ class ModerationBasicCog(
                     if isinstance(e, discord.Forbidden)
                     else mod_embeds.http_exception(self.bot)
                 )
-                return await interaction.followup.send(
-                    ephemeral=ephemeral, embed=embed, **del_kwargs
-                )
+                return await interaction.followup.send(ephemeral=ephemeral, embed=embed)
 
 
 async def setup(bot: TitaniumBot) -> None:
