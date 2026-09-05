@@ -9,7 +9,7 @@ from discord.ui import LayoutView
 from discord.utils import format_dt
 
 from lib.embeds.general import invalid_duration
-from lib.helpers.duration import DurationConverter
+from lib.helpers.duration import DurationTransformer
 from lib.helpers.shorten import shorten_preserve
 from lib.logic.reminders import create_reminder, get_all_reminders, get_reminder_count
 from lib.views.pagination import PaginationV2View
@@ -19,12 +19,13 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
+# TODO: what is going on with the durations here
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 class TemplateCog(commands.GroupCog, group_name="reminder", description="Create reminders."):
     """Create reminders"""
 
-    ConvertedDuration = typing.Annotated[timedelta | None, DurationConverter]
+    ConvertedDuration = typing.Annotated[timedelta | None, DurationTransformer]
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
@@ -45,7 +46,7 @@ class TemplateCog(commands.GroupCog, group_name="reminder", description="Create 
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     @app_commands.choices(
         mode=[
             app_commands.Choice(name="DM", value="dm"),
@@ -57,8 +58,7 @@ class TemplateCog(commands.GroupCog, group_name="reminder", description="Create 
         interaction: discord.Interaction["TitaniumBot"],
         mode: Literal["dm", "server"],
         time: ConvertedDuration,
-        *,
-        content: commands.Range[str, 1, 1000],
+        content: app_commands.Range[str, 1, 1000],
         ephemeral: bool = False,
     ) -> None:
         await interaction.response.defer(ephemeral=ephemeral)
@@ -173,7 +173,7 @@ class TemplateCog(commands.GroupCog, group_name="reminder", description="Create 
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def reminder_list(
         self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
     ) -> None:
@@ -185,13 +185,17 @@ class TemplateCog(commands.GroupCog, group_name="reminder", description="Create 
         reminder_pages: list[RemindersPageContainer] = []
         for chunk in reminder_chunks:
             reminder_pages.append(
-                RemindersPageContainer(interaction=interaction, reminders=chunk, reminder_count=len(reminders))
+                RemindersPageContainer(
+                    interaction=interaction, reminders=chunk, reminder_count=len(reminders)
+                )
             )
 
         view = LayoutView(timeout=300)
         if not reminder_pages:
             view.add_item(
-                RemindersPageContainer(interaction=interaction, reminders=[], reminder_count=len(reminders))
+                RemindersPageContainer(
+                    interaction=interaction, reminders=[], reminder_count=len(reminders)
+                )
             )
         elif len(reminder_pages) > 1:
             view = PaginationV2View(pages=reminder_pages)

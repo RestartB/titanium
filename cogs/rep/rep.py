@@ -173,7 +173,7 @@ class RepCog(
         member="The member to view.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def view_rep(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -260,7 +260,7 @@ class RepCog(
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def rep_leaderboard(
         self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
     ):
@@ -320,7 +320,7 @@ class RepCog(
         member="The member to give rep to.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def add_rep(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -414,7 +414,7 @@ class RepCog(
         amount="The amount of rep to remove from the user.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def remove_rep(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -514,8 +514,8 @@ class RepCog(
         member="The member to set the rep of.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.has_permissions(administrator=True)
-    @commands.cooldown(1, 3)
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.checks.cooldown(1, 3)
     async def set_rep(
         self,
         interaction: discord.Interaction["TitaniumBot"],
