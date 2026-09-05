@@ -320,12 +320,6 @@ class AutomodMonitorCog(commands.Cog):
                 else:
                     self.logger.debug(f"({rule.id}) Rule not met")
 
-            del_kwargs: dict[str, Any] = (
-                {"delete_after": 5.0}
-                if config and config.moderation_settings.delete_confirmation
-                else {}
-            )
-
             processed_actions = [
                 action
                 for action in triggered_actions
@@ -746,9 +740,7 @@ class AutomodMonitorCog(commands.Cog):
                         embed_chunks = discord.utils.as_chunks(embeds, 10)
                         for chunk in embed_chunks:
                             await message.channel.send(
-                                embeds=chunk,
-                                allowed_mentions=discord.AllowedMentions.none(),
-                                *del_kwargs,  # noqa: B026
+                                embeds=chunk, allowed_mentions=discord.AllowedMentions.none()
                             )
                     except discord.Forbidden as e:
                         await log_error(

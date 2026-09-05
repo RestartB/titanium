@@ -1679,7 +1679,6 @@ class APICog(commands.Cog):
                 if not db_config:
                     db_config = GuildModerationSettings(guild_id=guild.id)
 
-                db_config.delete_confirmation = validated_config.delete_confirmation
                 db_config.dm_users = validated_config.dm_users
                 db_config.ban_days = validated_config.ban_days
 
