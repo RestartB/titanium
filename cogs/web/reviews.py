@@ -127,9 +127,7 @@ class ReviewsCommandsCog(
             await interaction.followup.send(embed=pages[0], ephemeral=ephemeral)
 
     # Server reviews command
-    # TODO: check that the guild only part is working
     @app_commands.command(name="server", description="Get reviews for the server.")
-    @commands.guild_only()
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
@@ -138,7 +136,14 @@ class ReviewsCommandsCog(
         self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
     ):
         if not interaction.guild:
-            raise ValueError("Guild is missing")
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Not In Server",
+                description="This command only works in servers.",
+                colour=Colour.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
         await interaction.response.defer(ephemeral=ephemeral)
 
         # Send request to ReviewDB
