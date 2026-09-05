@@ -56,13 +56,12 @@ class WebSearchCommandsCog(
         page="Optional: page to jump to. Defaults to first page.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def urban_dict(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        *,
         query: str,
-        page: commands.Range[int, 1, 10] = 1,
+        page: app_commands.Range[int, 1, 10] = 1,
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
@@ -135,11 +134,10 @@ class WebSearchCommandsCog(
         search="The term to search for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def wiki(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        *,
         search: str,
         ephemeral: bool = False,
     ):

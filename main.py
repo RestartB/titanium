@@ -36,12 +36,10 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 from topgg.client import DBLClient
 
-import lib.helpers.hybrid as adapters
 from lib.classes import img_tools
 from lib.classes.automod_message import AutomodMessage
 from lib.classes.browser import BrowserRenderer
 from lib.embeds.general import guild_only
-from lib.helpers.hybrid import SlashCommandOnly
 from lib.helpers.log_error import log_error
 from lib.setup_logger import setup_logging
 from v1_to_v2.migrate import migrate_v1_to_v2
@@ -92,19 +90,6 @@ intents.message_content = True
 intents.members = True
 
 
-class TitaniumContext(commands.Context["TitaniumBot"]):
-    async def reply(
-        self,
-        content: str | None = None,
-        **kwargs: Any,
-    ) -> discord.Message:
-        if self.interaction is not None:
-            return await super().reply(content, **kwargs)
-
-        reference = self.message.to_reference(fail_if_not_exists=False)
-        return await self.send(content, reference=reference, **kwargs)
-
-
 class TitaniumBot(commands.Bot):
     user_installs: int = 0
     guild_installs: int = 0
@@ -118,12 +103,7 @@ class TitaniumBot(commands.Bot):
 
     pre_not_found: (
         Callable[
-            [
-                commands.Context["TitaniumBot"],
-                commands.CommandNotFound
-                | commands.NotOwner
-                | adapters.GroupCommandNotFoundException,
-            ],
+            [commands.Context["TitaniumBot"], commands.CommandNotFound | commands.NotOwner],
             Awaitable[bool],
         ]
         | None
@@ -149,15 +129,6 @@ class TitaniumBot(commands.Bot):
         self.opt_out: list[int] = []
 
         self.trusted_servers: list[int] = []
-
-    async def get_context(
-        self,
-        origin: discord.Message | discord.Interaction,
-        /,
-        *,
-        cls=TitaniumContext,
-    ):
-        return await super().get_context(origin, cls=cls)
 
     async def refresh_opt_out(self) -> None:
         cache_logger.info("Refreshing opt-out IDs...")
@@ -575,17 +546,11 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             colour=discord.Colour.red(),
         )
         ephemeral = False
-    elif isinstance(
-        error, (commands.CommandNotFound, commands.NotOwner, adapters.GroupCommandNotFoundException)
-    ):
+    elif isinstance(error, (commands.CommandNotFound, commands.NotOwner)):
         if ctx.bot.pre_not_found and await ctx.bot.pre_not_found(ctx, error):
             return
 
-        if isinstance(error, adapters.GroupCommandNotFoundException):
-            command_name = error.command_name
-        else:
-            command_name = ctx.invoked_with or "unknown"
-
+        command_name = ctx.invoked_with or "unknown"
         embed = discord.Embed(
             title=f"{bot.error_emoji} Command Not Found",
             description=f"The command `{command_name}` does not exist.",
@@ -681,12 +646,6 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             description=f"You are missing a required attachment (`{error.param.name}`) for this command.",
             colour=discord.Colour.red(),
         )
-    elif isinstance(error, SlashCommandOnly):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Slash Command Only",
-            description="This command is only available as a slash command.",
-            colour=discord.Colour.red(),
-        )
     elif isinstance(error, commands.errors.CheckFailure):
         return
     else:
@@ -721,9 +680,6 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         await ctx.reply(embed=embed, ephemeral=ephemeral)
     except Exception:
         await ctx.channel.send(content=ctx.author.mention, embed=embed)
-
-    # stop loading reaction
-    await adapters._stop_loading(ctx)
 
 
 @bot.tree.error

@@ -459,22 +459,23 @@ class ModerationBasicCog(
                 self.bot.punishing[interaction.guild.id].remove(user.id)
 
     @app_commands.command(name="warn", description="Warn a member for a specified reason.")
-    @commands.check_any(
-        commands.has_permissions(kick_members=True),
-        commands.has_permissions(ban_members=True),
-        commands.has_permissions(moderate_members=True),
+    @app_commands.check(
+        lambda interaction: (
+            interaction.permissions.kick_members
+            or interaction.permissions.ban_members
+            or interaction.permissions.moderate_members
+        )
     )
     @app_commands.describe(
         member="The member to warn.",
         reason="Optional: the reason for the warning.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def warn(
         self,
         interaction: discord.Interaction["TitaniumBot"],
         member: discord.Member,
-        *,
         reason: str = "",
         ephemeral: bool = False,
     ) -> None | Message:
@@ -536,21 +537,20 @@ class ModerationBasicCog(
             )
 
     @app_commands.command(name="mute", description="Mute a member for a specified duration.")
-    @commands.has_permissions(moderate_members=True)
-    @commands.bot_has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.bot_has_permissions(moderate_members=True)
     @app_commands.describe(
         member="The member to mute.",
         duration="Optional: the duration of the mute (e.g., 10m, 1h, 2h30m).",
         reason="Optional: the reason for the mute.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def mute(
         self,
         interaction: discord.Interaction["TitaniumBot"],
         member: discord.Member,
         duration: str = "",
-        *,
         reason: str = "",
         ephemeral: bool = False,
     ) -> None | Message:
@@ -636,13 +636,13 @@ class ModerationBasicCog(
             )
 
     @app_commands.command(name="unmute", description="Unmute a member.")
-    @commands.has_permissions(moderate_members=True)
-    @commands.bot_has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.bot_has_permissions(moderate_members=True)
     @app_commands.describe(
         member="The member to unmute.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def unmute(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -799,19 +799,18 @@ class ModerationBasicCog(
                 self.bot.punishing[interaction.guild.id].remove(member.id)
 
     @app_commands.command(name="kick", description="Kick a member from the server.")
-    @commands.has_permissions(kick_members=True)
-    @commands.bot_has_permissions(kick_members=True)
+    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.checks.bot_has_permissions(kick_members=True)
     @app_commands.describe(
         member="The member to kick.",
         reason="Optional: the reason for the kick.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def kick(
         self,
         interaction: discord.Interaction["TitaniumBot"],
         member: discord.Member,
-        *,
         reason: str = "",
         ephemeral: bool = False,
     ) -> None | Message:
@@ -889,8 +888,8 @@ class ModerationBasicCog(
             )
 
     @app_commands.command(name="ban", description="Ban a user from the server.")
-    @commands.has_permissions(ban_members=True)
-    @commands.bot_has_permissions(ban_members=True)
+    @app_commands.checks.has_permissions(ban_members=True)
+    @app_commands.checks.bot_has_permissions(ban_members=True)
     @app_commands.describe(
         user="The user to ban.",
         duration="Optional: the duration of the ban (e.g., 10m, 1h, 2h30m).",
@@ -898,18 +897,14 @@ class ModerationBasicCog(
         delete_message_days="Optional: amount of days of messages from the user that are deleted. Defaults to server default.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def ban(
         self,
         interaction: discord.Interaction["TitaniumBot"],
         user: discord.User,
         duration: str = "",
-        *,
         reason: str = "",
-        delete_message_days: float | None = commands.parameter(
-            converter=commands.Range[float, 0, 7],
-            default=None,
-        ),
+        delete_message_days: app_commands.Range[int, 0, 7] | None = None,
         ephemeral: bool = False,
     ) -> None | Message:
         if isinstance(delete_message_days, commands.Parameter):
@@ -1001,13 +996,13 @@ class ModerationBasicCog(
             )
 
     @app_commands.command(name="unban", description="Unban a user from the server.")
-    @commands.has_permissions(ban_members=True)
-    @commands.bot_has_permissions(ban_members=True)
+    @app_commands.checks.has_permissions(ban_members=True)
+    @app_commands.checks.bot_has_permissions(ban_members=True)
     @app_commands.describe(
         user="The user to unban.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def unban(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -1124,19 +1119,19 @@ class ModerationBasicCog(
     @app_commands.command(
         name="purge", description="Purge up to 300 messages up to 14 days old from a channel."
     )
-    @commands.has_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_messages=True)
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.describe(
         amount="The number of messages to purge (max 300).",
         user="Optional: the user whose messages should be purged.",
         bot_only="Optional: whether to delete messages from bots only. Defaults to false.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def purge(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        amount: commands.Range[int, 1, 300],
+        amount: app_commands.Range[int, 1, 300],
         user: discord.User | None = None,
         bot_only: bool = False,
         ephemeral: bool = False,
@@ -1232,10 +1227,12 @@ class ModerationBasicCog(
 
     ### MASS PUNISHMENTS ###
     @app_commands.command(name="masswarn", description="Warn members for a specified reason.")
-    @commands.check_any(
-        commands.has_permissions(kick_members=True),
-        commands.has_permissions(ban_members=True),
-        commands.has_permissions(moderate_members=True),
+    @app_commands.check(
+        lambda interaction: (
+            interaction.permissions.kick_members
+            or interaction.permissions.ban_members
+            or interaction.permissions.moderate_members
+        )
     )
     @app_commands.describe(
         member1="The first member to warn.",
@@ -1246,7 +1243,7 @@ class ModerationBasicCog(
         reason="Optional: the reason for the warning.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def masswarn(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -1255,7 +1252,6 @@ class ModerationBasicCog(
         member3: discord.Member | None = None,
         member4: discord.Member | None = None,
         member5: discord.Member | None = None,
-        *,
         reason: str = "",
         ephemeral: bool = False,
     ) -> None | Message:
@@ -1316,8 +1312,8 @@ class ModerationBasicCog(
         await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     @app_commands.command(name="massmute", description="Mute members for a specified duration.")
-    @commands.has_permissions(moderate_members=True)
-    @commands.bot_has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.bot_has_permissions(moderate_members=True)
     @app_commands.describe(
         member1="The first member to mute.",
         member2="The second member to mute.",
@@ -1328,7 +1324,7 @@ class ModerationBasicCog(
         reason="Optional: the reason for the mute.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def massmute(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -1338,7 +1334,6 @@ class ModerationBasicCog(
         member4: discord.Member | None = None,
         member5: discord.Member | None = None,
         duration: str = "",
-        *,
         reason: str = "",
         ephemeral: bool = False,
     ) -> None | Message:
@@ -1418,8 +1413,8 @@ class ModerationBasicCog(
         await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     @app_commands.command(name="masskick", description="Kick members from the server.")
-    @commands.has_permissions(kick_members=True)
-    @commands.bot_has_permissions(kick_members=True)
+    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.checks.bot_has_permissions(kick_members=True)
     @app_commands.describe(
         member1="The first member to kick.",
         member2="The second member to kick.",
@@ -1429,7 +1424,7 @@ class ModerationBasicCog(
         reason="Optional: the reason for the kick.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def masskick(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -1438,7 +1433,6 @@ class ModerationBasicCog(
         member3: discord.Member | None = None,
         member4: discord.Member | None = None,
         member5: discord.Member | None = None,
-        *,
         reason: str = "",
         ephemeral: bool = False,
     ) -> None | Message:
@@ -1503,15 +1497,15 @@ class ModerationBasicCog(
         await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     @app_commands.command(name="massban", description="Ban users from the server.")
-    @commands.has_permissions(ban_members=True)
-    @commands.bot_has_permissions(ban_members=True, manage_guild=True)
+    @app_commands.checks.has_permissions(ban_members=True)
+    @app_commands.checks.bot_has_permissions(ban_members=True, manage_guild=True)
     @app_commands.describe(
         duration="Optional: the duration of the ban (e.g., 10m, 1h, 2h30m).",
         reason="Optional: the reason for the ban.",
         delete_message_days="Optional: amount of days of messages from the user that are deleted. Defaults to server default.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def massban(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -1536,12 +1530,8 @@ class ModerationBasicCog(
         user19: discord.User | None = None,
         user20: discord.User | None = None,
         duration: str = "",
-        *,
         reason: str = "",
-        delete_message_days: float | None = commands.parameter(
-            converter=commands.Range[float, 0, 7],
-            default=None,
-        ),
+        delete_message_days: app_commands.Range[int, 0, 7] | None = None,
         ephemeral: bool = False,
     ) -> None | Message:
         if isinstance(delete_message_days, commands.Parameter):

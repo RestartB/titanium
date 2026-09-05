@@ -72,7 +72,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         user="The user to search for. You can only search for other users if you have a moderation permission.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def cases(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -170,7 +170,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         case_id="The case ID to search for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def view_case(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -223,16 +223,18 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         )
 
     @case_group.command(name="comments", description="View comments on a case.")
-    @commands.check_any(
-        commands.has_permissions(kick_members=True),
-        commands.has_permissions(ban_members=True),
-        commands.has_permissions(moderate_members=True),
+    @app_commands.check(
+        lambda interaction: (
+            interaction.permissions.kick_members
+            or interaction.permissions.ban_members
+            or interaction.permissions.moderate_members
+        )
     )
     @app_commands.describe(
         case_id="The case ID to search for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def case_comments(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -275,23 +277,24 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         )
 
     @case_group.command(name="add-comment", description="Add a comment to a case.")
-    @commands.check_any(
-        commands.has_permissions(kick_members=True),
-        commands.has_permissions(ban_members=True),
-        commands.has_permissions(moderate_members=True),
+    @app_commands.check(
+        lambda interaction: (
+            interaction.permissions.kick_members
+            or interaction.permissions.ban_members
+            or interaction.permissions.moderate_members
+        )
     )
     @app_commands.describe(
         case_id="The case ID to add a comment to.",
         comment="The comment to add.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 10)
+    @app_commands.checks.cooldown(1, 10)
     async def case_add_comment(
         self,
         interaction: discord.Interaction["TitaniumBot"],
         case_id: str,
-        *,
-        comment: commands.Range[str, 1, 500],
+        comment: app_commands.Range[str, 1, 500],
         ephemeral: bool = False,
     ) -> None | Message:
         if not interaction.guild or not self.bot.user:
@@ -326,16 +329,18 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         await interaction.followup.send(ephemeral=ephemeral, embed=embed)
 
     @case_group.command(name="delete", description="Delete a case by its ID.")
-    @commands.check_any(
-        commands.has_permissions(kick_members=True),
-        commands.has_permissions(ban_members=True),
-        commands.has_permissions(moderate_members=True),
+    @app_commands.check(
+        lambda interaction: (
+            interaction.permissions.kick_members
+            or interaction.permissions.ban_members
+            or interaction.permissions.moderate_members
+        )
     )
     @app_commands.describe(
         case_id="The case ID to delete.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def delete_case(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -398,16 +403,18 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         await msg.edit(embed=case_embeds.case_deleted(self.bot, case_id), view=None)
 
     @case_group.command(name="clean", description="Delete all resolved cases for a user.")
-    @commands.check_any(
-        commands.has_permissions(kick_members=True),
-        commands.has_permissions(ban_members=True),
-        commands.has_permissions(moderate_members=True),
+    @app_commands.check(
+        lambda interaction: (
+            interaction.permissions.kick_members
+            or interaction.permissions.ban_members
+            or interaction.permissions.moderate_members
+        )
     )
     @app_commands.describe(
         user="The user to clean.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def clean_cases(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -450,11 +457,11 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         await msg.edit(embed=embed, view=None)
 
     @case_group.command(name="delete-all", description="Delete all resolved cases for the server.")
-    @commands.has_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def delete_all_cases(
         self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
     ) -> None | Message:

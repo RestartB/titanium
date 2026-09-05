@@ -48,7 +48,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def cat(self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
@@ -87,7 +87,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def dog(self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False):
         await interaction.response.defer(ephemeral=ephemeral)
 
@@ -126,8 +126,10 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 5)
-    async def sand_cat(self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False):
+    @app_commands.checks.cooldown(1, 5)
+    async def sand_cat(
+        self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
+    ):
         await interaction.response.defer(ephemeral=ephemeral)
 
         request_data = {}

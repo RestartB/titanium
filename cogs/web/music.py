@@ -142,12 +142,11 @@ class MusicCommandsCog(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.autocomplete(search=song_search_autocomplete)
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def spotify_song(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        *,
-        search: commands.Range[str, 1, 100],
+        search: app_commands.Range[str, 1, 100],
         ephemeral: bool = False,
     ) -> None:
         await interaction.response.defer(ephemeral=ephemeral)
@@ -315,12 +314,11 @@ class MusicCommandsCog(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.autocomplete(search=artist_search_autocomplete)
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def spotify_artist(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        *,
-        search: commands.Range[str, 1, 100],
+        search: app_commands.Range[str, 1, 100],
         ephemeral: bool = False,
     ) -> None:
         await interaction.response.defer(ephemeral=ephemeral)
@@ -500,12 +498,11 @@ class MusicCommandsCog(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.autocomplete(search=album_search_autocomplete)
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def spotify_album(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        *,
-        search: commands.Range[str, 1, 100],
+        search: app_commands.Range[str, 1, 100],
         ephemeral: bool = False,
     ) -> None:
         await interaction.response.defer(ephemeral=ephemeral)
@@ -601,7 +598,7 @@ class MusicCommandsCog(
         url="The Spoptify link to get information for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def song_url(
         self, interaction: discord.Interaction["TitaniumBot"], url: str, ephemeral: bool = False
     ):
@@ -663,7 +660,7 @@ class MusicCommandsCog(
         url="The target Spotify URL. Song, album, playlist and spotify.link URLs are supported.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def spotify_image(
         self, interaction: discord.Interaction["TitaniumBot"], url: str, ephemeral: bool = False
     ) -> None:
@@ -890,12 +887,11 @@ class MusicCommandsCog(
         search="The term to search for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def lyrics(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        *,
-        search: commands.Range[str, 1, 100],
+        search: app_commands.Range[str, 1, 100],
         ephemeral: bool = False,
     ) -> None:
         await interaction.response.defer(ephemeral=ephemeral)

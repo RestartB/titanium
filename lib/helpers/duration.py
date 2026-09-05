@@ -14,34 +14,6 @@ if TYPE_CHECKING:
 # TODO: could be worth maybe switching to https://github.com/scrapinghub/dateparser at some point
 
 
-class DurationConverter(commands.Converter):
-    MAX_YEARS = 60
-    MAX_SECONDS = MAX_YEARS * 31536000
-
-    async def convert(
-        self, ctx: commands.Context["TitaniumBot"], argument: str
-    ) -> timedelta | None:
-        # Check for permanent keywords
-        try:
-            delta = timestring_to_duration(argument)
-
-            if not delta or delta.total_seconds() == 0:
-                return None
-
-            if delta.total_seconds() > self.MAX_SECONDS:
-                raise commands.BadArgument(
-                    f"Duration cannot exceed {self.MAX_YEARS} years. "
-                    f"For permanent actions, use 'permanent', 'perma', '0', or don't provide a duration."
-                )
-
-            return delta
-        except OverflowError:
-            raise commands.BadArgument(
-                f"Duration cannot exceed {self.MAX_YEARS} years. "
-                f"For permanent actions, use 'permanent', 'perma', '0', or don't provide a duration."
-            )
-
-
 class DurationTransformer(app_commands.Transformer):
     MAX_YEARS = 60
     MAX_SECONDS = MAX_YEARS * 31536000
