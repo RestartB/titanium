@@ -25,16 +25,13 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         self.bot = bot
 
     async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
-        ephemeral = bool(getattr(interaction.namespace, "ephemeral", False))
-        await interaction.response.defer(ephemeral=ephemeral)
-
         if not interaction.guild:
             return False
 
         config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.moderation_enabled:
-            await interaction.followup.send(
-                ephemeral=ephemeral,
+            await interaction.response.send_message(
+                ephemeral=True,
                 embed=Embed(
                     colour=Colour.red(),
                     title=f"{self.bot.error_emoji} Moderation Disabled",
@@ -81,6 +78,8 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
     ) -> None | Message:
         if not interaction.guild or not self.bot.user or isinstance(interaction.user, User):
             return
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         async with get_session() as session:
             case_manager = GuildModCaseManager(self.bot, interaction.guild, session)
@@ -180,6 +179,8 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not interaction.guild or not self.bot.user:
             return
 
+        await interaction.response.defer(ephemeral=ephemeral)
+
         try:
             async with get_session() as session:
                 case = await GuildModCaseManager(
@@ -244,6 +245,8 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not interaction.guild or not self.bot.user:
             return
 
+        await interaction.response.defer(ephemeral=ephemeral)
+
         try:
             async with get_session() as session:
                 case = await GuildModCaseManager(
@@ -300,6 +303,8 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not interaction.guild or not self.bot.user:
             return
 
+        await interaction.response.defer(ephemeral=ephemeral)
+
         if not isinstance(interaction.user, Member):
             return await interaction.followup.send(ephemeral=ephemeral, embed=guild_only(self.bot))
 
@@ -349,6 +354,8 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
     ) -> None | Message:
         if not interaction.guild or not self.bot.user:
             return
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         async with get_session() as session:
             case_manager = GuildModCaseManager(self.bot, interaction.guild, session)
@@ -424,6 +431,8 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         if not interaction.guild or not self.bot.user:
             return
 
+        await interaction.response.defer(ephemeral=ephemeral)
+
         embed = Embed(
             title=f"{self.bot.warn_emoji} Are you sure?",
             description=f"This will delete **all resolved cases** on record for {user.mention} (@{user.name}). "
@@ -467,6 +476,8 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
     ) -> None | Message:
         if not interaction.guild or not self.bot.user:
             return
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         embed = Embed(
             title=f"{self.bot.warn_emoji} Are you sure?",

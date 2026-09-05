@@ -25,6 +25,9 @@ class GameCog(commands.GroupCog, group_name="game", description="Game related co
     async def __update_stats(
         self, interaction: discord.Interaction, game: Literal["dice", "coin"], won: bool
     ) -> None:
+        if interaction.user.id in self.bot.opt_out:
+            return
+
         async with get_session() as session:
             session.add(
                 GameStat(

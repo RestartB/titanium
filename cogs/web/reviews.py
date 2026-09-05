@@ -12,7 +12,13 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class ReviewsCommandsCog(commands.GroupCog):
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+class ReviewsCommandsCog(
+    commands.GroupCog,
+    group_name="reviews",
+    description="Get reviews for users and servers from ReviewDB.",
+):
     REQUEST_HEADERS: ClassVar = {
         "User-Agent": os.getenv("REQUEST_USER_AGENT", ""),
     }
@@ -21,8 +27,6 @@ class ReviewsCommandsCog(commands.GroupCog):
         self.bot = bot
 
     @app_commands.command(name="user", description="Get reviews for a user.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
         user="Optional: the user to get reviews for. Defaults to yourself.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -34,6 +38,8 @@ class ReviewsCommandsCog(commands.GroupCog):
         user: discord.User | discord.Member | None,
         ephemeral: bool = False,
     ) -> None:
+        await interaction.response.defer(ephemeral=ephemeral)
+
         if user is None:
             user = interaction.user
 
