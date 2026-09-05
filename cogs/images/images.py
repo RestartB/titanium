@@ -176,7 +176,6 @@ class ResizeModal(BaseModal):
             return
 
         await interaction.response.defer(ephemeral=True)
-
         for attachment in self.message.attachments:
             if not attachment.content_type or not attachment.content_type.startswith("image/"):
                 continue
@@ -311,7 +310,6 @@ class RotateModal(BaseModal):
             return
 
         await interaction.response.defer(ephemeral=True)
-
         for attachment in self.message.attachments:
             if not attachment.content_type or not attachment.content_type.startswith("image/"):
                 continue
@@ -362,7 +360,6 @@ class SpeechBubbleModal(BaseModal):
         bubble_colour = cast(Literal["black", "white", "transparent"], colour)
 
         await interaction.response.defer(ephemeral=True)
-
         for attachment in self.message.attachments:
             if not attachment.content_type or not attachment.content_type.startswith("image/"):
                 continue
