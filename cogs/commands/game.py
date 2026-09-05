@@ -37,8 +37,7 @@ class GameCog(commands.GroupCog, group_name="game", description="Game related co
                 )
             )
 
-    # TODO: check that commands.Author works here
-    @app_commands.command(name="stats", description="Get stats for games that you've played.")
+    @app_commands.command(name="stats", description="Get stats for games that a user has played.")
     @app_commands.describe(
         user="The user to get game stats for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -47,13 +46,14 @@ class GameCog(commands.GroupCog, group_name="game", description="Game related co
     async def game_stats(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        user: Member | User = commands.Author,
+        user: Member | User | None = None,
         ephemeral: bool = False,
     ) -> None:
         """Get the all games stats, How many times they played, and win"""
         await interaction.response.defer(ephemeral=ephemeral)
 
-        if interaction.user.id in self.bot.opt_out:
+        user = user or interaction.user
+        if user.id in self.bot.opt_out:
             embed = Embed(
                 title=f"{self.bot.error_emoji} Opted Out",
                 description="This user has opted out of optional data collection and cannot use game statistic tracking.",

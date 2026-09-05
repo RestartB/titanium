@@ -27,11 +27,12 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
     async def user(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        user: User | Member = commands.Author,
+        user: User | Member | None = None,
         ephemeral: bool = False,
     ) -> None:
         await interaction.response.defer(ephemeral=ephemeral)
 
+        user = user or interaction.user
         in_guild = isinstance(user, Member)
 
         fetched_user = await interaction.client.fetch_user(user.id)
@@ -152,12 +153,11 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
     async def server_pfp(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        user: Member | None = commands.Author,
+        user: Member | None = None,
         ephemeral: bool = False,
     ) -> None:
         await interaction.response.defer(ephemeral=ephemeral)
 
-        # TODO: commands.Author i think should let me remove this
         if not user:
             user = interaction.user if isinstance(interaction.user, Member) else None
 
