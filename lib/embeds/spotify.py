@@ -256,7 +256,9 @@ async def album(
         page_embeds.append(embed)
 
     page_embeds[0].set_footer(
-        text=f"Controlling: @{interaction.user.name}" if len(page_embeds) > 1 else f"@{interaction.user.name}",
+        text=f"Controlling: @{interaction.user.name}"
+        if len(page_embeds) > 1
+        else f"@{interaction.user.name}",
         icon_url=interaction.user.display_avatar.url,
     )
 

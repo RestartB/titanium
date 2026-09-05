@@ -635,7 +635,10 @@ class LeaderboardCog(commands.Cog):
         async with get_session() as session:
             stmt = (
                 select(LeaderboardUserStats)
-                .where(LeaderboardUserStats.guild_id == interaction.guild.id, LeaderboardUserStats.xp != 0)
+                .where(
+                    LeaderboardUserStats.guild_id == interaction.guild.id,
+                    LeaderboardUserStats.xp != 0,
+                )
                 .order_by(LeaderboardUserStats.xp.desc())
                 .limit(1000)
             )
