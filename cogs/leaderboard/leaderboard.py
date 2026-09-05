@@ -608,7 +608,7 @@ class LeaderboardCog(commands.Cog):
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def leaderboard_command(
         self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
     ):
@@ -685,7 +685,7 @@ class LeaderboardCog(commands.Cog):
         member="Optional: the user to get the XP info from. Defaults to yourself.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def level_command(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -793,7 +793,7 @@ class LeaderboardCog(commands.Cog):
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def set_xp(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -862,7 +862,7 @@ class LeaderboardCog(commands.Cog):
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def add_xp(
         self,
         interaction: discord.Interaction["TitaniumBot"],
@@ -935,7 +935,7 @@ class LeaderboardCog(commands.Cog):
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def remove_xp(
         self,
         interaction: discord.Interaction["TitaniumBot"],

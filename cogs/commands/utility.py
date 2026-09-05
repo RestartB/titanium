@@ -47,7 +47,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     async def base64_encode(
-        self, interaction: discord.Interaction["TitaniumBot"], *, text: str, ephemeral: bool = False
+        self, interaction: discord.Interaction["TitaniumBot"], text: str, ephemeral: bool = False
     ) -> None:
         """
         Encode text to Base64.
@@ -87,7 +87,6 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
     async def base64_decode(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        *,
         base_64: str,
         ephemeral: bool = False,
     ) -> None:
@@ -144,7 +143,6 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
     async def qrcode(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        *,
         data: app_commands.Range[str, 1, 1000],
         ephemeral: bool = False,
     ) -> None:
@@ -175,7 +173,6 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
     async def file_info(
         self,
         interaction: discord.Interaction["TitaniumBot"],
-        *,
         file: Attachment,
         ephemeral: bool = False,
     ) -> None:

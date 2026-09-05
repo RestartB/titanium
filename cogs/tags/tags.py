@@ -270,7 +270,7 @@ class TagCommandsCog(commands.Cog):
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.autocomplete(tag=tag_autocomplete)
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def tags_group(
         self, interaction: discord.Interaction["TitaniumBot"], tag: str, ephemeral: bool = False
     ):
@@ -410,7 +410,7 @@ class TagCommandsCog(commands.Cog):
             app_commands.Choice(name="User Tag", value="user"),
         ]
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def view_all_tags(
         self,
         interaction: discord.Interaction["TitaniumBot"],
