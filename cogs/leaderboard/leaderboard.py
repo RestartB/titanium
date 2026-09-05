@@ -605,7 +605,6 @@ class LeaderboardCog(commands.Cog):
     @app_commands.command(name="leaderboard")
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
-    @commands.guild_only()
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
@@ -682,7 +681,6 @@ class LeaderboardCog(commands.Cog):
     @app_commands.command(name="level")
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
-    @commands.guild_only()
     @app_commands.describe(
         member="Optional: the user to get the XP info from. Defaults to yourself.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
