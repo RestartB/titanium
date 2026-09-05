@@ -121,6 +121,7 @@ class ReviewsCommandsCog(commands.GroupCog):
             await interaction.followup.send(embed=pages[0], ephemeral=ephemeral)
 
     # Server reviews command
+    # TODO: check that the guild only part is working
     @app_commands.command(name="server", description="Get reviews for the server.")
     @commands.guild_only()
     @app_commands.describe(
