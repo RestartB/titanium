@@ -224,13 +224,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         )
 
     @case_group.command(name="comments", description="View comments on a case.")
-    @app_commands.check(
-        lambda interaction: (
-            interaction.permissions.kick_members
-            or interaction.permissions.ban_members
-            or interaction.permissions.moderate_members
-        )
-    )
     @app_commands.describe(
         case_id="The case ID to search for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -280,13 +273,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         )
 
     @case_group.command(name="add-comment", description="Add a comment to a case.")
-    @app_commands.check(
-        lambda interaction: (
-            interaction.permissions.kick_members
-            or interaction.permissions.ban_members
-            or interaction.permissions.moderate_members
-        )
-    )
     @app_commands.describe(
         case_id="The case ID to add a comment to.",
         comment="The comment to add.",
@@ -334,13 +320,6 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         await interaction.followup.send(ephemeral=ephemeral, embed=embed)
 
     @case_group.command(name="delete", description="Delete a case by its ID.")
-    @app_commands.check(
-        lambda interaction: (
-            interaction.permissions.kick_members
-            or interaction.permissions.ban_members
-            or interaction.permissions.moderate_members
-        )
-    )
     @app_commands.describe(
         case_id="The case ID to delete.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -410,13 +389,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         await msg.edit(embed=case_embeds.case_deleted(self.bot, case_id), view=None)
 
     @case_group.command(name="clean", description="Delete all resolved cases for a user.")
-    @app_commands.check(
-        lambda interaction: (
-            interaction.permissions.kick_members
-            or interaction.permissions.ban_members
-            or interaction.permissions.moderate_members
-        )
-    )
+    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(
         user="The user to clean.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
