@@ -21,10 +21,8 @@ class DurationTransformer(app_commands.Transformer):
     async def transform(
         self, interaction: discord.Interaction["TitaniumBot"], value: str
     ) -> timedelta | None:
-        # Check for permanent keywords
         try:
             delta = timestring_to_duration(value)
-
             if not delta or delta.total_seconds() == 0:
                 return None
 

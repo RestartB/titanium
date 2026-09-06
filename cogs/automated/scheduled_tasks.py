@@ -396,10 +396,12 @@ class ScheduledTasksCog(commands.Cog):
                     self.logger.debug("no message id for reminder")
 
                 if reply_message:
-                    await reply_message.reply(embed=embed)
+                    await reply_message.reply(
+                        content=member.mention if not reminder.dm else None, embed=embed
+                    )
                 else:
                     await channel.send(
-                        content=member.mention if not reminder.dm and not reply_message else None,
+                        content=member.mention if not reminder.dm else None,
                         embed=embed,
                     )
 

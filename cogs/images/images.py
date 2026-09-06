@@ -61,7 +61,6 @@ class ImageFormatPicker(discord.ui.View):
 
 
 class BaseModal(discord.ui.Modal):
-    # TODO: maybe switch to a dropdown
     output_format = discord.ui.Label(
         text="Output Format",
         description="Select the image format to output to.",
