@@ -6,7 +6,6 @@ import discord
 from discord.ext import commands
 
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_message
-from lib.helpers.hybrid import defer, handle_group_command_not_found
 from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
@@ -23,13 +22,12 @@ class AdminCog(commands.Cog):
     @commands.group(name="admin", hidden=True, invoke_without_command=True)
     @commands.is_owner()
     async def admin_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        handle_group_command_not_found(ctx)
+        raise commands.CommandNotFound(ctx.invoked_with)
 
     @admin_group.command(name="exc", hidden=True)
     @commands.is_owner()
     async def raise_exception(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        async with defer(ctx):
-            raise RuntimeError("Test")
+        raise RuntimeError("Test")
 
     @admin_group.command(name="sync", hidden=True)
     @commands.is_owner()
@@ -38,110 +36,106 @@ class AdminCog(commands.Cog):
         ctx: commands.Context["TitaniumBot"],
         server_id: int | None = None,
     ) -> None:
-        async with defer(ctx, ephemeral=True):
-            # Sync commands
-            self.logger.info("Syncing commands...")
-            try:
-                tree = await self.bot.tree.sync(
-                    guild=(discord.Object(id=server_id) if server_id else None)
-                )
-                self.logger.info(f"Synced {len(tree)} commands.")
+        # Sync commands
+        self.logger.info("Syncing commands...")
+        try:
+            tree = await self.bot.tree.sync(
+                guild=(discord.Object(id=server_id) if server_id else None)
+            )
+            self.logger.info(f"Synced {len(tree)} commands.")
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Commands Synced",
-                        description=f"Synced {len(tree)} commands.",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-                await ctx.message.remove_reaction(self.bot.loading_emoji, ctx.me)
-            except discord.HTTPException as e:
-                self.logger.error("Failed to sync commands.", exc_info=e)
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Commands Synced",
+                    description=f"Synced {len(tree)} commands.",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+            await ctx.message.remove_reaction(self.bot.loading_emoji, ctx.me)
+        except discord.HTTPException as e:
+            self.logger.error("Failed to sync commands.", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Failed to sync",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-                await ctx.message.remove_reaction(self.bot.loading_emoji, ctx.me)
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Failed to sync",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+            await ctx.message.remove_reaction(self.bot.loading_emoji, ctx.me)
 
     @admin_group.command(name="reload", hidden=True)
     @commands.is_owner()
     async def reload_cogs(self, ctx: commands.Context["TitaniumBot"], cog: str) -> None:
-        async with defer(ctx, ephemeral=True):
-            try:
-                await self.bot.reload_extension(f"cogs.{cog}")
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Reloaded",
-                        description=f"Successfully reloaded `{cog}`.",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error(f"Error reloading {cog}", exc_info=e)
+        try:
+            await self.bot.reload_extension(f"cogs.{cog}")
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Reloaded",
+                    description=f"Successfully reloaded `{cog}`.",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error(f"Error reloading {cog}", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Reloading",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Reloading",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
 
     @admin_group.command(name="load", hidden=True)
     @commands.is_owner()
     async def load_cog(self, ctx: commands.Context["TitaniumBot"], cog_name: str) -> None:
-        async with defer(ctx, ephemeral=True):
-            try:
-                await ctx.bot.load_extension(f"cogs.{cog_name}")
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Loaded",
-                        description=f"Successfully loaded `{cog_name}` cog.",
-                        colour=discord.Colour.green(),
-                    )
+        try:
+            await ctx.bot.load_extension(f"cogs.{cog_name}")
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Loaded",
+                    description=f"Successfully loaded `{cog_name}` cog.",
+                    colour=discord.Colour.green(),
                 )
-            except Exception as e:
-                self.logger.error(f"Error loading {cog_name}", exc_info=e)
+            )
+        except Exception as e:
+            self.logger.error(f"Error loading {cog_name}", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Loading",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    )
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Loading",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
                 )
+            )
 
     @admin_group.command(name="unload", hidden=True)
     @commands.is_owner()
     async def unload_cog(self, ctx: commands.Context["TitaniumBot"], cog_name: str) -> None:
-        async with defer(ctx, ephemeral=True):
-            try:
-                await ctx.bot.unload_extension(f"cogs.{cog_name}")
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Unloaded",
-                        description=f"Successfully unloaded `{cog_name}` cog.",
-                        colour=discord.Colour.green(),
-                    )
+        try:
+            await ctx.bot.unload_extension(f"cogs.{cog_name}")
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Unloaded",
+                    description=f"Successfully unloaded `{cog_name}` cog.",
+                    colour=discord.Colour.green(),
                 )
-            except Exception as e:
-                self.logger.error(f"Error unloading {cog_name}", exc_info=e)
+            )
+        except Exception as e:
+            self.logger.error(f"Error unloading {cog_name}", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Unloading",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    )
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Unloading",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
                 )
+            )
 
     # @admin_group.command("reloadall", hidden=True)
     # @commands.is_owner()
@@ -166,57 +160,55 @@ class AdminCog(commands.Cog):
     @admin_group.command(name="migrate-db", hidden=True)
     @commands.is_owner()
     async def migrate_db(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        async with defer(ctx, ephemeral=True):
-            try:
-                from lib.sql.sql import init_db
+        try:
+            from lib.sql.sql import init_db
 
-                await init_db()
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Database Migrated",
-                        description="Database migrations completed successfully.",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error("Error migrating database", exc_info=e)
+            await init_db()
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Database Migrated",
+                    description="Database migrations completed successfully.",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error("Error migrating database", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Migrating Database",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Migrating Database",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
 
     @admin_group.command(name="reloadcaches", aliases=["reload-caches"], hidden=True)
     @commands.is_owner()
     async def reload_caches(self, ctx: commands.Context["TitaniumBot"]) -> None:
         """Reload all caches."""
-        async with defer(ctx, ephemeral=True):
-            try:
-                await self.bot.refresh_all_caches()
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Reloaded",
-                        description="Successfully reloaded caches.",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error("Error reloading caches", exc_info=e)
+        try:
+            await self.bot.refresh_all_caches()
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Reloaded",
+                    description="Successfully reloaded caches.",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error("Error reloading caches", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Reloading Caches",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Reloading Caches",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
 
     @admin_group.command(
         name="reloadserver", aliases=["refreshserver", "refreshguild", "reloadguild"], hidden=True
@@ -224,212 +216,205 @@ class AdminCog(commands.Cog):
     @commands.is_owner()
     async def reload_server(self, ctx: commands.Context["TitaniumBot"], guild_id: int) -> None:
         """Reload a guild's configuration from the database."""
-        async with defer(ctx, ephemeral=True):
-            try:
-                await self.bot.refresh_guild_config_cache(guild_id)
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Server Reloaded",
-                        description=f"Successfully reloaded configuration for guild ID `{guild_id}`.",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error(f"Error reloading server {guild_id}", exc_info=e)
+        try:
+            await self.bot.refresh_guild_config_cache(guild_id)
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Server Reloaded",
+                    description=f"Successfully reloaded configuration for guild ID `{guild_id}`.",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error(f"Error reloading server {guild_id}", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Reloading Server",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Reloading Server",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
 
     @admin_group.command(name="serverlist", aliases=["server-list", "servers"], hidden=True)
     @commands.is_owner()
     async def server_list(self, ctx: commands.Context) -> None:
-        async with defer(ctx, ephemeral=True):
-            page: list[str] = []
-            pages: list[discord.Embed] = []
+        page: list[str] = []
+        pages: list[discord.Embed] = []
 
-            for i, guild in enumerate(self.bot.guilds, start=1):
-                page.append(f"{i}. `{guild.name}` (`{guild.id}`) (`{guild.member_count}` members)")
+        for i, guild in enumerate(self.bot.guilds, start=1):
+            page.append(f"{i}. `{guild.name}` (`{guild.id}`) (`{guild.member_count}` members)")
 
-                if len(page) == 20:
-                    pages.append(discord.Embed(title="Servers", description="\n".join(page)))
-                    page = []
-
-            if page:
+            if len(page) == 20:
                 pages.append(discord.Embed(title="Servers", description="\n".join(page)))
+                page = []
 
-            if len(pages) > 1:
-                view = PaginationView(embeds=pages, timeout=900)
-                await ctx.reply(embed=pages[0], view=view)
-            else:
-                await ctx.reply(embed=pages[0])
+        if page:
+            pages.append(discord.Embed(title="Servers", description="\n".join(page)))
+
+        if len(pages) > 1:
+            view = PaginationView(embeds=pages, timeout=900)
+            await ctx.reply(embed=pages[0], view=view)
+        else:
+            await ctx.reply(embed=pages[0])
 
     @admin_group.command(name="unlockuser", aliases=["unlock-user"], hidden=True)
     @commands.is_owner()
     async def unlock_user(self, ctx: commands.Context["TitaniumBot"], user_id: int) -> None:
-        async with defer(ctx, ephemeral=True):
-            try:
-                for server in self.bot.punishing:
-                    if user_id not in self.bot.punishing[server]:
-                        continue
-                    self.bot.punishing[server].remove(user_id)
+        try:
+            for server in self.bot.punishing:
+                if user_id not in self.bot.punishing[server]:
+                    continue
+                self.bot.punishing[server].remove(user_id)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} User Unlocked",
-                        description=f"Successfully unlocked user ID `{user_id}`.",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error(f"Error unlocking user {user_id}", exc_info=e)
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} User Unlocked",
+                    description=f"Successfully unlocked user ID `{user_id}`.",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error(f"Error unlocking user {user_id}", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Unlocking User",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Unlocking User",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
 
     @admin_group.command(name="debuglogs", aliases=["debug-logs", "debuglog"], hidden=True)
     @commands.is_owner()
     async def debug_logs(self, ctx: commands.Context["TitaniumBot"], logger: str) -> None:
-        async with defer(ctx, ephemeral=True):
-            try:
-                target_logger = logging.getLogger(logger)
-                target_logger.setLevel(logging.DEBUG)
+        try:
+            target_logger = logging.getLogger(logger)
+            target_logger.setLevel(logging.DEBUG)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Log Level Changed",
-                        description=f"Enabled debug logging for `{logger}`.",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error(f"Error changing log level for {logger}", exc_info=e)
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Log Level Changed",
+                    description=f"Enabled debug logging for `{logger}`.",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error(f"Error changing log level for {logger}", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Changing Log Level",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Changing Log Level",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
 
     @admin_group.command(name="infologs", aliases=["info-logs", "infolog"], hidden=True)
     @commands.is_owner()
     async def info_logs(self, ctx: commands.Context["TitaniumBot"], logger: str) -> None:
-        async with defer(ctx, ephemeral=True):
-            try:
-                target_logger = logging.getLogger(logger)
-                target_logger.setLevel(logging.INFO)
+        try:
+            target_logger = logging.getLogger(logger)
+            target_logger.setLevel(logging.INFO)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Log Level Changed",
-                        description=f"Enabled info logging for `{logger}`.",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error(f"Error changing log level for {logger}", exc_info=e)
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Log Level Changed",
+                    description=f"Enabled info logging for `{logger}`.",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error(f"Error changing log level for {logger}", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Changing Log Level",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Changing Log Level",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
 
     @admin_group.command(name="getserverowner", aliases=["get-server-owner"], hidden=True)
     @commands.is_owner()
     async def get_server_owner(self, ctx: commands.Context["TitaniumBot"], guild_id: int) -> None:
         """Get the owner ID of a specified server."""
-        async with defer(ctx, ephemeral=True):
-            try:
-                guild = self.bot.get_guild(guild_id)
-                if guild is None:
-                    raise ValueError(f"Guild with ID {guild_id} not found.")
+        try:
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                raise ValueError(f"Guild with ID {guild_id} not found.")
 
-                if guild.owner_id is None:
-                    raise ValueError(f"Guild with ID {guild_id} has no owner ID.")
+            if guild.owner_id is None:
+                raise ValueError(f"Guild with ID {guild_id} has no owner ID.")
 
-                owner = guild.owner
+            owner = guild.owner
 
-                if owner is None:
-                    owner = await self.bot.fetch_user(guild.owner_id)
+            if owner is None:
+                owner = await self.bot.fetch_user(guild.owner_id)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.success_emoji} Server Owner",
-                        description=f"`@{owner.name}` (`{owner.id}`)",
-                        colour=discord.Colour.green(),
-                    ),
-                    ephemeral=True,
-                )
-            except Exception as e:
-                self.logger.error(f"Error retrieving owner for server {guild_id}", exc_info=e)
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Server Owner",
+                    description=f"`@{owner.name}` (`{owner.id}`)",
+                    colour=discord.Colour.green(),
+                ),
+                ephemeral=True,
+            )
+        except Exception as e:
+            self.logger.error(f"Error retrieving owner for server {guild_id}", exc_info=e)
 
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Error Retrieving Server Owner",
-                        description=f"```python\n{traceback.format_exc()}```",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error Retrieving Server Owner",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
 
     @admin_group.command(name="msgchannel", aliases=["msg-channel"], hidden=True)
     @commands.is_owner()
     async def msg_channel(self, ctx: commands.Context["TitaniumBot"], msg_id: int) -> None:
-        async with defer(ctx, ephemeral=True):
-            message = discord.utils.get(ctx.bot.cached_messages, id=msg_id)
-            if message is None:
-                await ctx.reply(
-                    embed=discord.Embed(
-                        title=f"{self.bot.error_emoji} Not Found",
-                        description=f"Message with ID `{msg_id}` not found in cache.",
-                        colour=discord.Colour.red(),
-                    ),
-                    ephemeral=True,
-                )
-                return
-
-            embed = discord.Embed(
-                title=f"{self.bot.success_emoji} Message Channel",
-                description=f"Channel for message ID `{msg_id}` is `#{message.channel}` (`{message.channel.id}`).",
-                colour=discord.Colour.green(),
-            )
-
-            view = discord.ui.View()
-            view.add_item(
-                discord.ui.Button(
-                    label="Jump to Message",
-                    url=message.jump_url,
-                    style=discord.ButtonStyle.link,
-                )
-            )
-
+        message = discord.utils.get(ctx.bot.cached_messages, id=msg_id)
+        if message is None:
             await ctx.reply(
-                embed=embed,
-                view=view,
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Not Found",
+                    description=f"Message with ID `{msg_id}` not found in cache.",
+                    colour=discord.Colour.red(),
+                ),
                 ephemeral=True,
             )
+            return
+
+        embed = discord.Embed(
+            title=f"{self.bot.success_emoji} Message Channel",
+            description=f"Channel for message ID `{msg_id}` is `#{message.channel}` (`{message.channel.id}`).",
+            colour=discord.Colour.green(),
+        )
+
+        view = discord.ui.View()
+        view.add_item(
+            discord.ui.Button(
+                label="Jump to Message",
+                url=message.jump_url,
+                style=discord.ButtonStyle.link,
+            )
+        )
+
+        await ctx.reply(
+            embed=embed,
+            view=view,
+            ephemeral=True,
+        )
 
     @admin_group.command(name="usertest", hidden=True)
     @commands.is_owner()

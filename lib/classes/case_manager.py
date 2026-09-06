@@ -17,7 +17,7 @@ from lib.enums.moderation import CaseSource, CaseType
 from lib.enums.scheduled_events import EventType
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_user
 from lib.helpers.dm import send_dm
-from lib.helpers.duration import DurationConverter, duration_to_timestring
+from lib.helpers.duration import DurationTransformer, duration_to_timestring
 from lib.helpers.log_error import log_error
 from lib.sql.sql import ModCase, ScheduledTask
 
@@ -87,7 +87,7 @@ class GuildModCaseManager:
         creator_user: discord.User | discord.Member | discord.ClientUser | discord.Object,
         reason: str | None,
         time_created: datetime | None = None,
-        duration: Annotated[timedelta, DurationConverter] | None = None,
+        duration: Annotated[timedelta, DurationTransformer] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
         *,
@@ -102,7 +102,7 @@ class GuildModCaseManager:
         creator_user: discord.User | discord.Member | discord.ClientUser,
         reason: str | None,
         time_created: datetime | None = None,
-        duration: Annotated[timedelta, DurationConverter] | None = None,
+        duration: Annotated[timedelta, DurationTransformer] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
         external: Literal[False] = False,
@@ -115,7 +115,7 @@ class GuildModCaseManager:
         creator_user: discord.User | discord.Member | discord.ClientUser | discord.Object,
         reason: str | None,
         time_created: datetime | None = None,
-        duration: Annotated[timedelta, DurationConverter] | None = None,
+        duration: Annotated[timedelta, DurationTransformer] | None = None,
         until: datetime | None = None,
         source: CaseSource = CaseSource.MODERATION,
         external: bool = False,
@@ -327,7 +327,7 @@ class GuildModCaseManager:
         case_id: str,
         reason: str | None,
         resolved: bool | None,
-        duration: Annotated[timedelta, DurationConverter] | None = None,
+        duration: Annotated[timedelta, DurationTransformer] | None = None,
     ) -> ModCase:
         case = await self.get_case_by_id(case_id)
 

@@ -10,7 +10,6 @@ from discord.ext import commands
 
 from lib.classes import img_tools
 from lib.enums.images import ImageFormats
-from lib.helpers.hybrid import defer, handle_group_command_not_found
 from lib.helpers.log_error import log_error
 
 if TYPE_CHECKING:
@@ -177,7 +176,6 @@ class ResizeModal(BaseModal):
             return
 
         await interaction.response.defer(ephemeral=True)
-
         for attachment in self.message.attachments:
             if not attachment.content_type or not attachment.content_type.startswith("image/"):
                 continue
@@ -312,7 +310,6 @@ class RotateModal(BaseModal):
             return
 
         await interaction.response.defer(ephemeral=True)
-
         for attachment in self.message.attachments:
             if not attachment.content_type or not attachment.content_type.startswith("image/"):
                 continue
@@ -363,7 +360,6 @@ class SpeechBubbleModal(BaseModal):
         bubble_colour = cast(Literal["black", "white", "transparent"], colour)
 
         await interaction.response.defer(ephemeral=True)
-
         for attachment in self.message.attachments:
             if not attachment.content_type or not attachment.content_type.startswith("image/"):
                 continue
@@ -702,7 +698,9 @@ class MoreImageToolsView(discord.ui.View):
             await self.interaction.delete_original_response()
 
 
-class ImageCog(commands.Cog, name="Images", description="Image processing commands."):
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+class ImageCog(commands.GroupCog, group_name="image", description="Image processing commands."):
     NASA_NUMBER_OF: ClassVar = {
         "A": [0, 1, 2, 3, 4],
         "B": [0, 1],
@@ -813,17 +811,7 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         await interaction.followup.send(view=view)
         view.interaction = interaction
 
-    @commands.hybrid_group(
-        name="image",
-        aliases=["images", "photo", "photos"],
-        description="Image processing commands.",
-    )
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def image_group(self, ctx: commands.Context["TitaniumBot"]) -> None:
-        handle_group_command_not_found(ctx)
-
-    @image_group.command(
+    @app_commands.command(
         name="convert",
         description="Convert an uploaded image to a different format.",
     )
@@ -832,42 +820,46 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format="The format to convert to.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def convert_image(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         image: Attachment,
         output_format: ImageFormats,
         ephemeral: bool = False,
     ) -> None:
         """Convert a image to various formats."""
-        async with defer(ctx, ephemeral=ephemeral):
-            converter = img_tools.ImageTools(image)
-            file = await converter.convert(output_format, STANDARD_QUALITY)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            await ctx.reply(file=file, ephemeral=ephemeral)
+        converter = img_tools.ImageTools(image)
+        file = await converter.convert(output_format, STANDARD_QUALITY)
 
-    @image_group.command(
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
+
+    @app_commands.command(
         name="gif",
         description="Convert an image to GIF. For more formats, use the /image format command.",
-        aliases=["to-gif", "togif"],
     )
     @app_commands.describe(
         image="The image to convert.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def gif_image(
-        self, ctx: commands.Context["TitaniumBot"], image: Attachment, ephemeral: bool = False
+        self,
+        interaction: discord.Interaction["TitaniumBot"],
+        image: Attachment,
+        ephemeral: bool = False,
     ) -> None:
         """Convert a image to GIF."""
-        async with defer(ctx, ephemeral=ephemeral):
-            converter = img_tools.ImageTools(image)
-            file = await converter.convert(ImageFormats.GIF, STANDARD_QUALITY)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            await ctx.reply(file=file, ephemeral=ephemeral)
+        converter = img_tools.ImageTools(image)
+        file = await converter.convert(ImageFormats.GIF, STANDARD_QUALITY)
 
-    @image_group.command(
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
+
+    @app_commands.command(
         name="resize",
         description="Resize an uploaded image.",
     )
@@ -878,24 +870,25 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format="Optional: the format to output to. Defaults to PNG.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def resize_image(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         image: Attachment,
-        width: commands.Range[int, 1, 5000],
-        height: commands.Range[int, 1, 5000],
+        width: app_commands.Range[int, 1, 5000],
+        height: app_commands.Range[int, 1, 5000],
         output_format: ImageFormats = ImageFormats.PNG,
         ephemeral: bool = False,
     ) -> None:
         """Resize an image to the specified dimensions."""
-        async with defer(ctx, ephemeral=ephemeral):
-            converter = img_tools.ImageTools(image)
-            file = await converter.resize(output_format, width, height)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            await ctx.reply(file=file, ephemeral=ephemeral)
+        converter = img_tools.ImageTools(image)
+        file = await converter.resize(output_format, width, height)
 
-    @image_group.command(
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
+
+    @app_commands.command(
         name="deepfry",
         description="Deepfry an uploaded image.",
     )
@@ -906,27 +899,26 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format="Optional: the format to output to. Defaults to PNG.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def deepfry_image(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         image: Attachment,
-        intensity_scale: commands.Range[float, 1, 100] = 100,
+        intensity_scale: app_commands.Range[float, 1, 100] = 100,
         red_filter: bool = True,
         output_format: ImageFormats = ImageFormats.PNG,
         ephemeral: bool = False,
     ) -> None:
         """Deepfry an image."""
+        await interaction.response.defer(ephemeral=ephemeral)
 
-        async with defer(ctx, ephemeral=ephemeral):
-            intensity_scale /= 100.0
+        intensity_scale /= 100.0
+        converter = img_tools.ImageTools(image)
+        file = await converter.deepfry(output_format, intensity_scale, red_filter)
 
-            converter = img_tools.ImageTools(image)
-            file = await converter.deepfry(output_format, intensity_scale, red_filter)
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
 
-            await ctx.reply(file=file, ephemeral=ephemeral)
-
-    @image_group.command(
+    @app_commands.command(
         name="invert",
         description="Invert the colours of an uploaded image.",
     )
@@ -935,22 +927,23 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format="Optional: the format to output to. Defaults to PNG.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def invert_image(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         image: Attachment,
         output_format: ImageFormats = ImageFormats.PNG,
         ephemeral: bool = False,
     ) -> None:
         """Invert the colours of an image."""
-        async with defer(ctx, ephemeral=ephemeral):
-            converter = img_tools.ImageTools(image)
-            file = await converter.invert(output_format)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            await ctx.reply(file=file, ephemeral=ephemeral)
+        converter = img_tools.ImageTools(image)
+        file = await converter.invert(output_format)
 
-    @image_group.command(
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
+
+    @app_commands.command(
         name="grayscale",
         description="Convert an uploaded image to greyscale.",
     )
@@ -959,22 +952,23 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format="Optional: the format to output to. Defaults to PNG.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def greyscale_image(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         image: Attachment,
         output_format: ImageFormats = ImageFormats.PNG,
         ephemeral: bool = False,
     ) -> None:
         """Convert an image to greyscale."""
-        async with defer(ctx, ephemeral=ephemeral):
-            converter = img_tools.ImageTools(image)
-            file = await converter.grayscale(output_format)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            await ctx.reply(file=file, ephemeral=ephemeral)
+        converter = img_tools.ImageTools(image)
+        file = await converter.grayscale(output_format)
 
-    @image_group.command(
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
+
+    @app_commands.command(
         name="rotate",
         description="Rotate an uploaded image.",
     )
@@ -984,23 +978,24 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format="Optional: the format to output to. Defaults to PNG.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def rotate_image(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         image: Attachment,
-        angle: commands.Range[int, -9999, 9999],
+        angle: app_commands.Range[int, -9999, 9999],
         output_format: ImageFormats = ImageFormats.PNG,
         ephemeral: bool = False,
     ) -> None:
         """Rotate an image by the specified angle."""
-        async with defer(ctx, ephemeral=ephemeral):
-            converter = img_tools.ImageTools(image)
-            file = await converter.rotate(output_format, angle)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            await ctx.reply(file=file, ephemeral=ephemeral)
+        converter = img_tools.ImageTools(image)
+        file = await converter.rotate(output_format, angle)
 
-    @image_group.command(
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
+
+    @app_commands.command(
         name="speechbubble",
         description="Add a speech bubble effect to an uploaded image.",
     )
@@ -1022,10 +1017,10 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
             app_commands.Choice(name="Transparent", value="transparent"),
         ],
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def speechbubble_image(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         image: Attachment,
         direction: Literal["left", "right"] = "right",
         colour: Literal["black", "white", "transparent"] = "white",
@@ -1033,13 +1028,14 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         ephemeral: bool = False,
     ) -> None:
         """Add a speech bubble effect to an image."""
-        async with defer(ctx, ephemeral=ephemeral):
-            converter = img_tools.ImageTools(image)
-            file = await converter.speech_bubble(output_format, direction, colour)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            await ctx.reply(file=file, ephemeral=ephemeral)
+        converter = img_tools.ImageTools(image)
+        file = await converter.speech_bubble(output_format, direction, colour)
 
-    @image_group.command(
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
+
+    @app_commands.command(
         name="caption",
         description="Add a caption to an uploaded image.",
     )
@@ -1062,32 +1058,33 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
             app_commands.Choice(name="Figtree", value="figtree"),
         ],
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def caption_image(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         image: Attachment,
-        caption: commands.Range[str, 1, 500],
+        caption: app_commands.Range[str, 1, 500],
         font: Literal["futura", "impact", "figtree"] = "futura",
         position: Literal["top", "bottom"] = "top",
         output_format: ImageFormats = ImageFormats.GIF,
         ephemeral: bool = False,
     ) -> None:
         """Add a caption to an image."""
-        async with defer(ctx, ephemeral=ephemeral):
-            if font == "futura":
-                selected_font = os.path.join("lib", "fonts", "futura.otf")
-            else:
-                selected_font = os.path.join("lib", "fonts", f"{font}.ttf")
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            converter = img_tools.ImageTools(image)
-            file = await converter.caption(
-                output_format, caption.lower(), selected_font, self.bot.browser_renderer, position
-            )
+        if font == "futura":
+            selected_font = os.path.join("lib", "fonts", "futura.otf")
+        else:
+            selected_font = os.path.join("lib", "fonts", f"{font}.ttf")
 
-            await ctx.reply(file=file, ephemeral=ephemeral)
+        converter = img_tools.ImageTools(image)
+        file = await converter.caption(
+            output_format, caption.lower(), selected_font, self.bot.browser_renderer, position
+        )
 
-    @image_group.command(
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
+
+    @app_commands.command(
         name="overlay",
         description="Overlay a static image onto another static image.",
     )
@@ -1098,41 +1095,42 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format="Optional: the format to output to. Defaults to PNG.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def overlay_image(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         source: Attachment,
         overlay: Attachment,
-        opacity: commands.Range[int, 1, 100],
+        opacity: app_commands.Range[int, 1, 100],
         output_format: ImageFormats = ImageFormats.PNG,
         ephemeral: bool = False,
     ) -> None:
         """Overlay a static image onto another static image."""
-        async with defer(ctx, ephemeral=ephemeral):
-            if not overlay.content_type or not overlay.content_type.startswith("image/"):
-                embed = discord.Embed(
-                    title=f"{ctx.bot.error_emoji} Invalid Overlay File",
-                    description="Please ensure the overlay file is a valid image.",
-                    colour=Colour.red(),
-                )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
-                return
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            if overlay.size > 5_000_000:
-                embed = discord.Embed(
-                    title=f"{ctx.bot.error_emoji} Invalid Overlay File",
-                    description="Please ensure the overlay file is `5MB` or lower.",
-                    colour=Colour.red(),
-                )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
-                return
+        if not overlay.content_type or not overlay.content_type.startswith("image/"):
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Overlay File",
+                description="Please ensure the overlay file is a valid image.",
+                colour=Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
 
-            converter = img_tools.ImageTools(source)
-            file = await converter.overlay(overlay, opacity, output_format)
-            await ctx.reply(file=file, ephemeral=ephemeral)
+        if overlay.size > 5_000_000:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Overlay File",
+                description="Please ensure the overlay file is `5MB` or lower.",
+                colour=Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
 
-    @image_group.command(
+        converter = img_tools.ImageTools(source)
+        file = await converter.overlay(overlay, opacity, output_format)
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
+
+    @app_commands.command(
         name="nasa",
         description="Create an image of characters spelt by Earth images by NASA Landsat.",
     )
@@ -1141,60 +1139,61 @@ class ImageCog(commands.Cog, name="Images", description="Image processing comman
         output_format="Optional: the format to output to. Defaults to GIF.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def nasa(
         self,
-        ctx: commands.Context["TitaniumBot"],
-        word: commands.Range[str, 1, 50],
+        interaction: discord.Interaction["TitaniumBot"],
+        word: app_commands.Range[str, 1, 50],
         output_format: ImageFormats = ImageFormats.GIF,
         ephemeral: bool = False,
     ) -> None:
-        async with defer(ctx, ephemeral=ephemeral):
-            if len(word) > 50:
-                embed = discord.Embed(
-                    title=f"{ctx.bot.error_emoji} Too Long",
-                    description="The word is too long. It can only be 50 letters long.",
-                    colour=discord.Colour.red(),
-                )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
-                return
+        await interaction.response.defer(ephemeral=ephemeral)
 
-            if not (word.isascii() and word.isalpha()):
-                embed = discord.Embed(
-                    title=f"{ctx.bot.error_emoji} Invalid Input",
-                    description="The word can only contain letters.",
-                    colour=discord.Colour.red(),
-                )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
-                return
-
-            images: list[BytesIO] = []
-            for character in word:
-                number = random.choice(self.NASA_NUMBER_OF[character.upper()])
-
-                async with (
-                    aiohttp.ClientSession() as session,
-                    session.get(
-                        f"https://science.nasa.gov/specials/your-name-in-landsat/images/{character}_{number}.jpg"
-                    ) as request,
-                ):
-                    image_data = BytesIO()
-
-                    async for chunk in request.content.iter_chunked(8192):
-                        image_data.write(chunk)
-
-                    image_data.seek(0)
-
-                images.append(image_data)
-
-            converter = img_tools.ImageTools()
-            file = await converter.nasa(output_format, images)
-
+        if len(word) > 50:
             embed = discord.Embed(
-                description=f"{ctx.bot.info_emoji} Images sourced from NASA and the U.S. Geological Survey.",
-                colour=discord.Colour.light_grey(),
+                title=f"{interaction.client.error_emoji} Too Long",
+                description="The word is too long. It can only be 50 letters long.",
+                colour=discord.Colour.red(),
             )
-            await ctx.reply(embed=embed, file=file, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
+
+        if not (word.isascii() and word.isalpha()):
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Input",
+                description="The word can only contain letters.",
+                colour=discord.Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
+
+        images: list[BytesIO] = []
+        for character in word:
+            number = random.choice(self.NASA_NUMBER_OF[character.upper()])
+
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(
+                    f"https://science.nasa.gov/specials/your-name-in-landsat/images/{character}_{number}.jpg"
+                ) as request,
+            ):
+                image_data = BytesIO()
+
+                async for chunk in request.content.iter_chunked(8192):
+                    image_data.write(chunk)
+
+                image_data.seek(0)
+
+            images.append(image_data)
+
+        converter = img_tools.ImageTools()
+        file = await converter.nasa(output_format, images)
+
+        embed = discord.Embed(
+            description=f"{interaction.client.info_emoji} Images sourced from NASA and the U.S. Geological Survey.",
+            colour=discord.Colour.light_grey(),
+        )
+        await interaction.followup.send(embed=embed, file=file, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

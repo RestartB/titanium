@@ -44,13 +44,13 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
         self.bot = bot
 
     # Cat command
-    @commands.hybrid_command(name="cat", description="Get a random cat picture.")
+    @app_commands.command(name="cat", description="Get a random cat picture.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 5)
-    async def cat(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
-        await ctx.defer(ephemeral=ephemeral)
+    @app_commands.checks.cooldown(1, 5)
+    async def cat(self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         # Fetch image
         async with (
@@ -65,7 +65,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
                     description="The service has been rate limited. Try again later.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
             else:
                 request_data = await request.json()
@@ -76,20 +76,20 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
         embed = discord.Embed(title=embed_title, colour=Colour.light_grey())
         embed.set_image(url=request_data[0]["url"])
         embed.set_footer(
-            text=f"@{ctx.author.name}",
-            icon_url=ctx.author.display_avatar.url,
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Dog command
-    @commands.hybrid_command(name="dog", description="Get a random dog picture.")
+    @app_commands.command(name="dog", description="Get a random dog picture.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 5)
-    async def dog(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
-        await ctx.defer(ephemeral=ephemeral)
+    @app_commands.checks.cooldown(1, 5)
+    async def dog(self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         # Fetch image
         async with (
@@ -104,7 +104,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
                     description="The service has been rate limited. Try again later.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
             else:
                 request_data = await request.json()
@@ -115,20 +115,22 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
         embed = discord.Embed(title=embed_title, colour=Colour.light_grey())
         embed.set_image(url=request_data["message"])
         embed.set_footer(
-            text=f"@{ctx.author.name}",
-            icon_url=ctx.author.display_avatar.url,
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Sand Cat command
-    @commands.hybrid_command(name="sandcat", description="Get a random sand cat picture.")
+    @app_commands.command(name="sandcat", description="Get a random sand cat picture.")
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 5)
-    async def sand_cat(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
-        await ctx.defer(ephemeral=ephemeral)
+    @app_commands.checks.cooldown(1, 5)
+    async def sand_cat(
+        self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
+    ):
+        await interaction.response.defer(ephemeral=ephemeral)
 
         request_data = {}
         request_data["filename"] = ""
@@ -150,7 +152,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
                         description="The service has been rate limited. Try again later.",
                         colour=Colour.red(),
                     )
-                    await ctx.reply(embed=embed, ephemeral=ephemeral)
+                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                     return
                 elif request.status == 522:
                     embed = discord.Embed(
@@ -158,7 +160,7 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
                         description="The service timed out. Try again later.",
                         colour=Colour.red(),
                     )
-                    await ctx.reply(embed=embed, ephemeral=ephemeral)
+                    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                     return
                 else:
                     request_data = await request.json()
@@ -173,11 +175,11 @@ class AnimalCommandsCog(commands.GroupCog, group_name="animals", description="Se
         )
         embed.set_image(url=request_data["url"])
         embed.set_footer(
-            text=f"@{ctx.author.name}",
-            icon_url=ctx.author.display_avatar.url,
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
         )
 
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

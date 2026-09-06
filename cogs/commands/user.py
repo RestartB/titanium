@@ -16,27 +16,26 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
-    @commands.hybrid_command(
-        name="user", aliases=["userinfo"], description="Get information about a user."
-    )
+    @app_commands.command(name="user", description="Get information about a user.")
     @app_commands.describe(
         user="Optional: the user to get information about. Defaults to yourself.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def user(
         self,
-        ctx: commands.Context["TitaniumBot"],
-        user: User | Member = commands.Author,
+        interaction: discord.Interaction["TitaniumBot"],
+        user: User | Member | None = None,
         ephemeral: bool = False,
     ) -> None:
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
+        user = user or interaction.user
         in_guild = isinstance(user, Member)
 
-        fetched_user = await ctx.bot.fetch_user(user.id)
+        fetched_user = await interaction.client.fetch_user(user.id)
         banner = fetched_user.banner
         accent_colour = fetched_user.accent_colour
 
@@ -63,27 +62,29 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
                 value=f"{format_dt(join_date, style='R')} ({format_dt(join_date)})",
             )
 
-        if in_guild and ctx.guild and len(user.roles) > 0:
+        if in_guild and interaction.guild and len(user.roles) > 0:
             embed.add_field(
                 name="Roles",
-                value=", ".join(role.mention for role in user.roles if role.id != ctx.guild.id)
+                value=", ".join(
+                    role.mention for role in user.roles if role.id != interaction.guild.id
+                )
                 or "No Roles",
             )
 
         if in_guild and len(user.roles) > 0:
             embed.set_footer(
-                text=f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
             )
         elif in_guild:
             embed.set_footer(
-                text=f"@{ctx.author.name} - add Titanium to the server to get roles",
-                icon_url=ctx.author.display_avatar.url,
+                text=f"@{interaction.user.name} - add Titanium to the server to get roles",
+                icon_url=interaction.user.display_avatar.url,
             )
         else:
             embed.set_footer(
-                text=f"@{ctx.author.name} - user isn't in the server, showing limited info",
-                icon_url=ctx.author.display_avatar.url,
+                text=f"@{interaction.user.name} - user isn't in the server, showing limited info",
+                icon_url=interaction.user.display_avatar.url,
             )
 
         view = View()
@@ -105,61 +106,60 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
         )
 
         # Send Embed
-        await ctx.reply(embed=embed, view=view)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
-    @commands.hybrid_command(name="pfp", description="Get a user's profile picture.")
+    @app_commands.command(name="pfp", description="Get a user's profile picture.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
         user="Optional: the user to get the PFP of. Defaults to yourself.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def pfp(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         user: User | Member | None,
         ephemeral: bool = False,
     ) -> None:
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-        user = user or ctx.author
-        user = await ctx.bot.fetch_user(user.id)
+        user = user or interaction.user
+        user = await interaction.client.fetch_user(user.id)
 
         embed = Embed(colour=user.accent_colour)
         embed.set_author(
             name=f"@{user.name}'s PFP",
             icon_url=user.display_avatar.url,
         )
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+        embed.set_footer(
+            text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
+        )
 
         url = user.avatar.url if user.avatar else user.default_avatar.url
         embed.set_image(url=url)
 
         view = View().add_item(Button(label="Open in Browser", style=ButtonStyle.link, url=url))
-        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
-    @commands.hybrid_command(
-        name="server-pfp",
-        aliases=["serverpfp", "guildpfp", "guild-pfp"],
-        description="Get a user's server profile picture.",
-    )
+    @app_commands.command(name="server-pfp", description="Get a user's server profile picture.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
-    @commands.guild_only()
     @app_commands.describe(
         user="Optional: the user to get the PFP of. Defaults to yourself.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def server_pfp(
-        self, ctx: commands.Context["TitaniumBot"], user: Member | None, ephemeral: bool = False
+        self,
+        interaction: discord.Interaction["TitaniumBot"],
+        user: Member | None = None,
+        ephemeral: bool = False,
     ) -> None:
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-        # TODO: commands.Author i think should let me remove this
         if not user:
-            user = ctx.author if isinstance(ctx.author, Member) else None
+            user = interaction.user if isinstance(interaction.user, Member) else None
 
         if not user:
             raise RuntimeError("Impossible: member object not returned")
@@ -169,7 +169,9 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
             name=f"@{user.name}'s Server PFP",
             icon_url=user.display_avatar.url,
         )
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+        embed.set_footer(
+            text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
+        )
 
         if user.guild_avatar:
             embed.set_image(url=user.guild_avatar.url)
@@ -177,31 +179,31 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
                 Button(label="Open in Browser", style=ButtonStyle.link, url=user.guild_avatar.url)
             )
 
-            await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
         else:
             embed.description = (
                 f"{self.bot.error_emoji} {user.mention} does not have a server profile picture."
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
-    @commands.hybrid_command(name="banner", description="Get the banner of a user.")
+    @app_commands.command(name="banner", description="Get the banner of a user.")
     @app_commands.describe(
         user="Optional: the user to get the banner of. Defaults to yourself.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def banner(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         user: Member | User | None,
         ephemeral: bool = False,
     ) -> None:
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
-        user = user or ctx.author
-        user = await ctx.bot.fetch_user(user.id)
+        user = user or interaction.user
+        user = await interaction.client.fetch_user(user.id)
         banner = user.banner.url if user.banner else None
 
         embed = Embed(colour=user.accent_colour)
@@ -209,7 +211,9 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
             name=f"@{user.name}'s Banner",
             icon_url=user.display_avatar.url,
         )
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+        embed.set_footer(
+            text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
+        )
 
         if banner:
             embed.set_image(url=banner)
@@ -217,10 +221,10 @@ class UserCommandsCog(commands.Cog, name="Users", description="Get user informat
                 Button(label="Open in Browser", style=ButtonStyle.link, url=banner)
             )
 
-            await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
         else:
             embed.description = f"{self.bot.error_emoji} {user.mention} does not have a banner."
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

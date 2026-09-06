@@ -214,7 +214,7 @@ class GuildModerationSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="moderation_settings", uselist=False
     )
-    delete_confirmation: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+
     dm_users: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     external_cases: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     ban_days: Mapped[int] = MappedColumn(Integer, server_default=text("0"))

@@ -7,7 +7,6 @@ import aiohttp
 import discord
 from colorthief import ColorThief
 from discord import Colour
-from discord.ext import commands
 from discord.utils import escape_markdown
 
 from lib.views.pagination import PaginationView
@@ -34,7 +33,7 @@ async def song(
     bot: TitaniumBot,
     sp: TitaniumSpotifyClient,
     item: SpotifyTrack,
-    ctx: commands.Context["TitaniumBot"],
+    interaction: discord.Interaction["TitaniumBot"],
     add_button_url: str | None = None,
     add_button_text: str | None = None,
     cached: bool = False,
@@ -65,8 +64,8 @@ async def song(
         icon_url=artist_img,
     )
     embed.set_footer(
-        text=f"@{ctx.author.name}{' • Cached Result' if cached else ''}",
-        icon_url=ctx.author.display_avatar.url,
+        text=f"@{interaction.user.name}{' • Cached Result' if cached else ''}",
+        icon_url=interaction.user.display_avatar.url,
     )
 
     # Get image, store in memory
@@ -97,14 +96,14 @@ async def song(
     if responded and respond_msg:
         await respond_msg.edit(embed=embed, view=view)
     else:
-        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
 
 # Artist element function
 async def artist(
     item: SpotifyArtist,
     top_tracks: SpotifyArtistTopTracks,
-    ctx: commands.Context["TitaniumBot"],
+    interaction: discord.Interaction["TitaniumBot"],
     ephemeral: bool = False,
     responded: bool = False,
     respond_msg: discord.Message | None = None,
@@ -119,7 +118,7 @@ async def artist(
         embed.add_field(name="Followers", value=f"{item.followers.total:,}")
 
     embed.set_thumbnail(url=item.images[0].url)
-    embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+    embed.set_footer(text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url)
 
     try:
         topsong_string = ""
@@ -163,20 +162,20 @@ async def artist(
     view = ArtistView(
         item=item,
         colours=colours,
-        op_id=ctx.author.id,
+        op_id=interaction.user.id,
     )
 
     if responded and respond_msg:
         await respond_msg.edit(embed=embed, view=view)
     else:
-        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
 
 # Album element function
 async def album(
     sp: TitaniumSpotifyClient,
     item: SpotifyAlbum,
-    ctx: commands.Context["TitaniumBot"],
+    interaction: discord.Interaction["TitaniumBot"],
     add_button_url: str | None = None,
     add_button_text: str | None = None,
     ephemeral: bool = False,
@@ -257,8 +256,10 @@ async def album(
         page_embeds.append(embed)
 
     page_embeds[0].set_footer(
-        text=f"Controlling: @{ctx.author.name}" if len(page_embeds) > 1 else f"@{ctx.author.name}",
-        icon_url=ctx.author.display_avatar.url,
+        text=f"Controlling: @{interaction.user.name}"
+        if len(page_embeds) > 1
+        else f"@{interaction.user.name}",
+        icon_url=interaction.user.display_avatar.url,
     )
 
     if len(page_embeds) > 1:
@@ -305,4 +306,4 @@ async def album(
     if responded and respond_msg:
         await respond_msg.edit(embed=page_embeds[0], view=view)
     else:
-        await ctx.reply(embed=page_embeds[0], view=view, ephemeral=ephemeral)
+        await interaction.followup.send(embed=page_embeds[0], view=view, ephemeral=ephemeral)

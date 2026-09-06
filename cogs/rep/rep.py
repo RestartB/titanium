@@ -12,7 +12,6 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from lib.helpers.cache import get_or_fetch_member
-from lib.helpers.global_alias import add_global_aliases, global_alias, remove_global_aliases
 from lib.sql.sql import RepAddHistory, UserRep, get_session
 from lib.views.pagination import RepReloadPageView
 from lib.views.rep import RepView
@@ -21,7 +20,11 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class RepCog(commands.Cog):
+@app_commands.allowed_installs(guilds=True, users=False)
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+class RepCog(
+    commands.GroupCog, group_name="rep", description="Set, add, remove, and view rep for users."
+):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger = logging.getLogger("rep")
@@ -34,10 +37,6 @@ class RepCog(commands.Cog):
                 data["guild_id"],
             ),
         )
-        add_global_aliases(self, bot)
-
-    async def cog_unload(self) -> None:
-        remove_global_aliases(self, self.bot)
 
     # Snapshot task
     @tasks.loop(time=time(hour=0, minute=0, tzinfo=UTC))
@@ -151,13 +150,13 @@ class RepCog(commands.Cog):
             if user_stats:
                 await session.delete(user_stats)
 
-    async def cog_check(self, ctx: commands.Context["TitaniumBot"]) -> bool:
-        if not ctx.guild:
+    async def interaction_check(self, interaction: discord.Interaction["TitaniumBot"]) -> bool:
+        if not interaction.guild:
             return False
 
-        config = await self.bot.fetch_guild_config(ctx.guild.id)
+        config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not config or not config.rep_enabled or not config.rep_settings:
-            await ctx.reply(
+            await interaction.response.send_message(
                 embed=discord.Embed(
                     colour=discord.Colour.red(),
                     title=f"{self.bot.error_emoji} Rep Disabled",
@@ -169,27 +168,23 @@ class RepCog(commands.Cog):
 
         return True
 
-    @commands.hybrid_group(
-        name="rep", fallback="view", description="Set, add, remove, and view rep for users."
-    )
+    @app_commands.command(name="view", description="View how much rep a user has.")
     @app_commands.describe(
         member="The member to view.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.guild_only()
-    @app_commands.guild_install()
-    @commands.cooldown(1, 3)
-    async def rep_group(
+    @app_commands.checks.cooldown(1, 3)
+    async def view_rep(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         member: discord.Member,
         ephemeral: bool = False,
     ) -> None:
-        if not ctx.guild:
+        if not interaction.guild:
             raise ValueError("Guild only command but no guild available")
 
-        await ctx.defer(ephemeral=ephemeral)
-        user = member or ctx.author
+        await interaction.response.defer(ephemeral=ephemeral)
+        user = member or interaction.user
 
         if user.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -197,14 +192,14 @@ class RepCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use rep features.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
             stmt = (
                 select(UserRep)
                 .where(
-                    UserRep.guild_id == ctx.guild.id,
+                    UserRep.guild_id == interaction.guild.id,
                     UserRep.user_id == user.id,
                 )
                 .limit(1)
@@ -213,13 +208,13 @@ class RepCog(commands.Cog):
             user_stats = result.scalar_one_or_none()
 
             given_rep = 0
-            if user != ctx.author:
+            if user != interaction.user:
                 stmt = (
                     select(func.count())
                     .select_from(RepAddHistory)
                     .where(
-                        RepAddHistory.guild_id == ctx.guild.id,
-                        RepAddHistory.user_id == ctx.author.id,
+                        RepAddHistory.guild_id == interaction.guild.id,
+                        RepAddHistory.user_id == interaction.user.id,
                         RepAddHistory.target_id == user.id,
                     )
                 )
@@ -231,13 +226,13 @@ class RepCog(commands.Cog):
                     description=f"**{user.display_name}** has no recorded rep.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
 
             embed = discord.Embed(
                 title="Rep Info",
                 description=f"{self.bot.info_emoji} You have given this user `{given_rep:,}` rep."
-                if user != ctx.author
+                if user != interaction.user
                 else None,
                 colour=Colour.light_grey(),
             )
@@ -249,35 +244,35 @@ class RepCog(commands.Cog):
                 icon_url=user.display_avatar.url,
             )
             embed.set_footer(
-                text=f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
             )
             embed.set_thumbnail(
                 url=user.display_avatar.url,
             )
 
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Leaderboard command
-    @rep_group.command(
-        name="leaderboard",
-        aliases=["lb", "top"],
-        description="View the rep leaderboard for this server.",
+    @app_commands.command(
+        name="leaderboard", description="View the rep leaderboard for this server."
     )
     @app_commands.describe(
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false."
     )
-    @commands.cooldown(1, 5)
-    async def rep_leaderboard(self, ctx: commands.Context["TitaniumBot"], ephemeral: bool = False):
-        if not ctx.guild:
+    @app_commands.checks.cooldown(1, 5)
+    async def rep_leaderboard(
+        self, interaction: discord.Interaction["TitaniumBot"], ephemeral: bool = False
+    ):
+        if not interaction.guild:
             return
 
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         async with get_session() as session:
             stmt = (
                 select(UserRep)
-                .where(UserRep.guild_id == ctx.guild.id, UserRep.rep != 0)
+                .where(UserRep.guild_id == interaction.guild.id, UserRep.rep != 0)
                 .order_by(UserRep.rep.desc())
                 .limit(1000)
             )
@@ -290,7 +285,7 @@ class RepCog(commands.Cog):
                     description="No users have any rep yet.",
                     colour=Colour.red(),
                 )
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
 
             pages = [
@@ -304,44 +299,38 @@ class RepCog(commands.Cog):
                     ),
                     colour=Colour.light_grey(),
                 ).set_author(
-                    name=ctx.guild.name,
-                    icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+                    name=interaction.guild.name,
+                    icon_url=interaction.guild.icon.url if interaction.guild.icon else None,
                 )
                 for i, chunk in enumerate(discord.utils.as_chunks(top_users, 15))
             ]
 
             pages[0].set_footer(
-                text=f"Controlling: @{ctx.author.name}"
+                text=f"Controlling: @{interaction.user.name}"
                 if len(pages) > 1
-                else f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
+                else f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
             )
 
             view = RepReloadPageView(embeds=pages, timeout=240, title="Rep Leaderboard")
-            await ctx.reply(embed=pages[0], view=view, ephemeral=ephemeral)
+            await interaction.followup.send(embed=pages[0], view=view, ephemeral=ephemeral)
 
-    @rep_group.command(
-        name="add", aliases=["give", "plus", "+"], description="Give a rep point to a user."
-    )
-    @global_alias("addrep")
-    @global_alias("giverep")
-    @global_alias("plusrep")
-    @global_alias("+")
+    @app_commands.command(name="add", description="Give a rep point to a user.")
     @app_commands.describe(
         member="The member to give rep to.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def add_rep(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         member: discord.Member,
         ephemeral: bool = False,
     ) -> None:
-        if not ctx.guild:
+        if not interaction.guild:
             raise ValueError("Guild only command but no guild available")
 
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         if member.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -349,10 +338,10 @@ class RepCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use rep features.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
-        guild_config = await self.bot.fetch_guild_config(ctx.guild.id)
+        guild_config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not guild_config or not guild_config.rep_settings:
             raise ValueError("No guild config returned")
 
@@ -362,14 +351,14 @@ class RepCog(commands.Cog):
                 description="The rep system is disabled in this server.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         bucket = self.xp_cooldowns.get_bucket(
             {
-                "giver_id": ctx.author.id,
+                "giver_id": interaction.user.id,
                 "receiver_id": member.id,
-                "guild_id": ctx.guild.id,
+                "guild_id": interaction.guild.id,
             }
         )
         if not bucket:
@@ -378,16 +367,16 @@ class RepCog(commands.Cog):
         retry_after = bucket.update_rate_limit()
         if retry_after:
             embed = discord.Embed(
-                title=f"{ctx.bot.error_emoji} Cooldown",
+                title=f"{interaction.client.error_emoji} Cooldown",
                 description=f"Please wait `{naturaldelta(retry_after)}` before giving more rep to this user.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
             stmt = insert(UserRep).values(
-                guild_id=ctx.guild.id,
+                guild_id=interaction.guild.id,
                 user_id=member.id,
                 rep=1,
             )
@@ -402,13 +391,13 @@ class RepCog(commands.Cog):
 
             session.add(
                 RepAddHistory(
-                    user_id=ctx.author.id,
+                    user_id=interaction.user.id,
                     target_id=member.id,
-                    guild_id=ctx.guild.id,
+                    guild_id=interaction.guild.id,
                 )
             )
 
-        await ctx.reply(
+        await interaction.followup.send(
             ephemeral=ephemeral,
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
@@ -417,32 +406,26 @@ class RepCog(commands.Cog):
             ),
         )
 
-    @rep_group.command(
-        name="remove",
-        aliases=["take", "minus", "-"],
-        description="Take away rep points that you gave to a user.",
+    @app_commands.command(
+        name="remove", description="Take away rep points that you gave to a user."
     )
-    @global_alias("removerep")
-    @global_alias("takerep")
-    @global_alias("minusrep")
-    @global_alias("-")
     @app_commands.describe(
         member="The member to give rep to.",
         amount="The amount of rep to remove from the user.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def remove_rep(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         member: discord.Member,
         amount: int,
         ephemeral: bool = False,
     ) -> None:
-        if not ctx.guild:
+        if not interaction.guild:
             raise ValueError("Guild only command but no guild available")
 
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         if member.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -450,10 +433,10 @@ class RepCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use rep features.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
-        guild_config = await self.bot.fetch_guild_config(ctx.guild.id)
+        guild_config = await self.bot.fetch_guild_config(interaction.guild.id)
         if not guild_config or not guild_config.rep_settings:
             raise ValueError("No guild config returned")
 
@@ -463,15 +446,15 @@ class RepCog(commands.Cog):
                 description="Removing user rep is disabled in this server.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
             stmt = (
                 select(RepAddHistory)
                 .where(
-                    RepAddHistory.guild_id == ctx.guild.id,
-                    RepAddHistory.user_id == ctx.author.id,
+                    RepAddHistory.guild_id == interaction.guild.id,
+                    RepAddHistory.user_id == interaction.user.id,
                     RepAddHistory.target_id == member.id,
                 )
                 .limit(amount)
@@ -479,7 +462,7 @@ class RepCog(commands.Cog):
             history = list((await session.execute(stmt)).scalars())
 
             if not history:
-                await ctx.reply(
+                await interaction.followup.send(
                     ephemeral=ephemeral,
                     embed=discord.Embed(
                         title=f"{self.bot.error_emoji} Nothing to Remove",
@@ -490,7 +473,7 @@ class RepCog(commands.Cog):
                 return
 
             if len(history) != amount:
-                await ctx.reply(
+                await interaction.followup.send(
                     ephemeral=ephemeral,
                     embed=discord.Embed(
                         title=f"{self.bot.error_emoji} Too Much Rep",
@@ -504,7 +487,7 @@ class RepCog(commands.Cog):
                 await session.delete(history_item)
 
             stmt = insert(UserRep).values(
-                guild_id=ctx.guild.id,
+                guild_id=interaction.guild.id,
                 user_id=member.id,
                 rep=0,
             )
@@ -517,7 +500,7 @@ class RepCog(commands.Cog):
 
             rep = (await session.execute(stmt)).scalar_one()
 
-        await ctx.reply(
+        await interaction.followup.send(
             ephemeral=ephemeral,
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
@@ -526,24 +509,24 @@ class RepCog(commands.Cog):
             ),
         )
 
-    @rep_group.command(name="set", description="Manually set the rep of a user.")
+    @app_commands.command(name="set", description="Manually set the rep of a user.")
     @app_commands.describe(
         member="The member to set the rep of.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.has_permissions(administrator=True)
-    @commands.cooldown(1, 3)
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.checks.cooldown(1, 3)
     async def set_rep(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         member: discord.Member,
         amount: int,
         ephemeral: bool = False,
     ) -> None:
-        if not ctx.guild:
+        if not interaction.guild:
             raise ValueError("Guild only command but no guild available")
 
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         if member.id in self.bot.opt_out:
             embed = discord.Embed(
@@ -551,12 +534,12 @@ class RepCog(commands.Cog):
                 description="This user has opted out of optional data collection and cannot use rep features.",
                 colour=Colour.red(),
             )
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         async with get_session() as session:
             stmt = insert(UserRep).values(
-                guild_id=ctx.guild.id,
+                guild_id=interaction.guild.id,
                 user_id=member.id,
                 rep=amount,
             )
@@ -567,7 +550,7 @@ class RepCog(commands.Cog):
 
             await session.execute(stmt)
 
-        await ctx.reply(
+        await interaction.followup.send(
             ephemeral=ephemeral,
             embed=discord.Embed(
                 title=f"{self.bot.success_emoji} Done",
