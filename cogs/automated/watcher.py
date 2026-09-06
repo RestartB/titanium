@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
@@ -54,7 +55,7 @@ class WatcherCog(commands.Cog):
             return
 
         self.logger.critical("Bot has been disconnected for over 10 minutes! Killing process")
-        sys.exit(1)
+        os._exit(1)
 
 
 async def setup(bot: TitaniumBot):
