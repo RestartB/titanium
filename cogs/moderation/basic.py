@@ -849,7 +849,7 @@ class ModerationBasicCog(
         user: discord.User,
         duration: str = "",
         reason: str = "",
-        delete_message_days: app_commands.Range[int, 0, 7] | None = None,
+        delete_message_days: app_commands.Range[float, 0, 7] | None = None,
         ephemeral: bool = False,
     ) -> None | Message:
         if isinstance(delete_message_days, commands.Parameter):
@@ -1431,7 +1431,7 @@ class ModerationBasicCog(
         user20: discord.User | None = None,
         duration: str = "",
         reason: str = "",
-        delete_message_days: app_commands.Range[int, 0, 7] | None = None,
+        delete_message_days: app_commands.Range[float, 0, 7] | None = None,
         ephemeral: bool = False,
     ) -> None | Message:
         if isinstance(delete_message_days, commands.Parameter):
