@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-# TODO: what is going on with the durations here
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 class TemplateCog(commands.GroupCog, group_name="reminder", description="Create reminders."):
@@ -123,7 +122,7 @@ class TemplateCog(commands.GroupCog, group_name="reminder", description="Create 
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
-        # TODO: get message id if message is not private
+        og_response = await interaction.original_response()
         reminder = await create_reminder(
             content=content,
             time=time_scheduled,
@@ -131,7 +130,7 @@ class TemplateCog(commands.GroupCog, group_name="reminder", description="Create 
             dm=dm,
             guild_id=interaction.guild.id if interaction.guild else None,
             channel_id=interaction.channel.id if interaction.channel else None,
-            message_id=None,
+            message_id=None if og_response.flags.ephemeral else og_response.id,
         )
 
         if dm:
