@@ -434,6 +434,17 @@ class TitaniumBot(commands.Bot):
             self.connected = False
             self.last_disconnect = utcnow()
 
+    async def on_command_completion(self, ctx: commands.Context["TitaniumBot"]):
+        if ctx.interaction:
+            return
+
+        embed = discord.Embed(
+            title=f"{self.warn_emoji} Warning - Prefix Commands",
+            description="Prefix commands will be removed within the next few weeks due to Discord restrictions. To continue using Titanium, please use slash commands instead.",
+            colour=discord.Colour.orange(),
+        )
+        await ctx.reply(embed=embed, mention_author=False)
+
     async def on_error(self, event: str, *args, **kwargs):
         exc = sys.exc_info()[1]
         if not isinstance(exc, Exception):
