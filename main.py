@@ -442,23 +442,9 @@ class TitaniumBot(commands.Bot):
         )
 
 
-async def get_prefix(bot: TitaniumBot, message: discord.Message):
-    if message.guild:
-        config = await bot.fetch_guild_config(message.guild.id)
-
-        if config:
-            base = config.prefixes
-        else:
-            base = ["t!"]
-    else:
-        base = ["t!"]
-
-    return commands.when_mentioned_or(*base)(bot, message)
-
-
 bot = TitaniumBot(
     intents=intents,
-    command_prefix=get_prefix,
+    command_prefix=commands.when_mentioned,
     strip_after_prefix=True,
     case_insensitive=True,
     max_messages=2500,
@@ -547,43 +533,10 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         )
         ephemeral = False
     elif isinstance(error, (commands.CommandNotFound, commands.NotOwner)):
-        if ctx.bot.pre_not_found and await ctx.bot.pre_not_found(ctx, error):
+        if ctx.bot.pre_not_found:
+            return await ctx.bot.pre_not_found(ctx, error)
+        else:
             return
-
-        command_name = ctx.invoked_with or "unknown"
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Command Not Found",
-            description=f"The command `{command_name}` does not exist.",
-            colour=discord.Colour.red(),
-        )
-
-        command_list = [
-            command.qualified_name
-            for command in ctx.bot.walk_commands()
-            if not command.hidden
-            and not (
-                isinstance(command, commands.Group)
-                and not isinstance(command, commands.HybridGroup)
-            )
-            and not (isinstance(command, commands.HybridGroup) and not command.fallback)
-        ]
-
-        did_you_mean = await asyncio.to_thread(
-            process.extract,
-            command_name,
-            command_list,
-            scorer=fuzz.WRatio,
-            limit=3,
-            score_cutoff=65,
-            processor=utils.default_process,
-        )
-
-        if did_you_mean:
-            embed.add_field(
-                name="Did you mean:", value=", ".join([f"`{value[0]}`" for value in did_you_mean])
-            )
-
-        ephemeral = False
     elif isinstance(error, commands.errors.CommandOnCooldown):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Cooldown",
