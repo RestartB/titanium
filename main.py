@@ -30,7 +30,6 @@ from discord.ext import commands
 from discord.utils import utcnow
 from dotenv import load_dotenv
 from prometheus_client import Counter
-from rapidfuzz import fuzz, process, utils
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
