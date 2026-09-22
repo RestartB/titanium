@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
-from discord.ext import commands
 from durations import Duration
 from sqlalchemy import Column
 
@@ -12,6 +11,10 @@ if TYPE_CHECKING:
 
 
 # TODO: could be worth maybe switching to https://github.com/scrapinghub/dateparser at some point
+
+
+class DurationTooLongError(app_commands.AppCommandError):
+    pass
 
 
 class DurationTransformer(app_commands.Transformer):
@@ -27,14 +30,14 @@ class DurationTransformer(app_commands.Transformer):
                 return None
 
             if delta.total_seconds() > self.MAX_SECONDS:
-                raise commands.BadArgument(
+                raise DurationTooLongError(
                     f"Duration cannot exceed {self.MAX_YEARS} years. "
                     f"For permanent actions, use 'permanent', 'perma', '0', or don't provide a duration."
                 )
 
             return delta
         except OverflowError:
-            raise commands.BadArgument(
+            raise DurationTooLongError(
                 f"Duration cannot exceed {self.MAX_YEARS} years. "
                 f"For permanent actions, use 'permanent', 'perma', '0', or don't provide a duration."
             )

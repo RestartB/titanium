@@ -39,6 +39,7 @@ from lib.classes import img_tools
 from lib.classes.automod_message import AutomodMessage
 from lib.classes.browser import BrowserRenderer
 from lib.embeds.general import guild_only
+from lib.helpers.duration import DurationTooLongError
 from lib.helpers.log_error import log_error
 from lib.setup_logger import setup_logging
 from v1_to_v2.migrate import migrate_v1_to_v2
@@ -442,14 +443,7 @@ class TitaniumBot(commands.Bot):
                 logging.error(f"Unexpected error in {event}")
 
     async def on_autopost_error(self, exception: Exception) -> None:
-        await log_error(
-            bot=self,
-            module="top.gg Autopost",
-            guild_id=None,
-            error="Error",
-            store_err=False,
-            exc=exception,
-        )
+        logging.warning("Failed to update top.gg server count", exc_info=exception)
 
 
 bot = TitaniumBot(
@@ -522,62 +516,16 @@ async def check(ctx: commands.Context["TitaniumBot"]):
 
 @bot.event
 async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands.CommandError):
-    ephemeral = True
-    original_error = getattr(error, "original", error)
-
-    error_counter.labels(
-        name=type(original_error).__qualname__,
-        type="command",
-    ).inc()
-
-    if isinstance(original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)):
-        description = (
-            "The provided image is too small for this operation."
-            if isinstance(original_error, img_tools.ImageTooSmallError)
-            else "The resulting image would be too large to process. Please ensure that the result image is below 10000x10000px."
-        )
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Error",
-            description=description,
-            colour=discord.Colour.red(),
-        )
-        ephemeral = False
+    if isinstance(error, commands.errors.CheckFailure):
+        return
     elif isinstance(error, (commands.CommandNotFound, commands.NotOwner)):
-        if ctx.bot.pre_not_found:
-            return await ctx.bot.pre_not_found(ctx, error)
-        else:
-            return
-    elif isinstance(error, commands.errors.CommandOnCooldown):
         embed = discord.Embed(
-            title=f"{bot.error_emoji} Cooldown",
-            description=error,
-            colour=discord.Colour.red(),
-        )
-    elif isinstance(error, commands.errors.MissingPermissions):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Missing Permissions",
-            description=error,
-            colour=discord.Colour.red(),
-        )
-    elif isinstance(error, commands.errors.BotMissingPermissions):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Bot Missing Permissions",
-            description=error,
+            title=f"{ctx.bot.error_emoji} Prefix Commands Removed",
+            description="Due to Discord restrictions, prefix commands have been disabled. Please use slash commands instead.",
             colour=discord.Colour.red(),
         )
     elif isinstance(error, commands.errors.NoPrivateMessage):
         embed = guild_only(bot)
-    elif isinstance(error, commands.HybridCommandError) and isinstance(
-        error.original, discord.app_commands.TransformerError
-    ):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Bad Argument",
-            description=str(error.original).replace(
-                str(error.original)[0], str(error.original)[0].upper(), 1
-            ),
-            colour=discord.Colour.red(),
-        )
-
     elif isinstance(
         error,
         (
@@ -591,26 +539,6 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             description=str(error).replace(str(error)[0], str(error)[0].upper(), 1),
             colour=discord.Colour.red(),
         )
-    elif isinstance(error, commands.errors.BadLiteralArgument):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Bad Argument",
-            description=f"Couldn't find your input for the `{error.param.name}` argument in `{'`, `'.join([str(lit) for lit in error.literals])}`.",
-            colour=discord.Colour.red(),
-        )
-    elif isinstance(error, commands.errors.MissingRequiredArgument):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Argument Missing",
-            description=f"You are missing the `{error.param.name}` argument.",
-            colour=discord.Colour.red(),
-        )
-    elif isinstance(error, commands.errors.MissingRequiredAttachment):
-        embed = discord.Embed(
-            title=f"{bot.error_emoji} Attachment Missing",
-            description=f"You are missing a required attachment (`{error.param.name}`) for this command.",
-            colour=discord.Colour.red(),
-        )
-    elif isinstance(error, commands.errors.CheckFailure):
-        return
     else:
         try:
             error_id = await log_error(
@@ -618,7 +546,7 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
                 module="Commands",
                 guild_id=ctx.guild.id if ctx.guild else None,
                 user=ctx.author,
-                error=f"Unexpected error in prefix command {ctx.clean_prefix}{ctx.command.qualified_name if ctx.command else 'unknown'}.",
+                error=f"Unexpected error in command {ctx.clean_prefix}{ctx.command.qualified_name if ctx.command else 'unknown'}.",
                 dev_info=f"Full command: `{ctx.message.content}`",
                 exc=error,
             )
@@ -640,7 +568,7 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         )
 
     try:
-        await ctx.reply(embed=embed, ephemeral=ephemeral)
+        await ctx.reply(embed=embed, ephemeral=True)
     except Exception:
         await ctx.channel.send(content=ctx.author.mention, embed=embed)
 
@@ -656,7 +584,11 @@ async def on_app_command_error(
         type="app_command",
     ).inc()
 
-    if isinstance(original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)):
+    if isinstance(error, discord.app_commands.CheckFailure):
+        return
+    elif isinstance(
+        original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)
+    ):
         description = (
             "The provided image is too small for this operation."
             if isinstance(original_error, img_tools.ImageTooSmallError)
@@ -667,37 +599,36 @@ async def on_app_command_error(
             description=description,
             colour=discord.Colour.red(),
         )
-        await interaction.edit_original_response(embed=embed)
+    elif isinstance(original_error, DurationTooLongError):
+        embed = discord.Embed(
+            title=f"{bot.error_emoji} Bad Argument",
+            description=str(original_error),
+            colour=discord.Colour.red(),
+        )
     elif isinstance(error, discord.app_commands.CommandOnCooldown):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Cooldown",
             description=error,
             colour=discord.Colour.red(),
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
     elif isinstance(error, discord.app_commands.MissingPermissions):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Missing Permissions",
             description=error,
             colour=discord.Colour.red(),
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
     elif isinstance(error, discord.app_commands.BotMissingPermissions):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bot Missing Permissions",
             description=error,
             colour=discord.Colour.red(),
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
     elif isinstance(error, discord.app_commands.TransformerError):
         embed = discord.Embed(
             title=f"{bot.error_emoji} Bad Argument",
             description=str(error),
             colour=discord.Colour.red(),
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-    elif isinstance(error, discord.app_commands.CheckFailure):
-        return
     elif not isinstance(error, discord.app_commands.CommandNotFound):
         params = []
         if interaction.command and not isinstance(
@@ -737,8 +668,11 @@ async def on_app_command_error(
 
         try:
             await interaction.edit_original_response(embed=embed, view=None)
-        except discord.NotFound:
+        except Exception:
             await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 if __name__ == "__main__":
