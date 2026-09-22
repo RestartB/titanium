@@ -16,16 +16,13 @@ from discord.ui import (
     Button,
     Container,
     LayoutView,
-    Modal,
     Section,
     Select,
     Separator,
     TextDisplay,
-    TextInput,
     Thumbnail,
 )
 from sqlalchemy import delete, select
-from sqlalchemy.orm.attributes import flag_modified
 
 from lib.embeds.general import cancelled
 from lib.helpers.strings import dashboard_url
@@ -586,215 +583,6 @@ class UserTagsView(LayoutView):
 # endregion
 
 
-# region Prefix Views
-class PrefixModal(Modal, title="Add Prefix"):
-    def __init__(self, previous_view: LayoutView) -> None:
-        super().__init__()
-        self.previous_view = previous_view
-
-        self.prefix_input = TextInput(label="Prefix", placeholder="t!", min_length=1, max_length=5)
-        self.add_item(self.prefix_input)
-
-    async def on_submit(self, interaction: Interaction["TitaniumBot"]) -> None:
-        if not interaction.guild_id:
-            raise RuntimeError("No guild ID")
-
-        await interaction.response.defer(ephemeral=True)
-
-        if not interaction.permissions.administrator:
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Not Allowed",
-                description="You must have the Administrator permission to complete this action.",
-                colour=Colour.red(),
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
-
-        async with get_session() as session:
-            guild_settings = await session.get(GuildSettings, interaction.guild_id)
-
-            if not guild_settings:
-                guild_settings = GuildSettings(guild_id=interaction.guild_id)
-                session.add(guild_settings)
-
-            if len(guild_settings.prefixes) >= 5:
-                embed = discord.Embed(
-                    title=f"{interaction.client.error_emoji} Limit Reached",
-                    description="You can only have up to 5 custom prefixes.",
-                    colour=Colour.red(),
-                )
-                await interaction.followup.send(embed=embed, ephemeral=True)
-                return
-
-            guild_settings.prefixes.append(self.prefix_input.value)
-            flag_modified(guild_settings, "prefixes")
-
-        await interaction.client.refresh_guild_config_cache(interaction.guild_id)
-        await interaction.edit_original_response(
-            view=PrefixView(interaction.client, guild_settings, self.previous_view),
-            allowed_mentions=AllowedMentions.none(),
-        )
-
-
-class AddPrefixButton(Button["PrefixView"]):
-    def __init__(self, previous_view: LayoutView) -> None:
-        super().__init__(label="Add Prefix", style=ButtonStyle.green)
-        self.previous_view = previous_view
-
-    async def callback(self, interaction: Interaction["TitaniumBot"]) -> None:
-        if not interaction.permissions.administrator:
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Not Allowed",
-                description="You must have the Administrator permission to complete this action.",
-                colour=Colour.red(),
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        await interaction.response.send_modal(PrefixModal(self.previous_view))
-
-
-class PrefixDropdown(Select):
-    def __init__(self, prefixes: list[str], previous_view: LayoutView) -> None:
-        super().__init__()
-        self.prefixes = prefixes
-        self.previous_view = previous_view
-
-        for prefix in prefixes:
-            self.add_option(label=prefix)
-
-    async def callback(self, interaction: Interaction["TitaniumBot"]) -> None:
-        if not interaction.guild_id:
-            raise RuntimeError("No guild ID")
-
-        await interaction.response.defer(ephemeral=True)
-
-        if not interaction.permissions.administrator:
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Not Allowed",
-                description="You must have the Administrator permission to complete this action.",
-                colour=Colour.red(),
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
-
-        async with get_session() as session:
-            guild_settings = await session.get(GuildSettings, interaction.guild_id)
-
-            if not guild_settings:
-                guild_settings = GuildSettings(guild_id=interaction.guild_id)
-                session.add(guild_settings)
-
-            try:
-                guild_settings.prefixes.remove(self.values[0])
-                flag_modified(guild_settings, "prefixes")
-            except ValueError:
-                embed = discord.Embed(
-                    title=f"{interaction.client.error_emoji} Not Found",
-                    description="Couldn't find the prefix to remove.",
-                    colour=Colour.red(),
-                )
-                await interaction.followup.send(embed=embed, ephemeral=True)
-                return
-
-        await interaction.client.refresh_guild_config_cache(interaction.guild_id)
-        await interaction.edit_original_response(
-            view=PrefixView(interaction.client, guild_settings, self.previous_view),
-            allowed_mentions=AllowedMentions.none(),
-        )
-
-        embed = discord.Embed(
-            title=f"{interaction.client.success_emoji} Deleted",
-            description=f"The `{self.values[0]}` prefix was deleted.",
-            colour=Colour.green(),
-        )
-        await interaction.followup.send(embed=embed, ephemeral=True)
-
-
-class PrefixView(LayoutView):
-    def __init__(
-        self, bot: TitaniumBot, settings: GuildSettings, previous_view: LayoutView
-    ) -> None:
-        super().__init__(timeout=600)
-
-        top_section = Section(
-            TextDisplay(
-                "## Prefixes\nManage the prefixes that Titanium will respond to. You can also ping Titanium or use slash commands."
-            ),
-            accessory=BackButtonHomeReload(),
-        )
-
-        allow_prefix = Section(
-            TextDisplay(
-                "### Allow Prefix Commands\nAllow server members to interact with Titanium using prefix commands, as well as slash commands. Slash commands are always enabled."
-            ),
-            accessory=FeatureToggleButton(bot=bot, settings=settings, feature_attr="allow_prefix"),
-        )
-        not_allowed = Section(
-            TextDisplay(
-                "### Send Not Allowed Error\nSend a not allowed error to the user if they try to run prefix commands when they are disabled, in a blacklisted channel, or when they have a blacklisted role."
-            ),
-            accessory=FeatureToggleButton(
-                bot=bot, settings=settings, feature_attr="send_not_allowed"
-            ),
-        )
-        loading = Section(
-            TextDisplay(
-                "### Show Loading Reaction\nEnable or disable the loading reaction that appears when Titanium is processing a prefix command. The loading indicator will always show for slash commands."
-            ),
-            accessory=FeatureToggleButton(
-                bot=bot, settings=settings, feature_attr="loading_reaction"
-            ),
-        )
-
-        container = Container(
-            top_section,
-            TextDisplay(
-                content=f"{bot.warn_emoji} Please note that prefix commands will be **removed in mid-end of September** due to Discord restrictions."
-            ),
-            Separator(spacing=SeparatorSpacing.large),
-            allow_prefix,
-            not_allowed,
-            loading,
-            Separator(spacing=SeparatorSpacing.small),
-            TextDisplay(
-                f"### Blocked Channels & Roles\nAdd channels and roles that Titanium will ignore prefix commands from in the {dashboard_url(settings.guild_id)}."
-            ),
-            Separator(spacing=SeparatorSpacing.small),
-            TextDisplay("### Prefix List\nThe list of prefixes that Titanium will respond to."),
-            TextDisplay(
-                f"{bot.user.mention if bot.user else '`@Titanium`'}, `{'`, `'.join(settings.prefixes)}`"
-                if settings.prefixes
-                else f"{bot.user.mention if bot.user else '`@Titanium`'}"
-            ),
-            accent_colour=Colour.light_grey(),
-        )
-
-        if len(settings.prefixes) < 5:
-            container.add_item(Separator(spacing=SeparatorSpacing.small))
-            container.add_item(
-                TextDisplay(
-                    "### Add Prefix\nClick the button below to add a new prefix to the list."
-                )
-            )
-            container.add_item(ActionRow(AddPrefixButton(previous_view=previous_view)))
-
-        self.dropdown = PrefixDropdown(prefixes=settings.prefixes, previous_view=previous_view)
-        if settings.prefixes:
-            container.add_item(Separator(spacing=SeparatorSpacing.small))
-            container.add_item(
-                TextDisplay(
-                    "### Remove Prefix\nSelect a prefix from the dropdown below to remove it."
-                )
-            )
-            container.add_item(ActionRow(self.dropdown))
-
-        self.add_item(container)
-
-
-# endregion
-
-
 class ModulesView(LayoutView):
     def __init__(
         self,
@@ -917,18 +705,7 @@ class SettingsView(LayoutView):
                     label="Manage",
                 ),
             )
-            prefixes_section = Section(
-                TextDisplay(
-                    "### Prefixes\nManage the prefixes that Titanium will respond to in this server (will be removed mid-end September)."
-                ),
-                accessory=OpenPageButton(
-                    target_view=PrefixView(bot=bot, settings=settings, previous_view=self),
-                    label="Manage",
-                ),
-            )
-
             container.add_item(modules_section)
-            container.add_item(prefixes_section)
 
         if _get_if_server_tag_allowed(interaction, settings):
             server_tags_section = Section(

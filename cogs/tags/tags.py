@@ -1,7 +1,6 @@
 import asyncio
 import logging
-import os
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import discord
 from discord import app_commands
@@ -168,7 +167,6 @@ async def tag_autocomplete_base(
 
 class TagCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
-        bot.pre_not_found = self.command_not_found_hook
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("tags")
 
@@ -192,59 +190,6 @@ class TagCommandsCog(commands.Cog):
             if not session_tag:
                 return
             session_tag.amount_used += 1
-
-    async def command_not_found_hook(
-        self, ctx: commands.Context["TitaniumBot"], error: Any
-    ) -> bool:
-        config = await self.bot.fetch_guild_config(ctx.guild.id) if ctx.guild else None
-        if not self.__server_tag_available(ctx, config) or not ctx.guild:
-            self.logger.debug("Server tags unavailable")
-            return False
-
-        if not config or (
-            not config.tags_enabled
-            or not config.tag_settings
-            or not config.tag_settings.prefix_fallback
-        ):
-            self.logger.debug("Prefix fallback disabled")
-            return False
-
-        self.logger.debug(f"Searching tag: {ctx.invoked_with}")
-        for tag in config.tag_settings.tags:
-            if not (tag.name == ctx.invoked_with or str(tag.id) == ctx.invoked_with):
-                continue
-
-            self.logger.debug(f"Found tag: {tag.name}")
-            await ctx.reply(content=tag.content, allowed_mentions=discord.AllowedMentions.none())
-            await self.push_tag_usage(tag)
-
-            # Send analytics manually
-            # The command technically wasn't found so no analytics will be sent otherwise
-            embed = discord.Embed(
-                title=f"`@{ctx.author.name}` ran a tag command",
-                description=f"`{ctx.clean_prefix}{tag.name}`",
-                timestamp=ctx.message.created_at,
-            )
-            embed.add_field(name="User", value=f"{ctx.author.mention} (`{ctx.author.id}`)")
-            if self.bot.user:
-                embed.set_author(
-                    name=f"{self.bot.user.name}#{self.bot.user.discriminator}",
-                    icon_url=self.bot.user.display_avatar,
-                )
-
-            webhook_url = os.getenv("ANALYTICS_WEBHOOK")
-            if webhook_url:
-                self.logger.debug("Sending analytics")
-                webhook = discord.Webhook.from_url(
-                    webhook_url,
-                    client=self.bot,
-                )
-                await webhook.send(embed=embed)
-
-            return True
-
-        self.logger.debug("No tags found, skipping")
-        return False
 
     async def tag_autocomplete(
         self, interaction: discord.Interaction["TitaniumBot"], current: str

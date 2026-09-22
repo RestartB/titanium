@@ -406,17 +406,6 @@ class TitaniumBot(commands.Bot):
             self.connected = False
             self.last_disconnect = utcnow()
 
-    async def on_command_completion(self, ctx: commands.Context["TitaniumBot"]):
-        if ctx.interaction:
-            return
-
-        embed = discord.Embed(
-            title=f"{self.warn_emoji} Warning - Prefix Commands",
-            description="Prefix commands will be removed within the next few weeks due to Discord restrictions. To continue using Titanium, please use slash commands instead.",
-            colour=discord.Colour.orange(),
-        )
-        await ctx.reply(embed=embed, mention_author=False)
-
     async def on_error(self, event: str, *args, **kwargs):
         exc = sys.exc_info()[1]
         if not isinstance(exc, Exception):
@@ -446,72 +435,29 @@ class TitaniumBot(commands.Bot):
         logging.warning("Failed to update top.gg server count", exc_info=exception)
 
 
+async def get_prefix(bot: TitaniumBot, message: discord.Message):
+    if message.guild:
+        config = await bot.fetch_guild_config(message.guild.id)
+
+        if config:
+            base = config.prefixes
+        else:
+            base = ["t!"]
+    else:
+        base = ["t!"]
+
+    return commands.when_mentioned_or(*base)(bot, message)
+
+
 bot = TitaniumBot(
     intents=intents,
-    command_prefix=commands.when_mentioned,
+    command_prefix=get_prefix,
     strip_after_prefix=True,
     case_insensitive=True,
     max_messages=2500,
     help_command=None,
     chunk_guilds_at_startup=False,
 )
-
-
-@bot.check
-async def check(ctx: commands.Context["TitaniumBot"]):
-    if ctx.interaction or not ctx.guild:
-        return True
-
-    config = await ctx.bot.fetch_guild_config(ctx.guild.id)
-
-    if not config:
-        return True
-
-    if not config.allow_prefix:
-        if not config.send_not_allowed:
-            return False
-
-        embed = discord.Embed(
-            title=f"{ctx.bot.error_emoji} Not Allowed",
-            description="Prefix commands have been disabled in this server.",
-            colour=discord.Colour.red(),
-        )
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-
-        await ctx.reply(embed=embed)
-        return False
-
-    if ctx.channel.id in config.blocked_channels:
-        if not config.send_not_allowed:
-            return False
-
-        embed = discord.Embed(
-            title=f"{ctx.bot.error_emoji} Not Allowed",
-            description="You are not allowed to run prefix commands in this channel.",
-            colour=discord.Colour.red(),
-        )
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-
-        await ctx.reply(embed=embed)
-        return False
-
-    if isinstance(ctx.author, discord.Member) and any(
-        role.id in config.blocked_roles for role in ctx.author.roles
-    ):
-        if not config.send_not_allowed:
-            return False
-
-        embed = discord.Embed(
-            title=f"{ctx.bot.error_emoji} Not Allowed",
-            description="You have a role which blocks you from running prefix commands in this server.",
-            colour=discord.Colour.red(),
-        )
-        embed.set_footer(text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar.url)
-
-        await ctx.reply(embed=embed)
-        return False
-
-    return True
 
 
 @bot.event

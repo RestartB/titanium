@@ -62,16 +62,6 @@ class GuildSettings(Base):
     __tablename__ = "guild_settings"
     guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
 
-    allow_prefix: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    send_not_allowed: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    loading_reaction: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    blocked_channels: Mapped[list[int]] = MappedColumn(
-        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
-    )
-    blocked_roles: Mapped[list[int]] = MappedColumn(
-        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
-    )
-
     delete_after_3_days: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     leave_date: Mapped[datetime | None] = MappedColumn(DateTime(timezone=True), nullable=True)
 
@@ -849,7 +839,6 @@ class GuildTagSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="tag_settings", uselist=False
     )
-    prefix_fallback: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     allow_user_tags: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     tags: Mapped[list["Tag"]] = relationship(
         "Tag", back_populates="settings", cascade="all, delete-orphan"
