@@ -595,7 +595,7 @@ class MusicCommandsCog(
         description="Get information about a Spotify track, album or artist link.",
     )
     @app_commands.describe(
-        url="The Spoptify link to get information for.",
+        url="The Spotify link to get information for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.checks.cooldown(1, 5)

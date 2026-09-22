@@ -125,7 +125,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
         description="Roll the dice.",
     )
     @app_commands.describe(
-        sides="Optional: the amount of sides. Defaults to a 6 sided die.",
+        sides="Optional: the number of sides. Defaults to a 6 sided die.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     async def dice(
@@ -335,7 +335,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
     @app_commands.describe(
         mode="The conversion mode to use.",
         text="The text to convert.",
-        ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     async def freaky(
         self,
@@ -365,7 +365,7 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
     )
     @app_commands.describe(
         username="The GitHub account to roast.",
-        ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to false.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.checks.cooldown(1, 10)
     async def gh_roast(

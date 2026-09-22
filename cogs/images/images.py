@@ -893,7 +893,7 @@ class ImageCog(commands.GroupCog, group_name="image", description="Image process
     )
     @app_commands.describe(
         image="The image to deepfry.",
-        intensity_scale="Optional: the intensity scale to apply (0 to 100). Defaults to 100.",
+        intensity_scale="Optional: the intensity scale to apply (1 to 100). Defaults to 100.",
         red_filter="Optional: whether to apply a red filter. Defaults to True.",
         output_format="Optional: the format to output to. Defaults to PNG.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",

@@ -410,7 +410,7 @@ class RepCog(
         name="remove", description="Take away rep points that you gave to a user."
     )
     @app_commands.describe(
-        member="The member to give rep to.",
+        member="The member to take rep from.",
         amount="The amount of rep to remove from the user.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )

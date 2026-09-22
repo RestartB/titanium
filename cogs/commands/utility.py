@@ -206,7 +206,7 @@ class UtilityCog(commands.Cog, name="Utility", description="General utility comm
     )
     @app_commands.describe(
         channel="Optional: the target channel. Defaults to the current channel.",
-        ephemeral="Optional: whether to send the command output as a dismissable message only visible to you. Defaults to true.",
+        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to true.",
     )
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)

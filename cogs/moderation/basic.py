@@ -839,7 +839,7 @@ class ModerationBasicCog(
         user="The user to ban.",
         duration="Optional: the duration of the ban (e.g., 10m, 1h, 2h30m).",
         reason="Optional: the reason for the ban.",
-        delete_message_days="Optional: amount of days of messages from the user that are deleted. Defaults to server default.",
+        delete_message_days="Optional: number of days of messages from the user that are deleted. Defaults to server default.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.checks.cooldown(1, 5)
@@ -1402,7 +1402,7 @@ class ModerationBasicCog(
     @app_commands.describe(
         duration="Optional: the duration of the ban (e.g., 10m, 1h, 2h30m).",
         reason="Optional: the reason for the ban.",
-        delete_message_days="Optional: amount of days of messages from the user that are deleted. Defaults to server default.",
+        delete_message_days="Optional: number of days of messages from the user that are deleted. Defaults to server default.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.checks.cooldown(1, 5)
