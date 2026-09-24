@@ -471,7 +471,7 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
         ):
             embed = discord.Embed(
                 title=f"{ctx.bot.error_emoji} Prefix Commands Removed",
-                description="Due to Discord restrictions, prefix commands have been disabled. Please use slash commands instead.\n"
+                description="Due to Discord restrictions, prefix commands have been disabled. Please use slash commands instead.\n\n"
                 f"-# Server admin? You can disable this warning in the general settings tab of the {dashboard_url(ctx.guild.id if ctx.guild else 0)}",
                 colour=discord.Colour.red(),
             )
