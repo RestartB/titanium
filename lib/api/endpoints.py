@@ -33,7 +33,6 @@ def moderation_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web
     if not config.moderation_settings:
         return web.json_response(
             {
-                "delete_confirmation": False,
                 "dm_users": True,
                 "external_cases": True,
                 "ban_days": 0,
@@ -43,7 +42,6 @@ def moderation_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web
     moderation_settings = config.moderation_settings
     return web.json_response(
         {
-            "delete_confirmation": moderation_settings.delete_confirmation,
             "dm_users": moderation_settings.dm_users,
             "external_cases": moderation_settings.external_cases,
             "ban_days": moderation_settings.ban_days,
@@ -345,18 +343,8 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
 def tags_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
     if not config.tag_settings:
-        return web.json_response(
-            {
-                "allow_user_tags": True,
-                "prefix_fallback": True,
-            }
-        )
-    return web.json_response(
-        {
-            "allow_user_tags": config.tag_settings.allow_user_tags,
-            "prefix_fallback": config.tag_settings.prefix_fallback,
-        }
-    )
+        return web.json_response({"allow_user_tags": True})
+    return web.json_response({"allow_user_tags": config.tag_settings.allow_user_tags})
 
 
 def rep_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:

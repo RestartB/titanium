@@ -45,10 +45,9 @@ class WebSearchCommandsCog(
         ]
 
     # Urban Dictionary command
-    @commands.hybrid_command(
+    @app_commands.command(
         name="urban-dictionary",
         description="Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!",
-        aliases=["ud", "urbandictionary"],
     )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -57,16 +56,15 @@ class WebSearchCommandsCog(
         page="Optional: page to jump to. Defaults to first page.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def urban_dict(
         self,
-        ctx: commands.Context["TitaniumBot"],
-        *,
+        interaction: discord.Interaction["TitaniumBot"],
         query: str,
-        page: commands.Range[int, 1, 10] = 1,
+        page: app_commands.Range[int, 1, 10] = 1,
         ephemeral: bool = False,
     ):
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         item_list: list[dict] = []
         embeds_list: list[list[discord.Embed]] = []
@@ -93,24 +91,24 @@ class WebSearchCommandsCog(
                     colour=Colour.red(),
                 )
                 embed.set_footer(
-                    text=f"@{ctx.author.name} • Page 1/{len(item_list)}",
-                    icon_url=ctx.author.display_avatar.url,
+                    text=f"@{interaction.user.name} • Page 1/{len(item_list)}",
+                    icon_url=interaction.user.display_avatar.url,
                 )
 
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
 
             embeds_list[0][1].set_footer(
-                text=f"Controlling: @{ctx.author.name}"
+                text=f"Controlling: @{interaction.user.name}"
                 if len(item_list) > 1
-                else f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
+                else f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
             )
 
             if len(item_list) == 1:
-                await ctx.reply(embeds=embeds_list[0], ephemeral=ephemeral)
+                await interaction.followup.send(embeds=embeds_list[0], ephemeral=ephemeral)
             else:
-                await ctx.reply(
+                await interaction.followup.send(
                     embeds=embeds_list[0],
                     view=PaginationView(embeds=embeds_list, timeout=900, page_offset=page),
                     ephemeral=ephemeral,
@@ -122,27 +120,28 @@ class WebSearchCommandsCog(
                 colour=Colour.red(),
             )
             embed.set_footer(
-                text=f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
             )
 
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # Wikipedia command
-    @commands.hybrid_command(
-        name="wikipedia", description="Search Wikipedia for information.", aliases=["wiki"]
-    )
+    @app_commands.command(name="wikipedia", description="Search Wikipedia for information.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
         search="The term to search for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def wiki(
-        self, ctx: commands.Context["TitaniumBot"], *, search: str, ephemeral: bool = False
+        self,
+        interaction: discord.Interaction["TitaniumBot"],
+        search: str,
+        ephemeral: bool = False,
     ):
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         headers = {"User-Agent": os.getenv("REQUEST_USER_AGENT", "")}
 
@@ -164,11 +163,11 @@ class WebSearchCommandsCog(
                     icon_url="https://titanium.fyi/assets/wikipedia.png",
                 )
                 embed.set_footer(
-                    text=f"@{ctx.author.name}",
-                    icon_url=ctx.author.display_avatar.url,
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
                 )
 
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
 
             request.raise_for_status()
@@ -185,11 +184,11 @@ class WebSearchCommandsCog(
                 icon_url="https://titanium.fyi/assets/wikipedia.png",
             )
             embed.set_footer(
-                text=f"@{ctx.author.name}",
-                icon_url=ctx.author.display_avatar.url,
+                text=f"@{interaction.user.name}",
+                icon_url=interaction.user.display_avatar.url,
             )
 
-            await ctx.reply(embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
 
         target_page = page_data["pages"][0]
@@ -212,11 +211,11 @@ class WebSearchCommandsCog(
                     icon_url="https://titanium.fyi/assets/wikipedia.png",
                 )
                 embed.set_footer(
-                    text=f"@{ctx.author.name}",
-                    icon_url=ctx.author.display_avatar.url,
+                    text=f"@{interaction.user.name}",
+                    icon_url=interaction.user.display_avatar.url,
                 )
 
-                await ctx.reply(embed=embed, ephemeral=ephemeral)
+                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
                 return
 
             request.raise_for_status()
@@ -228,8 +227,8 @@ class WebSearchCommandsCog(
             colour=Colour.from_rgb(r=255, g=255, b=255),
         )
         embed.set_footer(
-            text=f"@{ctx.author.name}",
-            icon_url=ctx.author.display_avatar.url,
+            text=f"@{interaction.user.name}",
+            icon_url=interaction.user.display_avatar.url,
         )
         embed.set_author(
             name="Wikipedia",
@@ -245,7 +244,7 @@ class WebSearchCommandsCog(
             )
         )
 
-        await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:

@@ -25,17 +25,10 @@ class Analytics(commands.Cog):
     async def on_ready(self) -> None:
         # set all labels on start
         # this makes the count more accurate when the bot restarts
-
         for command in self.bot.tree.walk_commands():
             commands_counter.labels(
                 name=command.qualified_name,
                 type="app_command",
-            )
-
-        for command in self.bot.walk_commands():
-            commands_counter.labels(
-                name=command.qualified_name,
-                type="prefix",
             )
 
     async def _send_embed(self, embed: discord.Embed, raw: bool = False) -> None:
@@ -87,34 +80,6 @@ class Analytics(commands.Cog):
 
         await self._send_embed(embed)
 
-    # Analytics for prefix commands
-    @commands.Cog.listener()
-    async def on_command_completion(self, ctx: commands.Context["TitaniumBot"]):
-        if ctx.command is None or ctx.interaction:
-            return
-
-        # Set prometheus
-        commands_counter.labels(
-            name=ctx.command.qualified_name,
-            type="prefix",
-        ).inc()
-
-        if (
-            ctx.command.qualified_name.startswith("anonymous ")
-            and ctx.guild
-            and ctx.guild.id in self.bot.trusted_servers
-        ):
-            return
-
-        embed = discord.Embed(
-            title=f"`@{ctx.author.name}` ran a prefix command",
-            description=f"`{ctx.clean_prefix}{ctx.command.qualified_name}`",
-            timestamp=ctx.message.created_at,
-        )
-        embed.add_field(name="User", value=f"{ctx.author.mention} (`{ctx.author.id}`)")
-
-        await self._send_embed(embed)
-
     # Analytics for raw interactions
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction["TitaniumBot"]):
@@ -132,28 +97,6 @@ class Analytics(commands.Cog):
             timestamp=interaction.created_at,
         )
         embed.add_field(name="User", value=f"{interaction.user.mention} (`{interaction.user.id}`)")
-
-        await self._send_embed(embed, raw=True)
-
-    # Analytics for raw commands
-    @commands.Cog.listener()
-    async def on_command(self, ctx: commands.Context["TitaniumBot"]):
-        if ctx.command is None or ctx.interaction:
-            return
-
-        if (
-            ctx.command.qualified_name.startswith("anonymous ")
-            and ctx.guild
-            and ctx.guild.id in self.bot.trusted_servers
-        ):
-            return
-
-        embed = discord.Embed(
-            title=f"`@{ctx.author.name}` started a prefix command",
-            description=f"`{ctx.clean_prefix}{ctx.command.qualified_name}`",
-            timestamp=ctx.message.created_at,
-        )
-        embed.add_field(name="User", value=f"{ctx.author.mention} (`{ctx.author.id}`)")
 
         await self._send_embed(embed, raw=True)
 

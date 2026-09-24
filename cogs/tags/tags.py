@@ -1,7 +1,6 @@
 import asyncio
 import logging
-import os
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import discord
 from discord import app_commands
@@ -168,7 +167,6 @@ async def tag_autocomplete_base(
 
 class TagCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
-        bot.pre_not_found = self.command_not_found_hook
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("tags")
 
@@ -193,59 +191,6 @@ class TagCommandsCog(commands.Cog):
                 return
             session_tag.amount_used += 1
 
-    async def command_not_found_hook(
-        self, ctx: commands.Context["TitaniumBot"], error: Any
-    ) -> bool:
-        config = await self.bot.fetch_guild_config(ctx.guild.id) if ctx.guild else None
-        if not self.__server_tag_available(ctx, config) or not ctx.guild:
-            self.logger.debug("Server tags unavailable")
-            return False
-
-        if not config or (
-            not config.tags_enabled
-            or not config.tag_settings
-            or not config.tag_settings.prefix_fallback
-        ):
-            self.logger.debug("Prefix fallback disabled")
-            return False
-
-        self.logger.debug(f"Searching tag: {ctx.invoked_with}")
-        for tag in config.tag_settings.tags:
-            if not (tag.name == ctx.invoked_with or str(tag.id) == ctx.invoked_with):
-                continue
-
-            self.logger.debug(f"Found tag: {tag.name}")
-            await ctx.reply(content=tag.content, allowed_mentions=discord.AllowedMentions.none())
-            await self.push_tag_usage(tag)
-
-            # Send analytics manually
-            # The command technically wasn't found so no analytics will be sent otherwise
-            embed = discord.Embed(
-                title=f"`@{ctx.author.name}` ran a tag command",
-                description=f"`{ctx.clean_prefix}{tag.name}`",
-                timestamp=ctx.message.created_at,
-            )
-            embed.add_field(name="User", value=f"{ctx.author.mention} (`{ctx.author.id}`)")
-            if self.bot.user:
-                embed.set_author(
-                    name=f"{self.bot.user.name}#{self.bot.user.discriminator}",
-                    icon_url=self.bot.user.display_avatar,
-                )
-
-            webhook_url = os.getenv("ANALYTICS_WEBHOOK")
-            if webhook_url:
-                self.logger.debug("Sending analytics")
-                webhook = discord.Webhook.from_url(
-                    webhook_url,
-                    client=self.bot,
-                )
-                await webhook.send(embed=embed)
-
-            return True
-
-        self.logger.debug("No tags found, skipping")
-        return False
-
     async def tag_autocomplete(
         self, interaction: discord.Interaction["TitaniumBot"], current: str
     ) -> list[app_commands.Choice[str]]:
@@ -262,9 +207,7 @@ class TagCommandsCog(commands.Cog):
         )
 
     # Use tag command
-    @commands.hybrid_group(
-        name="tag", aliases=["tags"], fallback="use", description="Send a server or user tag."
-    )
+    @app_commands.command(name="tag", description="Send a server or user tag.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
@@ -272,31 +215,31 @@ class TagCommandsCog(commands.Cog):
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.autocomplete(tag=tag_autocomplete)
-    @commands.cooldown(1, 3)
+    @app_commands.checks.cooldown(1, 3)
     async def tags_group(
-        self, ctx: commands.Context["TitaniumBot"], tag: str, ephemeral: bool = False
+        self, interaction: discord.Interaction["TitaniumBot"], tag: str, ephemeral: bool = False
     ):
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         if not tag:
             embed = discord.Embed(
-                title=f"{ctx.bot.error_emoji} Enter a tag name",
+                title=f"{interaction.client.error_emoji} Enter a tag name",
                 description="Please enter a tag name when sending the command.",
                 colour=discord.Colour.red(),
             )
-            return await ctx.reply(embed=embed, ephemeral=ephemeral)
+            return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
         config = (
-            await self.bot.fetch_guild_config(ctx.guild.id)
-            if ctx.guild and (ctx.interaction and ctx.interaction.is_guild_integration())
+            await self.bot.fetch_guild_config(interaction.guild.id)
+            if interaction.guild and interaction.is_guild_integration()
             else None
         )
         user_tags_allowed = True
-        server_tags_allowed = self.__server_tag_available(ctx, config)
+        server_tags_allowed = self.__server_tag_available(interaction, config)
 
         if (
             server_tags_allowed
-            and ctx.guild
+            and interaction.guild
             and config
             and config.tag_settings
             and not config.tag_settings.allow_user_tags
@@ -312,14 +255,14 @@ class TagCommandsCog(commands.Cog):
                 tag_data = await session.get(Tag, tag)
 
             if not tag_data:
-                if server_tags_allowed and ctx.guild:
-                    stmt = select(Tag).where(Tag.name == tag, Tag.guild_id == ctx.guild.id)
+                if server_tags_allowed and interaction.guild:
+                    stmt = select(Tag).where(Tag.name == tag, Tag.guild_id == interaction.guild.id)
                     results = await session.execute(stmt)
                     server_result = results.scalar_one_or_none()
 
                 if user_tags_allowed:
                     stmt = select(Tag).where(
-                        Tag.name == tag, Tag.is_user, Tag.owner_id == ctx.author.id
+                        Tag.name == tag, Tag.is_user, Tag.owner_id == interaction.user.id
                     )
                     results = await session.execute(stmt)
                     user_result = results.scalar_one_or_none()
@@ -327,13 +270,13 @@ class TagCommandsCog(commands.Cog):
         view = None
         if server_result and user_result:
             embed = discord.Embed(
-                title=f"{ctx.bot.info_emoji} Select an option",
+                title=f"{interaction.client.info_emoji} Select an option",
                 description="There is a server tag and user tag available with the same name. Select which one you want to send.",
                 colour=discord.Colour.light_grey(),
             )
 
-            view = TagOptionView(original_user=ctx.author, ephemeral=ephemeral)
-            await ctx.reply(embed=embed, view=view, ephemeral=ephemeral)
+            view = TagOptionView(original_user=interaction.user, ephemeral=ephemeral)
+            await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
             timed_out = await view.wait()
 
             if not view.interaction:
@@ -354,11 +297,14 @@ class TagCommandsCog(commands.Cog):
 
         if (
             not tag_data
-            or (tag_data.is_user and tag_data.owner_id != ctx.author.id)
-            or (not tag_data.is_user and (not ctx.guild or tag_data.guild_id != ctx.guild.id))
+            or (tag_data.is_user and tag_data.owner_id != interaction.user.id)
+            or (
+                not tag_data.is_user
+                and (not interaction.guild or tag_data.guild_id != interaction.guild.id)
+            )
         ):
             embed = discord.Embed(
-                title=f"{ctx.bot.error_emoji} Not Found",
+                title=f"{interaction.client.error_emoji} Not Found",
                 description=f"Couldn't find a tag called `{tag}`. Create and manage tags with the `/settings` command.",
                 colour=discord.Colour.red(),
             )
@@ -366,18 +312,18 @@ class TagCommandsCog(commands.Cog):
             if view and view.interaction:
                 return await view.interaction.edit_original_response(embed=embed, view=None)
             else:
-                return await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
         if tag_data.is_user and not user_tags_allowed:
             embed = discord.Embed(
-                title=f"{ctx.bot.error_emoji} Not Allowed",
+                title=f"{interaction.client.error_emoji} Not Allowed",
                 description="A server admin has disabled user tags in this server.",
                 colour=discord.Colour.red(),
             )
             if view and view.interaction:
                 return await view.interaction.edit_original_response(embed=embed, view=None)
             else:
-                return await ctx.reply(embed=embed, ephemeral=ephemeral)
+                return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
         if view and view.interaction:
             await view.interaction.edit_original_response(
@@ -388,7 +334,7 @@ class TagCommandsCog(commands.Cog):
             )
             await self.push_tag_usage(tag_data)
         else:
-            await ctx.reply(
+            await interaction.followup.send(
                 content=tag_data.content,
                 allowed_mentions=discord.AllowedMentions.none(),
                 ephemeral=ephemeral,
@@ -396,9 +342,7 @@ class TagCommandsCog(commands.Cog):
             await self.push_tag_usage(tag_data)
 
     # List tags command
-    @tags_group.command(
-        name="list", aliases=["viewall"], description="View a list of all server or user tags."
-    )
+    @app_commands.command(name="tags", description="View a list of all server or user tags.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
@@ -411,32 +355,32 @@ class TagCommandsCog(commands.Cog):
             app_commands.Choice(name="User Tag", value="user"),
         ]
     )
-    @commands.cooldown(1, 5)
+    @app_commands.checks.cooldown(1, 5)
     async def view_all_tags(
         self,
-        ctx: commands.Context["TitaniumBot"],
+        interaction: discord.Interaction["TitaniumBot"],
         mode: Literal["server", "user"] = "user",
         ephemeral: bool = False,
     ):
-        await ctx.defer(ephemeral=ephemeral)
+        await interaction.response.defer(ephemeral=ephemeral)
 
         config = (
-            await self.bot.fetch_guild_config(ctx.guild.id)
-            if ctx.guild and (ctx.interaction and ctx.interaction.is_guild_integration())
+            await self.bot.fetch_guild_config(interaction.guild.id)
+            if interaction.guild and interaction.is_guild_integration()
             else None
         )
-        if mode == "server" and not self.__server_tag_available(ctx, config):
+        if mode == "server" and not self.__server_tag_available(interaction, config):
             embed = discord.Embed(
-                title=f"{ctx.bot.error_emoji} Not Available",
+                title=f"{interaction.client.error_emoji} Not Available",
                 description="Server tags are only available in servers with Titanium and the tags module enabled.",
                 colour=discord.Colour.red(),
             )
-            return await ctx.reply(embed=embed, ephemeral=ephemeral)
+            return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
-        if mode == "server" and ctx.guild:
-            stmt = select(Tag).where(Tag.guild_id == ctx.guild.id)
+        if mode == "server" and interaction.guild:
+            stmt = select(Tag).where(Tag.guild_id == interaction.guild.id)
         else:
-            stmt = select(Tag).where(Tag.owner_id == ctx.author.id, Tag.is_user)
+            stmt = select(Tag).where(Tag.owner_id == interaction.user.id, Tag.is_user)
 
         async with get_session() as session:
             results = await session.execute(stmt)
@@ -455,16 +399,16 @@ class TagCommandsCog(commands.Cog):
                 tag_pages.append(
                     discord.Embed(
                         title=f"{mode.capitalize()} Tags",
-                        description=f"There are `{len(tags)}` tags. To manage tags, use the `/tag-settings` slash commands.\n\n"
+                        description=f"There are `{len(tags)}` tags. To manage tags, use the `/settings` command.\n\n"
                         + "\n".join(current_page_tags),
                         colour=discord.Colour.light_grey(),
                     ).set_author(
-                        name=ctx.guild.name
-                        if mode == "server" and ctx.guild
-                        else f"@{ctx.author.name}",
-                        icon_url=ctx.guild.icon
-                        if mode == "server" and ctx.guild
-                        else ctx.author.display_avatar,
+                        name=interaction.guild.name
+                        if mode == "server" and interaction.guild
+                        else f"@{interaction.user.name}",
+                        icon_url=interaction.guild.icon
+                        if mode == "server" and interaction.guild
+                        else interaction.user.display_avatar,
                     )
                 )
                 current_page_tags = []
@@ -477,30 +421,30 @@ class TagCommandsCog(commands.Cog):
                     + "\n".join(current_page_tags),
                     colour=discord.Colour.light_grey(),
                 ).set_author(
-                    name=ctx.guild.name
-                    if mode == "server" and ctx.guild
-                    else f"@{ctx.author.name}",
-                    icon_url=ctx.guild.icon
-                    if mode == "server" and ctx.guild
-                    else ctx.author.display_avatar,
+                    name=interaction.guild.name
+                    if mode == "server" and interaction.guild
+                    else f"@{interaction.user.name}",
+                    icon_url=interaction.guild.icon
+                    if mode == "server" and interaction.guild
+                    else interaction.user.display_avatar,
                 )
             )
 
         if not tag_pages:
             embed = discord.Embed(
-                title=f"{ctx.bot.error_emoji} No Tags Found",
+                title=f"{interaction.client.error_emoji} No Tags Found",
                 description="Looks like you don't have any tags yet! To manage tags, use the `/settings` command.",
                 colour=discord.Colour.red(),
             )
-            return await ctx.reply(embed=embed, ephemeral=ephemeral)
+            return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
         if len(tag_pages) > 1:
             view = PaginationView(embeds=tag_pages, timeout=1200)
-            await ctx.reply(embed=tag_pages[0], view=view, ephemeral=ephemeral)
+            await interaction.followup.send(embed=tag_pages[0], view=view, ephemeral=ephemeral)
         else:
-            await ctx.reply(
+            await interaction.followup.send(
                 embed=tag_pages[0].set_footer(
-                    text=f"@{ctx.author.name}", icon_url=ctx.author.display_avatar
+                    text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar
                 ),
                 ephemeral=ephemeral,
             )

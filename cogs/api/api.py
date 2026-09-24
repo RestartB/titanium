@@ -1459,11 +1459,7 @@ class APICog(commands.Cog):
                     "rep": config.rep_enabled,
                 },
                 "settings": {
-                    "allow_prefix": config.allow_prefix,
                     "send_not_allowed": config.send_not_allowed,
-                    "loading_reaction": config.loading_reaction,
-                    "blocked_channels": [str(channel) for channel in config.blocked_channels],
-                    "blocked_roles": [str(role) for role in config.blocked_roles],
                     "delete_after_3_days": config.delete_after_3_days,
                 },
                 "prefixes": config.prefixes,
@@ -1517,17 +1513,7 @@ class APICog(commands.Cog):
             db_config.tags_enabled = validated_settings.modules.tags
             db_config.rep_enabled = validated_settings.modules.rep
 
-            db_config.prefixes = validated_settings.prefixes
-            db_config.allow_prefix = validated_settings.settings.allow_prefix
             db_config.send_not_allowed = validated_settings.settings.send_not_allowed
-            db_config.loading_reaction = validated_settings.settings.loading_reaction
-            db_config.blocked_channels = [
-                int(channel) for channel in validated_settings.settings.blocked_channels
-            ]
-            db_config.blocked_roles = [
-                int(role) for role in validated_settings.settings.blocked_roles
-            ]
-
             db_config.delete_after_3_days = validated_settings.settings.delete_after_3_days
 
             session.add(db_config)
@@ -1679,7 +1665,6 @@ class APICog(commands.Cog):
                 if not db_config:
                     db_config = GuildModerationSettings(guild_id=guild.id)
 
-                db_config.delete_confirmation = validated_config.delete_confirmation
                 db_config.dm_users = validated_config.dm_users
                 db_config.ban_days = validated_config.ban_days
 
@@ -2232,7 +2217,6 @@ class APICog(commands.Cog):
                     db_config = GuildTagSettings(guild_id=guild.id)
 
                 db_config.allow_user_tags = validated_config.allow_user_tags
-                db_config.prefix_fallback = validated_config.prefix_fallback
 
                 session.add(db_config)
         elif module_name == "rep" and isinstance(validated_config, RepConfigModel):

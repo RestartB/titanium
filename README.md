@@ -8,7 +8,7 @@ Titanium v2 includes many features designed to improve your Discord experience, 
 
 - complete rewrite of Titanium v1 to include better code and SQLAlchemy ORM
 - full user app support with info commands, Spotify commands, image commands and more
-- prefix and slash commmand support
+- full slash commmand support
 - fully custom [web dashboard](https://github.com/RestartB/titanium-dashboard) written in SvelteKit
 - advanced moderation and automod features
 - bouncer to monitor users as they join and update their profiles

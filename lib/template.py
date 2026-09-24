@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+import discord
 from discord import app_commands
 from discord.ext import commands
 
@@ -7,16 +8,16 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-@app_commands.allowed_installs(guilds=True, users=True)
-@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 class TemplateCog(commands.Cog, description="Template cog."):
     """Cog template."""
 
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
-    @commands.hybrid_command(name="command")
-    async def info(self, ctx: commands.Context["TitaniumBot"]) -> None:
+    @app_commands.command(name="command")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def info(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
         pass
 
 

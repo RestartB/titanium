@@ -43,29 +43,13 @@ class ModuleModel(BaseModel):
 
 
 class SettingsModel(BaseModel):
-    allow_prefix: bool
     send_not_allowed: bool
-    loading_reaction: bool
-    blocked_channels: list[DiscordId] = Field(default_factory=list, max_length=100)
-    blocked_roles: list[DiscordId] = Field(default_factory=list, max_length=100)
     delete_after_3_days: bool
 
 
 class GuildSettingsModel(BaseModel):
     modules: ModuleModel
     settings: SettingsModel
-    prefixes: list[str] = Field(default_factory=list, max_length=5)
-
-    @field_validator("prefixes")
-    def validate_prefixes(cls, v):
-        for prefix in v:
-            if not (1 <= len(prefix) <= 5):
-                raise ValueError("Each prefix must be between 1 and 5 characters long")
-
-        if len(v) != len(set(v)):
-            raise ValueError("Prefixes must be unique")
-
-        return v
 
 
 class GuildPermissionsModel(BaseModel):
@@ -81,7 +65,6 @@ class ConfessionsConfigModel(BaseModel):
 
 
 class ModerationConfigModel(BaseModel):
-    delete_confirmation: bool
     dm_users: bool
     external_cases: bool
     ban_days: int = Field(0, ge=0, le=7)
@@ -482,7 +465,6 @@ class LeaderboardConfigModel(BaseModel):
 
 class TagsConfigModel(BaseModel):
     allow_user_tags: bool
-    prefix_fallback: bool
 
 
 class TagModel(BaseModel):

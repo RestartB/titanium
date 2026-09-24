@@ -62,16 +62,6 @@ class GuildSettings(Base):
     __tablename__ = "guild_settings"
     guild_id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
 
-    allow_prefix: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    send_not_allowed: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    loading_reaction: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
-    blocked_channels: Mapped[list[int]] = MappedColumn(
-        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
-    )
-    blocked_roles: Mapped[list[int]] = MappedColumn(
-        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
-    )
-
     delete_after_3_days: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     leave_date: Mapped[datetime | None] = MappedColumn(DateTime(timezone=True), nullable=True)
 
@@ -89,12 +79,14 @@ class GuildSettings(Base):
         back_populates="guild_settings",
         uselist=False,
     )
+
     prefixes: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=5)),
         default=["t!"],
         server_default=text("ARRAY['t!']::varchar[]"),
         nullable=False,
     )
+    send_not_allowed: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
 
     moderation_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     moderation_settings: Mapped["GuildModerationSettings | None"] = relationship(
@@ -214,7 +206,7 @@ class GuildModerationSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="moderation_settings", uselist=False
     )
-    delete_confirmation: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+
     dm_users: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     external_cases: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     ban_days: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
@@ -849,7 +841,6 @@ class GuildTagSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="tag_settings", uselist=False
     )
-    prefix_fallback: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     allow_user_tags: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     tags: Mapped[list["Tag"]] = relationship(
         "Tag", back_populates="settings", cascade="all, delete-orphan"
