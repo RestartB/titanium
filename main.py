@@ -465,11 +465,16 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
     if isinstance(error, commands.errors.CheckFailure):
         return
     elif isinstance(error, (commands.CommandNotFound, commands.NotOwner)):
-        embed = discord.Embed(
-            title=f"{ctx.bot.error_emoji} Prefix Commands Removed",
-            description="Due to Discord restrictions, prefix commands have been disabled. Please use slash commands instead.",
-            colour=discord.Colour.red(),
-        )
+        if not ctx.guild or (
+            (config := await ctx.bot.fetch_guild_config(ctx.guild.id)) and config.send_not_allowed
+        ):
+            embed = discord.Embed(
+                title=f"{ctx.bot.error_emoji} Prefix Commands Removed",
+                description="Due to Discord restrictions, prefix commands have been disabled. Please use slash commands instead.",
+                colour=discord.Colour.red(),
+            )
+        else:
+            return
     elif isinstance(error, commands.errors.NoPrivateMessage):
         embed = guild_only(bot)
     elif isinstance(

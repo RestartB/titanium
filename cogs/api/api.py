@@ -1458,7 +1458,10 @@ class APICog(commands.Cog):
                     "tags": config.tags_enabled,
                     "rep": config.rep_enabled,
                 },
-                "settings": {"delete_after_3_days": config.delete_after_3_days},
+                "settings": {
+                    "send_not_allowed": config.send_not_allowed,
+                    "delete_after_3_days": config.delete_after_3_days,
+                },
                 "prefixes": config.prefixes,
                 "permissions": {
                     "dashboard_managers": [str(role_id) for role_id in config.dashboard_managers],
@@ -1510,6 +1513,7 @@ class APICog(commands.Cog):
             db_config.tags_enabled = validated_settings.modules.tags
             db_config.rep_enabled = validated_settings.modules.rep
 
+            db_config.send_not_allowed = validated_settings.settings.send_not_allowed
             db_config.delete_after_3_days = validated_settings.settings.delete_after_3_days
 
             session.add(db_config)

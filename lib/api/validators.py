@@ -43,6 +43,7 @@ class ModuleModel(BaseModel):
 
 
 class SettingsModel(BaseModel):
+    send_not_allowed: bool
     delete_after_3_days: bool
 
 

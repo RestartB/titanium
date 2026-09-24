@@ -79,12 +79,14 @@ class GuildSettings(Base):
         back_populates="guild_settings",
         uselist=False,
     )
+
     prefixes: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=5)),
         default=["t!"],
         server_default=text("ARRAY['t!']::varchar[]"),
         nullable=False,
     )
+    send_not_allowed: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
 
     moderation_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     moderation_settings: Mapped["GuildModerationSettings | None"] = relationship(
