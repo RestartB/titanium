@@ -37,16 +37,18 @@ class DataRetention(commands.Cog):
                 if self.bot.get_guild(server.guild_id) or server.leave_date:
                     continue
 
-                # delete all stored webhooks - they are deleted from discord when titanium leaves anyway
-                stmt = delete(AvailableWebhook).where(AvailableWebhook.guild_id == server.guild_id)
-                await session.execute(stmt)
-
-                # delete config or set leaver date
+                # delete config or set leaver date / delete webhooks
                 if server.delete_after_3_days:
                     self.logger.info(
-                        f"Left server while bot is offline - {server.guild_id}. Setting leave date."
+                        f"Left server while bot is offline - {server.guild_id}. Setting leave date and deleting webhooks."
                     )
                     server.leave_date = utcnow()
+
+                    stmt = delete(AvailableWebhook).where(
+                        AvailableWebhook.guild_id == server.guild_id
+                    )
+                    await session.execute(stmt)
+
                     self.bot.remove_cached_config(guild_id=server.guild_id)
                 else:
                     self.logger.info(
@@ -79,23 +81,25 @@ class DataRetention(commands.Cog):
         config = await self.bot.fetch_guild_config(guild.id, create_config=False)
 
         async with get_session() as session:
-            # delete all stored webhooks - they are deleted from discord when titanium leaves anyway
-            stmt = delete(AvailableWebhook).where(AvailableWebhook.guild_id == guild.id)
-            await session.execute(stmt)
-
             if not config:
                 # no config to remove
                 return
 
-            # delete config or set leaver date
+            # delete config or set leaver date / delete webhooks
             if config.delete_after_3_days:
                 settings = await session.get(GuildSettings, guild.id)
 
                 if not settings:
                     return
 
-                self.logger.info(f"Left server - {guild.id}. Setting leave date.")
+                self.logger.info(
+                    f"Left server - {guild.id}. Setting leave date and deleting webhooks."
+                )
                 settings.leave_date = utcnow()
+
+                stmt = delete(AvailableWebhook).where(AvailableWebhook.guild_id == guild.id)
+                await session.execute(stmt)
+
                 self.bot.remove_cached_config(guild_id=guild.id)
             else:
                 self.logger.info(f"Left server - {guild.id}. Deleting config.")
