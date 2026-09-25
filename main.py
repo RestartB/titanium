@@ -537,9 +537,7 @@ async def on_app_command_error(
         type="app_command",
     ).inc()
 
-    if isinstance(error, discord.app_commands.CheckFailure):
-        return
-    elif isinstance(
+    lif isinstance(
         original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)
     ):
         description = (
@@ -623,6 +621,8 @@ async def on_app_command_error(
             await interaction.edit_original_response(embed=embed, view=None)
         except Exception:
             await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    elif isinstance(error, discord.app_commands.CheckFailure):
         return
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
