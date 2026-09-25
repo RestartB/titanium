@@ -665,5 +665,7 @@ if __name__ == "__main__":
         bot.run(token, log_handler=None)
     except discord.LoginFailure:
         init_logger.critical("Invalid bot token provided. Please check your .env file.")
+        sys.exit(1)
     except Exception as e:
         init_logger.critical("An error occurred while starting the bot", exc_info=e)
+        sys.exit(1)
