@@ -55,6 +55,7 @@ class ReviewsCommandsCog(
 
         review_list: list = review_response["reviews"][1:]
 
+        # TODO: lazy load these pages
         while True:
             if not review_response["success"]:
                 embed = discord.Embed(
@@ -113,6 +114,15 @@ class ReviewsCommandsCog(
                     icon_url=user.display_avatar.url,
                 )
 
+        if not pages:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} No Reviews Found",
+                description=f"No reviews were found for {user.mention} on ReviewDB.",
+                colour=Colour.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
+
         pages[0].set_footer(
             text=f"Controlling: @{interaction.user.name}"
             if len(pages) > 1
@@ -158,6 +168,7 @@ class ReviewsCommandsCog(
 
         review_list: list = review_response["reviews"][1:]
 
+        # TODO: lazy load these pages
         while True:
             if not review_response["success"]:
                 embed = discord.Embed(
@@ -215,6 +226,15 @@ class ReviewsCommandsCog(
                     name=interaction.guild.name,
                     icon_url=interaction.guild.icon.url if interaction.guild.icon else None,
                 )
+
+        if not pages:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} No Reviews Found",
+                description="No reviews were found for this server on ReviewDB.",
+                colour=Colour.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
 
         pages[0].set_footer(
             text=f"Controlling: @{interaction.user.name}"
