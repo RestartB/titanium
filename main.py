@@ -463,9 +463,9 @@ bot = TitaniumBot(
 
 @bot.event
 async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands.CommandError):
-    if isinstance(error, commands.errors.CheckFailure):
-        return
-    elif isinstance(error, (commands.CommandNotFound, commands.NotOwner)):
+    embed: discord.Embed | None = None
+
+    if isinstance(error, (commands.CommandNotFound, commands.NotOwner)):
         if not ctx.guild or (
             (config := await ctx.bot.fetch_guild_config(ctx.guild.id)) and config.send_not_allowed
         ):
@@ -492,6 +492,8 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             description=str(error).replace(str(error)[0], str(error)[0].upper(), 1),
             colour=discord.Colour.red(),
         )
+    elif isinstance(error, commands.errors.CheckFailure):
+        return
     else:
         try:
             error_id = await log_error(
@@ -520,10 +522,11 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             inline=False,
         )
 
-    try:
-        await ctx.reply(embed=embed, ephemeral=True)
-    except Exception:
-        await ctx.channel.send(content=ctx.author.mention, embed=embed)
+    if embed:
+        try:
+            await ctx.reply(embed=embed, ephemeral=True)
+        except Exception:
+            await ctx.channel.send(content=ctx.author.mention, embed=embed)
 
 
 @bot.tree.error
@@ -537,7 +540,8 @@ async def on_app_command_error(
         type="app_command",
     ).inc()
 
-    lif isinstance(
+    embed: discord.Embed | None = None
+    if isinstance(
         original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)
     ):
         description = (
@@ -580,6 +584,8 @@ async def on_app_command_error(
             description=str(error),
             colour=discord.Colour.red(),
         )
+    elif isinstance(error, discord.app_commands.CheckFailure):
+        return
     elif not isinstance(error, discord.app_commands.CommandNotFound):
         params = []
         if interaction.command and not isinstance(
@@ -617,15 +623,12 @@ async def on_app_command_error(
             inline=False,
         )
 
+    if embed:
         try:
-            await interaction.edit_original_response(embed=embed, view=None)
-        except Exception:
             await interaction.response.send_message(embed=embed, ephemeral=True)
+        except Exception:
+            await interaction.edit_original_response(embed=embed, view=None)
         return
-    elif isinstance(error, discord.app_commands.CheckFailure):
-        return
-
-    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 if __name__ == "__main__":
