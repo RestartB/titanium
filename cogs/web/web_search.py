@@ -1,9 +1,11 @@
 import os
 import urllib.parse
+from textwrap import shorten
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 import aiohttp
 import discord
+import pycountry
 from discord import Colour, MediaGalleryItem, app_commands
 from discord.ext import commands
 from discord.ui import (
@@ -18,7 +20,9 @@ from discord.ui import (
     Thumbnail,
     View,
 )
+from pycountry.db import Country
 
+from lib.helpers.country import fuzzy_search_country
 from lib.views.pagination import PaginationV2View, PaginationView
 
 if TYPE_CHECKING:
@@ -137,7 +141,7 @@ class SteamGameButton(Button):
             container.add_item(
                 Section(
                     TextDisplay(
-                        f"## {' '.join(game['name'].splitlines())}\n-# By {', '.join(game['developers'])}\n\n{game['short_description']}"
+                        f"## {' '.join(game['name'].splitlines())}\n-# by {', '.join(game['developers'])}\n\n{game['short_description']}"
                     ),
                     accessory=Thumbnail(media=game["capsule_image"]),
                 )
@@ -157,15 +161,15 @@ class SteamGameButton(Button):
         price = game.get("price_overview")
 
         if price:
-            price_str = f"{f'~~{price["initial_formatted"]}~~ ' if price['initial_formatted'] else ''}**{price['final_formatted']}**{f' ({price["discount_percent"]}% off)' if price['discount_percent'] else ''}"
+            price_str = f"💵 {f'~~{price["initial_formatted"]}~~ ' if price['initial_formatted'] else ''}**{price['final_formatted']}**{f' ({price["discount_percent"]}% off)' if price['discount_percent'] else ''} - "
         elif game["is_free"]:
-            price_str = "Free"
+            price_str = "💵 **Free** - "
         else:
-            price_str = "Unavailable"
+            price_str = ""
 
         container.add_item(
             TextDisplay(
-                f"💵 {price_str} - {game['release_date']['date']} - {len(game.get('dlc', [])) or 'No'} addons"
+                f"{price_str}{game['release_date']['date']} - {len(game.get('dlc', [])) or 'No'} addons"
             )
         )
 
@@ -212,7 +216,7 @@ class SteamResultsContainer(Container):
     def __init__(
         self,
         query: str,
-        country: str,
+        country: Country,
         page: list[SteamResult],
         total: int,
         info_emoji: discord.Emoji | str,
@@ -236,14 +240,21 @@ class SteamResultsContainer(Container):
             self.add_item(
                 Section(
                     TextDisplay(
-                        f"### [{' '.join(game['name'].splitlines())}](https://store.steampowered.com/app/{game['id']}/)\n{f'£{price["final"] / 100:.2f}' if price else '£0.00'}"
+                        f"### [{' '.join(game['name'].splitlines())}](https://store.steampowered.com/app/{game['id']}/)\n`{f'{price["final"] / 100:.2f}' if price else 'Free / Unknown'}`"
                     ),
-                    accessory=SteamGameButton(game, country, info_emoji, ephemeral),
+                    accessory=SteamGameButton(game, country.alpha_2, info_emoji, ephemeral),
                 )
             )
 
+        self.add_item(Separator(spacing=discord.SeparatorSpacing.large))
+        self.add_item(
+            TextDisplay(
+                f"-# {country.flag} Showing results and prices for games in **{country.name}**. Select a different country using the `country` argument."
+            )
+        )
 
-# TODO: commands here apart from steam were ripped from v1 with little changes, could do with a rewrite
+
+# TODO: the urban dictionary command was ripped from v1 with no changes, could do with a rewrite
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 class WebSearchCommandsCog(
@@ -400,7 +411,7 @@ class WebSearchCommandsCog(
                 return
 
             request.raise_for_status()
-            page_data = await request.json()
+            page_data: dict = await request.json()
 
         if not page_data.get("pages") or len(page_data["pages"]) == 0:
             embed = discord.Embed(
@@ -475,6 +486,36 @@ class WebSearchCommandsCog(
 
         await interaction.followup.send(embed=embed, view=view, ephemeral=ephemeral)
 
+    async def country_autocomplete(
+        self, interaction: discord.Interaction["TitaniumBot"], current: str
+    ) -> list[app_commands.Choice[str]]:
+        countries: list[app_commands.Choice[str]] = []
+
+        if not current.strip():
+            countries.append(
+                app_commands.Choice(name="Start typing to search for a country", value="")
+            )
+            countries.extend(
+                [
+                    app_commands.Choice(
+                        name=shorten(f"{c.flag} {c.name}", width=25, placeholder="..."),
+                        value=c.alpha_2,
+                    )
+                    for c in list(pycountry.countries)[:24]
+                ]
+            )
+        else:
+            countries_raw = await fuzzy_search_country(current)
+            for c in countries_raw[:25]:
+                countries.append(
+                    app_commands.Choice(
+                        name=shorten(f"{c.flag} {c.name}", width=25, placeholder="..."),
+                        value=c.alpha_2,
+                    )
+                )
+
+        return countries
+
     # Steam command
     @app_commands.command(
         name="steam",
@@ -484,21 +525,42 @@ class WebSearchCommandsCog(
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
         query="The term to search for.",
+        country="Optional: the country to search in. Defaults to United Kingdom.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
+    @app_commands.autocomplete(country=country_autocomplete)
     @app_commands.checks.cooldown(1, 5)
     async def steam(
         self,
         interaction: discord.Interaction["TitaniumBot"],
         query: str,
+        country: str = "GB",
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
+        resolved_country: Country | None = None
+        if len(country) == 2:
+            resolved_country = pycountry.countries.get(alpha_2=country)
+
+        if not resolved_country:
+            countries_raw = await fuzzy_search_country(country, cutoff=70)
+            if len(countries_raw) > 0:
+                resolved_country = countries_raw[0]
+
+        if not resolved_country:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Country Not Found",
+                description=f"Couldn't find a country called `{country}`. Please select a country from the list or enter a valid country name or 2 character code.",
+                colour=Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
+
         async with (
             aiohttp.ClientSession() as session,
             session.get(
-                f"https://store.steampowered.com/api/storesearch/?term={urllib.parse.quote(query)}&l=english&cc=gb"
+                f"https://store.steampowered.com/api/storesearch/?term={urllib.parse.quote(query)}&l=english&cc={resolved_country.alpha_2}"
             ) as request,
         ):
             request.raise_for_status()
@@ -508,8 +570,11 @@ class WebSearchCommandsCog(
         if search_results["total"] == 0 or not results:
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} No Results Found",
-                description=f"Couldn't find any results for `{query}`. Please check your query and try again.",
+                description=f"Couldn't find any results for `{query}`. Please check the game is available in your selected country, and try again.",
                 colour=Colour.red(),
+            )
+            embed.set_footer(
+                text=f"{resolved_country.flag} Showing results and prices for games in {resolved_country.name}. Select a different country using the country argument."
             )
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
             return
@@ -520,7 +585,7 @@ class WebSearchCommandsCog(
             pages.append(
                 SteamResultsContainer(
                     query=query,
-                    country="gb",
+                    country=resolved_country,
                     page=chunk,
                     total=search_results["total"],
                     info_emoji=self.bot.info_emoji,
