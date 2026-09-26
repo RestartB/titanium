@@ -1,3 +1,4 @@
+import html
 import os
 import re
 import urllib.parse
@@ -157,7 +158,7 @@ class SteamGameButton(Button):
             container.add_item(
                 Section(
                     TextDisplay(
-                        f"## {' '.join(game['name'].splitlines())}\n-# by {', '.join(game['developers'])}\n\n{game['short_description']}"
+                        f"## {' '.join(game['name'].splitlines())}\n-# by {', '.join(game['developers'])}\n\n{html.unescape(game['short_description'])}"
                     ),
                     accessory=Thumbnail(media=game["capsule_image"]),
                 )
