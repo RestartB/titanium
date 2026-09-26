@@ -186,7 +186,7 @@ class SteamGameButton(Button):
 
         container.add_item(
             TextDisplay(
-                f"{price_str}{game['release_date']['date']} - {len(game.get('dlc', [])) or 'No'} addons"
+                f"{price_str}{game['release_date']['date']} - {len(game.get('dlc', [])) or 'No'} addon{'s' if len(game.get('dlc', [])) != 1 else ''}"
             )
         )
 
