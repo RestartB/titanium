@@ -1,5 +1,7 @@
 import os
+import re
 import urllib.parse
+from datetime import datetime
 from textwrap import shorten
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
@@ -23,7 +25,7 @@ from discord.ui import (
 from pycountry.db import Country
 
 from lib.helpers.country import fuzzy_search_country
-from lib.views.pagination import PaginationV2View, PaginationView
+from lib.views.pagination import PaginationV2View
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -38,6 +40,20 @@ ESRB_RATINGS = {
     "rp": "Rating Pending",
     "nr": "Not Rated",
 }
+
+
+class UrbanDictionaryDef(TypedDict):
+    author: str
+    current_vote: str
+    defid: int
+    definition: str
+    example: str
+    permalink: str
+    thumbs_down: int
+    thumbs_up: int
+    word: str
+    written_on: str
+    udimg_url: str
 
 
 class ReleaseDate(TypedDict):
@@ -254,7 +270,45 @@ class SteamResultsContainer(Container):
         )
 
 
-# TODO: the urban dictionary command was ripped from v1 with no changes, could do with a rewrite
+class UrbanDictionaryContainer(Container):
+    def __init__(self, data: UrbanDictionaryDef) -> None:
+        super().__init__(accent_colour=Colour.from_str("#F1FE5F"))
+
+        definition = re.sub(
+            r"\[([^\[\]]+)\](?!\()",
+            lambda match: (
+                f"[{match.group(1)}](https://www.urbandictionary.com/define.php?term={urllib.parse.quote(match.group(1))})"
+            ),
+            data["definition"],
+        )
+        self.add_item(
+            Section(
+                TextDisplay(
+                    f"## [{' '.join(data['word'].splitlines())}]({data['permalink']})\n-# by {data['author']}\n\n{definition}"
+                ),
+                accessory=Thumbnail(media="https://titanium.fyi/assets/ud.png"),
+            )
+        )
+
+        self.add_item(Separator(spacing=discord.SeparatorSpacing.small))
+
+        example = re.sub(
+            r"\[([^\[\]]+)\](?!\()",
+            lambda match: (
+                f"[{match.group(1)}](https://www.urbandictionary.com/define.php?term={urllib.parse.quote(match.group(1))})"
+            ),
+            data["example"],
+        )
+        self.add_item(TextDisplay(f"### Example\n{example}"))
+
+        self.add_item(Separator(spacing=discord.SeparatorSpacing.small))
+        self.add_item(
+            TextDisplay(
+                f"Written {discord.utils.format_dt(datetime.fromisoformat(data['written_on']))}"
+            )
+        )
+
+
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 class WebSearchCommandsCog(
@@ -263,31 +317,11 @@ class WebSearchCommandsCog(
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
-    def _create_urban_embed(self, data: dict) -> list[discord.Embed]:
-        embed = discord.Embed(
-            title=f"{data['word']}",
-            description=f"**Author: {data['author']}**\n\n||{(data['definition'].replace('[', '')).replace(']', '')}||",
-            url=data["permalink"],
-            colour=Colour.from_str("#F1FE5F"),
-        )
-        embed.set_author(
-            name="Urban Dictionary",
-            icon_url="https://titanium.fyi/assets/ud.png",
-        )
-
-        return [
-            discord.Embed(
-                title=f"{self.bot.warn_emoji} Content Warning",
-                description="Urban Dictionary has very little moderation and content may be inappropriate! View at your own risk.",
-                colour=Colour.orange(),
-            ),
-            embed,
-        ]
-
     # Urban Dictionary command
     @app_commands.command(
         name="urban-dictionary",
-        description="Search Urban Dictionary. Warning: content is mostly unmoderated and may be inappropriate!",
+        description="Search Urban Dictionary for word and phrase definitions.",
+        nsfw=True,
     )
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -306,54 +340,16 @@ class WebSearchCommandsCog(
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
-        item_list: list[dict] = []
-        embeds_list: list[list[discord.Embed]] = []
-
         async with (
             aiohttp.ClientSession() as session,
             session.get(
                 f"https://api.urbandictionary.com/v0/define?term={urllib.parse.quote(query)}"
             ) as request,
         ):
-            request_data = await request.json()
+            request_data: dict = await request.json()
 
-        if len(request_data["list"]) != 0:
-            page = max(1, min(len(request_data["list"]), page))
-            item_list = request_data["list"]
-
-            try:
-                for item in item_list:
-                    embeds_list.append(self._create_urban_embed(item))
-            except IndexError:
-                embed = discord.Embed(
-                    title=f"{self.bot.error_emoji} Not Found",
-                    description=f"**Page {page}** does not exist. Please try a different search term.",
-                    colour=Colour.red(),
-                )
-                embed.set_footer(
-                    text=f"@{interaction.user.name} • Page 1/{len(item_list)}",
-                    icon_url=interaction.user.display_avatar.url,
-                )
-
-                await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-                return
-
-            embeds_list[0][1].set_footer(
-                text=f"Controlling: @{interaction.user.name}"
-                if len(item_list) > 1
-                else f"@{interaction.user.name}",
-                icon_url=interaction.user.display_avatar.url,
-            )
-
-            if len(item_list) == 1:
-                await interaction.followup.send(embeds=embeds_list[0], ephemeral=ephemeral)
-            else:
-                await interaction.followup.send(
-                    embeds=embeds_list[0],
-                    view=PaginationView(embeds=embeds_list, timeout=900, page_offset=page),
-                    ephemeral=ephemeral,
-                )
-        else:
+        items: list[UrbanDictionaryDef] = request_data.get("list", [])
+        if not items:
             embed = discord.Embed(
                 title=f"{self.bot.error_emoji} No Results Found",
                 description=f"Couldn't find any results for `{query}`. Please try a different search term.",
@@ -365,6 +361,11 @@ class WebSearchCommandsCog(
             )
 
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+
+        pages = [UrbanDictionaryContainer(data=item) for item in items]
+        view = PaginationV2View(pages=pages)
+
+        await interaction.followup.send(view=view, ephemeral=ephemeral)
 
     # Wikipedia command
     @app_commands.command(name="wikipedia", description="Search Wikipedia for information.")
