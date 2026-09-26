@@ -103,12 +103,15 @@ class SteamGame(SteamResult):
     is_free: bool
     recommendations: NotRequired[dict[Literal["total"], int]]
     achievements: NotRequired[dict[Literal["total"], int]]
-    ratings: dict[
-        Literal[
-            "esrb", "pegi", "usk", "gmedia", "dejus", "steam_germany", "igrs", "steam_australia"
-        ],
-        AgeRating,
-    ]
+    ratings: (
+        dict[
+            Literal[
+                "esrb", "pegi", "usk", "gmedia", "dejus", "steam_germany", "igrs", "steam_australia"
+            ],
+            AgeRating,
+        ]
+        | None
+    )
 
 
 class SteamSearchResults(TypedDict):
@@ -193,13 +196,17 @@ class SteamGameButton(Button):
         container.add_item(Separator(spacing=discord.SeparatorSpacing.small))
 
         age_ratings = []
-        if "pegi" in game["ratings"]:
-            age_ratings.append(f"🔞 PEGI: `{game['ratings']['pegi']['rating']}`")
-        if "esrb" in game["ratings"]:
-            rating = ESRB_RATINGS.get(
-                game["ratings"]["esrb"]["rating"].lower(), game["ratings"]["esrb"]["rating"].upper()
-            )
-            age_ratings.append(f"🔞 ESRB: `{rating}`")
+        ratings = game["ratings"]
+
+        if isinstance(ratings, dict):
+            if "pegi" in ratings:
+                age_ratings.append(f"🔞 PEGI: `{ratings['pegi']['rating']}`")
+            if "esrb" in ratings:
+                rating = ESRB_RATINGS.get(
+                    ratings["esrb"]["rating"].lower(),
+                    ratings["esrb"]["rating"].upper(),
+                )
+                age_ratings.append(f"🔞 ESRB: `{rating}`")
 
         recommendations = game.get("recommendations")
         achievements = game.get("achievements")
