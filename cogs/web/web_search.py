@@ -549,19 +549,28 @@ class WebSearchCommandsCog(
     ):
         await interaction.response.defer(ephemeral=ephemeral)
 
+        if not country.strip():
+            embed = discord.Embed(
+                title=f"{interaction.client.warn_emoji} Select Country",
+                description="Please select a country.",
+                colour=Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return
+
         resolved_country: Country | None = None
-        if len(country) == 2:
-            resolved_country = pycountry.countries.get(alpha_2=country)
+        if len(country.strip()) == 2:
+            resolved_country = pycountry.countries.get(alpha_2=country.strip())
 
         if not resolved_country:
-            countries_raw = await fuzzy_search_country(country, cutoff=70)
+            countries_raw = await fuzzy_search_country(country.strip(), cutoff=70)
             if len(countries_raw) > 0:
                 resolved_country = countries_raw[0]
 
         if not resolved_country:
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Country Not Found",
-                description=f"Couldn't find a country called `{country}`. Please select a country from the list or enter a valid country name or 2 character code.",
+                description=f"Couldn't find a country called `{country.strip()}`. Please select a country from the list or enter a valid country name or 2 character code.",
                 colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
