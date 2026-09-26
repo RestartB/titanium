@@ -333,7 +333,6 @@ class WebSearchCommandsCog(
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
         query="The term to search for.",
-        page="Optional: page to jump to. Defaults to first page.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
     )
     @app_commands.checks.cooldown(1, 5)
@@ -341,7 +340,6 @@ class WebSearchCommandsCog(
         self,
         interaction: discord.Interaction["TitaniumBot"],
         query: str,
-        page: app_commands.Range[int, 1, 10] = 1,
         ephemeral: bool = False,
     ):
         await interaction.response.defer(ephemeral=ephemeral)
