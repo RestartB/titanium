@@ -375,10 +375,17 @@ class WebSearchCommandsCog(
 
         await interaction.followup.send(view=view, ephemeral=ephemeral)
 
+    search_group = app_commands.Group(
+        name="search",
+        description="Search the web using various services.",
+        allowed_contexts=discord.app_commands.AppCommandContext(
+            guild=True, dm_channel=True, private_channel=True
+        ),
+        allowed_installs=discord.app_commands.AppInstallationType(guild=True, user=True),
+    )
+
     # Wikipedia command
-    @app_commands.command(name="wikipedia", description="Search Wikipedia for information.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @search_group.command(name="wikipedia", description="Search Wikipedia for information.")
     @app_commands.describe(
         search="The term to search for.",
         ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
@@ -526,12 +533,10 @@ class WebSearchCommandsCog(
         return countries
 
     # Steam command
-    @app_commands.command(
+    @search_group.command(
         name="steam",
         description="Search the Steam Store for games and software.",
     )
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(
         query="The term to search for.",
         country="Optional: the country to search in. Defaults to United Kingdom.",

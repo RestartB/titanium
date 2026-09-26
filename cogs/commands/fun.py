@@ -1,7 +1,6 @@
 import random
 from typing import TYPE_CHECKING, ClassVar, Literal
 
-import aiohttp
 import discord
 from discord import Colour, Embed, app_commands
 from discord.ext import commands
@@ -357,56 +356,6 @@ class FunCommandsCog(commands.GroupCog, group_name="fun", description="Fun comma
             allowed_mentions=discord.AllowedMentions.none(),
             ephemeral=ephemeral,
         )
-
-    # GitHub Roast command
-    @app_commands.command(
-        name="github-roast",
-        description="Generate a random GitHub account roast. - https://githubroast.mgytr.top",
-    )
-    @app_commands.describe(
-        username="The GitHub account to roast.",
-        ephemeral="Optional: whether to send the command output as a dismissible message only visible to you. Defaults to false.",
-    )
-    @app_commands.checks.cooldown(1, 10)
-    async def gh_roast(
-        self,
-        interaction: discord.Interaction["TitaniumBot"],
-        username: str,
-        ephemeral: bool = False,
-    ):
-        await interaction.response.defer(ephemeral=ephemeral)
-
-        try:
-            async with (
-                aiohttp.ClientSession() as session,
-                session.post(
-                    url="https://githubroast.mgytr.top/llama",
-                    json={"username": username, "language": "english"},
-                ) as request,
-            ):
-                request.raise_for_status()
-                response = await request.json()
-        except aiohttp.ClientResponseError as e:
-            embed = discord.Embed(
-                title=f"{self.bot.error_emoji} Error",
-                description=f"The roast API returned an error (`{e.status}`). Please try again later.",
-                colour=Colour.red(),
-            )
-            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-            return
-
-        embed = discord.Embed(
-            title="AI GitHub Roast",
-            description=shorten_preserve(response["roast"], width=4096),
-            colour=Colour.light_grey(),
-        )
-        embed.set_footer(
-            text=f"@{interaction.user.name} - https://githubroast.mgytr.top",
-            icon_url=interaction.user.display_avatar.url,
-        )
-        embed.set_author(name=username)
-
-        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:
