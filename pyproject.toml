@@ -5,7 +5,7 @@ description = "Multipurpose Discord Bot"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "asyncpg>=0.30.0",
+    "asyncpg>=0.32.0",
     "atlas-provider-sqlalchemy>=0.5.2",
     "colorthief>=0.2.1",
     "dacite>=1.9.2",
