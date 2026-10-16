@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord.utils import format_dt
 
-from lib.embeds.general import guild_only, invalid_duration
+from lib.embeds.general import invalid_duration
 from lib.embeds.reminders import reminder_deleted, reminder_edited
 from lib.helpers.components import embed_to_v2
 from lib.helpers.duration import timestring_to_duration
@@ -46,13 +46,6 @@ class ReminderModal(discord.ui.Modal, title="Edit Reminder"):
 
         assert isinstance(self.content_label.component, discord.ui.TextInput)
         assert isinstance(self.duration_label.component, discord.ui.TextInput)
-
-        if not isinstance(interaction.user, discord.Member) or not interaction.guild:
-            await interaction.edit_original_response(
-                view=embed_to_v2(guild_only(interaction.client)),
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
-            return
 
         time_scheduled = None
         if self.duration_label.component.value:
