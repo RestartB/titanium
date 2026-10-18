@@ -878,6 +878,7 @@ class Tag(Base):
     components: Mapped[list] = MappedColumn(
         ARRAY(JSONB), server_default=text("ARRAY[]::JSONB[]"), nullable=False
     )
+    cv2: Mapped[bool] = MappedColumn(Boolean, nullable=False)
 
 
 class GuildRepSettings(Base):

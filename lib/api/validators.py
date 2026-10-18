@@ -1,12 +1,13 @@
 import re
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
 from emoji import is_emoji
-from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
+from pydantic import BaseModel, Field, HttpUrl, StringConstraints, field_validator, model_validator
 
 from lib.enums.automod import AutomodActionType, AutomodCriteriaType
 from lib.enums.bouncer import BouncerActionType, BouncerCriteriaType
+from lib.enums.cv2 import ComponentType
 from lib.enums.leaderboard import LeaderboardCalcType, LeaderboardVcCalcType
 from lib.enums.server_counters import ServerCounterType
 from lib.sql.sql import (
@@ -467,6 +468,40 @@ class TagsConfigModel(BaseModel):
     allow_user_tags: bool
 
 
+class Cv2Button(BaseModel):
+    url: Annotated[HttpUrl, StringConstraints(max_length=512)]
+    label: Annotated[str, StringConstraints(min_length=1, max_length=80, strip_whitespace=True)]
+
+
+class Cv2Component(BaseModel):
+    cId: ComponentType
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    content: (
+        Annotated[str, StringConstraints(min_length=1, max_length=1000, strip_whitespace=True)]
+        | None
+    ) = None
+    url: HttpUrl | None = None
+    urls: list[HttpUrl] = Field(default_factory=list, max_length=10)
+    buttons: list[Cv2Button] = Field(default_factory=list, max_length=5)
+    spacing: Literal[1, 2] = 1
+
+    @model_validator(mode="after")
+    def check_content(self):
+        if (
+            self.cId in [ComponentType.TEXT_DISPLAY, ComponentType.TEXT_THUMBNAIL]
+            and not self.content
+        ):
+            raise ValueError("A text box is missing content")
+        elif self.cId == ComponentType.TEXT_THUMBNAIL and not self.url:
+            raise ValueError("No thumbnail was provided")
+        elif self.cId == ComponentType.MEDIA_GALLERY and not self.urls:
+            raise ValueError("No media URLs provided")
+        elif self.cId == ComponentType.BUTTON_ROW and not self.buttons:
+            raise ValueError("No buttons provided")
+
+        return self
+
+
 class TagModel(BaseModel):
     name: Annotated[
         str,
@@ -474,8 +509,53 @@ class TagModel(BaseModel):
             min_length=1, max_length=35, to_lower=True, ascii_only=True, strip_whitespace=True
         ),
     ]
-    content: Annotated[str, StringConstraints(min_length=1, max_length=2000, strip_whitespace=True)]
+
+    cv2: bool
+    content: Annotated[str, StringConstraints(max_length=2000, strip_whitespace=True)] = ""
+    components: list[Cv2Component] = Field(default_factory=list, max_length=10)
+
     user: DiscordId
+
+    @model_validator(mode="after")
+    def check_content(self):
+        if self.cv2 and not self.components:
+            raise ValueError("No components were provided")
+        elif self.cv2:
+            self.content = ""
+
+        if not self.cv2 and not self.content:
+            raise ValueError("No content was provided")
+        elif not self.cv2:
+            self.components = []
+
+        return self
+
+    @model_validator(mode="after")
+    def check_lengths(self):
+        total_chars = 0
+        for c in self.components:
+            if c.cId in [ComponentType.TEXT_DISPLAY, ComponentType.TEXT_THUMBNAIL] and c.content:
+                total_chars += len(c.content)
+
+        total_components = 0
+        for c in self.components:
+            total_components += 1
+            if c.cId == ComponentType.BUTTON_ROW and c.urls:
+                total_components += len(c.urls)
+
+        # 4000 limit on all text characters in all components
+        if total_chars > 4000:
+            raise ValueError(
+                "Too many characters: please ensure the total length of all text components is less than 4000."
+            )
+
+        # 39 because the total is 40, and the container needs to be included
+        if total_components > 39:
+            raise ValueError(
+                "Too many components: please ensure the total length of components and buttons is less than 39"
+            )
+
+        return self
 
 
 class RepConfigModel(BaseModel):

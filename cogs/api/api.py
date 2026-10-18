@@ -949,6 +949,8 @@ class APICog(commands.Cog):
                     "id": str(tag.id),
                     "name": tag.name,
                     "content": tag.content,
+                    "components": tag.components,
+                    "cv2": tag.cv2,
                     "creator_id": str(tag.owner_id),
                     "creator_name": cuser.name if cuser else None,
                     "creator_display": cuser.display_name if cuser else None,
@@ -998,9 +1000,15 @@ class APICog(commands.Cog):
             return web.json_response({"error": "user not found"}, status=404)
 
         async with get_session(autocommit=False) as session:
+            components = [
+                component.model_dump(mode="json") for component in validated_tag.components
+            ]
+
             new_tag = Tag(
                 name=validated_tag.name,
                 content=validated_tag.content,
+                components=components,
+                cv2=validated_tag.cv2,
                 owner_id=member.id,
                 guild_id=guild.id,
                 is_user=False,
@@ -1060,6 +1068,9 @@ class APICog(commands.Cog):
 
             to_edit.name = validated_tag.name
             to_edit.content = validated_tag.content
+            to_edit.components = [
+                component.model_dump(mode="json") for component in validated_tag.components
+            ]
             to_edit.modified_by = member.id
 
             try:
