@@ -251,6 +251,7 @@ async def migrate_tags(bot: TitaniumBot):
                 new_tag = Tag(
                     name=str(tag[2])[:80],
                     content=str(tag[3])[:2000],
+                    cv2=false,
                     guild_id=tag_owner,
                     is_user=False,
                     owner_id=0,
@@ -259,6 +260,7 @@ async def migrate_tags(bot: TitaniumBot):
                 new_tag = Tag(
                     name=str(tag[2])[:80],
                     content=str(tag[3])[:2000],
+                    cv2=false,
                     is_user=True,
                     owner_id=tag_owner,
                 )
