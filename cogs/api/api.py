@@ -2,14 +2,16 @@ import asyncio
 import logging
 import os
 import uuid
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import discord
 from aiohttp import web
 from discord.ext import commands
+from discord.utils import utcnow
 from prometheus_client.aiohttp import make_aiohttp_handler
 from pydantic import ValidationError
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
@@ -48,6 +50,7 @@ from lib.enums.server_counters import ServerCounterType
 from lib.helpers.cache import get_or_fetch_member
 from lib.helpers.log_error import log_error
 from lib.helpers.resolve_counter import resolve_counter
+from lib.helpers.validation import is_valid_uuid
 from lib.sql.sql import (
     AutomodRule,
     BouncerRule,
@@ -70,6 +73,7 @@ from lib.sql.sql import (
     ModCaseComment,
     ServerCounterChannel,
     Tag,
+    TagEditLink,
     UserRep,
     get_session,
 )
@@ -167,6 +171,10 @@ class APICog(commands.Cog):
 
         self.app.router.add_post("/user/{user_id}/guilds", self.mutual_guilds)
         self.app.router.add_get("/user/{user_id}/inguild/{guild_id}", self.in_guild)
+
+        self.app.router.add_get("/taglink/{key}/start", self.tag_link_start)
+        self.app.router.add_get("/taglink/{key}/continue", self.tag_link_continue)
+        self.app.router.add_post("/taglink/{key}/submit", self.tag_link_sumbit)
 
         self.app.router.add_get("/guild/{guild_id}", self.guild_branding)
         self.app.router.add_get("/guild/{guild_id}/inguild", self.bot_in_guild)
@@ -353,9 +361,195 @@ class APICog(commands.Cog):
         else:
             return web.json_response({"in_guild": False}, status=200)
 
+    async def tag_link_start(self, request: web.Request) -> web.Response:
+        key = request.match_info.get("key", "")
+
+        if not key:
+            return web.Response(status=404)
+        elif not is_valid_uuid(key):
+            return web.Response(status=400)
+
+        async with get_session() as session:
+            data = await session.get(TagEditLink, key, options=[selectinload(TagEditLink.tag)])
+            if not data or data.initial_passed or utcnow() >= data.expires_at:
+                return web.Response(status=404)
+
+            data.initial_passed = True
+            data.expires_at = utcnow() + timedelta(minutes=10)
+
+        return web.json_response(
+            {
+                "submit_key": data.submit_key,
+                "expires": data.expires_at.isoformat(),
+                "tag": {
+                    "id": data.tag.id,
+                    "name": data.tag.name,
+                    "cv2": data.tag.cv2,
+                    "content": data.tag.content,
+                    "components": data.tag.components,
+                }
+                if data.tag
+                else None,
+            },
+            status=200,
+        )
+
+    async def tag_link_continue(self, request: web.Request) -> web.Response:
+        key = request.match_info.get("key", "")
+        submit_key = request.headers.get("Submit-Key", "")
+
+        if not key or not is_valid_uuid(key):
+            return web.Response(status=400)
+
+        if not submit_key or not is_valid_uuid(submit_key):
+            return web.Response(status=400)
+
+        async with get_session() as session:
+            data = await session.get(TagEditLink, key, options=[selectinload(TagEditLink.tag)])
+            if (
+                not data
+                or not data.initial_passed
+                or utcnow() >= data.expires_at
+                or data.submit_key != submit_key
+            ):
+                return web.Response(status=404)
+
+        return web.json_response(
+            {
+                "submit_key": data.submit_key,
+                "expires": data.expires_at.isoformat(),
+                "tag": {
+                    "id": data.tag.id,
+                    "name": data.tag.name,
+                    "cv2": data.tag.cv2,
+                    "content": data.tag.content,
+                    "components": data.tag.components,
+                }
+                if data.tag
+                else None,
+            },
+            status=200,
+        )
+
+    async def tag_link_sumbit(self, request: web.Request) -> web.Response:
+        key = request.match_info.get("key", "")
+        submit_key = request.headers.get("Submit-Key", "")
+
+        if not key or not is_valid_uuid(key):
+            return web.Response(status=400)
+
+        if not submit_key or not is_valid_uuid(submit_key):
+            return web.Response(status=400)
+
+        try:
+            data = await request.json()
+            validated_tag = TagModel(**data)
+        except ValidationError as e:
+            return web.json_response(self.__format_validation_error(e), status=400)
+
+        async with get_session(autocommit=False) as session:
+            session_data = await session.get(
+                TagEditLink, key, options=[selectinload(TagEditLink.tag)]
+            )
+            if (
+                not session_data
+                or not session_data.initial_passed
+                or utcnow() >= session_data.expires_at
+                or session_data.submit_key != submit_key
+            ):
+                return web.Response(status=404)
+
+            guild = None
+            member = None
+
+            if session_data.guild_id:
+                guild = self.bot.get_guild(int(session_data.guild_id))
+                if not guild:
+                    return web.json_response({"error": "guild not found"}, status=404)
+
+                config = await self.bot.fetch_guild_config(guild.id)
+                if not config or not config.tag_settings:
+                    return web.json_response({"error": "failed to get guild config"}, status=500)
+
+                if not config.tags_enabled:
+                    return web.json_response(
+                        {"error": "tags are disabled in this server"}, status=403
+                    )
+
+                if (
+                    session_data.tag_id == None
+                    and config.limits.enforcing
+                    and len(config.tag_settings.tags) >= config.limits.tags
+                ):
+                    return web.json_response(
+                        {
+                            "error": "Limit exceeded",
+                            "message": "You have gone over your limit for server tags.",
+                        },
+                        status=403,
+                    )
+
+                member = await get_or_fetch_member(self.bot, guild, int(validated_tag.user))
+                if not member:
+                    return web.json_response({"error": "user not found"}, status=404)
+
+            if session_data.tag:
+                components = [
+                    component.model_dump(mode="json") for component in validated_tag.components
+                ]
+
+                criteria = [Tag.id == session_data.tag.id]
+                if session_data.tag.is_user:
+                    criteria.append(Tag.is_user.is_(True))
+                    criteria.append(Tag.owner_id == session_data.tag.owner_id)
+                else:
+                    criteria.append(Tag.is_user.is_(False))
+                    criteria.append(Tag.guild_id == session_data.tag.guild_id)
+
+                await session.execute(
+                    update(Tag)
+                    .where(*criteria)
+                    .values(
+                        name=validated_tag.name,
+                        cv2=validated_tag.cv2,
+                        content=validated_tag.content,
+                        components=components,
+                    )
+                )
+            else:
+                components = [
+                    component.model_dump(mode="json") for component in validated_tag.components
+                ]
+
+                new_tag = Tag(
+                    name=validated_tag.name,
+                    content=validated_tag.content,
+                    components=components,
+                    cv2=validated_tag.cv2,
+                    owner_id=member.id if member else session_data.user_id,
+                    guild_id=guild.id if guild else None,
+                    is_user=not guild,
+                )
+
+                session.add(new_tag)
+
+            try:
+                await session.commit()
+            except IntegrityError as e:
+                await session.rollback()
+
+                err_code = getattr(e.orig, "sqlstate", getattr(e.orig, "pgcode", None))
+                if err_code == "23505":  # 23505 = unique_violation
+                    return web.json_response({"error": "tag_in_use"}, status=404)
+
+                raise
+
+        if guild:
+            await self.bot.refresh_guild_config_cache(guild.id)
+        return web.Response(status=204)
+
     async def bot_in_guild(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id", "")
-
         if not self.bot.get_guild(int(guild_id)):
             return web.json_response({"in_guild": False}, status=200)
 

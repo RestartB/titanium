@@ -881,6 +881,26 @@ class Tag(Base):
     cv2: Mapped[bool] = MappedColumn(Boolean, nullable=False)
 
 
+class TagEditLink(Base):
+    __tablename__ = "tag_edit_links"
+
+    page_key: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    submit_key: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), default=uuid.uuid4)
+
+    initial_passed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    expires_at: Mapped[datetime] = MappedColumn(DateTime(timezone=True))
+
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    guild_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+
+    tag_id: Mapped[uuid.UUID | None] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("tags.id", ondelete="CASCADE"), nullable=True
+    )
+    tag: Mapped["Tag | None"] = relationship("Tag", uselist=False)
+
+
 class GuildRepSettings(Base):
     __tablename__ = "guild_rep_settings"
 
