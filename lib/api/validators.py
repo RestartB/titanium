@@ -23,6 +23,10 @@ def validate_id(id: str) -> bool:
     return re.fullmatch(r"\d{15,20}", id) is not None
 
 
+def is_unicode_emoji(value: str) -> bool:
+    return is_emoji(value) or is_emoji(value.replace("\ufe0f", ""))
+
+
 DiscordId = Annotated[
     str,
     StringConstraints(pattern=r"^[0-9]{15,20}$"),
@@ -167,7 +171,7 @@ class AutomodActionModel(BaseModel):
             if not validate_id(self.reaction):
                 raise ValueError(f"Invalid emoji ID - {self.reaction}")
         else:
-            if not is_emoji(self.reaction):
+            if not is_unicode_emoji(self.reaction):
                 raise ValueError(f"Invalid emoji or emoji ID - {self.reaction}")
 
         return self
@@ -392,7 +396,7 @@ class FireboardBoardModel(BaseModel):
             if not validate_id(self.reaction):
                 raise ValueError(f"Invalid emoji ID - {self.reaction}")
         else:
-            if not is_emoji(self.reaction):
+            if not is_unicode_emoji(self.reaction):
                 raise ValueError(f"Invalid emoji or emoji ID - {self.reaction}")
 
         return self
