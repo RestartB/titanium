@@ -372,17 +372,17 @@ class APICog(commands.Cog):
         async with get_session() as session:
             data = await session.get(TagEditLink, key, options=[selectinload(TagEditLink.tag)])
             if not data or data.initial_passed or utcnow() >= data.expires_at:
-                return web.Response(status=404)
+                return web.json_response({"error": "link not found"}, status=404)
 
             data.initial_passed = True
             data.expires_at = utcnow() + timedelta(minutes=10)
 
         return web.json_response(
             {
-                "submit_key": data.submit_key,
+                "submit_key": str(data.submit_key),
                 "expires": data.expires_at.isoformat(),
                 "tag": {
-                    "id": data.tag.id,
+                    "id": str(data.tag.id),
                     "name": data.tag.name,
                     "cv2": data.tag.cv2,
                     "content": data.tag.content,
@@ -410,16 +410,16 @@ class APICog(commands.Cog):
                 not data
                 or not data.initial_passed
                 or utcnow() >= data.expires_at
-                or data.submit_key != submit_key
+                or str(data.submit_key) != submit_key
             ):
-                return web.Response(status=404)
+                return web.json_response({"error": "link not found"}, status=404)
 
         return web.json_response(
             {
-                "submit_key": data.submit_key,
+                "submit_key": str(data.submit_key),
                 "expires": data.expires_at.isoformat(),
                 "tag": {
-                    "id": data.tag.id,
+                    "id": str(data.tag.id),
                     "name": data.tag.name,
                     "cv2": data.tag.cv2,
                     "content": data.tag.content,
@@ -455,9 +455,9 @@ class APICog(commands.Cog):
                 not session_data
                 or not session_data.initial_passed
                 or utcnow() >= session_data.expires_at
-                or session_data.submit_key != submit_key
+                or str(session_data.submit_key) != submit_key
             ):
-                return web.Response(status=404)
+                return web.json_response({"error": "link not found"}, status=404)
 
             guild = None
             member = None

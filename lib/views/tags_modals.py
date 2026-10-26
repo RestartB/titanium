@@ -57,7 +57,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
         self,
         server_tag_allowed: bool,
         user_tag_allowed: bool,
-        timeout: float = 240,
+        timeout: float = 600,
         existing_tag: Tag | None = None,
     ) -> None:
         super().__init__(timeout=timeout)
@@ -244,6 +244,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                     is_user=not self.is_server_tag,
                     name=cleaned_name,
                     content=self.tag_content.component.value.strip(),
+                    cv2=False,
                 )
                 session.add(new_tag)
 
