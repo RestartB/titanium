@@ -113,6 +113,9 @@ class TitaniumBot(commands.Bot):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
+        self.website_url = ""
+        self.dashboard_url = ""
+
         self.browser_renderer = BrowserRenderer(max_concurrency=3)
 
         self.guild_configs: dict[int, GuildSettings] = {}
@@ -300,6 +303,11 @@ class TitaniumBot(commands.Bot):
         self.remove_cached_config(guild_id)
 
     async def setup_hook(self):
+        self.website_url = os.getenv("WEBSITE_URL", "https://titanium.fyi").removesuffix("/")
+        self.dashboard_url = os.getenv("DASHBOARD_URL", "https://dash.titanium.fyi").removesuffix(
+            "/"
+        )
+
         await init_db()
         await self.refresh_opt_out()
         await self.refresh_all_caches()
@@ -472,7 +480,7 @@ async def on_command_error(ctx: commands.Context["TitaniumBot"], error: commands
             embed = discord.Embed(
                 title=f"{ctx.bot.error_emoji} Prefix Commands Removed",
                 description="Due to Discord restrictions, prefix commands have been disabled. Please use slash commands instead.\n\n"
-                f"-# Server admin? You can disable this warning in the general settings tab of the {dashboard_url(ctx.guild.id if ctx.guild else 0)}",
+                f"-# Server admin? You can disable this warning in the general settings tab of the {dashboard_url(ctx.guild.id if ctx.guild else 0, ctx.bot.dashboard_url)}",
                 colour=discord.Colour.red(),
             )
         else:
@@ -541,9 +549,7 @@ async def on_app_command_error(
     ).inc()
 
     embed: discord.Embed | None = None
-    if isinstance(
-        original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)
-    ):
+    if isinstance(original_error, (img_tools.ImageTooSmallError, img_tools.OperationTooLargeError)):
         description = (
             "The provided image is too small for this operation."
             if isinstance(original_error, img_tools.ImageTooSmallError)

@@ -78,7 +78,7 @@ class StatsUpdateCog(commands.Cog):
                     status=discord.Status.online,
                     type=discord.ActivityType.custom,
                     name="titanium",
-                    state="🌐 titanium.fyi",
+                    state=f"🌐 {self.bot.website_url.removeprefix('http://').removeprefix('https://')}",
                 )
             )
         elif self.current_status == 0:
@@ -89,7 +89,7 @@ class StatsUpdateCog(commands.Cog):
                     status=discord.Status.online,
                     type=discord.ActivityType.custom,
                     name="titanium",
-                    state="🔧 dash.titanium.fyi",
+                    state=f"🔧 {self.bot.dashboard_url.removeprefix('http://').removeprefix('https://')}",
                 )
             )
         elif self.current_status == 1:

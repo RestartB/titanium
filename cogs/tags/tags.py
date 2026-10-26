@@ -356,7 +356,7 @@ class TagCommandsCog(commands.Cog):
                 colour=discord.Colour.red(),
             )
             embed.set_footer(
-                text="Feel free to join Titanium's support server for help with this error - https://titanium.fyi/server"
+                text=f"Feel free to join Titanium's support server for help with this error - {self.bot.website_url}/server"
             )
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         except discord.HTTPException as error:
@@ -369,7 +369,7 @@ class TagCommandsCog(commands.Cog):
                 colour=discord.Colour.red(),
             )
             embed.set_footer(
-                text="Feel free to join Titanium's support server for help with this error - https://titanium.fyi/server"
+                text=f"Feel free to join Titanium's support server for help with this error - {self.bot.website_url}/server"
             )
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 

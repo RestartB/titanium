@@ -178,7 +178,7 @@ class CommentPageContainer(discord.ui.Container):
         buttons.add_item(
             discord.ui.Button(
                 label="View all comments",
-                url=f"https://dash.titanium.fyi/guild/{case.guild_id}/moderation/cases/{case.id}",
+                url=f"{bot.dashboard_url}/guild/{case.guild_id}/moderation/cases/{case.id}",
                 style=discord.ButtonStyle.link,
             )
         )
@@ -231,7 +231,7 @@ class ViewCaseButton(discord.ui.Button):
             view=discord.ui.View().add_item(
                 discord.ui.Button(
                     label="View in browser",
-                    url=f"https://dash.titanium.fyi/guild/{self.case.guild_id}/moderation/cases/{self.case.id}",
+                    url=f"{interaction.client.dashboard_url}/guild/{self.case.guild_id}/moderation/cases/{self.case.id}",
                     style=discord.ButtonStyle.link,
                 )
             ),

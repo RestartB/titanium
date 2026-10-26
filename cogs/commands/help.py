@@ -65,13 +65,13 @@ class HelpCommandCog(commands.Cog):
             ):
                 embed.add_field(
                     name="Manage Settings",
-                    value=f"Use `/settings` or the **{dashboard_url(ctx.guild.id)}** to manage Titanium's settings for this server.",
+                    value=f"Use `/settings` or the **{dashboard_url(ctx.guild.id, self.bot.dashboard_url)}** to manage Titanium's settings for this server.",
                     inline=False,
                 )
 
         embed.add_field(
             name="Need more help?",
-            value="Join the **[Support Server](https://titanium.fyi/server)** for feature and status updates, support, and more.",
+            value=f"Join the **[Support Server]({self.bot.website_url}/server)** for feature and status updates, support, and more.",
             inline=False,
         )
 

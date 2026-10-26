@@ -208,7 +208,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                     if config.limits.enforcing and total_count >= config.limits.tags:
                         embed = discord.Embed(
                             title=f"{interaction.client.error_emoji} Limit Exceeded",
-                            description=f"You have exceeded the server tag limit of `{config.limits.tags}`. The tag was not created. Please delete some tags, or request an increased limit in the [support server](https://titanium.fyi/server).",
+                            description=f"You have exceeded the server tag limit of `{config.limits.tags}`. The tag was not created. Please delete some tags, or request an increased limit in the [support server]({interaction.client.website_url}/server).",
                             colour=discord.Colour.red(),
                         )
                         return await interaction.followup.send(embed=embed, ephemeral=True)

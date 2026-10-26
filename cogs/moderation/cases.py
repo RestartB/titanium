@@ -212,7 +212,7 @@ class ModerationCasesCog(commands.Cog, name="Cases", description="Manage moderat
         view.add_item(
             Button(
                 label="View in browser",
-                url=f"https://dash.titanium.fyi/guild/{case.guild_id}/moderation/cases/{case.id}",
+                url=f"{self.bot.dashboard_url}/guild/{case.guild_id}/moderation/cases/{case.id}",
                 style=ButtonStyle.link,
             )
         )

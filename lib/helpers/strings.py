@@ -1,2 +1,2 @@
-def dashboard_url(guild_id: int) -> str:
-    return f"[Titanium Dashboard](https://dash.titanium.fyi/guild/{guild_id})"
+def dashboard_url(guild_id: int, dashboard_url: str) -> str:
+    return f"[Titanium Dashboard]({dashboard_url}/guild/{guild_id})"

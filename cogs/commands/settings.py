@@ -289,7 +289,7 @@ class TagAdvancedLinkButton(Button):
                 ActionRow(
                     Button(
                         label="Open Editor",
-                        url=f"https://dash.titanium.fyi/public/tagedit/{link.page_key}",
+                        url=f"{interaction.client.dashboard_url}/public/tagedit/{link.page_key}",
                         style=ButtonStyle.url,
                     )
                 ),
@@ -334,7 +334,7 @@ class TagAdvancedButton(Button):
                     ),
                     accessory=Button(
                         label="Open",
-                        url=f"https://dash.titanium.fyi/guild/{interaction.guild_id}/tags",
+                        url=f"{interaction.client.dashboard_url}/guild/{interaction.guild_id}/tags",
                         style=ButtonStyle.url,
                     ),
                 )
@@ -739,13 +739,13 @@ class SettingsView(LayoutView):
             if interaction.guild.icon:
                 top_section = Section(
                     TextDisplay(
-                        f"## Settings\nManage settings for your account and this server. To manage more server settings, please go to the {dashboard_url(interaction.guild.id)}."
+                        f"## Settings\nManage settings for your account and this server. To manage more server settings, please go to the {dashboard_url(interaction.guild.id, interaction.client.dashboard_url)}."
                     ),
                     accessory=Thumbnail(media=interaction.guild.icon.url),
                 )
             else:
                 top_section = TextDisplay(
-                    f"## Settings\nManage settings for your account and this server. To manage more server settings, please go to the {dashboard_url(interaction.guild.id)}."
+                    f"## Settings\nManage settings for your account and this server. To manage more server settings, please go to the {dashboard_url(interaction.guild.id, interaction.client.dashboard_url)}."
                 )
         else:
             if bot.user:
