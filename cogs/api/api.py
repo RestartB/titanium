@@ -489,7 +489,7 @@ class APICog(commands.Cog):
                         status=403,
                     )
 
-                member = await get_or_fetch_member(self.bot, guild, int(validated_tag.user))
+                member = await get_or_fetch_member(self.bot, guild, session_data.user_id)
                 if not member:
                     return web.json_response({"error": "user not found"}, status=404)
 
@@ -1169,6 +1169,9 @@ class APICog(commands.Cog):
         except ValidationError as e:
             return web.json_response(self.__format_validation_error(e), status=400)
 
+        if not validated_tag.user:
+            return web.json_response({"error": "user id is missing"}, status=400)
+
         guild = self.bot.get_guild(int(guild_id))
         if not guild:
             return web.json_response({"error": "guild not found"}, status=404)
@@ -1238,6 +1241,9 @@ class APICog(commands.Cog):
             validated_tag = TagModel(**data)
         except ValidationError as e:
             return web.json_response(self.__format_validation_error(e), status=400)
+
+        if not validated_tag.user:
+            return web.json_response({"error": "user id is missing"}, status=400)
 
         guild = self.bot.get_guild(int(guild_id))
         if not guild:

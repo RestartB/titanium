@@ -518,7 +518,7 @@ class TagModel(BaseModel):
     content: Annotated[str, StringConstraints(max_length=2000, strip_whitespace=True)] = ""
     components: list[Cv2Component] = Field(default_factory=list, max_length=10)
 
-    user: DiscordId
+    user: DiscordId | None = None
 
     @model_validator(mode="after")
     def check_content(self):
