@@ -473,8 +473,8 @@ class TagsConfigModel(BaseModel):
 
 
 class Cv2Button(BaseModel):
-    url: Annotated[HttpUrl, StringConstraints(max_length=512)]
     label: Annotated[str, StringConstraints(min_length=1, max_length=80, strip_whitespace=True)]
+    url: Annotated[HttpUrl, StringConstraints(max_length=512)]
 
 
 class Cv2Component(BaseModel):
@@ -484,8 +484,10 @@ class Cv2Component(BaseModel):
         Annotated[str, StringConstraints(min_length=1, max_length=1000, strip_whitespace=True)]
         | None
     ) = None
-    url: HttpUrl | None = None
-    urls: list[HttpUrl] = Field(default_factory=list, max_length=10)
+    url: Annotated[HttpUrl, StringConstraints(max_length=2048)] | None = None
+    urls: list[Annotated[HttpUrl, StringConstraints(max_length=2048)]] = Field(
+        default_factory=list, max_length=10
+    )
     buttons: list[Cv2Button] = Field(default_factory=list, max_length=5)
     spacing: Literal[1, 2] = 1
 
