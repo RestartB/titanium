@@ -807,9 +807,51 @@ class GuildTagSettings(Base):
     guild_settings: Mapped["GuildSettings"] = relationship(
         "GuildSettings", back_populates="tag_settings", uselist=False
     )
+
     allow_user_tags: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+
     tags: Mapped[list["Tag"]] = relationship(
         "Tag", back_populates="settings", cascade="all, delete-orphan"
+    )
+    quick_responses: Mapped[list["TagQuickResponse"]] = relationship(
+        "TagQuickResponse", back_populates="settings", cascade="all, delete-orphan"
+    )
+
+    global_ignored_channels: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    global_ignored_roles: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+
+
+class TagQuickResponse(Base):
+    __tablename__ = "tag_quick_responses"
+
+    id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    guild_id: Mapped[int] = MappedColumn(
+        BigInteger, ForeignKey("guild_tag_settings.guild_id", ondelete="CASCADE")
+    )
+    settings: Mapped["GuildTagSettings"] = relationship(
+        "GuildTagSettings", back_populates="quick_responses", uselist=False
+    )
+
+    tag_id: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("tags.id", ondelete="CASCADE"), nullable=True
+    )
+    tag: Mapped["Tag | None"] = relationship("Tag", uselist=False)
+
+    keywords: Mapped[list[str]] = MappedColumn(
+        ARRAY(String(length=25)), server_default=text("ARRAY[]::varchar[]")
+    )
+    match_whole_word: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    case_sensitive: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+
+    ignored_roles: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
+    )
+    ignored_channels: Mapped[list[int]] = MappedColumn(
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
 
 

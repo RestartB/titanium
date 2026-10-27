@@ -74,6 +74,7 @@ from lib.sql.sql import (
     ServerCounterChannel,
     Tag,
     TagEditLink,
+    TagQuickResponse,
     UserRep,
     get_session,
 )
@@ -200,6 +201,7 @@ class APICog(commands.Cog):
         )
 
         self.app.router.add_get("/guild/{guild_id}/tags", self.guild_tags)
+        self.app.router.add_get("/guild/{guild_id}/tags/ids", self.guild_tag_ids)
         self.app.router.add_post("/guild/{guild_id}/tags", self.guild_create_tag)
         self.app.router.add_patch("/guild/{guild_id}/tags/{tag_id}", self.guild_edit_tag)
         self.app.router.add_delete("/guild/{guild_id}/tags/{tag_id}", self.guild_delete_tag)
@@ -1222,6 +1224,34 @@ class APICog(commands.Cog):
             )
 
         return web.json_response({"total_count": total_count, "tags": tags_list})
+
+    async def guild_tag_ids(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        async with get_session() as session:
+            # Get tags from db
+            result = await session.execute(
+                select(Tag).where(Tag.guild_id == guild.id, Tag.is_user.is_(False))
+            )
+            tags = result.scalars().all()
+
+        return web.json_response(
+            {
+                "tags": [
+                    {
+                        "id": str(tag.id),
+                        "name": tag.name,
+                    }
+                    for tag in tags
+                ]
+            }
+        )
 
     async def guild_create_tag(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
@@ -2497,6 +2527,30 @@ class APICog(commands.Cog):
                     db_config = GuildTagSettings(guild_id=guild.id)
 
                 db_config.allow_user_tags = validated_config.allow_user_tags
+                db_config.global_ignored_channels = [
+                    int(channel) for channel in validated_config.global_ignored_channels
+                ]
+                db_config.global_ignored_roles = [
+                    int(role) for role in validated_config.global_ignored_roles
+                ]
+
+                await session.execute(
+                    delete(TagQuickResponse).where(TagQuickResponse.guild_id == guild_id)
+                )
+                for response in validated_config.quick_responses:
+                    session.add(
+                        TagQuickResponse(
+                            guild_id=guild_id,
+                            tag_id=response.tag_id,
+                            keywords=response.keywords,
+                            match_whole_word=response.match_whole_word,
+                            case_sensitive=response.case_sensitive,
+                            ignored_roles=[int(role) for role in response.ignored_roles],
+                            ignored_channels=[
+                                int(channel) for channel in response.ignored_channels
+                            ],
+                        )
+                    )
 
                 session.add(db_config)
         elif module_name == "rep" and isinstance(validated_config, RepConfigModel):

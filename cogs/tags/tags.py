@@ -207,6 +207,54 @@ class TagCommandsCog(commands.Cog):
             verify=self.__server_tag_available(interaction, config),
         )
 
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message) -> None:
+        if message.author.bot or not message.guild or isinstance(message.author, discord.User):
+            return
+
+        config = await self.bot.fetch_guild_config(message.guild.id)
+        if not config or not config.tags_enabled or not config.tag_settings:
+            return
+
+        if message.channel.id in config.tag_settings.global_ignored_channels or any(
+            role.id in config.tag_settings.global_ignored_roles for role in message.author.roles
+        ):
+            return
+
+        for response in config.tag_settings.quick_responses:
+            if (
+                not response.tag
+                or message.channel.id in response.ignored_channels
+                or any(role.id in response.ignored_roles for role in message.author.roles)
+            ):
+                continue
+
+            matched = False
+            for word in response.keywords:
+                content = message.content if response.case_sensitive else message.content.lower()
+
+                if (response.match_whole_word and content == word) or (
+                    not response.match_whole_word and content.startswith(word)
+                ):
+                    matched = True
+
+                if matched:
+                    break
+
+            if matched:
+                tag = response.tag
+                if tag.cv2:
+                    await message.reply(
+                        view=ti_to_cv2(tag.components, colour=tag.colour, spoiler=tag.spoiler),
+                        allowed_mentions=discord.AllowedMentions.none(),
+                    )
+                else:
+                    await message.reply(
+                        content=tag.content,
+                        allowed_mentions=discord.AllowedMentions.none(),
+                    )
+                await self.push_tag_usage(tag)
+
     # Use tag command
     @app_commands.command(name="tag", description="Send a server or user tag.")
     @app_commands.allowed_installs(guilds=True, users=True)
