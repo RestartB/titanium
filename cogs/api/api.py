@@ -726,6 +726,7 @@ class APICog(commands.Cog):
                     "leaderboard_levels": guild_limits.leaderboard_levels,
                     "server_counters": guild_limits.server_counters,
                     "tags": guild_limits.tags,
+                    "tag_responses": guild_limits.tag_responses,
                 },
                 "bot_permissions": str(guild.me.guild_permissions.value),
             }
@@ -1980,11 +1981,14 @@ class APICog(commands.Cog):
 
                 session.add(db_config)
         elif module_name == "automod" and isinstance(validated_config, AutomodConfigModel):
-            if len(validated_config.rules) > config.limits.automod_rules:
+            if (
+                config.limits.enforcing
+                and len(validated_config.rules) > config.limits.automod_rules
+            ):
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
-                        "message": "You have gone over your allocated automod rules limit.",
+                        "message": "You have gone over your limit for automod rules.",
                     },
                     status=403,
                 )
@@ -2007,6 +2011,7 @@ class APICog(commands.Cog):
                     for criterion in rule.criteria:
                         if (
                             criterion.words
+                            and config.limits.enforcing
                             and len(criterion.words) > config.limits.bad_word_list_size
                         ):
                             return web.json_response(
@@ -2031,11 +2036,14 @@ class APICog(commands.Cog):
                     status=500,
                 )
         elif module_name == "bouncer" and isinstance(validated_config, BouncerConfigModel):
-            if len(validated_config.rules) > config.limits.bouncer_rules:
+            if (
+                config.limits.enforcing
+                and len(validated_config.rules) > config.limits.bouncer_rules
+            ):
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
-                        "message": "You have gone over your allocated bouncer rules limit.",
+                        "message": "You have gone over your limit for bouncer rules.",
                     },
                     status=403,
                 )
@@ -2050,6 +2058,7 @@ class APICog(commands.Cog):
                     for criterion in rule.criteria:
                         if (
                             criterion.words
+                            and config.limits.enforcing
                             and len(criterion.words) > config.limits.bad_word_list_size
                         ):
                             return web.json_response(
@@ -2091,11 +2100,11 @@ class APICog(commands.Cog):
 
                 session.add(db_config)
         elif module_name == "fireboard" and isinstance(validated_config, FireboardConfigModel):
-            if len(validated_config.boards) > config.limits.fireboards:
+            if config.limits.enforcing and len(validated_config.boards) > config.limits.fireboards:
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
-                        "message": "You have gone over your allocated fireboard limit.",
+                        "message": "You have gone over your limit for fireboards.",
                     },
                     status=403,
                 )
@@ -2193,11 +2202,14 @@ class APICog(commands.Cog):
                     status=403,
                 )
 
-            if len(validated_config.channels) > config.limits.server_counters:
+            if (
+                config.limits.enforcing
+                and len(validated_config.channels) > config.limits.server_counters
+            ):
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
-                        "message": "You have gone over your allocated server counter channel limit.",
+                        "message": "You have gone over your limit for server counter channels.",
                     },
                     status=403,
                 )
@@ -2425,11 +2437,14 @@ class APICog(commands.Cog):
 
                         await session.delete(existing_channel)
         elif module_name == "leaderboard" and isinstance(validated_config, LeaderboardConfigModel):
-            if len(validated_config.levels) > config.limits.leaderboard_levels:
+            if (
+                config.limits.enforcing
+                and len(validated_config.levels) > config.limits.leaderboard_levels
+            ):
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
-                        "message": "You have gone over your allocated leaderboard level limit.",
+                        "message": "You have gone over your limit for leaderboard levels.",
                     },
                     status=403,
                 )
@@ -2525,6 +2540,18 @@ class APICog(commands.Cog):
                 db_config = await session.get(GuildTagSettings, guild.id)
                 if not db_config:
                     db_config = GuildTagSettings(guild_id=guild.id)
+
+                if (
+                    config.limits.enforcing
+                    and len(validated_config.quick_responses) > config.limits.tag_responses
+                ):
+                    return web.json_response(
+                        {
+                            "error": "Limit exceeded",
+                            "message": "You have gone over your limit for quick responses.",
+                        },
+                        status=403,
+                    )
 
                 db_config.allow_user_tags = validated_config.allow_user_tags
                 db_config.global_ignored_channels = [

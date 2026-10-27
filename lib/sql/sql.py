@@ -193,6 +193,7 @@ class GuildLimits(Base):
     leaderboard_levels: Mapped[int] = MappedColumn(Integer, server_default=text("100"))
     server_counters: Mapped[int] = MappedColumn(Integer, server_default=text("20"))
     tags: Mapped[int] = MappedColumn(Integer, server_default=text("250"))
+    tag_responses: Mapped[int] = MappedColumn(Integer, server_default=text("50"))
 
 
 class GuildModerationSettings(Base):
