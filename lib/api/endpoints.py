@@ -359,10 +359,12 @@ def tags_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Respo
                     "id": str(response.id),
                     "tag_id": str(response.tag_id),
                     "keywords": response.keywords,
-                    "match_whole_words": response.match_whole_word,
+                    "match_whole_word": response.match_whole_word,
                     "case_sensitive": response.case_sensitive,
-                    "ignored_channels": response.ignored_channels,
-                    "ignored_roles": response.ignored_roles,
+                    "ignored_channels": [
+                        str(channel_id) for channel_id in response.ignored_channels
+                    ],
+                    "ignored_roles": [str(role_id) for role_id in response.ignored_roles],
                 }
                 for response in config.tag_settings.quick_responses
             ],
