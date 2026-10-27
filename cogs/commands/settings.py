@@ -245,8 +245,7 @@ class TagBasicButton(Button):
 
     async def callback(self, interaction: Interaction["TitaniumBot"]) -> None:
         modal = TagModal(
-            server_tag_allowed=self.server,
-            user_tag_allowed=not self.server,
+            server_tag=self.server,
             existing_tag=self.existing_tag,
         )
         await interaction.response.send_modal(modal)
@@ -263,6 +262,33 @@ class TagAdvancedLinkButton(Button):
 
     async def callback(self, interaction: Interaction["TitaniumBot"]) -> None:
         await interaction.response.defer(ephemeral=True)
+
+        if self.server:
+            config = (
+                await interaction.client.fetch_guild_config(interaction.guild_id)
+                if interaction.guild_id and interaction.is_guild_integration()
+                else None
+            )
+            server_tag_allowed = _get_if_server_tag_allowed(interaction, config)
+
+            if not server_tag_allowed:
+                embed = discord.Embed(
+                    title=f"{interaction.client.error_emoji} Not Allowed",
+                    description="You are not allowed to manage server tags in this server.",
+                    colour=discord.Colour.red(),
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+        else:
+            user_tag_allowed = interaction.user.id not in interaction.client.opt_out
+            if not user_tag_allowed:
+                embed = discord.Embed(
+                    title=f"{interaction.client.error_emoji} Opted Out",
+                    description="You have opted out of optional data collection, so you are not allowed to manage user tags.",
+                    colour=discord.Colour.red(),
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
 
         link = TagEditLink(
             user_id=interaction.user.id,
@@ -378,14 +404,32 @@ class TagActionsOptionRow(ActionRow):
             else None
         )
 
-        if not self.user_tag and not _get_if_server_tag_allowed(interaction, config):
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} No Permissions",
-                description="You are not allowed to create or modify server tags. Please ensure you have the **Manage Guild** permission.",
-                colour=discord.Colour.red(),
+        if self.user_tag:
+            user_tag_allowed = interaction.user.id not in interaction.client.opt_out
+            if not user_tag_allowed:
+                embed = discord.Embed(
+                    title=f"{interaction.client.error_emoji} Opted Out",
+                    description="You have opted out of optional data collection, so you are not allowed to manage user tags.",
+                    colour=discord.Colour.red(),
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return False
+        else:
+            config = (
+                await interaction.client.fetch_guild_config(interaction.guild_id)
+                if interaction.guild_id and interaction.is_guild_integration()
+                else None
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return False
+            server_tag_allowed = _get_if_server_tag_allowed(interaction, config)
+
+            if not server_tag_allowed:
+                embed = discord.Embed(
+                    title=f"{interaction.client.error_emoji} Not Allowed",
+                    description="You are not allowed to manage server tags in this server.",
+                    colour=discord.Colour.red(),
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return False
 
         return True
 
@@ -478,7 +522,13 @@ class TagSelectDropdown(Select):
             async with get_session() as session:
                 tag = await session.get(Tag, self.values[0])
 
-        if not tag:
+        # check user has access to the tag before showing actions
+        if self.user_tag:
+            valid_tag = bool(tag and tag.is_user and tag.owner_id == interaction.user.id)
+        else:
+            valid_tag = bool(tag and not tag.is_user and tag.guild_id == interaction.guild_id)
+
+        if not valid_tag:
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Not Found",
                 description="Couldn't find the tag, maybe it was deleted?",
@@ -559,7 +609,7 @@ class TagActionRow(ActionRow):
                     description="You have opted out of optional data collection, so you are not allowed to manage user tags.",
                     colour=discord.Colour.red(),
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 return False
 
         return True

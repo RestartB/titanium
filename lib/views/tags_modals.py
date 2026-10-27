@@ -15,24 +15,6 @@ LOGGER = logging.getLogger("feedback")
 
 
 class TagModal(discord.ui.Modal, title="Tag Information"):
-    tag_type = discord.ui.Label(
-        text="Tag Type",
-        description="Select the type of tag to make.",
-        component=discord.ui.RadioGroup(
-            options=[
-                discord.RadioGroupOption(
-                    label="User Tag - use in any server by adding Titanium to your account",
-                    value="user",
-                    default=True,
-                ),
-                discord.RadioGroupOption(
-                    label="Server Tag - use in this server only, requires Manage Server permissions",
-                    value="server",
-                ),
-            ],
-        ),
-    )
-
     tag_name = discord.ui.Label(
         text="Tag Name",
         description="Enter the name of the tag. The name must be unique and cannot contain spaces or backticks (`).",
@@ -55,54 +37,35 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
 
     def __init__(
         self,
-        server_tag_allowed: bool,
-        user_tag_allowed: bool,
+        server_tag: bool,
         timeout: float = 600,
         existing_tag: Tag | None = None,
     ) -> None:
         super().__init__(timeout=timeout)
-        self.server_tag_allowed = server_tag_allowed
-        self.user_tag_allowed = user_tag_allowed
+        self.server_tag = server_tag
         self.existing_tag = existing_tag
-        self.is_server_tag = False
 
-        assert isinstance(self.tag_type.component, discord.ui.RadioGroup)
         assert isinstance(self.tag_name.component, discord.ui.TextInput)
         assert isinstance(self.tag_content.component, discord.ui.TextInput)
 
-        if not user_tag_allowed and server_tag_allowed:
-            self.remove_item(self.tag_type)
-            self.is_server_tag = True
-            self.title = "Server Tag Information"
-        elif user_tag_allowed and not server_tag_allowed:
-            self.remove_item(self.tag_type)
-            self.title = "User Tag Information"
-
         if existing_tag:
-            self.remove_item(self.tag_type)
             self.tag_name.component.default = existing_tag.name
             self.tag_content.component.default = existing_tag.content
-            self.is_server_tag = not existing_tag.is_user
 
     async def on_submit(self, interaction: discord.Interaction["TitaniumBot"]) -> None:
         await interaction.response.defer(ephemeral=True)
 
-        assert isinstance(self.tag_type.component, discord.ui.RadioGroup)
         assert isinstance(self.tag_name.component, discord.ui.TextInput)
         assert isinstance(self.tag_content.component, discord.ui.TextInput)
-        assert self.tag_type.component.value != "server" or (
-            self.tag_type.component.value == "server" and interaction.guild
-        )
 
         cleaned_name = self.tag_name.component.value.lower().strip()
 
         # has the user bypassed checks / permissions have changed since modal was sent?
-        if self.tag_type.component.value == "server" and (
-            not self.server_tag_allowed
-            or (
-                isinstance(interaction.user, discord.Member)
-                and not interaction.permissions.manage_guild
-            )
+        if self.server_tag and (
+            not interaction.guild
+            or not interaction.is_guild_integration()
+            or not isinstance(interaction.user, discord.Member)
+            or not interaction.permissions.manage_guild
         ):
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} No Permissions",
@@ -138,10 +101,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
             )
             return await interaction.followup.send(embed=embed, ephemeral=True)
 
-        if not self.is_server_tag:
-            self.is_server_tag = self.tag_type.component.value == "server"
-
-        if self.is_server_tag and interaction.guild:
+        if self.server_tag and interaction.guild:
             config = (
                 await interaction.client.fetch_guild_config(interaction.guild.id)
                 if interaction.is_guild_integration()
@@ -163,7 +123,21 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
             async with get_session() as session:
                 existing_tag = await session.get(Tag, self.existing_tag.id)
 
-                if not existing_tag:
+                # check user has access to tag before updating
+                if self.server_tag:
+                    valid_target = bool(
+                        existing_tag
+                        and not existing_tag.is_user
+                        and existing_tag.guild_id == interaction.guild_id
+                    )
+                else:
+                    valid_target = bool(
+                        existing_tag
+                        and existing_tag.is_user
+                        and existing_tag.owner_id == interaction.user.id
+                    )
+
+                if not existing_tag or not valid_target:
                     embed = discord.Embed(
                         title=f"{interaction.client.error_emoji} Not Found",
                         description="Couldn't find the tag to edit. Maybe someone deleted it?",
@@ -197,7 +171,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
         else:
             # creating tag
             async with get_session(autocommit=False) as session:
-                if self.is_server_tag and interaction.guild and config:
+                if self.server_tag and interaction.guild and config:
                     total_result = await session.execute(
                         select(func.count())
                         .select_from(Tag)
@@ -228,7 +202,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                         )
                         return await interaction.followup.send(embed=embed, ephemeral=True)
 
-                if interaction.user.id in interaction.client.opt_out and not self.is_server_tag:
+                if interaction.user.id in interaction.client.opt_out and not self.server_tag:
                     embed = discord.Embed(
                         title=f"{interaction.client.error_emoji} Opted Out",
                         description="You have opted out of data collection and cannot create user tags.",
@@ -238,10 +212,10 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
 
                 new_tag = Tag(
                     guild_id=interaction.guild.id
-                    if interaction.guild and self.is_server_tag
+                    if interaction.guild and self.server_tag
                     else None,
                     owner_id=interaction.user.id,
-                    is_user=not self.is_server_tag,
+                    is_user=not self.server_tag,
                     name=cleaned_name,
                     content=self.tag_content.component.value.strip(),
                     cv2=False,
@@ -265,12 +239,12 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
 
             embed = discord.Embed(
                 title=f"{interaction.client.success_emoji} Done",
-                description=f"Created a new {'server' if self.is_server_tag else 'user'} tag: `{cleaned_name}`",
+                description=f"Created a new {'server' if self.server_tag else 'user'} tag: `{cleaned_name}`",
                 colour=discord.Colour.green(),
             )
 
         # reload cache if this is a server tag
-        if interaction.guild_id and self.is_server_tag:
+        if interaction.guild_id and self.server_tag:
             await interaction.client.refresh_guild_config_cache(interaction.guild_id)
 
         await interaction.followup.send(embed=embed, ephemeral=True)

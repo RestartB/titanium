@@ -370,7 +370,15 @@ class APICog(commands.Cog):
             return web.Response(status=400)
 
         async with get_session() as session:
-            data = await session.get(TagEditLink, key, options=[selectinload(TagEditLink.tag)])
+            # lock session to stop replay attempts
+            data = await session.get(
+                TagEditLink,
+                key,
+                options=[selectinload(TagEditLink.tag)],
+                populate_existing=True,
+                with_for_update=True,
+            )
+
             if not data or data.initial_passed or utcnow() >= data.expires_at:
                 return web.json_response({"error": "link not found"}, status=404)
 
@@ -448,9 +456,15 @@ class APICog(commands.Cog):
             return web.json_response(self.__format_validation_error(e), status=400)
 
         async with get_session(autocommit=False) as session:
+            # lock session to stop replay attempts
             session_data = await session.get(
-                TagEditLink, key, options=[selectinload(TagEditLink.tag)]
+                TagEditLink,
+                key,
+                options=[selectinload(TagEditLink.tag)],
+                populate_existing=True,
+                with_for_update=True,
             )
+
             if (
                 not session_data
                 or not session_data.initial_passed
@@ -477,7 +491,7 @@ class APICog(commands.Cog):
                     )
 
                 if (
-                    session_data.tag_id == None
+                    session_data.tag_id is None
                     and config.limits.enforcing
                     and len(config.tag_settings.tags) >= config.limits.tags
                 ):
@@ -493,10 +507,49 @@ class APICog(commands.Cog):
                 if not member:
                     return web.json_response({"error": "user not found"}, status=404)
 
+                if not member.guild_permissions.manage_guild:
+                    return web.json_response({"error": "no permissions"}, status=403)
+            else:
+                if session_data.user_id in self.bot.opt_out:
+                    return web.json_response({"error": "opted out"}, status=403)
+
+                if not session_data.tag_id:
+                    # new tag, check user's limits first
+                    count = await session.execute(
+                        select(func.count())
+                        .select_from(Tag)
+                        .where(Tag.is_user.is_(True), Tag.owner_id == session_data.user_id)
+                    )
+                    result = count.scalar() or 0
+
+                    if result >= 250:
+                        return web.json_response(
+                            {
+                                "error": "Limit exceeded",
+                                "message": "You have gone over your limit for user tags.",
+                            },
+                            status=403,
+                        )
+
             if session_data.tag:
                 components = [
                     component.model_dump(mode="json") for component in validated_tag.components
                 ]
+
+                # check user has access to tag before updating
+                if session_data.guild_id is None:
+                    valid_target = (
+                        session_data.tag.is_user
+                        and session_data.tag.owner_id == session_data.user_id
+                    )
+                else:
+                    valid_target = (
+                        not session_data.tag.is_user
+                        and session_data.tag.guild_id == session_data.guild_id
+                    )
+
+                if not valid_target:
+                    return web.json_response({"error": "tag not found"}, status=404)
 
                 criteria = [Tag.id == session_data.tag.id]
                 if session_data.tag.is_user:
@@ -532,6 +585,8 @@ class APICog(commands.Cog):
                 )
 
                 session.add(new_tag)
+
+            await session.delete(session_data)
 
             try:
                 await session.commit()
