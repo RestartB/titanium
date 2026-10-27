@@ -59,7 +59,7 @@ class BasicCommandsCog(
             description=(
                 f"{self.websocket_emoji_select(self.bot.latency)} **Websocket latency:** `{self.bot.latency * 1000:.2f}ms`\n"
                 f"{self.api_emoji_select(self.bot.api_latency)} **Discord API latency:** `{f'{self.bot.api_latency * 1000:.2f}ms' if self.bot.api_latency > 0 else 'Unavailable'}`"
-                "\n\nIs ping high or is the bot running slow? Check the [status page](https://titanium.fyi/status) or join the [support server](https://titanium.fyi/server) for help."
+                f"\n\nIs ping high or is the bot running slow? Check the [status page]({self.bot.website_url}/status) or join the [support server]({self.bot.website_url}/server) for help."
             ),
             colour=Colour.green(),
         )
@@ -95,7 +95,7 @@ class BasicCommandsCog(
         )
         embed.set_author(
             name="Titanium",
-            url="https://titanium.fyi",
+            url=self.bot.website_url,
             icon_url=self.bot.user.display_avatar.url if self.bot.user else "",
         )
         embed.set_footer(
@@ -104,7 +104,7 @@ class BasicCommandsCog(
         )
         embed.add_field(
             name="Links",
-            value="**Website:** https://titanium.fyi\n**Dashboard:** https://dash.titanium.fyi\n**Support Server:** https://titanium.fyi/server\n**Privacy Policy:** https://titanium.fyi/privacy\n**Terms of Use:** https://titanium.fyi/terms",
+            value=f"**Website:** {self.bot.website_url}\n**Dashboard:** {self.bot.dashboard_url}\n**Support Server:** {self.bot.website_url}/server\n**Privacy Policy:** {self.bot.website_url}/privacy\n**Terms of Use:** {self.bot.website_url}/terms",
         )
 
         await interaction.followup.send(embed=embed, ephemeral=ephemeral)
@@ -126,7 +126,7 @@ class BasicCommandsCog(
             description="Use this invite to add Titanium to your account or server.",
             colour=Colour.light_grey(),
         )
-        embed.add_field(name="Invite", value="https://titanium.fyi/invite")
+        embed.add_field(name="Invite", value=f"{self.bot.website_url}/invite")
 
         view = View()
         view.add_item(

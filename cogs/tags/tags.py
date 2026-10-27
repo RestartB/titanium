@@ -9,6 +9,7 @@ from rapidfuzz import fuzz, process
 from sqlalchemy import select
 
 from lib.embeds.general import cancelled
+from lib.helpers.components import tiToCv2
 from lib.helpers.validation import is_valid_uuid
 from lib.sql.sql import GuildSettings, Tag, get_session
 from lib.views.pagination import PaginationView
@@ -219,15 +220,15 @@ class TagCommandsCog(commands.Cog):
     async def tags_group(
         self, interaction: discord.Interaction["TitaniumBot"], tag: str, ephemeral: bool = False
     ):
-        await interaction.response.defer(ephemeral=ephemeral)
-
         if not tag:
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Enter a tag name",
                 description="Please enter a tag name when sending the command.",
                 colour=discord.Colour.red(),
             )
-            return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+            return await interaction.followup.send(embed=embed, ephemeral=True)
+
+        await interaction.response.defer(ephemeral=ephemeral)
 
         config = (
             await self.bot.fetch_guild_config(interaction.guild.id)
@@ -325,21 +326,52 @@ class TagCommandsCog(commands.Cog):
             else:
                 return await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
-        if view and view.interaction:
-            await view.interaction.edit_original_response(
-                embed=None,
-                view=None,
-                content=tag_data.content,
-                allowed_mentions=discord.AllowedMentions.none(),
+        try:
+            if view and view.interaction:
+                await view.interaction.edit_original_response(
+                    embed=None,
+                    view=tiToCv2(tag_data.components) if tag_data.cv2 else None,
+                    content=None if tag_data.cv2 else tag_data.content,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+                await self.push_tag_usage(tag_data)
+            else:
+                if tag_data.cv2:
+                    await interaction.followup.send(
+                        view=tiToCv2(tag_data.components),
+                        allowed_mentions=discord.AllowedMentions.none(),
+                        ephemeral=ephemeral,
+                    )
+                else:
+                    await interaction.followup.send(
+                        content=tag_data.content,
+                        allowed_mentions=discord.AllowedMentions.none(),
+                        ephemeral=ephemeral,
+                    )
+                await self.push_tag_usage(tag_data)
+        except ValueError as error:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Tag Data",
+                description=f"Titanium can't send your tag as it contains invalid data. Please review the error message below for more info:\n```{str(error)[:4096]}```",
+                colour=discord.Colour.red(),
             )
-            await self.push_tag_usage(tag_data)
-        else:
-            await interaction.followup.send(
-                content=tag_data.content,
-                allowed_mentions=discord.AllowedMentions.none(),
-                ephemeral=ephemeral,
+            embed.set_footer(
+                text=f"Feel free to join Titanium's support server for help with this error - {self.bot.website_url}/server"
             )
-            await self.push_tag_usage(tag_data)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+        except discord.HTTPException as error:
+            _, separator, details = error.text.partition("\n")
+            details = details if separator else error.text
+
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Invalid Tag Data",
+                description=f"Discord can't send your tag as it contains invalid data. Please review the error message below for more info:\n```{details[:4096]}```",
+                colour=discord.Colour.red(),
+            )
+            embed.set_footer(
+                text=f"Feel free to join Titanium's support server for help with this error - {self.bot.website_url}/server"
+            )
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # List tags command
     @app_commands.command(name="tags", description="View a list of all server or user tags.")

@@ -412,7 +412,7 @@ class WebSearchCommandsCog(
                 )
                 embed.set_author(
                     name="Wikipedia",
-                    icon_url="https://titanium.fyi/assets/wikipedia.png",
+                    icon_url=f"{self.bot.website_url}/assets/wikipedia.png",
                 )
                 embed.set_footer(
                     text=f"@{interaction.user.name}",
@@ -433,7 +433,7 @@ class WebSearchCommandsCog(
             )
             embed.set_author(
                 name="Wikipedia",
-                icon_url="https://titanium.fyi/assets/wikipedia.png",
+                icon_url=f"{self.bot.website_url}/assets/wikipedia.png",
             )
             embed.set_footer(
                 text=f"@{interaction.user.name}",
@@ -460,7 +460,7 @@ class WebSearchCommandsCog(
                 )
                 embed.set_author(
                     name="Wikipedia",
-                    icon_url="https://titanium.fyi/assets/wikipedia.png",
+                    icon_url=f"{self.bot.website_url}/assets/wikipedia.png",
                 )
                 embed.set_footer(
                     text=f"@{interaction.user.name}",
@@ -484,7 +484,7 @@ class WebSearchCommandsCog(
         )
         embed.set_author(
             name="Wikipedia",
-            icon_url="https://titanium.fyi/assets/wikipedia.png",
+            icon_url=f"{self.bot.website_url}/assets/wikipedia.png",
         )
 
         view = View()

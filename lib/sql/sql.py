@@ -81,10 +81,7 @@ class GuildSettings(Base):
     )
 
     prefixes: Mapped[list[str]] = MappedColumn(
-        ARRAY(String(length=5)),
-        default=["t!"],
-        server_default=text("ARRAY['t!']::varchar[]"),
-        nullable=False,
+        ARRAY(String(length=5)), default=["t!"], server_default=text("ARRAY['t!']::varchar[]")
     )
     send_not_allowed: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
 
@@ -220,7 +217,7 @@ class ModCase(Base):
     )
 
     id: Mapped[str] = MappedColumn(String(length=8), primary_key=True, default=generate_short_uuid)
-    type: Mapped[CaseType] = MappedColumn(Enum(CaseType), nullable=False)
+    type: Mapped[CaseType] = MappedColumn(Enum(CaseType))
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE")
     )
@@ -344,18 +341,12 @@ class AutomodRule(Base):
     )
 
     rule_name: Mapped[str] = MappedColumn(String(length=100))
-    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"), nullable=False)
-    evaluate_edits: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("true"), nullable=False
-    )
-    match_all_criteria: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("true"), nullable=False
-    )
+    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    evaluate_edits: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    match_all_criteria: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
 
-    order: Mapped[int] = MappedColumn(Integer, nullable=False)
-    stop_if_triggered: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("false"), nullable=False
-    )
+    order: Mapped[int] = MappedColumn(Integer)
+    stop_if_triggered: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
 
     criteria: Mapped[list["AutomodCriteria"]] = relationship(
         "AutomodCriteria",
@@ -386,17 +377,11 @@ class AutomodCriteria(Base):
     duration: Mapped[int | None] = MappedColumn(Integer, nullable=True)
 
     words: Mapped[list[str]] = MappedColumn(
-        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]"), nullable=False
+        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
     )
-    match_whole_word: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("true"), nullable=False
-    )
-    match_all_words: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("false"), nullable=False
-    )
-    case_sensitive: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("false"), nullable=False
-    )
+    match_whole_word: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    match_all_words: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    case_sensitive: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
 
     rule_id: Mapped[uuid.UUID] = MappedColumn(
         UUID(as_uuid=True), ForeignKey("automod_rules.id", ondelete="CASCADE")
@@ -421,7 +406,7 @@ class AutomodAction(Base):
     embed_colour: Mapped[str | None] = MappedColumn(String(length=7), nullable=True)
 
     role_ids: Mapped[list[int]] = MappedColumn(
-        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
 
     reaction: Mapped[str | None] = MappedColumn(String(), nullable=True)
@@ -458,19 +443,15 @@ class BouncerRule(Base):
     )
 
     rule_name: Mapped[str] = MappedColumn(String(length=100))
-    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"), nullable=False)
-    match_all_criteria: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("true"), nullable=False
-    )
+    enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    match_all_criteria: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
 
     member_join: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     member_update: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     suspicious_reaction: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
 
-    order: Mapped[int] = MappedColumn(Integer, nullable=False)
-    stop_if_triggered: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("false"), nullable=False
-    )
+    order: Mapped[int] = MappedColumn(Integer)
+    stop_if_triggered: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
 
     criteria: Mapped[list["BouncerCriteria"]] = relationship(
         "BouncerCriteria",
@@ -503,17 +484,11 @@ class BouncerCriteria(Base):
     account_age: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
 
     words: Mapped[list[str]] = MappedColumn(
-        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]"), nullable=False
+        ARRAY(String(length=100)), server_default=text("ARRAY[]::varchar[]")
     )
-    match_whole_word: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("true"), nullable=False
-    )
-    match_all_words: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("false"), nullable=False
-    )
-    case_sensitive: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("false"), nullable=False
-    )
+    match_whole_word: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+    match_all_words: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    case_sensitive: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
 
     rule: Mapped["BouncerRule"] = relationship(
         "BouncerRule", back_populates="criteria", uselist=False
@@ -532,7 +507,7 @@ class BouncerAction(Base):
     reason: Mapped[str | None] = MappedColumn(String(length=512), nullable=True)
 
     role_ids: Mapped[list[int]] = MappedColumn(
-        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]"), nullable=False
+        ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
 
     rule: Mapped["BouncerRule"] = relationship(
@@ -598,7 +573,7 @@ class FireboardBoard(Base):
         "GuildFireboardSettings", back_populates="fireboard_boards", uselist=False
     )
 
-    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    channel_id: Mapped[int] = MappedColumn(BigInteger)
     reaction: Mapped[str] = MappedColumn(String(), server_default=text("'🔥'"))
     threshold: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
 
@@ -623,13 +598,10 @@ class FireboardMessage(Base):
 
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(
-        BigInteger,
-        ForeignKey("guild_fireboard_settings.guild_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+        BigInteger, ForeignKey("guild_fireboard_settings.guild_id", ondelete="CASCADE"), index=True
     )
-    message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    fireboard_message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    message_id: Mapped[int] = MappedColumn(BigInteger)
+    fireboard_message_id: Mapped[int] = MappedColumn(BigInteger)
     fireboard_id: Mapped[uuid.UUID] = MappedColumn(
         UUID(as_uuid=True), ForeignKey("fireboard_boards.id", ondelete="CASCADE"), index=True
     )
@@ -648,7 +620,7 @@ class GuildLeaderboardSettings(Base):
     )
 
     mode: Mapped[LeaderboardCalcType] = MappedColumn(
-        Enum(LeaderboardCalcType), nullable=False, server_default=text("'FIXED'")
+        Enum(LeaderboardCalcType), server_default=text("'FIXED'")
     )
     delete_leavers: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     stack_roles: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
@@ -661,7 +633,7 @@ class GuildLeaderboardSettings(Base):
 
     vc_enabled: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
     vc_mode: Mapped[LeaderboardVcCalcType] = MappedColumn(
-        Enum(LeaderboardVcCalcType), nullable=False, server_default=text("'FIXED'")
+        Enum(LeaderboardVcCalcType), server_default=text("'FIXED'")
     )
     vc_delay: Mapped[int] = MappedColumn(Integer, server_default=text("5"))
     vc_base_xp: Mapped[int] = MappedColumn(Integer, server_default=text("10"))
@@ -716,11 +688,9 @@ class LeaderboardUserStats(Base):
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guild_id: Mapped[int] = MappedColumn(
-        BigInteger,
-        ForeignKey("guild_leaderboard_settings.guild_id", ondelete="CASCADE"),
-        nullable=False,
+        BigInteger, ForeignKey("guild_leaderboard_settings.guild_id", ondelete="CASCADE")
     )
-    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
+    user_id: Mapped[int] = MappedColumn(BigInteger, index=True)
 
     xp: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
     level: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
@@ -783,20 +753,18 @@ class AnonymousPoll(Base):
         BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE")
     )
 
-    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    creator_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    message_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    channel_id: Mapped[int] = MappedColumn(BigInteger)
+    creator_id: Mapped[int] = MappedColumn(BigInteger)
+    message_id: Mapped[int] = MappedColumn(BigInteger)
 
-    content: Mapped[str] = MappedColumn(String(length=1000), nullable=False)
+    content: Mapped[str] = MappedColumn(String(length=1000))
     image_url: Mapped[str | None] = MappedColumn(String(), nullable=True)
     choices: Mapped[list[str]] = MappedColumn(
         ARRAY(String(length=100)),
         server_default=text("ARRAY[]::varchar[]"),
     )
-    closing_time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=False)
-    show_live_results: Mapped[bool] = MappedColumn(
-        Boolean, server_default=text("true"), nullable=False
-    )
+    closing_time: Mapped[datetime] = MappedColumn(DateTime(timezone=True))
+    show_live_results: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
 
     responses: Mapped[list["AnonymousPollResponse"]] = relationship(
         "AnonymousPollResponse",
@@ -818,13 +786,11 @@ class AnonymousPollResponse(Base):
     __table_args__ = (UniqueConstraint("poll_id", "user_id", name="uq_poll_user_id"),)
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    user_id: Mapped[int] = MappedColumn(BigInteger)
     poll_id: Mapped[uuid.UUID] = MappedColumn(
-        UUID(as_uuid=True),
-        ForeignKey("anonymous_polls.id", ondelete="CASCADE"),
-        nullable=False,
+        UUID(as_uuid=True), ForeignKey("anonymous_polls.id", ondelete="CASCADE")
     )
-    answer_index: Mapped[int] = MappedColumn(Integer, nullable=False)
+    answer_index: Mapped[int] = MappedColumn(Integer)
 
     poll: Mapped["AnonymousPoll"] = relationship(
         "AnonymousPoll",
@@ -868,12 +834,35 @@ class Tag(Base):
         "GuildTagSettings", back_populates="tags", uselist=False
     )
 
-    owner_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    owner_id: Mapped[int] = MappedColumn(BigInteger)
     modified_by: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
-    is_user: Mapped[bool] = MappedColumn(Boolean, nullable=False)
-    name: Mapped[str] = MappedColumn(String(length=80), nullable=False)
-    content: Mapped[str] = MappedColumn(String(length=2000), nullable=False)
+    is_user: Mapped[bool] = MappedColumn(Boolean)
     amount_used: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
+
+    name: Mapped[str] = MappedColumn(String(length=80))
+    content: Mapped[str] = MappedColumn(String(length=2000))
+    components: Mapped[list] = MappedColumn(ARRAY(JSONB), server_default=text("ARRAY[]::JSONB[]"))
+    cv2: Mapped[bool] = MappedColumn(Boolean)
+
+
+class TagEditLink(Base):
+    __tablename__ = "tag_edit_links"
+
+    page_key: Mapped[uuid.UUID] = MappedColumn(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    submit_key: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), default=uuid.uuid4)
+
+    initial_passed: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
+    expires_at: Mapped[datetime] = MappedColumn(DateTime(timezone=True))
+
+    user_id: Mapped[int] = MappedColumn(BigInteger)
+    guild_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
+
+    tag_id: Mapped[uuid.UUID | None] = MappedColumn(
+        UUID(as_uuid=True), ForeignKey("tags.id", ondelete="CASCADE"), nullable=True
+    )
+    tag: Mapped["Tag | None"] = relationship("Tag", uselist=False)
 
 
 class GuildRepSettings(Base):
@@ -909,14 +898,12 @@ class UserRep(Base):
     )
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    user_id: Mapped[int] = MappedColumn(BigInteger)
     guild_id: Mapped[int] = MappedColumn(
-        BigInteger,
-        ForeignKey("guild_rep_settings.guild_id", ondelete="CASCADE"),
-        nullable=False,
+        BigInteger, ForeignKey("guild_rep_settings.guild_id", ondelete="CASCADE")
     )
 
-    rep: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"), nullable=False)
+    rep: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
     daily_snapshots: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )
@@ -940,25 +927,23 @@ class RepAddHistory(Base):
     )
 
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    guild_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    guild_id: Mapped[int] = MappedColumn(BigInteger)
+    user_id: Mapped[int] = MappedColumn(BigInteger)
 
-    target_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
+    target_id: Mapped[int] = MappedColumn(BigInteger)
     target_user: Mapped[UserRep] = relationship(
         "UserRep", back_populates="rep_history", uselist=False
     )
 
-    time: Mapped[datetime] = MappedColumn(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
-    )
+    time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), server_default=text("NOW()"))
 
 
 class GameStat(Base):
     __tablename__ = "game_stats"
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
-    game: Mapped[GameTypes] = MappedColumn(Enum(GameTypes), nullable=False)
-    won: Mapped[bool] = MappedColumn(Boolean, nullable=False)
+    user_id: Mapped[int] = MappedColumn(BigInteger, index=True)
+    game: Mapped[GameTypes] = MappedColumn(Enum(GameTypes))
+    won: Mapped[bool] = MappedColumn(Boolean)
 
 
 class Reminder(Base):
@@ -967,14 +952,14 @@ class Reminder(Base):
 
     guild_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     channel_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
-    user_id: Mapped[int] = MappedColumn(BigInteger, nullable=False, index=True)
-    dm: Mapped[bool] = MappedColumn(Boolean, nullable=False)
-    time: Mapped[datetime] = MappedColumn(DateTime(timezone=True), nullable=False)
+    user_id: Mapped[int] = MappedColumn(BigInteger, index=True)
+    dm: Mapped[bool] = MappedColumn(Boolean)
+    time: Mapped[datetime] = MappedColumn(DateTime(timezone=True))
     time_created: Mapped[datetime] = MappedColumn(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=text("NOW()")
     )
 
-    content: Mapped[str] = MappedColumn(String(), nullable=False)
+    content: Mapped[str] = MappedColumn(String())
     scheduled_task: Mapped[ScheduledTask] = relationship(
         "ScheduledTask",
         back_populates="reminder",
@@ -1020,8 +1005,8 @@ class ScheduledTask(Base):
     id: Mapped[uuid.UUID] = MappedColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     time_scheduled: Mapped[datetime] = MappedColumn(DateTime(timezone=True), index=True)
-    type: Mapped[EventType] = MappedColumn(Enum(EventType), nullable=False)
-    retry_amount: Mapped[int] = MappedColumn(Integer, server_default=text("0"), nullable=False)
+    type: Mapped[EventType] = MappedColumn(Enum(EventType))
+    retry_amount: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
 
     guild_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
     user_id: Mapped[int | None] = MappedColumn(BigInteger, nullable=True)
@@ -1062,13 +1047,10 @@ class AvailableWebhook(Base):
 
     id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
     guild_id: Mapped[int] = MappedColumn(
-        BigInteger,
-        ForeignKey("guild_settings.guild_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+        BigInteger, ForeignKey("guild_settings.guild_id", ondelete="CASCADE"), index=True
     )
-    channel_id: Mapped[int] = MappedColumn(BigInteger, nullable=False)
-    webhook_url: Mapped[str] = MappedColumn(String, nullable=False)
+    channel_id: Mapped[int] = MappedColumn(BigInteger)
+    webhook_url: Mapped[str] = MappedColumn(String)
 
 
 class ErrorLog(Base):

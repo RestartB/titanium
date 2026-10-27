@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import discord
@@ -22,6 +23,7 @@ from discord.ui import (
     TextDisplay,
     Thumbnail,
 )
+from discord.utils import format_dt, utcnow
 from sqlalchemy import delete, select
 
 from lib.embeds.general import cancelled
@@ -35,6 +37,7 @@ from lib.sql.sql import (
     OptOutIDs,
     Reminder,
     Tag,
+    TagEditLink,
     UserRep,
     get_session,
 )
@@ -143,7 +146,7 @@ class BackButtonHomeReload(Button["SettingsView"]):
 # endregion
 
 
-# region Tag Views
+# region Tag Utility
 def _get_if_server_tag_allowed(
     interaction: discord.Interaction["TitaniumBot"], config: GuildSettings | None
 ) -> bool:
@@ -176,7 +179,7 @@ async def build_tags_pagination_view(
 
     if len(tags) == 0:
         container_pages = [
-            SelectTagContainer(
+            TagSelectContainer(
                 this_page=[],
                 user_tag=user_tag,
                 previous_view=previous_view,
@@ -197,7 +200,7 @@ async def build_tags_pagination_view(
         pages.append(page)
 
     container_pages = [
-        SelectTagContainer(
+        TagSelectContainer(
             this_page=page,
             user_tag=user_tag,
             previous_view=previous_view,
@@ -212,6 +215,10 @@ async def build_tags_pagination_view(
     return view
 
 
+# endregion
+
+
+# region Tag Views
 class BackButtonTagReload(Button["SettingsView"]):
     def __init__(self, user_tag: bool, previous_view: PaginationV2View) -> None:
         super().__init__(label="Back", style=ButtonStyle.red)
@@ -224,21 +231,207 @@ class BackButtonTagReload(Button["SettingsView"]):
             interaction=interaction,
             user_tag=self.user_tag,
             previous_view=self.previous_view.pages[0].previous_view
-            if isinstance(self.previous_view.pages[0], SelectTagContainer)
+            if isinstance(self.previous_view.pages[0], TagSelectContainer)
             else None,
         )
         await interaction.edit_original_response(view=view, allowed_mentions=AllowedMentions.none())
 
 
+class TagBasicButton(Button):
+    def __init__(self, server: bool, existing_tag: Tag | None = None):
+        super().__init__(label="Edit" if existing_tag else "Create")
+        self.server = server
+        self.existing_tag = existing_tag
+
+    async def callback(self, interaction: Interaction["TitaniumBot"]) -> None:
+        modal = TagModal(
+            server_tag=self.server,
+            existing_tag=self.existing_tag,
+        )
+        await interaction.response.send_modal(modal)
+
+
+class TagAdvancedLinkButton(Button):
+    def __init__(
+        self, previous_view: LayoutView, server: bool, existing_tag: Tag | None = None
+    ) -> None:
+        super().__init__(label="Generate")
+        self.previous_view = previous_view
+        self.server = server
+        self.existing_tag = existing_tag
+
+    async def callback(self, interaction: Interaction["TitaniumBot"]) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        if self.server:
+            config = (
+                await interaction.client.fetch_guild_config(interaction.guild_id)
+                if interaction.guild_id and interaction.is_guild_integration()
+                else None
+            )
+            server_tag_allowed = _get_if_server_tag_allowed(interaction, config)
+
+            if not server_tag_allowed:
+                embed = discord.Embed(
+                    title=f"{interaction.client.error_emoji} Not Allowed",
+                    description="You are not allowed to manage server tags in this server.",
+                    colour=discord.Colour.red(),
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+        else:
+            user_tag_allowed = interaction.user.id not in interaction.client.opt_out
+            if not user_tag_allowed:
+                embed = discord.Embed(
+                    title=f"{interaction.client.error_emoji} Opted Out",
+                    description="You have opted out of optional data collection, so you are not allowed to manage user tags.",
+                    colour=discord.Colour.red(),
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+
+        link = TagEditLink(
+            user_id=interaction.user.id,
+            guild_id=interaction.guild_id if self.server else None,
+            tag_id=self.existing_tag.id if self.existing_tag else None,
+            expires_at=utcnow() + timedelta(minutes=1),
+        )
+
+        async with get_session() as session:
+            session.add(link)
+
+        view = LayoutView()
+        view.add_item(
+            Container(
+                Section(
+                    TextDisplay(
+                        "## Link Generated\nA link has been generated. Open the link to start editing. You do not need to sign in with Discord to access this link."
+                    ),
+                    accessory=OpenPageButton(
+                        target_view=self.previous_view, label="Back", style=ButtonStyle.red
+                    ),
+                ),
+                Separator(spacing=SeparatorSpacing.large),
+                ActionRow(
+                    Button(
+                        label="Open Editor",
+                        url=f"{interaction.client.dashboard_url}/public/tagedit/{link.page_key}",
+                        style=ButtonStyle.url,
+                    )
+                ),
+                Separator(spacing=SeparatorSpacing.large),
+                TextDisplay(f"-# This link expires {format_dt(link.expires_at, style='R')}"),
+                accent_colour=Colour.light_grey(),
+            )
+        )
+
+        await interaction.edit_original_response(view=view)
+
+
+class TagAdvancedButton(Button):
+    def __init__(self, previous_view: LayoutView, server: bool, existing_tag: Tag | None = None):
+        super().__init__(label="Edit" if existing_tag else "Create")
+        self.previous_view = previous_view
+        self.server = server
+        self.existing_tag = existing_tag
+
+    async def callback(self, interaction: Interaction["TitaniumBot"]) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        view = LayoutView()
+        container = Container(
+            Section(
+                TextDisplay(
+                    "## Select Method\nAdvanced tags can't be created or edited inside of Discord. Select the method to use."
+                ),
+                accessory=OpenPageButton(
+                    target_view=self.previous_view, label="Back", style=ButtonStyle.red
+                ),
+            ),
+            Separator(spacing=SeparatorSpacing.large),
+            accent_colour=Colour.light_grey(),
+        )
+
+        if self.server:
+            container.add_item(
+                Section(
+                    TextDisplay(
+                        "### Web Dashboard\nUse the Titanium Dashboard to create and manage tags for this server. Login required."
+                    ),
+                    accessory=Button(
+                        label="Open",
+                        url=f"{interaction.client.dashboard_url}/guild/{interaction.guild_id}/tags",
+                        style=ButtonStyle.url,
+                    ),
+                )
+            )
+
+        container.add_item(
+            Section(
+                TextDisplay(
+                    "### Temporary Link\nCreate a one time link to use the web tag editor. No login required."
+                ),
+                accessory=TagAdvancedLinkButton(
+                    previous_view=view, server=self.server, existing_tag=self.existing_tag
+                ),
+            )
+        )
+
+        view.add_item(container)
+        await interaction.edit_original_response(view=view)
+
+
 class TagActionsOptionRow(ActionRow):
     def __init__(
-        self, tag: str, user_tag: bool, previous_view: PaginationV2View, my_view: LayoutView
+        self, tag: Tag, user_tag: bool, previous_view: PaginationV2View, my_view: LayoutView
     ) -> None:
         super().__init__()
         self.tag = tag
         self.user_tag = user_tag
         self.previous_view = previous_view
         self.my_view = my_view
+
+        self.add_item(
+            TagAdvancedButton(previous_view=my_view, server=not user_tag, existing_tag=tag)
+            if tag.cv2
+            else TagBasicButton(server=not user_tag, existing_tag=tag)
+        )
+
+    async def interaction_check(self, interaction: Interaction["TitaniumBot"]) -> bool:
+        config = (
+            await interaction.client.fetch_guild_config(interaction.guild_id)
+            if interaction.guild_id and interaction.is_guild_integration()
+            else None
+        )
+
+        if self.user_tag:
+            user_tag_allowed = interaction.user.id not in interaction.client.opt_out
+            if not user_tag_allowed:
+                embed = discord.Embed(
+                    title=f"{interaction.client.error_emoji} Opted Out",
+                    description="You have opted out of optional data collection, so you are not allowed to manage user tags.",
+                    colour=discord.Colour.red(),
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return False
+        else:
+            config = (
+                await interaction.client.fetch_guild_config(interaction.guild_id)
+                if interaction.guild_id and interaction.is_guild_integration()
+                else None
+            )
+            server_tag_allowed = _get_if_server_tag_allowed(interaction, config)
+
+            if not server_tag_allowed:
+                embed = discord.Embed(
+                    title=f"{interaction.client.error_emoji} Not Allowed",
+                    description="You are not allowed to manage server tags in this server.",
+                    colour=discord.Colour.red(),
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return False
+
+        return True
 
     @discord.ui.button(label="Delete", style=ButtonStyle.red)
     async def delete_button(
@@ -253,115 +446,28 @@ class TagActionsOptionRow(ActionRow):
             )
             return
 
-        config = (
-            await interaction.client.fetch_guild_config(interaction.guild_id)
-            if interaction.guild_id and interaction.is_guild_integration()
-            else None
-        )
-
-        if not self.user_tag and not _get_if_server_tag_allowed(interaction, config):
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} No Permissions",
-                description="You are not allowed to create or modify server tags. Please ensure you have the **Manage Guild** permission.",
-                colour=discord.Colour.red(),
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
-
         async with get_session() as session:
-            to_delete = await session.get(Tag, self.tag)
-
-            if (
-                not to_delete
-                or (
-                    self.user_tag
-                    and (not to_delete.is_user or to_delete.owner_id != interaction.user.id)
-                )
-                or (
-                    not self.user_tag
-                    and (to_delete.is_user or to_delete.guild_id != interaction.guild_id)
-                )
-            ):
-                embed = discord.Embed(
-                    title=f"{interaction.client.error_emoji} Not Found",
-                    description="Couldn't find the tag. Maybe it was deleted?",
-                    colour=discord.Colour.red(),
-                )
-                await interaction.followup.send(embed=embed, ephemeral=True)
-                return
-
-            await session.delete(to_delete)
+            await session.delete(self.tag)
 
         view = await build_tags_pagination_view(
             interaction=interaction,
             user_tag=self.user_tag,
             previous_view=self.previous_view.pages[0].previous_view
-            if isinstance(self.previous_view.pages[0], SelectTagContainer)
+            if isinstance(self.previous_view.pages[0], TagSelectContainer)
             else None,
         )
         await interaction.edit_original_response(view=view, allowed_mentions=AllowedMentions.none())
 
         embed = discord.Embed(
             title=f"{interaction.client.success_emoji} Deleted",
-            description=f"The `{to_delete.name}` tag was deleted.",
+            description=f"The `{self.tag.name}` tag was deleted.",
             colour=Colour.green(),
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
 
-    @discord.ui.button(label="Edit", style=ButtonStyle.blurple)
-    async def edit_button(
-        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
-    ) -> None:
-        if not is_valid_uuid(self.tag):
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Invalid Tag",
-                description="The provided tag is invalid. Please select a tag from the list.",
-                colour=discord.Colour.red(),
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
 
-        config = (
-            await interaction.client.fetch_guild_config(interaction.guild_id)
-            if interaction.guild_id and interaction.is_guild_integration()
-            else None
-        )
-
-        if not self.user_tag and not _get_if_server_tag_allowed(interaction, config):
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} No Permissions",
-                description="You are not allowed to create or modify server tags. Please ensure you have the **Manage Guild** permission.",
-                colour=discord.Colour.red(),
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        async with get_session() as session:
-            to_edit = await session.get(Tag, self.tag)
-
-        if (
-            not to_edit
-            or (self.user_tag and (not to_edit.is_user or to_edit.owner_id != interaction.user.id))
-            or (not self.user_tag and (to_edit.is_user or to_edit.guild_id != interaction.guild_id))
-        ):
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Not Found",
-                description="Couldn't find the tag. Maybe it was deleted?",
-                colour=discord.Colour.red(),
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        modal = TagModal(
-            server_tag_allowed=not self.user_tag,
-            user_tag_allowed=self.user_tag,
-            existing_tag=to_edit,
-        )
-        await interaction.response.send_modal(modal)
-
-
-class TagsActionsView(LayoutView):
-    def __init__(self, tag: str, user_tag: bool, previous_view: PaginationV2View) -> None:
+class TagActionsView(LayoutView):
+    def __init__(self, tag: Tag, user_tag: bool, previous_view: PaginationV2View) -> None:
         super().__init__(timeout=600)
         self.tag = tag
         self.user_tag = user_tag
@@ -375,7 +481,7 @@ class TagsActionsView(LayoutView):
             top_section,
             Separator(spacing=SeparatorSpacing.large),
             TagActionsOptionRow(
-                tag=tag, user_tag=user_tag, previous_view=previous_view, my_view=self
+                tag=self.tag, user_tag=user_tag, previous_view=previous_view, my_view=self
             ),
             accent_colour=Colour.light_grey(),
         )
@@ -410,15 +516,34 @@ class TagSelectDropdown(Select):
         if self.my_view is None:
             raise RuntimeError("my_view must be set before interaction")
 
+        valid = is_valid_uuid(self.values[0])
+        tag = None
+        if valid:
+            async with get_session() as session:
+                tag = await session.get(Tag, self.values[0])
+
+        # check user has access to the tag before showing actions
+        if self.user_tag:
+            valid_tag = bool(tag and tag.is_user and tag.owner_id == interaction.user.id)
+        else:
+            valid_tag = bool(tag and not tag.is_user and tag.guild_id == interaction.guild_id)
+
+        if not valid_tag:
+            embed = discord.Embed(
+                title=f"{interaction.client.error_emoji} Not Found",
+                description="Couldn't find the tag, maybe it was deleted?",
+                colour=Colour.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
         await interaction.edit_original_response(
-            view=TagsActionsView(
-                tag=self.values[0], user_tag=self.user_tag, previous_view=self.my_view
-            ),
+            view=TagActionsView(tag=tag, user_tag=self.user_tag, previous_view=self.my_view),
             allowed_mentions=AllowedMentions.none(),
         )
 
 
-class SelectTagContainer(Container):
+class TagSelectContainer(Container):
     def __init__(
         self,
         this_page: list[Tag],
@@ -451,91 +576,80 @@ class SelectTagContainer(Container):
             self.add_item(ActionRow(self.dropdown))
 
 
-class ServerTagsActionRow(ActionRow):
-    def __init__(self, previous_view: LayoutView) -> None:
+class TagActionRow(ActionRow):
+    def __init__(self, previous_view: LayoutView, server: bool) -> None:
         super().__init__()
         self.previous_view = previous_view
+        self.server = server
+
+    async def interaction_check(self, interaction: Interaction["TitaniumBot"]) -> bool:
+        await interaction.response.defer(ephemeral=True)
+
+        if self.server:
+            config = (
+                await interaction.client.fetch_guild_config(interaction.guild_id)
+                if interaction.guild_id and interaction.is_guild_integration()
+                else None
+            )
+            server_tag_allowed = _get_if_server_tag_allowed(interaction, config)
+
+            if not server_tag_allowed:
+                embed = discord.Embed(
+                    title=f"{interaction.client.error_emoji} Not Allowed",
+                    description="You are not allowed to manage server tags in this server.",
+                    colour=discord.Colour.red(),
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return False
+        else:
+            user_tag_allowed = interaction.user.id not in interaction.client.opt_out
+            if not user_tag_allowed:
+                embed = discord.Embed(
+                    title=f"{interaction.client.error_emoji} Opted Out",
+                    description="You have opted out of optional data collection, so you are not allowed to manage user tags.",
+                    colour=discord.Colour.red(),
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return False
+
+        return True
 
     @discord.ui.button(label="Add", style=ButtonStyle.green)
     async def add_button(
         self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
     ):
-        config = (
-            await interaction.client.fetch_guild_config(interaction.guild_id)
-            if interaction.guild_id and interaction.is_guild_integration()
-            else None
-        )
-        server_tag_allowed = _get_if_server_tag_allowed(interaction, config)
-
-        if not server_tag_allowed:
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Not Allowed",
-                description="You are not allowed to manage server tags in this server.",
-                colour=discord.Colour.red(),
+        view = LayoutView()
+        view.add_item(
+            Container(
+                Section(
+                    TextDisplay("## Select Type\nSelect the type of tag to create."),
+                    accessory=OpenPageButton(
+                        target_view=self.previous_view, label="Back", style=ButtonStyle.red
+                    ),
+                ),
+                Separator(spacing=SeparatorSpacing.large),
+                Section(
+                    TextDisplay("### Basic Tag\nCreate a basic tag that contains markdown text."),
+                    accessory=TagBasicButton(self.server),
+                ),
+                Section(
+                    TextDisplay(
+                        "### Advanced Tag\nCreate an advanced tag that contains text, buttons, images, videos and more."
+                    ),
+                    accessory=TagAdvancedButton(previous_view=view, server=self.server),
+                ),
+                accent_colour=Colour.light_grey(),
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
+        )
 
-        modal = TagModal(server_tag_allowed=server_tag_allowed, user_tag_allowed=False)
-        await interaction.response.send_modal(modal)
+        await interaction.edit_original_response(view=view)
 
     @discord.ui.button(label="Update or Remove", style=ButtonStyle.blurple)
     async def modify_button(
         self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
     ):
-        await interaction.response.defer(ephemeral=True)
-
-        config = (
-            await interaction.client.fetch_guild_config(interaction.guild_id)
-            if interaction.guild_id and interaction.is_guild_integration()
-            else None
-        )
-        server_tag_allowed = _get_if_server_tag_allowed(interaction, config)
-
-        if not server_tag_allowed:
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Not Allowed",
-                description="You are not allowed to manage server tags in this server.",
-                colour=discord.Colour.red(),
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
-
         view = await build_tags_pagination_view(
-            interaction=interaction, user_tag=False, previous_view=self.previous_view
-        )
-        await interaction.edit_original_response(view=view, allowed_mentions=AllowedMentions.none())
-
-
-class UserTagsActionRow(ActionRow):
-    def __init__(self, previous_view: LayoutView) -> None:
-        super().__init__()
-        self.previous_view = previous_view
-
-    @discord.ui.button(label="Add", style=ButtonStyle.green)
-    async def add_button(
-        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
-    ):
-        user_tag_allowed = interaction.user.id not in interaction.client.opt_out
-        if not user_tag_allowed:
-            embed = discord.Embed(
-                title=f"{interaction.client.error_emoji} Opted Out",
-                description="You have opted out of optional data collection, so you are not allowed to manage user tags.",
-                colour=discord.Colour.red(),
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        modal = TagModal(server_tag_allowed=False, user_tag_allowed=user_tag_allowed)
-        await interaction.response.send_modal(modal)
-
-    @discord.ui.button(label="Update or Remove", style=ButtonStyle.blurple)
-    async def modify_button(
-        self, interaction: discord.Interaction["TitaniumBot"], button: discord.ui.Button
-    ):
-        await interaction.response.defer(ephemeral=True)
-        view = await build_tags_pagination_view(
-            interaction=interaction, user_tag=True, previous_view=self.previous_view
+            interaction=interaction, user_tag=not self.server, previous_view=self.previous_view
         )
         await interaction.edit_original_response(view=view, allowed_mentions=AllowedMentions.none())
 
@@ -554,7 +668,7 @@ class ServerTagsView(LayoutView):
         container = Container(
             top_section,
             Separator(spacing=SeparatorSpacing.large),
-            ServerTagsActionRow(previous_view=self),
+            TagActionRow(previous_view=self, server=True),
             accent_colour=Colour.light_grey(),
         )
         self.add_item(container)
@@ -574,7 +688,7 @@ class UserTagsView(LayoutView):
         container = Container(
             top_section,
             Separator(spacing=SeparatorSpacing.large),
-            UserTagsActionRow(previous_view=self),
+            TagActionRow(previous_view=self, server=False),
             accent_colour=Colour.light_grey(),
         )
         self.add_item(container)
@@ -583,6 +697,7 @@ class UserTagsView(LayoutView):
 # endregion
 
 
+# region Settings Views
 class ModulesView(LayoutView):
     def __init__(
         self,
@@ -674,13 +789,13 @@ class SettingsView(LayoutView):
             if interaction.guild.icon:
                 top_section = Section(
                     TextDisplay(
-                        f"## Settings\nManage settings for your account and this server. To manage more server settings, please go to the {dashboard_url(interaction.guild.id)}."
+                        f"## Settings\nManage settings for your account and this server. To manage more server settings, please go to the {dashboard_url(interaction.guild.id, interaction.client.dashboard_url)}."
                     ),
                     accessory=Thumbnail(media=interaction.guild.icon.url),
                 )
             else:
                 top_section = TextDisplay(
-                    f"## Settings\nManage settings for your account and this server. To manage more server settings, please go to the {dashboard_url(interaction.guild.id)}."
+                    f"## Settings\nManage settings for your account and this server. To manage more server settings, please go to the {dashboard_url(interaction.guild.id, interaction.client.dashboard_url)}."
                 )
         else:
             if bot.user:
@@ -731,6 +846,9 @@ class SettingsView(LayoutView):
 
         container.add_item(user_tags_section)
         self.add_item(container)
+
+
+# endregion
 
 
 class GuildSettingsCog(commands.Cog, name="Settings", description="Manage server settings."):
