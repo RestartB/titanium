@@ -840,7 +840,7 @@ class Tag(Base):
     amount_used: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
 
     name: Mapped[str] = MappedColumn(String(length=80))
-    cv2: Mapped[bool] = MappedColumn(Boolean)
+    cv2: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
 
     content: Mapped[str] = MappedColumn(String(length=2000))
     components: Mapped[list] = MappedColumn(ARRAY(JSONB), server_default=text("ARRAY[]::JSONB[]"))
