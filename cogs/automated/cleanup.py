@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from main import TitaniumBot
 
 
-class DataRetention(commands.Cog):
+class CleanupTasks(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
@@ -30,4 +30,4 @@ class DataRetention(commands.Cog):
 
 
 async def setup(bot: TitaniumBot) -> None:
-    await bot.add_cog(DataRetention(bot))
+    await bot.add_cog(CleanupTasks(bot))
