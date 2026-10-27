@@ -395,6 +395,8 @@ class APICog(commands.Cog):
                     "cv2": data.tag.cv2,
                     "content": data.tag.content,
                     "components": data.tag.components,
+                    "colour": data.tag.colour,
+                    "spoiler": data.tag.spoiler,
                 }
                 if data.tag
                 else None,
@@ -432,6 +434,8 @@ class APICog(commands.Cog):
                     "cv2": data.tag.cv2,
                     "content": data.tag.content,
                     "components": data.tag.components,
+                    "colour": data.tag.colour,
+                    "spoiler": data.tag.spoiler,
                 }
                 if data.tag
                 else None,
@@ -567,6 +571,8 @@ class APICog(commands.Cog):
                         cv2=validated_tag.cv2,
                         content=validated_tag.content,
                         components=components,
+                        colour=validated_tag.colour,
+                        spoiler=validated_tag.spoiler,
                     )
                 )
             else:
@@ -576,9 +582,11 @@ class APICog(commands.Cog):
 
                 new_tag = Tag(
                     name=validated_tag.name,
+                    cv2=validated_tag.cv2,
                     content=validated_tag.content,
                     components=components,
-                    cv2=validated_tag.cv2,
+                    colour=validated_tag.colour,
+                    spoiler=validated_tag.spoiler,
                     owner_id=member.id if member else session_data.user_id,
                     guild_id=guild.id if guild else None,
                     is_user=not guild,
@@ -1197,9 +1205,11 @@ class APICog(commands.Cog):
                 {
                     "id": str(tag.id),
                     "name": tag.name,
+                    "cv2": tag.cv2,
                     "content": tag.content,
                     "components": tag.components,
-                    "cv2": tag.cv2,
+                    "colour": tag.colour,
+                    "spoiler": tag.spoiler,
                     "creator_id": str(tag.owner_id),
                     "creator_name": cuser.name if cuser else None,
                     "creator_display": cuser.display_name if cuser else None,
@@ -1258,9 +1268,11 @@ class APICog(commands.Cog):
 
             new_tag = Tag(
                 name=validated_tag.name,
+                cv2=validated_tag.cv2,
                 content=validated_tag.content,
                 components=components,
-                cv2=validated_tag.cv2,
+                colour=validated_tag.colour,
+                spoiler=validated_tag.spoiler,
                 owner_id=member.id,
                 guild_id=guild.id,
                 is_user=False,
@@ -1326,6 +1338,8 @@ class APICog(commands.Cog):
             to_edit.components = [
                 component.model_dump(mode="json") for component in validated_tag.components
             ]
+            to_edit.colour = validated_tag.colour
+            to_edit.spoiler = validated_tag.spoiler
             to_edit.modified_by = member.id
 
             try:

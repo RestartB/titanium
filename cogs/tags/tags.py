@@ -9,7 +9,7 @@ from rapidfuzz import fuzz, process
 from sqlalchemy import select
 
 from lib.embeds.general import cancelled
-from lib.helpers.components import tiToCv2
+from lib.helpers.components import ti_to_cv2
 from lib.helpers.validation import is_valid_uuid
 from lib.sql.sql import GuildSettings, Tag, get_session
 from lib.views.pagination import PaginationView
@@ -330,7 +330,11 @@ class TagCommandsCog(commands.Cog):
             if view and view.interaction:
                 await view.interaction.edit_original_response(
                     embed=None,
-                    view=tiToCv2(tag_data.components) if tag_data.cv2 else None,
+                    view=ti_to_cv2(
+                        tag_data.components, colour=tag_data.colour, spoiler=tag_data.spoiler
+                    )
+                    if tag_data.cv2
+                    else None,
                     content=None if tag_data.cv2 else tag_data.content,
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
@@ -338,7 +342,9 @@ class TagCommandsCog(commands.Cog):
             else:
                 if tag_data.cv2:
                     await interaction.followup.send(
-                        view=tiToCv2(tag_data.components),
+                        view=ti_to_cv2(
+                            tag_data.components, colour=tag_data.colour, spoiler=tag_data.spoiler
+                        ),
                         allowed_mentions=discord.AllowedMentions.none(),
                         ephemeral=ephemeral,
                     )

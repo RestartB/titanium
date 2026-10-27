@@ -57,13 +57,13 @@ def embed_to_v2(embed: discord.Embed) -> discord.ui.LayoutView:
     return discord.ui.LayoutView().add_item(container)
 
 
-def tiToCv2(data: list) -> LayoutView:
+def ti_to_cv2(data: list, colour: str, spoiler: bool) -> LayoutView:
     cps: list[Cv2Component] = []
     for item in data:
         cps.append(Cv2Component(**item))
 
     view = LayoutView()
-    container = Container(accent_colour=discord.Colour.light_grey())
+    container = Container(accent_colour=discord.Colour.from_str(colour), spoiler=spoiler)
 
     for cp in cps:
         if cp.cId == ComponentType.TEXT_DISPLAY and cp.content:

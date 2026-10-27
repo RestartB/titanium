@@ -515,10 +515,12 @@ class TagModel(BaseModel):
             min_length=1, max_length=35, to_lower=True, ascii_only=True, strip_whitespace=True
         ),
     ]
-
     cv2: bool
+
     content: Annotated[str, StringConstraints(max_length=2000, strip_whitespace=True)] = ""
     components: list[Cv2Component] = Field(default_factory=list, max_length=10)
+    colour: Annotated[str, StringConstraints(max_length=7, strip_whitespace=True)] = "#979C9F"
+    spoiler: bool
 
     user: DiscordId | None = None
 

@@ -840,9 +840,12 @@ class Tag(Base):
     amount_used: Mapped[int] = MappedColumn(BigInteger, server_default=text("0"))
 
     name: Mapped[str] = MappedColumn(String(length=80))
+    cv2: Mapped[bool] = MappedColumn(Boolean)
+
     content: Mapped[str] = MappedColumn(String(length=2000))
     components: Mapped[list] = MappedColumn(ARRAY(JSONB), server_default=text("ARRAY[]::JSONB[]"))
-    cv2: Mapped[bool] = MappedColumn(Boolean)
+    colour: Mapped[str] = MappedColumn(String(length=7), server_default=text("'#979C9F'"))
+    spoiler: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
 
 
 class TagEditLink(Base):
