@@ -343,8 +343,39 @@ def leaderboard_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> we
 def tags_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:
     config = bot.guild_configs[guild.id]
     if not config.tag_settings:
-        return web.json_response({"allow_user_tags": True})
-    return web.json_response({"allow_user_tags": config.tag_settings.allow_user_tags})
+        return web.json_response(
+            {
+                "allow_user_tags": True,
+                "quick_responses": [],
+                "global_ignored_roles": [],
+                "global_ignored_channels": [],
+            }
+        )
+    return web.json_response(
+        {
+            "allow_user_tags": config.tag_settings.allow_user_tags,
+            "quick_responses": [
+                {
+                    "id": str(response.id),
+                    "tag_id": str(response.tag_id),
+                    "keywords": response.keywords,
+                    "match_whole_word": response.match_whole_word,
+                    "case_sensitive": response.case_sensitive,
+                    "ignored_channels": [
+                        str(channel_id) for channel_id in response.ignored_channels
+                    ],
+                    "ignored_roles": [str(role_id) for role_id in response.ignored_roles],
+                }
+                for response in config.tag_settings.quick_responses
+            ],
+            "global_ignored_roles": [
+                str(role_id) for role_id in config.tag_settings.global_ignored_roles
+            ],
+            "global_ignored_channels": [
+                str(channel_id) for channel_id in config.tag_settings.global_ignored_channels
+            ],
+        }
+    )
 
 
 def rep_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Response:

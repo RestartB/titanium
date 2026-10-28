@@ -74,6 +74,7 @@ from lib.sql.sql import (
     ServerCounterChannel,
     Tag,
     TagEditLink,
+    TagQuickResponse,
     UserRep,
     get_session,
 )
@@ -200,6 +201,7 @@ class APICog(commands.Cog):
         )
 
         self.app.router.add_get("/guild/{guild_id}/tags", self.guild_tags)
+        self.app.router.add_get("/guild/{guild_id}/tags/ids", self.guild_tag_ids)
         self.app.router.add_post("/guild/{guild_id}/tags", self.guild_create_tag)
         self.app.router.add_patch("/guild/{guild_id}/tags/{tag_id}", self.guild_edit_tag)
         self.app.router.add_delete("/guild/{guild_id}/tags/{tag_id}", self.guild_delete_tag)
@@ -724,6 +726,7 @@ class APICog(commands.Cog):
                     "leaderboard_levels": guild_limits.leaderboard_levels,
                     "server_counters": guild_limits.server_counters,
                     "tags": guild_limits.tags,
+                    "tag_responses": guild_limits.tag_responses,
                 },
                 "bot_permissions": str(guild.me.guild_permissions.value),
             }
@@ -1222,6 +1225,34 @@ class APICog(commands.Cog):
             )
 
         return web.json_response({"total_count": total_count, "tags": tags_list})
+
+    async def guild_tag_ids(self, request: web.Request) -> web.Response:
+        guild_id = request.match_info.get("guild_id")
+        if not guild_id or not guild_id.isdigit():
+            return web.json_response({"error": "guild_id required"}, status=400)
+
+        guild = self.bot.get_guild(int(guild_id))
+        if not guild:
+            return web.json_response({"error": "guild not found"}, status=404)
+
+        async with get_session() as session:
+            # Get tags from db
+            result = await session.execute(
+                select(Tag).where(Tag.guild_id == guild.id, Tag.is_user.is_(False))
+            )
+            tags = result.scalars().all()
+
+        return web.json_response(
+            {
+                "tags": [
+                    {
+                        "id": str(tag.id),
+                        "name": tag.name,
+                    }
+                    for tag in tags
+                ]
+            }
+        )
 
     async def guild_create_tag(self, request: web.Request) -> web.Response:
         guild_id = request.match_info.get("guild_id")
@@ -1950,11 +1981,14 @@ class APICog(commands.Cog):
 
                 session.add(db_config)
         elif module_name == "automod" and isinstance(validated_config, AutomodConfigModel):
-            if len(validated_config.rules) > config.limits.automod_rules:
+            if (
+                config.limits.enforcing
+                and len(validated_config.rules) > config.limits.automod_rules
+            ):
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
-                        "message": "You have gone over your allocated automod rules limit.",
+                        "message": "You have gone over your limit for automod rules.",
                     },
                     status=403,
                 )
@@ -1977,6 +2011,7 @@ class APICog(commands.Cog):
                     for criterion in rule.criteria:
                         if (
                             criterion.words
+                            and config.limits.enforcing
                             and len(criterion.words) > config.limits.bad_word_list_size
                         ):
                             return web.json_response(
@@ -2001,11 +2036,14 @@ class APICog(commands.Cog):
                     status=500,
                 )
         elif module_name == "bouncer" and isinstance(validated_config, BouncerConfigModel):
-            if len(validated_config.rules) > config.limits.bouncer_rules:
+            if (
+                config.limits.enforcing
+                and len(validated_config.rules) > config.limits.bouncer_rules
+            ):
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
-                        "message": "You have gone over your allocated bouncer rules limit.",
+                        "message": "You have gone over your limit for bouncer rules.",
                     },
                     status=403,
                 )
@@ -2020,6 +2058,7 @@ class APICog(commands.Cog):
                     for criterion in rule.criteria:
                         if (
                             criterion.words
+                            and config.limits.enforcing
                             and len(criterion.words) > config.limits.bad_word_list_size
                         ):
                             return web.json_response(
@@ -2061,11 +2100,11 @@ class APICog(commands.Cog):
 
                 session.add(db_config)
         elif module_name == "fireboard" and isinstance(validated_config, FireboardConfigModel):
-            if len(validated_config.boards) > config.limits.fireboards:
+            if config.limits.enforcing and len(validated_config.boards) > config.limits.fireboards:
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
-                        "message": "You have gone over your allocated fireboard limit.",
+                        "message": "You have gone over your limit for fireboards.",
                     },
                     status=403,
                 )
@@ -2163,11 +2202,14 @@ class APICog(commands.Cog):
                     status=403,
                 )
 
-            if len(validated_config.channels) > config.limits.server_counters:
+            if (
+                config.limits.enforcing
+                and len(validated_config.channels) > config.limits.server_counters
+            ):
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
-                        "message": "You have gone over your allocated server counter channel limit.",
+                        "message": "You have gone over your limit for server counter channels.",
                     },
                     status=403,
                 )
@@ -2395,11 +2437,14 @@ class APICog(commands.Cog):
 
                         await session.delete(existing_channel)
         elif module_name == "leaderboard" and isinstance(validated_config, LeaderboardConfigModel):
-            if len(validated_config.levels) > config.limits.leaderboard_levels:
+            if (
+                config.limits.enforcing
+                and len(validated_config.levels) > config.limits.leaderboard_levels
+            ):
                 return web.json_response(
                     {
                         "error": "Limit exceeded",
-                        "message": "You have gone over your allocated leaderboard level limit.",
+                        "message": "You have gone over your limit for leaderboard levels.",
                     },
                     status=403,
                 )
@@ -2496,7 +2541,43 @@ class APICog(commands.Cog):
                 if not db_config:
                     db_config = GuildTagSettings(guild_id=guild.id)
 
+                if (
+                    config.limits.enforcing
+                    and len(validated_config.quick_responses) > config.limits.tag_responses
+                ):
+                    return web.json_response(
+                        {
+                            "error": "Limit exceeded",
+                            "message": "You have gone over your limit for quick responses.",
+                        },
+                        status=403,
+                    )
+
                 db_config.allow_user_tags = validated_config.allow_user_tags
+                db_config.global_ignored_channels = [
+                    int(channel) for channel in validated_config.global_ignored_channels
+                ]
+                db_config.global_ignored_roles = [
+                    int(role) for role in validated_config.global_ignored_roles
+                ]
+
+                await session.execute(
+                    delete(TagQuickResponse).where(TagQuickResponse.guild_id == guild_id)
+                )
+                for response in validated_config.quick_responses:
+                    session.add(
+                        TagQuickResponse(
+                            guild_id=guild_id,
+                            tag_id=response.tag_id,
+                            keywords=response.keywords,
+                            match_whole_word=response.match_whole_word,
+                            case_sensitive=response.case_sensitive,
+                            ignored_roles=[int(role) for role in response.ignored_roles],
+                            ignored_channels=[
+                                int(channel) for channel in response.ignored_channels
+                            ],
+                        )
+                    )
 
                 session.add(db_config)
         elif module_name == "rep" and isinstance(validated_config, RepConfigModel):

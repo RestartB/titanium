@@ -468,8 +468,25 @@ class LeaderboardConfigModel(BaseModel):
     levels: list[LeaderboardLevelModel] = Field(default_factory=list)
 
 
+class TagQuickResponseModel(BaseModel):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    tag_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+
+    keywords: list[
+        Annotated[str, StringConstraints(min_length=1, max_length=25, strip_whitespace=True)]
+    ] = Field(default_factory=list, max_length=5)
+    match_whole_word: bool
+    case_sensitive: bool
+
+    ignored_roles: list[DiscordId] = Field(default_factory=list, max_length=100)
+    ignored_channels: list[DiscordId] = Field(default_factory=list, max_length=100)
+
+
 class TagsConfigModel(BaseModel):
     allow_user_tags: bool
+    quick_responses: list[TagQuickResponseModel]
+    global_ignored_roles: list[DiscordId] = Field(default_factory=list, max_length=100)
+    global_ignored_channels: list[DiscordId] = Field(default_factory=list, max_length=100)
 
 
 class Cv2Button(BaseModel):
