@@ -1,12 +1,14 @@
 import asyncio
 import logging
+import uuid
 from typing import TYPE_CHECKING, Literal
 
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord.ext.commands import CooldownMapping
 from rapidfuzz import fuzz, process
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from lib.embeds.general import cancelled
 from lib.helpers.components import ti_to_cv2
@@ -170,6 +172,14 @@ class TagCommandsCog(commands.Cog):
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
         self.logger: logging.Logger = logging.getLogger("tags")
+        self.response_cooldowns = CooldownMapping.from_cooldown(
+            rate=1,
+            per=3,
+            type=lambda data: (
+                data["user_id"],
+                data["guild_id"],
+            ),
+        )
 
     def __server_tag_available(
         self,
@@ -185,12 +195,13 @@ class TagCommandsCog(commands.Cog):
             and config.tags_enabled
         )
 
-    async def push_tag_usage(self, tag: Tag) -> None:
+    async def push_tag_usage(self, tags: list[Tag]) -> None:
         async with get_session() as session:
-            session_tag = await session.get(Tag, tag.id)
-            if not session_tag:
-                return
-            session_tag.amount_used += 1
+            await session.execute(
+                update(Tag)
+                .where(Tag.id.in_(tag.id for tag in tags))
+                .values(amount_used=Tag.amount_used + 1)
+            )
 
     async def tag_autocomplete(
         self, interaction: discord.Interaction["TitaniumBot"], current: str
@@ -221,6 +232,16 @@ class TagCommandsCog(commands.Cog):
         ):
             return
 
+        bucket = self.response_cooldowns.get_bucket(
+            {
+                "user_id": message.author.id,
+                "guild_id": message.guild.id,
+            }
+        )
+        if not bucket:
+            raise ValueError("No bucket returned")
+
+        tags_to_send: dict[uuid.UUID, Tag] = {}
         for response in config.tag_settings.quick_responses:
             if (
                 not response.tag
@@ -241,8 +262,17 @@ class TagCommandsCog(commands.Cog):
                 if matched:
                     break
 
-            if matched:
-                tag = response.tag
+            if matched and response.tag.id not in tags_to_send:
+                tags_to_send[response.tag.id] = response.tag
+                if len(tags_to_send) == 3:
+                    break
+
+        if tags_to_send:
+            limited = bucket.update_rate_limit()
+            if limited is not None:
+                return
+
+            for tag in tags_to_send.values():
                 if tag.cv2:
                     await message.reply(
                         view=ti_to_cv2(tag.components, colour=tag.colour, spoiler=tag.spoiler),
@@ -253,7 +283,8 @@ class TagCommandsCog(commands.Cog):
                         content=tag.content,
                         allowed_mentions=discord.AllowedMentions.none(),
                     )
-                await self.push_tag_usage(tag)
+
+            await self.push_tag_usage(list(tags_to_send.values()))
 
     # Use tag command
     @app_commands.command(name="tag", description="Send a server or user tag.")
@@ -386,7 +417,7 @@ class TagCommandsCog(commands.Cog):
                     content=None if tag_data.cv2 else tag_data.content,
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
-                await self.push_tag_usage(tag_data)
+                await self.push_tag_usage([tag_data])
             else:
                 if tag_data.cv2:
                     await interaction.followup.send(
@@ -402,7 +433,7 @@ class TagCommandsCog(commands.Cog):
                         allowed_mentions=discord.AllowedMentions.none(),
                         ephemeral=ephemeral,
                     )
-                await self.push_tag_usage(tag_data)
+                await self.push_tag_usage([tag_data])
         except ValueError as error:
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Invalid Tag Data",
