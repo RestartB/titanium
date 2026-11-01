@@ -361,6 +361,7 @@ def tags_info(bot: TitaniumBot, request: web.Request, guild: Guild) -> web.Respo
                     "keywords": response.keywords,
                     "match_whole_word": response.match_whole_word,
                     "case_sensitive": response.case_sensitive,
+                    "reply": response.reply,
                     "ignored_channels": [
                         str(channel_id) for channel_id in response.ignored_channels
                     ],

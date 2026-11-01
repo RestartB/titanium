@@ -848,6 +848,8 @@ class TagQuickResponse(Base):
     match_whole_word: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     case_sensitive: Mapped[bool] = MappedColumn(Boolean, server_default=text("false"))
 
+    reply: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
+
     ignored_roles: Mapped[list[int]] = MappedColumn(
         ARRAY(BigInteger), server_default=text("ARRAY[]::bigint[]")
     )

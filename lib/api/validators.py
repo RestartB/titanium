@@ -478,6 +478,8 @@ class TagQuickResponseModel(BaseModel):
     match_whole_word: bool
     case_sensitive: bool
 
+    reply: bool
+
     ignored_roles: list[DiscordId] = Field(default_factory=list, max_length=100)
     ignored_channels: list[DiscordId] = Field(default_factory=list, max_length=100)
 

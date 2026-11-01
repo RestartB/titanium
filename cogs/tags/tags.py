@@ -13,7 +13,7 @@ from sqlalchemy import select, update
 from lib.embeds.general import cancelled
 from lib.helpers.components import ti_to_cv2
 from lib.helpers.validation import is_valid_uuid
-from lib.sql.sql import GuildSettings, Tag, get_session
+from lib.sql.sql import GuildSettings, Tag, TagQuickResponse, get_session
 from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
@@ -241,7 +241,7 @@ class TagCommandsCog(commands.Cog):
         if not bucket:
             raise ValueError("No bucket returned")
 
-        tags_to_send: dict[uuid.UUID, Tag] = {}
+        tags_to_send: dict[uuid.UUID, TagQuickResponse] = {}
         for response in config.tag_settings.quick_responses:
             if (
                 not response.tag
@@ -264,7 +264,7 @@ class TagCommandsCog(commands.Cog):
                     break
 
             if matched and response.tag.id not in tags_to_send:
-                tags_to_send[response.tag.id] = response.tag
+                tags_to_send[response.tag.id] = response
                 if len(tags_to_send) == 3:
                     break
 
@@ -273,15 +273,23 @@ class TagCommandsCog(commands.Cog):
             if limited is not None:
                 return
 
-            for tag in tags_to_send.values():
-                if tag.cv2:
-                    await message.reply(
-                        view=ti_to_cv2(tag.components, colour=tag.colour, spoiler=tag.spoiler),
+            for response in tags_to_send.values():
+                if not response.tag:
+                    continue
+
+                method = message.reply if response.reply else message.channel.send
+                if response.tag.cv2:
+                    await method(
+                        view=ti_to_cv2(
+                            response.tag.components,
+                            colour=response.tag.colour,
+                            spoiler=response.tag.spoiler,
+                        ),
                         allowed_mentions=discord.AllowedMentions.none(),
                     )
                 else:
-                    await message.reply(
-                        content=tag.content,
+                    await method(
+                        content=response.tag.content,
                         allowed_mentions=discord.AllowedMentions.none(),
                     )
 
