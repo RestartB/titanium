@@ -2572,6 +2572,7 @@ class APICog(commands.Cog):
                             keywords=response.keywords,
                             match_whole_word=response.match_whole_word,
                             case_sensitive=response.case_sensitive,
+                            reply=response.reply,
                             ignored_roles=[int(role) for role in response.ignored_roles],
                             ignored_channels=[
                                 int(channel) for channel in response.ignored_channels
