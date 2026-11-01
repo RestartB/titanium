@@ -252,6 +252,7 @@ class TagCommandsCog(commands.Cog):
 
             matched = False
             for word in response.keywords:
+                word = word if response.case_sensitive else word.lower()
                 content = message.content if response.case_sensitive else message.content.lower()
 
                 if (response.match_whole_word and content == word) or (
