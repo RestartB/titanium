@@ -12,6 +12,7 @@ class BouncerCriteriaType(StrEnum):
     TAG = "tag"
     AGE = "age"
     AVATAR = "avatar"
+    VERIFIED = "verified"
 
 
 class BouncerActionType(StrEnum):

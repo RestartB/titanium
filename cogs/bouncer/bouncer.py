@@ -139,8 +139,8 @@ class BouncerMonitorCog(commands.Cog):
                             self.logger.debug(f"({criteria.id}) Username match found")
                             criterion_matched += 1
                             break
-                elif criteria.type == BouncerCriteriaType.TAG and member.primary_guild:
-                    if not member.primary_guild.tag:
+                elif criteria.type == BouncerCriteriaType.TAG:
+                    if not member.primary_guild or not member.primary_guild.tag:
                         continue
 
                     normalised_content_to_check = self.normalise_automod_text(
@@ -168,8 +168,8 @@ class BouncerMonitorCog(commands.Cog):
                         or (not criteria.match_all_words and words_matched > 0)
                     ):
                         criteria_met = True
-                elif criteria.type == BouncerCriteriaType.AGE and member.joined_at:
-                    if not criteria.account_age:
+                elif criteria.type == BouncerCriteriaType.AGE:
+                    if not member.joined_at or not criteria.account_age:
                         continue
 
                     if (
@@ -177,8 +177,17 @@ class BouncerMonitorCog(commands.Cog):
                     ).total_seconds() <= criteria.account_age:
                         self.logger.debug(f"({criteria.id}) Account age match found")
                         criterion_matched += 1
-                elif criteria.type == BouncerCriteriaType.AVATAR and not member.avatar:
+                elif criteria.type == BouncerCriteriaType.AVATAR:
+                    if member.avatar:
+                        continue
+
                     self.logger.debug(f"({criteria.id}) No avatar match found")
+                    criterion_matched += 1
+                elif criteria.type == BouncerCriteriaType.VERIFIED:
+                    if not member.bot or member.public_flags.verified_bot:
+                        continue
+
+                    self.logger.debug(f"({criteria.id}) Bot is not verified")
                     criterion_matched += 1
                 else:
                     self.logger.warning(f"({criteria.id}) Unknown rule type: {criteria.type}")
