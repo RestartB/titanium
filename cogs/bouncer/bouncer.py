@@ -248,6 +248,7 @@ class BouncerMonitorCog(commands.Cog):
 
         successful_actions: list[BouncerAction] = []
         failed_actions: dict[BouncerAction, str] = {}
+        nick_reset = False
 
         async with get_session() as session:
             manager = GuildModCaseManager(self.bot, member.guild, session)
@@ -427,6 +428,12 @@ class BouncerMonitorCog(commands.Cog):
                                 reason=f"Bouncer: {action.reason if action.reason else 'No reason provided'}",
                                 atomic=False,
                             )
+                    elif action.type == BouncerActionType.RESET_NICK:
+                        if nick_reset:
+                            continue
+
+                        await member.edit(nick=None)
+                        nick_reset = True
                     else:
                         self.logger.warning(
                             f"({action.id}) Unknown action type: {action.type.value}"
