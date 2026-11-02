@@ -96,10 +96,10 @@ class QuoteView(View):
     async def delete_button(self, interaction: Interaction["TitaniumBot"], button: Button):
         await interaction.response.defer(ephemeral=True)
 
-        if self.data.user.id != interaction.user.id or not interaction.permissions.manage_messages:
+        if self.data.user.id != interaction.user.id and not interaction.permissions.manage_messages:
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Not Allowed",
-                description="You didn't send the original message. Only the original message author or users with Manage Message permissions can delete the quote.",
+                description="Only the quoted user or users with Manage Message permissions can delete the quote.",
                 colour=Colour.red(),
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
