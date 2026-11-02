@@ -601,8 +601,10 @@ class FireboardMessage(Base):
     guild_id: Mapped[int] = MappedColumn(
         BigInteger, ForeignKey("guild_fireboard_settings.guild_id", ondelete="CASCADE"), index=True
     )
+
     message_id: Mapped[int] = MappedColumn(BigInteger)
     fireboard_message_id: Mapped[int] = MappedColumn(BigInteger)
+
     fireboard_id: Mapped[uuid.UUID] = MappedColumn(
         UUID(as_uuid=True), ForeignKey("fireboard_boards.id", ondelete="CASCADE"), index=True
     )

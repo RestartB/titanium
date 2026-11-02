@@ -99,7 +99,7 @@ class RepCog(
             matches.extend(re.findall(pattern, message.content, flags=re.IGNORECASE))
 
         if not matches:
-            self.logger.debug(f"no matches ({message.content})")
+            self.logger.debug("no matches")
             return
 
         referenced_message = message.reference.resolved
