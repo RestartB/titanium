@@ -73,6 +73,7 @@ class RepCog(
             or not message.reference.resolved
             or isinstance(message.reference.resolved, discord.DeletedReferencedMessage)
             or message.reference.type != discord.MessageReferenceType.reply
+            or message.author.bot
             or message.author.id in self.bot.opt_out
         ):
             self.logger.debug("ignoring message")
