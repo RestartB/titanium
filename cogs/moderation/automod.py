@@ -540,10 +540,13 @@ class AutomodMonitorCog(commands.Cog):
                                 message_chunks = discord.utils.as_chunks(messages, 100)
 
                                 for chunk in message_chunks:
-                                    await channel.delete_messages(
-                                        messages=chunk,
-                                        reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
-                                    )
+                                    try:
+                                        await channel.delete_messages(
+                                            messages=chunk,
+                                            reason=f"Automod: {action.reason if action.reason else 'No reason provided'}",
+                                        )
+                                    except discord.NotFound:
+                                        pass
                         elif action.type == AutomodActionType.ADD_ROLE:
                             # fmt: off
                             if message.author.top_role >= message.guild.me.top_role:

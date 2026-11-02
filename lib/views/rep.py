@@ -129,7 +129,7 @@ class RepView(View):
 
         if (
             self.original_message.author.id != interaction.user.id
-            or not interaction.permissions.manage_messages
+            and not interaction.permissions.manage_messages
         ):
             embed = discord.Embed(
                 title=f"{interaction.client.error_emoji} Not Allowed",
