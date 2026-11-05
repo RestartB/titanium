@@ -35,6 +35,9 @@ dev = [
     "ruff>=0.17.3",
 ]
 
+[tool.uv]
+exclude-newer = "3 days"
+
 [tool.ruff]
 line-length = 100
 
