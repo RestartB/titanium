@@ -4,7 +4,7 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import shortuuid
 from discord import Guild, Member, PartialInviteGuild
@@ -1114,6 +1114,17 @@ class ErrorLog(Base):
     details: Mapped[str | None] = MappedColumn(String(length=1024), nullable=True)
     time_occurred: Mapped[datetime] = MappedColumn(
         DateTime(timezone=True), server_default=text("NOW()")
+    )
+
+
+class UserLimitOverride(Base):
+    __tablename__ = "user_limit_overrides"
+
+    DEFAULT_TAGS: ClassVar[int] = 250
+
+    id: Mapped[int] = MappedColumn(BigInteger, primary_key=True)
+    tags: Mapped[int] = MappedColumn(
+        Integer, default=DEFAULT_TAGS, server_default=text(str(DEFAULT_TAGS))
     )
 
 

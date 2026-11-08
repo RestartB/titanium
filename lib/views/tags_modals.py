@@ -5,7 +5,7 @@ import discord
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
-from lib.sql.sql import Tag, get_session
+from lib.sql.sql import Tag, UserLimitOverride, get_session
 
 if TYPE_CHECKING:
     from main import TitaniumBot
@@ -182,7 +182,7 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                     if config.limits.enforcing and total_count >= config.limits.tags:
                         embed = discord.Embed(
                             title=f"{interaction.client.error_emoji} Limit Exceeded",
-                            description=f"You have exceeded the server tag limit of `{config.limits.tags}`. The tag was not created. Please delete some tags, or request an increased limit in the [support server]({interaction.client.website_url}/server).",
+                            description=f"You have exceeded this server's tag limit of `{config.limits.tags}`. Please delete some tags, or request an increased limit in the [support server]({interaction.client.website_url}/server).",
                             colour=discord.Colour.red(),
                         )
                         return await interaction.followup.send(embed=embed, ephemeral=True)
@@ -194,10 +194,15 @@ class TagModal(discord.ui.Modal, title="Tag Information"):
                     )
                     total_count = total_result.scalar() or 0
 
-                    if total_count >= 250:
+                    override = interaction.client.user_limits.get(interaction.user.id)
+                    tag_limit = (
+                        override.tags if override is not None else UserLimitOverride.DEFAULT_TAGS
+                    )
+
+                    if total_count >= tag_limit:
                         embed = discord.Embed(
                             title=f"{interaction.client.error_emoji} Limit Exceeded",
-                            description="You cannot create more than `250` user tags.",
+                            description=f"You have exceeded your user tag limit of `{config.limits.tags}`. Please delete some tags, or request an increased limit in the [support server]({interaction.client.website_url}/server).",
                             colour=discord.Colour.red(),
                         )
                         return await interaction.followup.send(embed=embed, ephemeral=True)

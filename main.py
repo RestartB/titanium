@@ -57,6 +57,7 @@ from lib.sql.sql import (
     ModCase,
     OptOutIDs,
     ScheduledTask,
+    UserLimitOverride,
     get_guild_settings_child_tables,
     get_session,
     init_db,
@@ -131,6 +132,7 @@ class TitaniumBot(commands.Bot):
         self.explicit_phrases: list[str] = []
 
         self.opt_out: list[int] = []
+        self.user_limits: dict[int, UserLimitOverride]
 
         self.trusted_servers: list[int] = []
 
@@ -138,15 +140,20 @@ class TitaniumBot(commands.Bot):
         cache_logger.info("Refreshing opt-out IDs...")
 
         async with get_session() as session:
-            stmt = select(OptOutIDs)
-            result = await session.execute(stmt)
-            opt_out_ids = result.scalars().all()
-            self.opt_out.clear()
-
-            for opt_out in opt_out_ids:
-                self.opt_out.append(opt_out.id)
+            opt_out_ids = (await session.execute(select(OptOutIDs))).scalars().all()
+            self.opt_out = [row.id for row in opt_out_ids]
 
         cache_logger.info("Opt-out IDs refreshed.")
+
+    async def refresh_user_limits(self) -> None:
+        cache_logger.info("Refreshing user limit overrides...")
+
+        async with get_session() as session:
+            stmt = select(UserLimitOverride)
+            results = (await session.execute(stmt)).scalars().all()
+            self.user_limits = {result.id: result for result in results}
+
+        cache_logger.info("User limit overrides refreshed.")
 
     async def refresh_all_caches(self) -> None:
         cache_logger.info("Refreshing all guild config caches...")
@@ -309,6 +316,7 @@ class TitaniumBot(commands.Bot):
         )
 
         await init_db()
+        await self.refresh_user_limits()
         await self.refresh_opt_out()
         await self.refresh_all_caches()
 

@@ -75,6 +75,7 @@ from lib.sql.sql import (
     Tag,
     TagEditLink,
     TagQuickResponse,
+    UserLimitOverride,
     UserRep,
     get_session,
 )
@@ -528,11 +529,16 @@ class APICog(commands.Cog):
                     )
                     result = count.scalar() or 0
 
-                    if result >= 250:
+                    override = self.bot.user_limits.get(session_data.user_id)
+                    tag_limit = (
+                        override.tags if override is not None else UserLimitOverride.DEFAULT_TAGS
+                    )
+
+                    if result >= tag_limit:
                         return web.json_response(
                             {
                                 "error": "Limit exceeded",
-                                "message": "You have gone over your limit for user tags.",
+                                "message": f"You have gone over your limit for user tags ({tag_limit}).",
                             },
                             status=403,
                         )
