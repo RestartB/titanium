@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 
 from lib.helpers.cache import get_or_fetch_member, get_or_fetch_message
+from lib.sql.sql import GuildLimits, UserLimitOverride, get_session
 from lib.views.pagination import PaginationView
 
 if TYPE_CHECKING:
@@ -136,26 +137,6 @@ class AdminCog(commands.Cog):
                     colour=discord.Colour.red(),
                 )
             )
-
-    # @admin_group.command("reloadall", hidden=True)
-    # @commands.is_owner()
-    # async def reload_all(self, ctx: commands.Context["TitaniumBot"]) -> None:
-    #     success: list[str] = []
-    #     failed: list[str] = []
-    #     for cog in self.bot.cogs:
-    #         try:
-    #             await self.bot.reload_extension(cog)
-    #             success.append(cog)
-    #         except Exception as e:
-    #             self.logger.error(f"Error unloading {cog}", exc_info=e)
-    #             failed.append(cog)
-
-    #     embed = discord.Embed(
-    #         title=f"{self.bot.success_emoji} Reloaded All Cogs",
-    #         description=f"**Reload Successful ({len(success)})**\n`{'`, `'.join(success)}`\n**Reload Failed ({len(failed)})**\n`{'`, `'.join(failed)}`",
-    #         colour=discord.Colour.green(),
-    #     )
-    #     await ctx.reply(embed=embed)
 
     @admin_group.command(name="migrate-db", hidden=True)
     @commands.is_owner()
@@ -337,6 +318,72 @@ class AdminCog(commands.Cog):
             await ctx.reply(
                 embed=discord.Embed(
                     title=f"{self.bot.error_emoji} Error Changing Log Level",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
+
+    @admin_group.command(name="serverlimit", aliases=["server-limit"], hidden=True)
+    @commands.is_owner()
+    async def change_server_limit(
+        self, ctx: commands.Context["TitaniumBot"], guild: discord.Guild, limit: str, amount: int
+    ) -> None:
+        try:
+            async with get_session() as session:
+                limits = await session.get(GuildLimits, guild.id)
+                if not limits:
+                    raise ValueError("Guild is not initialised")
+
+                setattr(limits, limit, amount)
+                session.add(limits)
+
+            await self.bot.refresh_guild_config_cache(guild.id)
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Done", colour=discord.Colour.green()
+                )
+            )
+        except Exception as e:
+            self.logger.error(f"Error increasing limit for server {guild.id}", exc_info=e)
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error",
+                    description=f"```python\n{traceback.format_exc()}```",
+                    colour=discord.Colour.red(),
+                ),
+                ephemeral=True,
+            )
+
+    @admin_group.command(name="userlimit", aliases=["user-limit"], hidden=True)
+    @commands.is_owner()
+    async def change_user_limit(
+        self, ctx: commands.Context["TitaniumBot"], user: discord.User, limit: str, amount: int
+    ) -> None:
+        try:
+            async with get_session() as session:
+                limits = (
+                    limits
+                    if (limits := await session.get(UserLimitOverride, user.id))
+                    else UserLimitOverride(id=user.id)
+                )
+
+                setattr(limits, limit, amount)
+                session.add(limits)
+
+            await ctx.bot.refresh_user_limits()
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.success_emoji} Done", colour=discord.Colour.green()
+                )
+            )
+        except Exception as e:
+            self.logger.error(f"Error increasing limit for user {user.id}", exc_info=e)
+
+            await ctx.reply(
+                embed=discord.Embed(
+                    title=f"{self.bot.error_emoji} Error",
                     description=f"```python\n{traceback.format_exc()}```",
                     colour=discord.Colour.red(),
                 ),
