@@ -500,7 +500,7 @@ class Cv2Component(BaseModel):
     cId: ComponentType
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     content: (
-        Annotated[str, StringConstraints(min_length=1, max_length=1000, strip_whitespace=True)]
+        Annotated[str, StringConstraints(min_length=1, max_length=4000, strip_whitespace=True)]
         | None
     ) = None
     url: Annotated[HttpUrl, StringConstraints(max_length=2048)] | None = None
@@ -573,7 +573,7 @@ class TagModel(BaseModel):
         # 4000 limit on all text characters in all components
         if total_chars > 4000:
             raise ValueError(
-                "Too many characters: please ensure the total length of all text components is less than 4000."
+                "Too many characters: please ensure the total length of all text components is 4000 or less."
             )
 
         # 39 because the total is 40, and the container needs to be included
