@@ -1184,7 +1184,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.2.4" },
     { name = "rapidfuzz", specifier = ">=3.14.6" },
     { name = "shortuuid", specifier = ">=1.0.13" },
-    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.1.6" },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.1.8" },
     { name = "topggpy", specifier = ">=1.4.0" },
     { name = "wand", specifier = ">=0.7.2" },
 ]
