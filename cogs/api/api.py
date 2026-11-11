@@ -1983,7 +1983,13 @@ class APICog(commands.Cog):
                     db_config = GuildModerationSettings(guild_id=guild.id)
 
                 db_config.dm_users = validated_config.dm_users
+                db_config.external_cases = validated_config.external_cases
                 db_config.ban_days = validated_config.ban_days
+
+                db_config.warn_additional = validated_config.warn_additional
+                db_config.mute_additional = validated_config.mute_additional
+                db_config.kick_additional = validated_config.kick_additional
+                db_config.ban_additional = validated_config.ban_additional
 
                 session.add(db_config)
         elif module_name == "automod" and isinstance(validated_config, AutomodConfigModel):

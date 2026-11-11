@@ -74,6 +74,35 @@ class ModerationConfigModel(BaseModel):
     external_cases: bool
     ban_days: int = Field(0, ge=0, le=7)
 
+    warn_additional: (
+        Annotated[
+            str,
+            StringConstraints(max_length=256, strip_whitespace=True),
+        ]
+        | None
+    )
+    mute_additional: (
+        Annotated[
+            str,
+            StringConstraints(max_length=256, strip_whitespace=True),
+        ]
+        | None
+    )
+    kick_additional: (
+        Annotated[
+            str,
+            StringConstraints(max_length=256, strip_whitespace=True),
+        ]
+        | None
+    )
+    ban_additional: (
+        Annotated[
+            str,
+            StringConstraints(max_length=256, strip_whitespace=True),
+        ]
+        | None
+    )
+
 
 class CaseComment(BaseModel):
     user: str

@@ -209,6 +209,11 @@ class GuildModerationSettings(Base):
     external_cases: Mapped[bool] = MappedColumn(Boolean, server_default=text("true"))
     ban_days: Mapped[int] = MappedColumn(Integer, server_default=text("0"))
 
+    warn_additional: Mapped[str | None] = MappedColumn(String(length=256), nullable=True)
+    mute_additional: Mapped[str | None] = MappedColumn(String(length=256), nullable=True)
+    kick_additional: Mapped[str | None] = MappedColumn(String(length=256), nullable=True)
+    ban_additional: Mapped[str | None] = MappedColumn(String(length=256), nullable=True)
+
 
 class ModCase(Base):
     __tablename__ = "mod_cases"

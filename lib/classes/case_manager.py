@@ -128,17 +128,18 @@ class GuildModCaseManager:
         else:
             time_created = utcnow()
 
-        if external:
-            guild_settings = await self.bot.fetch_guild_config(self.guild.id)
+        guild_settings = await self.bot.fetch_guild_config(self.guild.id)
+        if (
+            not guild_settings
+            or not guild_settings.moderation_enabled
+            or not guild_settings.moderation_settings
+        ):
+            raise ValueError("Moderation is disabled")
+        settings = guild_settings.moderation_settings
 
-            # Check if external cases are enabled
-            if (
-                not guild_settings
-                or not guild_settings.moderation_enabled
-                or not guild_settings.moderation_settings
-                or not guild_settings.moderation_settings.external_cases
-            ):
-                raise ExternalCasesDisabledException
+        # Check if external cases are enabled
+        if external and not settings.external_cases:
+            raise ExternalCasesDisabledException
 
         case = ModCase(
             guild_id=self.guild.id,
@@ -253,9 +254,12 @@ class GuildModCaseManager:
                 if case.time_expires
                 else "Permanent",
                 reason=case.description,
+                additional=settings.ban_additional,
             )
         elif action == CaseType.KICK:
-            embed = kicked_dm(bot=self.bot, ctx=user, reason=case.description)
+            embed = kicked_dm(
+                bot=self.bot, ctx=user, reason=case.description, additional=settings.kick_additional
+            )
         elif action == CaseType.MUTE:
             embed = muted_dm(
                 bot=self.bot,
@@ -264,9 +268,12 @@ class GuildModCaseManager:
                 if case.time_expires
                 else "Permanent",
                 reason=case.description,
+                additional=settings.mute_additional,
             )
         elif action == CaseType.WARN:
-            embed = warned_dm(bot=self.bot, ctx=user, reason=case.description)
+            embed = warned_dm(
+                bot=self.bot, ctx=user, reason=case.description, additional=settings.warn_additional
+            )
 
         if embed and not user.bot:
             dm_success, dm_error = await send_dm(

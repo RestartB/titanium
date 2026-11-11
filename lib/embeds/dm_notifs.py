@@ -12,12 +12,18 @@ def warned_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     reason: str | None,
+    additional: str | None,
 ) -> Embed:
-    return Embed(
+    embed = Embed(
         title=f"{bot.warn_emoji} Warned",
         description=f"A moderator has warned you in **{ctx.guild.name if ctx.guild else ''}.**\n**Reason:** {reason or 'No reason provided.'}",
         colour=Colour.red(),
     )
+
+    if additional:
+        embed.add_field(name="Additional Information", value=additional)
+
+    return embed
 
 
 def muted_dm(
@@ -25,12 +31,18 @@ def muted_dm(
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     duration: str,
     reason: str | None,
+    additional: str | None,
 ) -> Embed:
-    return Embed(
+    embed = Embed(
         title=f"{bot.warn_emoji} Muted",
         description=f"A moderator has muted you in **{ctx.guild.name if ctx.guild else ''}.**\n**Duration:** {duration}\n**Reason:** {reason or 'No reason provided.'}",
         colour=Colour.red(),
     )
+
+    if additional:
+        embed.add_field(name="Additional Information", value=additional)
+
+    return embed
 
 
 def unmuted_dm(
@@ -48,12 +60,18 @@ def kicked_dm(
     bot: TitaniumBot,
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     reason: str | None,
+    additional: str | None,
 ) -> Embed:
-    return Embed(
+    embed = Embed(
         title=f"{bot.warn_emoji} Kicked",
         description=f"A moderator has kicked you from **{ctx.guild.name if ctx.guild else ''}.**\n**Reason:** {reason or 'No reason provided.'}",
         colour=Colour.red(),
     )
+
+    if additional:
+        embed.add_field(name="Additional Information", value=additional)
+
+    return embed
 
 
 def banned_dm(
@@ -61,12 +79,18 @@ def banned_dm(
     ctx: commands.Context["TitaniumBot"] | Message | Member,
     duration: str,
     reason: str | None,
+    additional: str | None,
 ) -> Embed:
-    return Embed(
+    embed = Embed(
         title=f"{bot.warn_emoji} Banned",
         description=f"A moderator has banned you from **{ctx.guild.name if ctx.guild else ''}.**\n**Duration:** {duration}\n**Reason:** {reason or 'No reason provided.'}",
         colour=Colour.red(),
     )
+
+    if additional:
+        embed.add_field(name="Additional Information", value=additional)
+
+    return embed
 
 
 def jump_button(guild: Guild) -> Button:
