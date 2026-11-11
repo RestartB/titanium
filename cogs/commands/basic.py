@@ -96,11 +96,13 @@ class BasicCommandsCog(
 
         embed.add_field(
             name="Source Code",
-            value="Titanium's source code is fully open source! Check it out at [Titanium's GitHub repository.](https://github.com/RestartB/Titanium) If you like what I'm doing, consider leaving a star on GitHub. Thank you!"
+            value="Titanium's source code is fully open source! Check it out at [Titanium's GitHub repository.](https://github.com/RestartB/Titanium) If you like what I'm doing, consider leaving a star on GitHub. Thank you!",
+            inline=False,
         )
         embed.add_field(
             name="Links",
             value=f"**Website:** {self.bot.website_url}\n**Dashboard:** {self.bot.dashboard_url}\n**Support Server:** {self.bot.website_url}/server\n**Privacy Policy:** {self.bot.website_url}/privacy\n**Terms of Use:** {self.bot.website_url}/terms",
+            inline=False,
         )
 
         embed.set_author(
