@@ -96,7 +96,7 @@ class BasicCommandsCog(
 
         embed.add_field(
             name="Source Code",
-            description="Titanium's source code is fully open source! Check it out at [Titanium's GitHub repository.](https://github.com/RestartB/Titanium) If you like what I'm doing, consider leaving a star on GitHub. Thank you!"
+            value="Titanium's source code is fully open source! Check it out at [Titanium's GitHub repository.](https://github.com/RestartB/Titanium) If you like what I'm doing, consider leaving a star on GitHub. Thank you!"
         )
         embed.add_field(
             name="Links",
