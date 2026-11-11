@@ -81,8 +81,8 @@ class BasicCommandsCog(
 
         embed = Embed(
             title="About",
-            description="Titanium is **your** multipurpose, open source Discord bot developed by **Restart**. "
-            "It can operate as a traditional server bot, and as a user app, so your Discord experience can be enhanced in any server. "
+            description="Titanium is your multipurpose Discord bot developed by **Restart**. "
+            "It can be used as a traditional server bot, and as a user app, so your Discord experience can be enhanced in any server. "
             "Titanium includes the following powerful features (and more!) for free:\n\n"
             "- powerful moderation, automod and logging tools\n"
             "- bouncer system to monitor user profiles\n"
@@ -93,6 +93,18 @@ class BasicCommandsCog(
             "To add Titanium to your server or account, press the `Add App` button on Titanium's profile, or use the Add Bot link on Titanium's website!",
             colour=Colour.light_grey(),
         )
+
+        embed.add_field(
+            name="Source Code",
+            value="Titanium's source code is fully open source! Check it out at [Titanium's GitHub repository.](https://github.com/RestartB/Titanium) If you like what I'm doing, consider leaving a star on GitHub. Thank you!",
+            inline=False,
+        )
+        embed.add_field(
+            name="Links",
+            value=f"**Website:** {self.bot.website_url}\n**Dashboard:** {self.bot.dashboard_url}\n**Support Server:** {self.bot.website_url}/server\n**Privacy Policy:** {self.bot.website_url}/privacy\n**Terms of Use:** {self.bot.website_url}/terms",
+            inline=False,
+        )
+
         embed.set_author(
             name="Titanium",
             url=self.bot.website_url,
@@ -101,10 +113,6 @@ class BasicCommandsCog(
         embed.set_footer(
             text=f"@{interaction.user.name}",
             icon_url=interaction.user.display_avatar.url,
-        )
-        embed.add_field(
-            name="Links",
-            value=f"**Website:** {self.bot.website_url}\n**Dashboard:** {self.bot.dashboard_url}\n**Support Server:** {self.bot.website_url}/server\n**Privacy Policy:** {self.bot.website_url}/privacy\n**Terms of Use:** {self.bot.website_url}/terms",
         )
 
         await interaction.followup.send(embed=embed, ephemeral=ephemeral)
