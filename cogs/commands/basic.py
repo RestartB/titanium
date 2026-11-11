@@ -81,7 +81,7 @@ class BasicCommandsCog(
 
         embed = Embed(
             title="About",
-            description="Titanium is **your** multipurpose Discord bot developed by **Restart**. "
+            description="Titanium is your multipurpose Discord bot developed by **Restart**. "
             "It can be used as a traditional server bot, and as a user app, so your Discord experience can be enhanced in any server. "
             "Titanium includes the following powerful features (and more!) for free:\n\n"
             "- powerful moderation, automod and logging tools\n"
