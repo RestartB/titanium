@@ -30,36 +30,6 @@ class ChristmasCog(commands.GroupCog, group_name="christmas", description="Chris
     def __init__(self, bot: TitaniumBot) -> None:
         self.bot = bot
 
-    async def _send_image(
-        self,
-        interaction: discord.Interaction["TitaniumBot"],
-        file: discord.File,
-        title: str,
-        ephemeral: bool,
-        user: discord.User | discord.Member | None = None,
-    ) -> None:
-        embed = discord.Embed(
-            title=title,
-            colour=(user.accent_colour if user else None) or discord.Colour.light_grey(),
-        )
-        embed.set_image(url=f"attachment://{file.filename}")
-        if user:
-            embed.set_author(
-                name=f"{user.display_name} (@{user.name})", icon_url=user.display_avatar.url
-            )
-        embed.set_footer(
-            text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
-        )
-        message = await interaction.followup.send(
-            embed=embed, file=file, ephemeral=ephemeral, wait=True
-        )
-        if message.attachments:
-            view = discord.ui.View()
-            view.add_item(
-                discord.ui.Button(label="Open in Browser", url=message.attachments[0].url)
-            )
-            await message.edit(view=view)
-
     async def _send_error(
         self, interaction: discord.Interaction["TitaniumBot"], description: str, ephemeral: bool
     ) -> None:
@@ -109,8 +79,10 @@ class ChristmasCog(commands.GroupCog, group_name="christmas", description="Chris
         ephemeral: bool = False,
     ) -> None:
         await interaction.response.defer(ephemeral=ephemeral)
+
         target = user or interaction.user
         avatar = await target.display_avatar.replace(format="png").read()
+
         file = await ImageTools().christmas(
             avatar=avatar,
             hat=hat,
@@ -121,7 +93,21 @@ class ChristmasCog(commands.GroupCog, group_name="christmas", description="Chris
             y_offset=y_offset,
             rotation=rotation,
         )
-        await self._send_image(interaction, file, "Christmas PFP", ephemeral, target)
+
+        resolved_user = user if user else interaction.user
+
+        embed = discord.Embed(colour=discord.Colour.light_grey())
+        embed.set_author(
+            name=f"@{resolved_user.name}'s Christmas PFP",
+            icon_url=resolved_user.display_avatar.url,
+        )
+        embed.set_footer(
+            text=f"@{interaction.user.name}", icon_url=interaction.user.display_avatar.url
+        )
+
+        embed.set_image(url=f"attachment://{file.filename}")
+
+        await interaction.followup.send(file=file, ephemeral=ephemeral)
 
     @app_commands.command(
         name="image", description="Add a Christmas hat and snow to a static image."
@@ -176,7 +162,8 @@ class ChristmasCog(commands.GroupCog, group_name="christmas", description="Chris
                 ephemeral,
             )
             return
-        await self._send_image(interaction, result, "Christmas Image", ephemeral)
+
+        await interaction.followup.send(file=result, ephemeral=ephemeral)
 
 
 async def setup(bot: TitaniumBot) -> None:
