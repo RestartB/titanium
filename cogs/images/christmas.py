@@ -81,7 +81,7 @@ class ChristmasCog(commands.GroupCog, group_name="christmas", description="Chris
         await interaction.response.defer(ephemeral=ephemeral)
 
         target = user or interaction.user
-        avatar = await target.display_avatar.replace(format="png").read()
+        avatar = await target.display_avatar.replace(size=512, format="png").read()
 
         file = await ImageTools().christmas(
             avatar=avatar,
@@ -107,7 +107,7 @@ class ChristmasCog(commands.GroupCog, group_name="christmas", description="Chris
 
         embed.set_image(url=f"attachment://{file.filename}")
 
-        await interaction.followup.send(file=file, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, file=file, ephemeral=ephemeral)
 
     @app_commands.command(
         name="image", description="Add a Christmas hat and snow to a static image."
