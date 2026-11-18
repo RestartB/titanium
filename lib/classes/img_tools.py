@@ -27,6 +27,10 @@ class OperationTooLargeError(Exception):
     """Raised when the operation would result in an image that is too large."""
 
 
+class StaticImageRequiredError(ValueError):
+    """Raised when an operation requires a static image."""
+
+
 class EmojiRenderer:
     """Handle rendering text with emoji support"""
 
@@ -331,6 +335,137 @@ class ImageTools:
 
         return File(
             fp=buffer, filename=self._get_output_filename(output_format), spoiler=self._is_spoiler()
+        )
+
+    def _christmas_sync(
+        self,
+        img: Image.Image,
+        hat: bool,
+        snow: bool,
+        hat_width: int,
+        position: str,
+        x_offset: int,
+        y_offset: int,
+        rotation: int,
+        avatar: bool,
+        hat_size: int,
+    ) -> BytesIO:
+        if img.format in self.ANIMATED_FORMATS and getattr(img, "n_frames", 1) > 1:
+            raise StaticImageRequiredError("Please provide a static image.")
+
+        with img:
+            output = ImageOps.exif_transpose(img).convert("RGBA")
+        if avatar:
+            output.thumbnail((256, 256), Image.Resampling.LANCZOS)
+
+        assets = Path(__file__).resolve().parents[1] / "images"
+        if hat:
+            with Image.open(assets / "hat.png") as source:
+                overlay = source.convert("RGBA")
+            width = (
+                max(1, overlay.width // hat_size)
+                if avatar
+                else hat_width or max(1, output.width // 2)
+            )
+            height = max(1, width * overlay.height // overlay.width)
+            overlay = overlay.resize((width, height), Image.Resampling.LANCZOS)
+            if rotation:
+                overlay = overlay.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+
+            left, centre, right = (
+                0,
+                (output.width - overlay.width) // 2,
+                output.width - overlay.width,
+            )
+            top, middle, bottom = (
+                0,
+                (output.height - overlay.height) // 2,
+                output.height - overlay.height,
+            )
+
+            positions = {
+                "topleft": (left, top),
+                "topmiddle": (centre, top),
+                "topright": (right, top),
+                "middleleft": (left, middle),
+                "middle": (centre, middle),
+                "middleright": (right, middle),
+                "bottomleft": (left, bottom),
+                "bottommiddle": (centre, bottom),
+                "bottomright": (right, bottom),
+            }
+            x, y = positions[position]
+
+            output.alpha_composite(overlay, (x + x_offset, y - y_offset))
+
+        if snow:
+            with Image.open(assets / "snow.png") as source:
+                overlay = source.convert("RGBA")
+
+            for x in range(0, output.width, overlay.width):
+                for y in range(0, output.height, overlay.height):
+                    output.alpha_composite(overlay, (x, y))
+
+        return self._save_sync(output, ImageFormats.PNG, 95)
+
+    async def christmas(
+        self,
+        *,
+        hat: bool = True,
+        snow: bool = True,
+        hat_width: int = 0,
+        position: str = "topmiddle",
+        x_offset: int = 0,
+        y_offset: int = 0,
+        rotation: int = 0,
+        avatar: bytes | None = None,
+        hat_size: int = 4,
+    ) -> File:
+        """Add a Christmas hat and tiled snow and return File."""
+
+        if position not in {
+            "topleft",
+            "topmiddle",
+            "topright",
+            "middleleft",
+            "middle",
+            "middleright",
+            "bottomleft",
+            "bottommiddle",
+            "bottomright",
+        }:
+            raise ValueError("Invalid hat position")
+        if hat_size not in (2, 4, 6):
+            raise ValueError("Hat size must be 2, 4 or 6")
+        if hat_width != 0 and not 10 <= hat_width <= 1000:
+            raise ValueError("Hat width must be between 10 and 1000")
+        if not -180 <= rotation <= 180:
+            raise ValueError("Rotation must be between -180 and 180")
+        if avatar is None and self.image and self.image.size >= 20_000_000:
+            raise OperationTooLargeError("Please provide an image smaller than 20MB.")
+
+        img = (
+            await asyncio.to_thread(self._load_sync, avatar)
+            if avatar is not None
+            else await self._load_image()
+        )
+        buffer = await asyncio.to_thread(
+            self._christmas_sync,
+            img,
+            hat,
+            snow,
+            hat_width,
+            position,
+            x_offset,
+            y_offset,
+            rotation,
+            avatar is not None,
+            hat_size,
+        )
+        return File(
+            fp=buffer,
+            filename=self._get_output_filename(ImageFormats.PNG, "christmas"),
+            spoiler=self._is_spoiler(),
         )
 
     def _resize_sync(self, img: Image.Image, width: int, height: int) -> Image.Image:
