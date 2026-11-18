@@ -355,6 +355,8 @@ class ImageTools:
 
         with img:
             output = ImageOps.exif_transpose(img).convert("RGBA")
+        if avatar:
+            output = ImageOps.contain(output, (512, 512), Image.Resampling.LANCZOS)
 
         assets = Path(__file__).resolve().parents[1] / "images"
         if hat:
