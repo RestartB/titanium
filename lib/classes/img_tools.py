@@ -356,19 +356,21 @@ class ImageTools:
         with img:
             output = ImageOps.exif_transpose(img).convert("RGBA")
         if avatar:
-            output.thumbnail((256, 256), Image.Resampling.LANCZOS)
+            output.thumbnail((512, 512), Image.Resampling.LANCZOS)
 
         assets = Path(__file__).resolve().parents[1] / "images"
         if hat:
             with Image.open(assets / "hat.png") as source:
                 overlay = source.convert("RGBA")
+
             width = (
-                max(1, overlay.width // hat_size)
+                max(1, overlay.width * 2 // hat_size)
                 if avatar
                 else hat_width or max(1, output.width // 2)
             )
             height = max(1, width * overlay.height // overlay.width)
             overlay = overlay.resize((width, height), Image.Resampling.LANCZOS)
+
             if rotation:
                 overlay = overlay.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
 
