@@ -1173,7 +1173,7 @@ requires-dist = [
     { name = "rapidfuzz", specifier = ">=3.14.6" },
     { name = "shortuuid", specifier = ">=1.0.13" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.1.9" },
-    { name = "topggpy", specifier = ">=1.4.0" },
+    { name = "topggpy", specifier = ">=2.0.0" },
     { name = "wand", specifier = ">=0.7.2" },
 ]
 
@@ -1185,14 +1185,15 @@ dev = [
 
 [[package]]
 name = "topggpy"
-version = "1.4.0"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "discord-py" },
+    { name = "aiohttp" },
+    { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fe/aa/45e9aafedf5065f6da0c1f5eae5b234d3ab5c8973febcd561aec3ecf4f4c/topggpy-1.4.0.tar.gz", hash = "sha256:75a2f3011a073c058238b740989155cc85598250ed605b788b5de28c4314ec04", size = 15649, upload-time = "2021-11-06T09:10:49.462Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e4/ca/fed07cca5976dc47a2b2b99a84e17136aae2a1554ad64dab4268064c2f76/topggpy-2.0.0.tar.gz", hash = "sha256:6c957b4b853a5d750a8003ddfe1f3c8837a51d9e4208b369bc69287b25fd0078", size = 20805, upload-time = "2026-11-23T13:30:24.349Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/94/2a/720c6ff93df413d2eca84e3e09bee0f8365cd84edc3a65558aab0f27ded1/topggpy-1.4.0-py3-none-any.whl", hash = "sha256:d0c9e329c6613d6a4889ad56295554e60440a5c5025d92ea3bf0b7a816dae27c", size = 19501, upload-time = "2021-11-06T09:10:47.204Z" },
+    { url = "https://files.pythonhosted.org/packages/51/c3/5ff063b5cda7b2dae65fda3df4321db70058d9dfaeb889269e5aacde5b41/topggpy-2.0.0-py3-none-any.whl", hash = "sha256:1dded19d9fc7fe54a18056337e35e43f1399a0b7e9bae8d0809242d541dce039", size = 21354, upload-time = "2026-11-23T13:30:23.245Z" },
 ]
 
 [[package]]
